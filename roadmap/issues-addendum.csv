@@ -1,0 +1,25 @@
+id,phase,area,title,priority,depends_on,acceptance_criteria
+BWB-101,P0,Architecture,Decide multilingual content storage and locale routing,high,BWB-001,"ADR covers locale identity, slugs, plugins and fallback"
+BWB-102,P0,Architecture,Specify mode CSS cascade and breakpoint interactions,high,BWB-101,ADR includes exact precedence and reference fixtures
+BWB-103,P0,Product,Approve Free Plus Pro allocation for translations and theme modes,high,BWB-101,Decision includes expiry behavior and cost implications
+BWB-104,P2,Core,Add stable translatable property registry and locale schema,high,BWB-101,Schema validates locale values and preserves stable IDs
+BWB-105,P2,Core,Add stale translation detection and source revisions,medium,BWB-104,Source changes preserve target text and mark stale
+BWB-106,P2,Styles,Implement light dark base tokens and sparse overrides,high,BWB-102,Token engine computes both modes without cloning nodes
+BWB-107,P2,Styles,Implement responsive mode selector precedence tests,high,BWB-106,Fixture matrix confirms deterministic CSS output
+BWB-108,P3,Theme,Add light dark auto site preference tokens,high,BWB-106,No JS remains legible and auto mode respects system preference
+BWB-109,P3,Onboarding,Extend preset wizard with both-mode preview and tokens,medium,BWB-108,Wizard persists both modes and can restore prior settings
+BWB-110,P4,Renderer,Render localized element props safely in PHP,high,BWB-104,Escaping and fallback verified in contract fixtures
+BWB-111,P4,WordPress,Implement locale routing and translation plugin adapter boundary,high,BWB-101,Default routing and supported adapter contract documented
+BWB-112,P4,REST,Implement locale aware saving revisioning and validation,high,BWB-104,Autosave and conflicts retain locale identity
+BWB-113,P4,Renderer,Implement theme preference and safe initial paint,medium,BWB-108,System manual and JS-off modes tested
+BWB-114,P5,Editor,Build content locale switcher and per-field translation inspector,high,BWB-112,Source text target text and states editable
+BWB-115,P5,Editor,Build website appearance mode controls independent of chrome,high,BWB-107,Light dark auto selection survives reload
+BWB-116,P5,Editor,Build mode override inspector and reset controls,high,BWB-115,Override provenance and reset actions are testable
+BWB-117,P5,Editor,Add side by side light dark preview comparison,medium,BWB-116,Same document IDs rendered in two visual modes
+BWB-118,P6,Accessibility,Implement keyboard and RTL editing behavior,high,BWB-114,Keyboard and RTL fixture suite passes
+BWB-119,P7,QA,Run locale mode breakpoint rendering parity suite,high,"BWB-110,BWB-107",Selected cases match PHP and editor previews
+BWB-120,P7,QA,Verify cross-mode contrast accessibility and reduced motion,high,BWB-115,Automated and manual accessibility evidence recorded
+BWB-121,P7,QA,Validate stale translations fallback and migration rollback,high,"BWB-105,BWB-112",Round trip rollback and fallback tests pass
+BWB-122,P8,Plus,Design optional bulk translation export and import API,low,"BWB-103,BWB-114",API contract reviewed and tier decision enforced
+BWB-123,P9,Pro,Evaluate opt in translation provider adapter and privacy controls,low,"BWB-103,BWB-122",Privacy license and usage controls approved before implementation
+BWB-124,P10,Docs,Document locale and theme mode APIs with Playwright tutorials,high,BWB-119,Starlight tutorial tested in light dark and NL EN

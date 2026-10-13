@@ -1,0 +1,498 @@
+{
+ "BWB-001": {
+  "number": 1,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/1"
+ },
+ "BWB-002": {
+  "number": 2,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/2"
+ },
+ "BWB-003": {
+  "number": 3,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/3"
+ },
+ "BWB-004": {
+  "number": 4,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/4"
+ },
+ "BWB-005": {
+  "number": 5,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/5"
+ },
+ "BWB-006": {
+  "number": 6,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/6"
+ },
+ "BWB-007": {
+  "number": 7,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/7"
+ },
+ "BWB-008": {
+  "number": 8,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/8"
+ },
+ "BWB-009": {
+  "number": 9,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/9"
+ },
+ "BWB-010": {
+  "number": 10,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/10"
+ },
+ "BWB-011": {
+  "number": 11,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/11"
+ },
+ "BWB-012": {
+  "number": 12,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/12"
+ },
+ "BWB-013": {
+  "number": 13,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/13"
+ },
+ "BWB-014": {
+  "number": 14,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/14"
+ },
+ "BWB-015": {
+  "number": 15,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/15"
+ },
+ "BWB-016": {
+  "number": 16,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/16"
+ },
+ "BWB-017": {
+  "number": 17,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/17"
+ },
+ "BWB-018": {
+  "number": 18,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/18"
+ },
+ "BWB-019": {
+  "number": 19,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/19"
+ },
+ "BWB-020": {
+  "number": 20,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/20"
+ },
+ "BWB-021": {
+  "number": 21,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/21"
+ },
+ "BWB-022": {
+  "number": 22,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/22"
+ },
+ "BWB-023": {
+  "number": 23,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/23"
+ },
+ "BWB-024": {
+  "number": 24,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/24"
+ },
+ "BWB-025": {
+  "number": 25,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/25"
+ },
+ "BWB-026": {
+  "number": 26,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/26"
+ },
+ "BWB-027": {
+  "number": 27,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/27"
+ },
+ "BWB-028": {
+  "number": 28,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/28"
+ },
+ "BWB-029": {
+  "number": 29,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/29"
+ },
+ "BWB-030": {
+  "number": 30,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/30"
+ },
+ "BWB-031": {
+  "number": 31,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/31"
+ },
+ "BWB-032": {
+  "number": 32,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/32"
+ },
+ "BWB-033": {
+  "number": 33,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/33"
+ },
+ "BWB-034": {
+  "number": 34,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/34"
+ },
+ "BWB-035": {
+  "number": 35,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/35"
+ },
+ "BWB-036": {
+  "number": 36,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/36"
+ },
+ "BWB-037": {
+  "number": 37,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/37"
+ },
+ "BWB-038": {
+  "number": 38,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/38"
+ },
+ "BWB-039": {
+  "number": 39,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/39"
+ },
+ "BWB-040": {
+  "number": 40,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/40"
+ },
+ "BWB-041": {
+  "number": 41,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/41"
+ },
+ "BWB-042": {
+  "number": 42,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/42"
+ },
+ "BWB-043": {
+  "number": 43,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/43"
+ },
+ "BWB-044": {
+  "number": 44,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/44"
+ },
+ "BWB-045": {
+  "number": 45,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/45"
+ },
+ "BWB-046": {
+  "number": 46,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/46"
+ },
+ "BWB-047": {
+  "number": 47,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/47"
+ },
+ "BWB-048": {
+  "number": 48,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/48"
+ },
+ "BWB-049": {
+  "number": 49,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/49"
+ },
+ "BWB-050": {
+  "number": 50,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/50"
+ },
+ "BWB-051": {
+  "number": 51,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/51"
+ },
+ "BWB-052": {
+  "number": 52,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/52"
+ },
+ "BWB-053": {
+  "number": 53,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/53"
+ },
+ "BWB-054": {
+  "number": 54,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/54"
+ },
+ "BWB-055": {
+  "number": 55,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/55"
+ },
+ "BWB-056": {
+  "number": 56,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/56"
+ },
+ "BWB-057": {
+  "number": 57,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/57"
+ },
+ "BWB-058": {
+  "number": 58,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/58"
+ },
+ "BWB-059": {
+  "number": 59,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/59"
+ },
+ "BWB-060": {
+  "number": 60,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/60"
+ },
+ "BWB-061": {
+  "number": 61,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/61"
+ },
+ "BWB-062": {
+  "number": 62,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/62"
+ },
+ "BWB-063": {
+  "number": 63,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/63"
+ },
+ "BWB-064": {
+  "number": 64,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/64"
+ },
+ "BWB-065": {
+  "number": 65,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/65"
+ },
+ "BWB-066": {
+  "number": 66,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/66"
+ },
+ "BWB-067": {
+  "number": 67,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/67"
+ },
+ "BWB-068": {
+  "number": 68,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/68"
+ },
+ "BWB-069": {
+  "number": 69,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/69"
+ },
+ "BWB-070": {
+  "number": 70,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/70"
+ },
+ "BWB-071": {
+  "number": 71,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/71"
+ },
+ "BWB-072": {
+  "number": 72,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/72"
+ },
+ "BWB-073": {
+  "number": 73,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/73"
+ },
+ "BWB-074": {
+  "number": 74,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/74"
+ },
+ "BWB-075": {
+  "number": 75,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/75"
+ },
+ "BWB-076": {
+  "number": 76,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/76"
+ },
+ "BWB-077": {
+  "number": 77,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/77"
+ },
+ "BWB-078": {
+  "number": 78,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/78"
+ },
+ "BWB-079": {
+  "number": 79,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/79"
+ },
+ "BWB-080": {
+  "number": 80,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/80"
+ },
+ "BWB-081": {
+  "number": 81,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/81"
+ },
+ "BWB-082": {
+  "number": 82,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/82"
+ },
+ "BWB-083": {
+  "number": 83,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/83"
+ },
+ "BWB-084": {
+  "number": 84,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/84"
+ },
+ "BWB-085": {
+  "number": 85,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/85"
+ },
+ "BWB-086": {
+  "number": 86,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/86"
+ },
+ "BWB-087": {
+  "number": 87,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/87"
+ },
+ "BWB-088": {
+  "number": 88,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/88"
+ },
+ "BWB-089": {
+  "number": 89,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/89"
+ },
+ "BWB-090": {
+  "number": 90,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/90"
+ },
+ "BWB-091": {
+  "number": 91,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/91"
+ },
+ "BWB-092": {
+  "number": 92,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/92"
+ },
+ "BWB-093": {
+  "number": 93,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/93"
+ },
+ "BWB-094": {
+  "number": 94,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/94"
+ },
+ "BWB-095": {
+  "number": 95,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/95"
+ },
+ "BWB-096": {
+  "number": 96,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/96"
+ },
+ "BWB-097": {
+  "number": 97,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/97"
+ },
+ "BWB-098": {
+  "number": 98,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/98"
+ },
+ "BWB-099": {
+  "number": 99,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/99"
+ },
+ "BWB-100": {
+  "number": 100,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/100"
+ },
+ "BWB-101": {
+  "number": 101,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/101"
+ },
+ "BWB-102": {
+  "number": 102,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/102"
+ },
+ "BWB-103": {
+  "number": 103,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/103"
+ },
+ "BWB-104": {
+  "number": 104,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/104"
+ },
+ "BWB-105": {
+  "number": 105,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/105"
+ },
+ "BWB-106": {
+  "number": 106,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/106"
+ },
+ "BWB-107": {
+  "number": 107,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/107"
+ },
+ "BWB-108": {
+  "number": 108,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/108"
+ },
+ "BWB-109": {
+  "number": 109,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/109"
+ },
+ "BWB-110": {
+  "number": 110,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/110"
+ },
+ "BWB-111": {
+  "number": 111,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/111"
+ },
+ "BWB-112": {
+  "number": 112,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/112"
+ },
+ "BWB-113": {
+  "number": 113,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/113"
+ },
+ "BWB-114": {
+  "number": 114,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/114"
+ },
+ "BWB-115": {
+  "number": 115,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/115"
+ },
+ "BWB-116": {
+  "number": 116,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/116"
+ },
+ "BWB-117": {
+  "number": 117,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/117"
+ },
+ "BWB-118": {
+  "number": 118,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/118"
+ },
+ "BWB-119": {
+  "number": 119,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/119"
+ },
+ "BWB-120": {
+  "number": 120,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/120"
+ },
+ "BWB-121": {
+  "number": 121,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/121"
+ },
+ "BWB-122": {
+  "number": 122,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/122"
+ },
+ "BWB-123": {
+  "number": 123,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/123"
+ },
+ "BWB-124": {
+  "number": 124,
+  "url": "https://github.com/blixis-io/wp-blocks/issues/124"
+ }
+}
