@@ -1,0 +1,3 @@
+# Handoff: final verification of the last ADR edits
+
+READ-ONLY, offline. Compare `coordination/reviews/P0-ADR-REREVIEW-codex-response.md` "New defects" with the current text of ADRs 0001, 0003, 0004, 0005. For each of the 4 new defects (source comparison target; class edits vs layout revision; combined Publish shortcut; determinism inputs) answer resolved / not resolved with section reference. Then list at most 5 NEW Blocker/Major defects, if any, introduced by these last edits (check especially `classRefs`/`classVersion` pending detection, `sourceContentRevision` retention, and the single-pointer-row atomic publish). Be concise.
