@@ -4,6 +4,8 @@ All samples are illustrative contracts to validate through spikes and ADRs; they
 
 ## Document
 
+> **Superseded sketch.** The canonical document model is [ADR 0003](adrs/0003-document-model-and-persistence.md); publication in [ADR 0004](adrs/0004-publication-model-and-revisions.md); styles in [ADR 0005](adrs/0005-style-resolution-and-css-output.md). The types below are kept only as history.
+
 ```ts
 type BuilderDocument = {
   schemaVersion: number;

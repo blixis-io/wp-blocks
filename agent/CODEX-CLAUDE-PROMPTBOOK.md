@@ -37,7 +37,7 @@ Verify expected unique issue count, actual issue count and Project membership fr
 ```text
 Perform architecture discovery for P0 using the PRD and addendum. Inspect actual repo files before proposing changes. Identify decisions about: WordPress/PHP versions, classic vs hybrid theme, canonical JSON schema, element registry, PHP preview parity, Font Library adapter, locale storage and routing, supported multilingual plugin adapters, dark/light/auto website style cascade, persistence of theme preference, REST capability checks, editor iframe security, Free/Plus/Pro entitlement boundaries, GSAP license review, data portability and accessibility.
 
-Create concise draft ADR Markdown files in architecture/adr/ with Context, Decision, Alternatives, Consequences, Test Strategy, Rollback and Open Questions. Do not make irreversible choices where owner input is required. Run docs/link lint if configured. Summarize decisions requiring approval, evidence and proposed issue mappings. Do not write implementation code.
+Create concise draft ADR Markdown files in architecture/adrs/ with Context, Decision, Alternatives, Consequences, Test Strategy, Rollback and Open Questions. Do not make irreversible choices where owner input is required. Run docs/link lint if configured. Summarize decisions requiring approval, evidence and proposed issue mappings. Do not write implementation code.
 ```
 
 ## Prompt 03 — Implement exactly one GitHub issue (Codex / Claude Code)

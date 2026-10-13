@@ -42,12 +42,12 @@ The original PRD covers UI localization (NFR-008) but not author-managed **multi
 
 - **FR-070** Document format has an explicit schema version and migration suite for locale/mode additions; unknown future fields round-trip safely where possible. Never execute arbitrary CSS/HTML from an untrusted translation payload.
 - **FR-071** Public renderer independently handles locale, theme mode and viewport breakpoints; editor and PHP output must be parity-tested against shared fixtures.
-- **FR-072** CSS cascade precedence must be documented with conformance tests: global tokens → classes → element styles → mode overrides → responsive overrides (order within a mode/breakpoint intersection defined in an ADR). Don't treat this illustrative order as implementation until ADR approval.
-- **FR-073** Translation/mode features have a written Free/Plus/Pro allocation decision **before shipping**. Avoid relying on premium plugins to render already-published content after expiration. Recommended: basic manual translation + light/dark theming in Free; bulk/pro translation integrations in paid tiers after market validation.
+- **FR-072** CSS cascade precedence must be documented with conformance tests: global tokens → classes → element styles → mode overrides → responsive overrides (order within a mode/breakpoint intersection defined in an ADR). **Resolved by [ADR 0005](../architecture/adrs/0005-style-resolution-and-css-output.md)** (owner decision 2026-10-14): base < breakpoint < mode < mode+breakpoint; mode beats breakpoint.
+- **FR-073** Translation/mode features have a written Free/Plus/Pro allocation decision **before shipping**. Avoid relying on premium plugins to render already-published content after expiration. **Decided in [ADR 0007](../architecture/adrs/0007-free-plus-pro-allocation-translation-and-modes.md):** manual translation + light/dark theming are Free; bulk/pro translation integrations in paid tiers after market validation.
 - **FR-074** Version and compatibility matrix defines supported WordPress/PHP/Node/browser versions and plugin interoperability; no speculative compatibility guarantees.
 - **FR-075** CI includes snapshot/conformance tests over locales × modes × breakpoints and protects against explosive combinations via representative pairwise matrices plus targeted full tests for critical cases.
 
-## 3. Proposed data model (illustrative, not final)
+## 3. Proposed data model (illustrative, **superseded by [ADR 0003](../architecture/adrs/0003-document-model-and-persistence.md)**)
 
 ```ts
 interface PageDocument {
