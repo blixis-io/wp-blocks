@@ -2,7 +2,7 @@
 
 The issue inventory in [`issues.csv`](issues.csv) is canonical for issue creation. All phases have an entry/exit gate. **Never implement a downstream phase before upstream contracts pass.** Milestones are outcome-based; do not assign fictional delivery dates.
 
-**Total: 100 issues across 11 phases.**
+**Total: 125 issues across 11 phases** (100 in `issues.csv`, 24 in `issues-addendum.csv`, plus BWB-125 below). The table lists the original 100; addendum issues BWB-101–124 and BWB-125 are placed in the phase shown in their CSV row.
 
 | Phase | Focus | Issues | Exit gate |
 |---|---|---:|---|

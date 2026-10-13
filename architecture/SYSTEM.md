@@ -86,4 +86,4 @@ tooling
 
 ## Architectural Decision Records
 
-Create ADRs at `architecture/adrs/` for: theme mode, WP version floor, page persistence, PHP parity, CSS schema, fonts, plugin split, theme-switch fallback, animation engine license, and licensing/deployment. ADR template: context, options, decision, consequences, rollback.
+ADRs live in `architecture/adrs/` (index: `architecture/adrs/README.md`); topics: theme mode, WP version floor, page persistence, PHP parity, CSS schema, fonts, plugin split, theme-switch fallback, animation engine license, and licensing/deployment. ADR template: context, options, decision, consequences, rollback.

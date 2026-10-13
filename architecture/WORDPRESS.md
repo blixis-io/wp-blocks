@@ -2,7 +2,7 @@
 
 ## Supported environment
 
-Provisional baseline: WordPress 7.0+ for native Font Library; final PHP version support requires decision after inspecting current hosting realities, PHP support policy and plugin compatibility. Test multisite even if initial launch does not promise full support.
+Baseline decided in [ADR 0001](adrs/0001-supported-environments.md): WordPress 7.0+ (Font Library available to classic themes from 7.0, verified against wordpress.org documentation), PHP 8.2+ proposed pending owner confirmation. Test multisite even if initial launch does not promise full support.
 
 ## Plugin/theme responsibilities
 

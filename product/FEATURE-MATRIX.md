@@ -9,6 +9,9 @@
 | Core visual editor, responsive styles, history, save/publish | Yes | Yes | Yes |
 | Core elements and media | Yes | Yes | Yes |
 | Global CSS classes and design tokens | Yes | Yes | Yes |
+| Manual multilingual content: multiple locales, locale-specific storage, translation statuses, fallbacks, independent locale publishing | Yes | Yes | Yes |
+| Website light/dark appearance: global light/dark tokens, element-level overrides, responsive styling, light/dark previews | Yes | Yes | Yes |
+| Automated/AI translation, translation providers, bulk workflows, translation memory, advanced localization rules | — | Candidate | Candidate |
 | Theme templates / display conditions | — | Yes | Yes |
 | Dynamic data bindings / ACF adapter | — | Yes | Yes |
 | Enhanced reusable design patterns | — | Yes | Yes |
@@ -16,6 +19,8 @@
 | WooCommerce component templates | — | — | Yes |
 | Advanced animation controls (approved engine) | — | — | Yes |
 | Extended integration SDK examples | — | — | Yes |
+
+Decision record: [ADR 0007](../architecture/adrs/0007-free-plus-pro-allocation-translation-and-modes.md). "Candidate" rows are assigned to Plus or Pro when their issue is scheduled.
 
 ## Entitlement and lifecycle invariants
 
