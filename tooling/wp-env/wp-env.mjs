@@ -663,6 +663,26 @@ async function smoke() {
         command('option', 'delete', 'blixis_setup');
       }
     }
+
+    // Builder plugin lifecycle (BWB-039): activation stores the version once, deactivation keeps it, uninstall removes it.
+    const builderOption = () => wpCmd('option', 'get', 'blixis_builder_version');
+    wpCmd('plugin', 'deactivate', 'blixis-builder');
+    wpCmd('option', 'delete', 'blixis_builder_version');
+    command('plugin', 'activate', 'blixis-builder');
+    check(builderOption().stdout.toString().trim() === '0.1.0', 'activating the Builder stores its version');
+    command('option', 'update', 'blixis_builder_version', 'kept-value');
+    command('plugin', 'deactivate', 'blixis-builder');
+    command('plugin', 'activate', 'blixis-builder');
+    check(builderOption().stdout.toString().trim() === 'kept-value', 'reactivating the Builder keeps existing state');
+    check(
+      command('eval', "echo array_key_exists('blixis_builder_version', wp_load_alloptions()) ? 'autoload' : 'no';") ===
+        'no',
+      'the Builder version option is not autoloaded',
+    );
+    check((await get('/')).status === 200, 'the front page renders with the Builder active');
+    command('plugin', 'deactivate', 'blixis-builder');
+    check(builderOption().status === 0, 'deactivating the Builder deletes no options');
+    command('plugin', 'activate', 'blixis-builder');
   }
   // The wizard also writes this option; leave the fixture site's prior setting intact.
   if (appearanceBefore.status === 0) {
