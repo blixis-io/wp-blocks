@@ -1,0 +1,67 @@
+# Local WordPress development and CI integration environment (BWB-012). Dev/test only: never expose it.
+# Defaults are the ADR 0001 floor (WordPress 7.0, PHP 8.2), pinned by image digest. Override with environment
+# variables (see tooling/wp-env/wp-env.mjs and docs/engineering/LOCAL-DEVELOPMENT.md).
+# A distinctive project name: plain "blixis" collides with other Blixis stacks on developer machines.
+name: blixis-wp-blocks
+
+services:
+  db:
+    image: ${BLX_DB_IMAGE:-mariadb:11.4@sha256:1292844148b311e4ed4300022a996d39083f415a963e970cf47cad1b3b18e3a6}
+    environment:
+      MARIADB_DATABASE: wordpress
+      MARIADB_USER: wordpress
+      MARIADB_PASSWORD: wordpress-dev-only
+      MARIADB_ROOT_PASSWORD: root-dev-only
+    volumes:
+      - db-data:/var/lib/mysql
+    healthcheck:
+      test: ['CMD', 'healthcheck.sh', '--connect', '--innodb_initialized']
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    # No published ports: the database is reachable only from the other containers.
+
+  wordpress:
+    image: ${BLX_WP_IMAGE:-wordpress:7.0-php8.2-apache@sha256:38b906b70449a4f7d6b8bdfd2b9ad737882c2ae47c177e141fa7ed6f6093ae1e}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      # Bound to the loopback interface only.
+      - '127.0.0.1:${BLX_WP_PORT:-8888}:80'
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress-dev-only
+      WORDPRESS_DEBUG: '1'
+      WORDPRESS_CONFIG_EXTRA: |
+        define( 'WP_ENVIRONMENT_TYPE', 'local' );
+        define( 'DISALLOW_FILE_EDIT', true );
+        define( 'WP_DEBUG_DISPLAY', false );
+        define( 'WP_DEBUG_LOG', true );
+        define( 'AUTOMATIC_UPDATER_DISABLED', true );
+    volumes:
+      - wp-data:/var/www/html
+    # Package mounts (wordpress/theme, wordpress/plugin, ...) are added through docker/compose.packages.yml
+    # once those packages contain PHP code, so Docker never creates empty host directories.
+
+  cli:
+    image: ${BLX_CLI_IMAGE:-wordpress:cli-php8.2@sha256:b99fac444f68b8d41b23c6496c7c036082d86a2f6a2b669217d0987a06ef775f}
+    profiles: ['tools']
+    user: '33:33'
+    depends_on:
+      - wordpress
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress-dev-only
+      HOME: /tmp
+    volumes:
+      - wp-data:/var/www/html
+      - ../tooling/wp-env/fixtures:/fixtures:ro
+
+volumes:
+  db-data:
+  wp-data:
