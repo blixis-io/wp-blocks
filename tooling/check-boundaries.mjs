@@ -5,6 +5,10 @@ import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+/** A denylist entry ending in "*" bans the whole scope/family, e.g. "@gsap/*". */
+export const isDenied = (name, list) =>
+  list.some((d) => (d.endsWith('*') ? name.startsWith(d.slice(0, -1)) : name === d));
+
 const DEP_FIELDS = ['dependencies', 'devDependencies', 'peerDependencies', 'optionalDependencies'];
 
 /** The package a dependency really resolves to: handles `npm:` and `workspace:name@range` aliases. */
@@ -35,6 +39,33 @@ export function hasTypeScriptSources(dir) {
     }
   }
   return false;
+}
+
+const SOURCE_EXT = /\.(js|mjs|cjs|jsx|ts|tsx|mdx|php|html|twig|vue|svelte)$/;
+const SKIP_DIRS = new Set(['node_modules', 'vendor', 'dist', 'coverage', '.git', 'docs', 'tooling']);
+const GSAP_IMPORT = /(?:\bfrom\s+|\bimport\s*\(\s*|\brequire\s*\(\s*|\bimport\s+)['"](?:gsap|@gsap\/[^'"]*)(?:['"/])/;
+const GSAP_SCRIPT = /<script[^>]+src=["'][^"']*gsap[^"']*\.js/i;
+
+/** Source files that vendor GSAP (by file name) or import/load it (by content). docs/ and tooling/ may mention it. */
+export function findGsapUsage(root, dir = root) {
+  const hits = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const path = join(dir, entry.name);
+    const rel = path.slice(root.length + 1);
+    if (entry.isDirectory()) {
+      if (!SKIP_DIRS.has(entry.name)) hits.push(...findGsapUsage(root, path));
+    } else if (
+      /^(gsap|scrolltrigger|draggable|splittext|morphsvgplugin)([.-].*)?\.(js|mjs|cjs|ts)$/i.test(entry.name)
+    ) {
+      hits.push(`${rel} (vendored file name)`);
+    } else if (
+      SOURCE_EXT.test(entry.name) &&
+      (GSAP_IMPORT.test(readFileSync(path, 'utf8')) || GSAP_SCRIPT.test(readFileSync(path, 'utf8')))
+    ) {
+      hits.push(`${rel} (imports or loads GSAP)`);
+    }
+  }
+  return hits;
 }
 
 /** Reads the `packages:` list from pnpm-workspace.yaml (the only shape we use). */
@@ -80,14 +111,14 @@ export function check(root, config) {
     seenNames.add(w.name);
     byShort.set(w.name.slice(config.scope.length), { path, ...w });
   }
-  const denied = new Set(config.globalForbidExternal);
+  const denied = config.globalForbidExternal;
 
   const checkDeps = (label, all, w) => {
     const allowedNames = new Set(w ? w.allow.map((a) => config.scope + a) : []);
     for (const [dep, value] of Object.entries(all)) {
       const target = resolveTarget(dep, value);
       for (const name of new Set([dep, target])) {
-        if (denied.has(name) || (w && w.forbidExternal.includes(name))) {
+        if (isDenied(name, denied) || (w && isDenied(name, w.forbidExternal))) {
           errors.push(
             `${label}: forbidden dependency "${name}"${name !== dep ? ` (via alias "${dep}": "${value}")` : ''}`,
           );
@@ -145,12 +176,15 @@ export function check(root, config) {
   const lock = join(root, 'pnpm-lock.yaml');
   if (existsSync(lock)) {
     const text = readFileSync(lock, 'utf8');
-    for (const name of denied) {
-      const esc = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      if (new RegExp(`(^|[\\s'"/])${esc}(@|['":\\s])`, 'm').test(text))
-        errors.push(`pnpm-lock.yaml: resolves forbidden package "${name}"`);
+    for (const entry of denied) {
+      const family = entry.endsWith('*');
+      const base = (family ? entry.slice(0, -1) : entry).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const re = new RegExp(`(^|[\\s'"/])${base}${family ? '[\\w.-]+' : ''}(@|['":\\s])`, 'm');
+      if (re.test(text)) errors.push(`pnpm-lock.yaml: resolves forbidden package "${entry}"`);
     }
   }
+  // Vendored copies and direct imports of GSAP outside the package manager (ADR 0008).
+  for (const hit of findGsapUsage(root)) errors.push(`${hit}: GSAP is not approved (ADR 0008)`);
 
   // Workspace discovery follows pnpm-workspace.yaml and must match boundaries.json in both directions.
   const globs = readWorkspaceGlobs(root);

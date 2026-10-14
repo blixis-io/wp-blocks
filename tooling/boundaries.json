@@ -79,13 +79,13 @@
     "wordpress/plus": {
       "name": "@blixis/wp-plus",
       "allow": ["extension-api"],
-      "forbidExternal": ["gsap", "@gsap/react"],
+      "forbidExternal": ["gsap", "@gsap/*"],
       "description": "Plus add-on JS. Depends on the public extension API only (ADR 0009); it must be externalised in the add-on build."
     },
     "wordpress/pro": {
       "name": "@blixis/wp-pro",
       "allow": ["extension-api"],
-      "forbidExternal": ["gsap", "@gsap/react"],
+      "forbidExternal": ["gsap", "@gsap/*"],
       "description": "Pro add-on JS. Depends on the public extension API only (ADR 0009); it must be externalised in the add-on build."
     },
     "tests/e2e": {
@@ -108,5 +108,5 @@
     }
   },
   "reserved": ["apps/docs"],
-  "globalForbidExternal": ["gsap", "@gsap/react"]
+  "globalForbidExternal": ["gsap", "@gsap/*"]
 }

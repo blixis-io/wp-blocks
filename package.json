@@ -24,7 +24,8 @@
     "lint:php": "composer run lint",
     "stan": "composer run stan",
     "test:php": "composer run test",
-    "check:php": "composer run check"
+    "check:php": "composer run check",
+    "check:licenses": "node tooling/check-licenses.mjs"
   },
   "devDependencies": {
     "@commitlint/cli": "21.2.3",

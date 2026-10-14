@@ -136,7 +136,7 @@ test('rejects GSAP directly, through npm: aliases, in the root and in the lockfi
         realConfig,
       ),
       'pnpm-lock.yaml',
-      '@gsap/react',
+      '@gsap/*',
     ),
   );
   assert.deepEqual(check(fixture(realConfig, { lock: 'packages:\n  not-gsap-related@1.0.0:\n' }), realConfig), []);
@@ -285,4 +285,40 @@ test('fixtures, declaration files and node_modules do not count as TypeScript so
   writeFileSync(join(root, 'tooling', 'node_modules', 'x', 'b.ts'), 'export {};\n');
   writeFileSync(join(root, 'tooling', 'types.d.ts'), 'export {};\n');
   assert.deepEqual(check(root, realConfig), []);
+});
+
+test('the whole @gsap scope is banned, not just @gsap/react (ADR 0008)', () => {
+  for (const pkg of ['@gsap/react', '@gsap/shockingly', 'gsap']) {
+    const errors = check(
+      fixture(realConfig, { overrides: { 'apps/editor': { dependencies: { [pkg]: '^1.0.0' } } } }),
+      realConfig,
+    );
+    assert.ok(has(errors, `forbidden dependency "${pkg}"`), `${pkg}: ${errors.join('\n')}`);
+  }
+  const lock = check(
+    fixture(realConfig, { lock: "packages:\n  '@gsap/shockingly@3.13.0':\n    resolution: {integrity: x}\n" }),
+    realConfig,
+  );
+  assert.ok(has(lock, 'pnpm-lock.yaml', '@gsap/*'), lock.join('\n'));
+});
+
+test('vendored GSAP files and GSAP imports in source are rejected; docs and tooling may mention it', () => {
+  const root = fixture(realConfig);
+  mkdirSync(join(root, 'wordpress', 'theme', 'assets'), { recursive: true });
+  mkdirSync(join(root, 'docs'), { recursive: true });
+  writeFileSync(join(root, 'docs', 'note.mdx'), "import gsap from 'gsap';\n");
+  writeFileSync(join(root, 'tooling', 'mention.mjs'), "import x from 'gsap';\n");
+  assert.deepEqual(check(root, realConfig), []);
+  writeFileSync(join(root, 'wordpress', 'theme', 'assets', 'gsap.min.js'), '/* vendored */');
+  writeFileSync(join(root, 'apps', 'editor', 'a.ts'), "import { gsap } from 'gsap';\nexport default gsap;\n");
+  writeFileSync(join(root, 'apps', 'editor', 'b.tsx'), "const m = await import('@gsap/react');\n");
+  writeFileSync(
+    join(root, 'wordpress', 'theme', 'header.php'),
+    '<script src="https://cdn.example.com/gsap/3.12/gsap.min.js"></script>',
+  );
+  const errors = check(root, realConfig);
+  assert.ok(has(errors, 'gsap.min.js', 'vendored file name'), errors.join('\n'));
+  assert.ok(has(errors, 'a.ts', 'imports or loads GSAP'), errors.join('\n'));
+  assert.ok(has(errors, 'b.tsx', 'imports or loads GSAP'), errors.join('\n'));
+  assert.ok(has(errors, 'header.php', 'imports or loads GSAP'), errors.join('\n'));
 });

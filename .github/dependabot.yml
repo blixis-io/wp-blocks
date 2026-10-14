@@ -1,0 +1,34 @@
+# Keeps pinned GitHub Actions, npm and Composer dependencies current. Updates arrive as pull requests that must pass CI.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: 'ci'
+    labels: ['area:dx']
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: 'build'
+      prefix-development: 'build'
+    labels: ['area:dx']
+    open-pull-requests-limit: 5
+  - package-ecosystem: composer
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: 'build'
+      prefix-development: 'build'
+    labels: ['area:dx']
+    open-pull-requests-limit: 5
