@@ -12,5 +12,13 @@ export {
   type ElementDefinition,
   type PropDefinition,
 } from './definition.ts';
-export { ElementRegistry, describe, type Defaults, type RegisterResult, type Source } from './registry.ts';
+export {
+  ElementRegistry,
+  describe,
+  type Defaults,
+  type PropIssue,
+  type PropIssueCode,
+  type RegisterResult,
+  type Source,
+} from './registry.ts';
 export { isSafeUrl } from './url.ts';

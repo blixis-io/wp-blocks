@@ -56,6 +56,8 @@ describe('isSafeUrl', () => {
     ['a character reference rebuilding the colon', 'javascript&colon;alert(1)'],
     ['a numeric character reference', 'javascript&#58;alert(1)'],
     ['a hex character reference', 'javascript&#x3a;alert(1)'],
+    ['a numeric reference without semicolon', 'javascript&#58alert(1)'],
+    ['a hex reference without semicolon', 'javascript&#x3aalert(1)'],
     ['a colon before the first slash', 'foo:bar/baz'],
     ['percent-encoded colon trick still has a colon', 'javascript%3Aalert(1):x'],
     ['too long', 'https://example.com/' + 'a'.repeat(2040)],

@@ -58,13 +58,20 @@ function classIdsIn(node: ElementNode): string[] {
 }
 
 /** Every nesting inside a subtree, plus the subtree root under `parentType`, must be allowed by the registry hook. */
-function nestingAllowed(parentType: string | null, node: ElementNode, ctx: CommandContext): boolean {
+function nestingAllowed(
+  parentType: string | null,
+  node: ElementNode,
+  ctx: CommandContext,
+  intent: 'create' | 'relocate',
+): boolean {
   if (ctx.canNest === undefined) return true;
+  // Relocating unchanged content only changes how its root is attached; nestings inside the subtree stay as they were.
+  if (intent === 'relocate') return ctx.canNest(parentType, node.type, intent);
   const stack: { parent: string | null; node: ElementNode }[] = [{ parent: parentType, node }];
   while (stack.length > 0) {
     const item = stack.pop();
     if (item === undefined) break;
-    if (!ctx.canNest(item.parent, item.node.type)) return false;
+    if (!ctx.canNest(item.parent, item.node.type, intent)) return false;
     for (const child of item.node.children) stack.push({ parent: item.node.type, node: child });
   }
   return true;
@@ -90,6 +97,7 @@ function checkPlacement(
   subtree: ElementNode,
   listLength: number,
   ctx: CommandContext,
+  intent: 'create' | 'relocate',
 ): CommandError | null {
   if (index < 0 || index > listLength)
     return { code: 'index-out-of-range', message: `index ${String(index)} is outside 0..${String(listLength)}` };
@@ -106,7 +114,7 @@ function checkPlacement(
       message: `the document would have more than ${String(DOCUMENT_LIMITS.maxNodes)} elements`,
     };
   }
-  if (!nestingAllowed(parent.node?.type ?? null, subtree, ctx)) {
+  if (!nestingAllowed(parent.node?.type ?? null, subtree, ctx, intent)) {
     return {
       code: 'disallowed-parent',
       message: `${subtree.type} may not be placed inside ${parent.node?.type ?? 'the page root'}`,
@@ -181,7 +189,15 @@ function insertOrRestore(
     }
   }
   const list = parent.node === null ? doc.root : parent.node.children;
-  const problem = checkPlacement(doc, parent, command.index, element, list.length, ctx);
+  const problem = checkPlacement(
+    doc,
+    parent,
+    command.index,
+    element,
+    list.length,
+    ctx,
+    command.type === 'insert' ? 'create' : 'relocate',
+  );
   if (problem !== null) return { ok: false, error: problem };
   const inserted = insertAt(doc, parent, command.index, element);
   return {
@@ -236,7 +252,7 @@ function move(doc: BuilderDocument, command: Extract<Command, { type: 'move' }>,
   const parent = parentInfo(without, command.parentId);
   if (parent === null) return fail('parent-not-found', `no element with id ${String(command.parentId)}`);
   const list = parent.node === null ? without.root : parent.node.children;
-  const problem = checkPlacement(without, parent, command.index, node, list.length, ctx);
+  const problem = checkPlacement(without, parent, command.index, node, list.length, ctx, 'relocate');
   if (problem !== null) return { ok: false, error: problem };
   return {
     document: insertAt(without, parent, command.index, node),

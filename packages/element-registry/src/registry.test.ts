@@ -171,6 +171,64 @@ describe('the core registry', () => {
   });
 });
 
+describe('hostile registration input', () => {
+  const fresh = () => new ElementRegistry();
+  it('turns throwing getters, proxies and reserved JSON keys into errors, never exceptions', () => {
+    const getter = {
+      get type(): string {
+        throw new Error('boom');
+      },
+    };
+    const proxy = new Proxy(
+      {},
+      {
+        ownKeys() {
+          throw new Error('boom');
+        },
+      },
+    );
+    for (const input of [getter, proxy, JSON.parse('{"__proto__":{"x":1}}')]) {
+      const result = fresh().register(input, 'vendor');
+      expect(result.ok).toBe(false);
+    }
+    const withReserved: unknown = JSON.parse(
+      `{"type":"acme/box","label":"B","tier":"free","props":{},"allowedChildren":[],"__proto__":{"a":1}}`,
+    );
+    expect(fresh().register(withReserved, 'vendor').ok).toBe(false);
+  });
+
+  it('registrarFor binds the source', () => {
+    const r = fresh();
+    expect(r.registrarFor('vendor').register(vendorDef({ type: 'blixis/evil' })).ok).toBe(false);
+    expect(r.registrarFor('vendor').register(vendorDef()).ok).toBe(true);
+  });
+
+  it('only invariant properties can be required', () => {
+    const bad = vendorDef({
+      props: {
+        t: { kind: 'string', classification: 'translatable', label: 'T', maxLength: 10, required: true, default: 'x' },
+      },
+    });
+    expect(errorsOf(bad).join()).toMatch(/only invariant properties can be required/);
+  });
+
+  it('relocating an unknown element is allowed only into the root or a container', () => {
+    const r = new ElementRegistry();
+    for (const d of CORE_ELEMENTS) r.register(d, 'core');
+    expect(r.canNest(null, 'gone/thing')).toBe(false);
+    expect(r.canNest(null, 'gone/thing', 'relocate')).toBe(true);
+    expect(r.canNest('blixis/section', 'gone/thing', 'relocate')).toBe(true);
+    expect(r.canNest('blixis/heading', 'gone/thing', 'relocate')).toBe(false);
+    expect(r.canNest('gone/parent', 'blixis/text', 'relocate')).toBe(false);
+  });
+
+  it('propIssues returns stable codes', () => {
+    const r = new ElementRegistry();
+    for (const d of CORE_ELEMENTS) r.register(d, 'core');
+    expect(r.propIssues('blixis/heading', { nope: 1 }).map((i) => i.code)).toContain('unknown-property');
+  });
+});
+
 describe('registration rules', () => {
   it('accepts a valid vendor, plus and pro element', () => {
     expect(errorsOf(vendorDef())).toEqual([]);
@@ -357,6 +415,34 @@ describe('the registry works with the document commands (canNest hook)', () => {
         element: { id: 'el-u', type: 'acme/unknown', props: {}, children: [] },
       }),
     ).toBe('disallowed-parent');
+  });
+
+  it('moves a known container that holds an unknown (removed add-on) element, but cannot create or detach it', () => {
+    const base = doc();
+    const withUnknown = applyCommand(
+      base,
+      {
+        type: 'insert',
+        parentId: 'el-sec',
+        index: 0,
+        element: { id: 'el-u', type: 'acme/gone', props: {}, children: [] },
+      },
+      { canNest: () => true },
+    );
+    expect(withUnknown.ok).toBe(true);
+    if (!withUnknown.ok) return;
+    const second = registry.createElement('blixis/section', 'el-s2');
+    const withSecond = applyCommand(
+      withUnknown.document,
+      { type: 'insert', parentId: null, index: 1, element: second },
+      ctx,
+    );
+    expect(withSecond.ok).toBe(true);
+    if (!withSecond.ok) return;
+    const moved = applyCommand(withSecond.document, { type: 'move', id: 'el-sec', parentId: null, index: 1 }, ctx);
+    expect(moved.ok).toBe(true);
+    const detached = applyCommand(withSecond.document, { type: 'move', id: 'el-u', parentId: 'el-h', index: 0 }, ctx);
+    expect(detached.ok).toBe(false);
   });
 
   it('a document built from createElement passes both validators', () => {

@@ -71,8 +71,10 @@ export type CommandResult =
 /** Extra rules supplied by the element registry (BWB-021). Without a registry every nesting is allowed. */
 export interface CommandContext {
   /**
-   * May an element of `childType` be placed inside `parentType` (`null` = the page root)? Must be a pure predicate; if it
-   * throws, the command fails with `invalid-argument` and nothing changes.
+   * May an element of `childType` be placed inside `parentType` (`null` = the page root)? `intent` is `create` for new content
+   * (insert: every nesting in the subtree is asked) and `relocate` for existing content (move and restore: only the subtree's
+   * root placement is asked, because nestings inside an unchanged subtree do not change; this lets a document whose add-on is
+   * gone still be rearranged). Must be a pure predicate; if it throws, the command fails with `invalid-argument`.
    */
-  canNest?: (parentType: string | null, childType: string) => boolean;
+  canNest?: (parentType: string | null, childType: string, intent: 'create' | 'relocate') => boolean;
 }

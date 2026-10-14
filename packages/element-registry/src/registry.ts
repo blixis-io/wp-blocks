@@ -1,4 +1,4 @@
-import type { ElementNode, Json } from '@blixis/wp-core';
+import { admitValue, type ElementNode, type Json } from '@blixis/wp-core';
 import {
   EXTENSION_API_VERSION,
   ElementDefinitionSchema,
@@ -14,6 +14,16 @@ const NAMESPACE = { core: 'blixis', plus: 'blixis-plus', pro: 'blixis-pro' } as 
 const TIER = { core: 'free', plus: 'plus', pro: 'pro', vendor: 'free' } as const;
 
 export type RegisterResult = { ok: true } | { ok: false; errors: string[] };
+
+export type PropIssueCode =
+  'unknown-property' | 'translatable-property-in-props' | 'missing-required-property' | 'invalid-property-value';
+
+/** A problem with one invariant property. The code is stable; the message is for humans. */
+export interface PropIssue {
+  code: PropIssueCode;
+  property: string;
+  message: string;
+}
 
 export interface Defaults {
   /** Invariant property defaults, stored in `props`. */
@@ -58,6 +68,10 @@ function checkDefinition(def: ElementDefinition, source: Source): string[] {
     if (prop.classification === 'locale-specific' && !['string', 'url', 'media'].includes(prop.kind))
       errors.push(`${where}: ${prop.kind} properties cannot be locale-specific`);
     if (prop.kind === 'integer' && prop.min > prop.max) errors.push(`${where}: min is greater than max`);
+    if (prop.required === true && prop.classification !== 'invariant')
+      errors.push(
+        `${where}: only invariant properties can be required (translated values are checked per language by the translation workflow)`,
+      );
     if (prop.required === true && prop.default === undefined)
       errors.push(`${where}: a required property needs a default so new elements can be created`);
     if (prop.default !== undefined && !valueSchemaFor(prop).safeParse(prop.default).success)
@@ -76,7 +90,11 @@ export class ElementRegistry {
 
   /** Validates and adds a definition. Never throws; reports every problem. */
   register(input: unknown, source: Source): RegisterResult {
-    const parsed = ElementDefinitionSchema.safeParse(input);
+    // One inert, bounded copy first: a hostile object (getter, Proxy, reserved key) becomes an error, never an exception.
+    const admitted = admitValue(input);
+    if (!admitted.ok)
+      return { ok: false, errors: admitted.issues.slice(0, 5).map((i) => `definition: ${i.code}: ${i.message}`) };
+    const parsed = ElementDefinitionSchema.safeParse(admitted.value);
     if (!parsed.success) {
       return {
         ok: false,
@@ -107,13 +125,16 @@ export class ElementRegistry {
   /**
    * May an element of `childType` be placed inside `parentType` (`null` = the page root)? Both types must be registered
    * (an unknown parent or child cannot be edited), the parent must accept the child, and the child must accept the parent.
-   * This is the `canNest` hook of the document commands.
+   * This is the `canNest` hook of the document commands. With `intent: 'relocate'` (moving or restoring existing content) an
+   * *unknown* child, for example an element of a removed add-on, may still be moved to the page root or into a known
+   * container, so such documents can be rearranged; it is never allowed under a leaf or an unknown parent, and new unknown
+   * elements can never be created (`intent: 'create'`).
    */
-  canNest = (parentType: string | null, childType: string): boolean => {
+  canNest = (parentType: string | null, childType: string, intent: 'create' | 'relocate' = 'create'): boolean => {
     const child = this.#definitions.get(childType);
-    if (child === undefined) return false;
     const parent = parentType === null ? null : this.#definitions.get(parentType);
     if (parent === undefined) return false;
+    if (child === undefined) return intent === 'relocate' && (parent === null || parent.allowedChildren.length > 0);
     const parentAccepts = parent === null ? true : parent.allowedChildren.some((entry) => matches(entry, child));
     const childAccepts = child.allowedParents.some((entry) => matches(entry, parent));
     return parentAccepts && childAccepts;
@@ -143,23 +164,45 @@ export class ElementRegistry {
     return defaults === undefined ? undefined : { id, type, props: defaults.props, children: [] };
   }
 
-  /** Problems with a set of invariant `props` for `type`; empty = valid. Unknown types are not an error here. */
-  validateProps(type: string, props: Record<string, unknown>): string[] {
+  /** Problems with a set of invariant `props` for `type`, with stable codes; empty = valid. Unknown types are not an error here. */
+  propIssues(type: string, props: Record<string, unknown>): PropIssue[] {
     const def = this.#definitions.get(type);
     if (def === undefined) return [];
-    const problems: string[] = [];
+    const issues: PropIssue[] = [];
     for (const [name, value] of Object.entries(props)) {
       const prop = Object.hasOwn(def.props, name) ? def.props[name] : undefined;
-      if (prop === undefined) problems.push(`${name}: not a property of ${type}`);
-      else if (prop.classification !== 'invariant')
-        problems.push(`${name}: is ${prop.classification} and belongs in the translation streams, not in props`);
-      else problems.push(...describe(name, prop, value));
+      if (prop === undefined)
+        issues.push({ code: 'unknown-property', property: name, message: `${name}: not a property of ${type}` });
+      else if (prop.classification !== 'invariant') {
+        issues.push({
+          code: 'translatable-property-in-props',
+          property: name,
+          message: `${name}: is ${prop.classification} and belongs in the translation streams, not in props`,
+        });
+      } else {
+        for (const message of describe(name, prop, value))
+          issues.push({ code: 'invalid-property-value', property: name, message });
+      }
     }
     for (const [name, prop] of Object.entries(def.props)) {
-      if (prop.classification === 'invariant' && prop.required === true && !Object.hasOwn(props, name))
-        problems.push(`${name}: is required`);
+      if (prop.classification === 'invariant' && prop.required === true && !Object.hasOwn(props, name)) {
+        issues.push({ code: 'missing-required-property', property: name, message: `${name}: is required` });
+      }
     }
-    return problems;
+    return issues;
+  }
+
+  /** The messages of `propIssues`; empty = valid. */
+  validateProps(type: string, props: Record<string, unknown>): string[] {
+    return this.propIssues(type, props).map((i) => i.message);
+  }
+
+  /**
+   * A handle that registers with a fixed, host-assigned source. The host (the plugin loader) must give add-on code only this
+   * handle: `source` is a claim of identity that this class cannot verify, so it must never come from an add-on's payload.
+   */
+  registrarFor(source: Source): { register: (input: unknown) => RegisterResult } {
+    return { register: (input) => this.register(input, source) };
   }
 
   /** JSON-safe description of every definition, for the REST API and the PHP side (GET /elements: no executable code). */

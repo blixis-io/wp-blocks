@@ -54,16 +54,8 @@ export function checkAgainstRegistry(doc: BuilderDocument, registry: ElementRegi
       if (!registry.canNest(parentType, node.type) && (parentType === null || registry.has(parentType))) {
         add('invalid-nesting', 'error', path, `${node.type} may not be placed inside ${parentType ?? 'the page root'}`);
       }
-      for (const message of registry.validateProps(node.type, node.props)) {
-        const code: RegistryIssueCode = message.includes('not a property of')
-          ? 'unknown-property'
-          : message.includes('belongs in the translation streams')
-            ? 'translatable-property-in-props'
-            : message.endsWith('is required')
-              ? 'missing-required-property'
-              : 'invalid-property-value';
-        add(code, 'error', `${path}.props`, message);
-      }
+      for (const issue of registry.propIssues(node.type, node.props))
+        add(issue.code, 'error', `${path}.props`, issue.message);
     }
     for (let i = node.children.length - 1; i >= 0; i -= 1) {
       const child = node.children[i];
@@ -74,7 +66,7 @@ export function checkAgainstRegistry(doc: BuilderDocument, registry: ElementRegi
 
   for (const [locale, stream] of Object.entries(doc.translations)) {
     for (const [elementId, entry] of Object.entries(stream)) {
-      const type = Object.hasOwn(Object.fromEntries(typeById), elementId) ? typeById.get(elementId) : undefined;
+      const type = typeById.get(elementId);
       const def = type === undefined ? undefined : registry.get(type);
       if (def === undefined) continue; // orphaned or unknown type: kept as is
       for (const [name, value] of Object.entries(entry.values)) {

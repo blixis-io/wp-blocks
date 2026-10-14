@@ -35,7 +35,8 @@ export function isSafeUrl(value: string): boolean {
   }
   if (value.startsWith('//')) return false;
   // A character reference such as &colon; is decoded by the HTML parser inside attribute values, so it could rebuild a scheme.
-  if (/&[a-zA-Z0-9#]+;/.test(value)) return false;
+  // Numeric references are decoded even without the closing semicolon (&#58 is a colon), so '&#' is never accepted.
+  if (value.includes('&#') || /&[a-zA-Z0-9]+;/.test(value)) return false;
   const scheme = /^([a-zA-Z][a-zA-Z0-9+.-]*):/.exec(value);
   if (scheme !== null) return SAFE_SCHEMES.has(`${(scheme[1] ?? '').toLowerCase()}:`);
   // No scheme: it is relative. A colon before the first '/', '?' or '#' would still make a browser read a scheme.

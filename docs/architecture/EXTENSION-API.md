@@ -15,7 +15,7 @@ A definition is plain data (no code), validated strictly when registered and fro
 | `props` | Property definitions by id (below). |
 | `allowedParents` / `allowedChildren` | Types, categories (`@layout`) and, for parents, `#root` (the page). A nesting is legal only if the parent accepts the child **and** the child accepts the parent. |
 
-Property kinds: `string` (max length), `enum`, `integer` (min, max), `boolean`, `media` (a media-library attachment id) and `url`. Every property is classified (FR-051): **invariant** (stored in `props`, identical in every language), **translatable** (strings only; stored in the translation streams, edited per locale) or **locale-specific** (string, url or media; also stored per locale but never offered for automatic translation, for example a link target). A property with `required: true` must have a default so a new element can always be created.
+Property kinds: `string` (max length), `enum`, `integer` (min, max), `boolean`, `media` (a media-library attachment id) and `url`. Every property is classified (FR-051): **invariant** (stored in `props`, identical in every language), **translatable** (strings only; stored in the translation streams, edited per locale) or **locale-specific** (string, url or media; also stored per locale but never offered for automatic translation, for example a link target). Only invariant properties can be `required` (translated values are checked per language by the translation workflow), and a required property must have a default so a new element can always be created.
 
 ## Who may register what
 
@@ -26,7 +26,7 @@ Property kinds: `string` (max length), `enum`, `integer` (min, max), `boolean`, 
 | Pro add-on | `blixis-pro/` | pro |
 | anyone else | any name that does not start with `blixis` | free |
 
-Registration never throws: `register(definition, source)` returns `{ ok: true }` or every problem found. Duplicates, bad defaults (checked against the property's own validator), impossible ranges, translatable non-strings and reserved namespaces are all rejected.
+Registration never throws, even for hostile input (throwing getters, Proxies, reserved keys such as a JSON `__proto__`; the definition is copied once through the same inert snapshot as documents). `source` is a claim of identity the registry cannot verify, so the trusted host assigns it from plugin provenance and gives add-on code only `registry.registrarFor(source)`, never the raw `register` and never a source taken from an add-on payload. `register(definition, source)` returns `{ ok: true }` or every problem found. Duplicates, bad defaults (checked against the property's own validator), impossible ranges, translatable non-strings and reserved namespaces are all rejected.
 
 ## Using it
 
@@ -42,7 +42,7 @@ Registration never throws: `register(definition, source)` returns `{ ok: true }`
 
 ## Link safety
 
-URL properties are validated by `isSafeUrl`: `http`, `https`, `mailto`, `tel` and relative references only. It rejects every other scheme (`javascript:`, `data:`, `vbscript:`, `blob:`, `file:` ...), protocol-relative `//host`, backslashes, whitespace, control and invisible characters (which browsers drop inside schemes), and character references such as `&colon;`. Rendering still escapes with `esc_url` (BWB-043); this is the first of two layers.
+URL properties are validated by `isSafeUrl`: `http`, `https`, `mailto`, `tel` and relative references only. It rejects every other scheme (`javascript:`, `data:`, `vbscript:`, `blob:`, `file:` ...), protocol-relative `//host`, backslashes, whitespace, control and invisible characters (which browsers drop inside schemes), and character references: named (`&colon;`) and numeric, with or without the closing semicolon (`&#58`), so any `&#` is rejected. Rendering still escapes with `esc_url` (BWB-043); this is the first of two layers.
 
 ## Not here yet
 
