@@ -70,12 +70,17 @@ export function referencesIn(value: string, depth = 0): string[] {
   return names;
 }
 
-type Expansion = { ok: true; value: string } | { ok: false; code: TokenIssueCode; message: string };
+type Expansion = { ok: true; value: string; height: number } | { ok: false; code: TokenIssueCode; message: string };
 
 /**
  * Resolves every token of a set for one mode: `var(--blx-x)` references are replaced by the referenced token's own
- * resolved value (alias chains, composite values, fallbacks). Unknown references without a fallback, cycles, chains deeper
- * than 16 and expansions larger than 8 KiB are reported per token and that token is left out of `values`.
+ * resolved value (alias chains, composite values, fallbacks). Unknown references without a fallback, reference cycles (a
+ * token fails when it is on a cycle or depends on one), chains of more than 16 tokens and expansions larger than 8 KiB are
+ * reported per token, and that token is left out of `values`.
+ *
+ * Every outcome depends only on the token and what it references, never on the order of the tokens or on which token is
+ * resolved first: cycles are found up front on the whole graph and the rest is resolved bottom-up with memoization, so the
+ * work is linear in the references.
  */
 export function resolveTokens(
   set: Pick<TokenSet, 'tokens'>,
@@ -85,11 +90,76 @@ export function resolveTokens(
   set.tokens.forEach((token, index) => {
     if (!byName.has(token.name)) byName.set(token.name, { token, index });
   });
-  const memo = new Map<string, Expansion>();
+  const textOf = (name: string): string => tokenValueFor((byName.get(name) as { token: Token }).token, mode);
 
-  const expand = (text: string, stack: readonly string[]): Expansion => {
+  // 1. Cycles: strongly connected components of the reference graph (Tarjan), then everything that reaches one.
+  const edges = new Map<string, string[]>();
+  for (const name of byName.keys())
+    edges.set(
+      name,
+      referencesIn(textOf(name)).filter((n) => byName.has(n)),
+    );
+  const cyclic = new Map<string, string>(); // token -> message
+  let counter = 0;
+  const index = new Map<string, number>();
+  const low = new Map<string, number>();
+  const onStack = new Set<string>();
+  const path: string[] = [];
+  const visit = (name: string): void => {
+    index.set(name, counter);
+    low.set(name, counter);
+    counter += 1;
+    path.push(name);
+    onStack.add(name);
+    for (const next of edges.get(name) ?? []) {
+      if (!index.has(next)) {
+        visit(next);
+        low.set(name, Math.min(low.get(name) ?? 0, low.get(next) ?? 0));
+      } else if (onStack.has(next)) {
+        low.set(name, Math.min(low.get(name) ?? 0, index.get(next) ?? 0));
+      }
+    }
+    if (low.get(name) === index.get(name)) {
+      const component: string[] = [];
+      for (;;) {
+        const member = path.pop();
+        if (member === undefined) break;
+        onStack.delete(member);
+        component.push(member);
+        if (member === name) break;
+      }
+      const selfLoop = component.length === 1 && (edges.get(name) ?? []).includes(name);
+      if (component.length > 1 || selfLoop) {
+        const members = component.sort((x, y) => (byName.get(x)?.index ?? 0) - (byName.get(y)?.index ?? 0));
+        const message = `${members.join(', ')} ${members.length === 1 ? 'refers' : 'refer'} back to ${members.length === 1 ? 'itself' : 'each other'}`;
+        for (const member of members) cyclic.set(member, message);
+      }
+    }
+  };
+  for (const name of byName.keys()) if (!index.has(name)) visit(name);
+  const reaches = new Map<string, string | null>();
+  const dependsOnCycle = (name: string): string | null => {
+    const known = reaches.get(name);
+    if (known !== undefined) return known;
+    let result: string | null = cyclic.get(name) ?? null;
+    if (result === null) {
+      for (const next of edges.get(name) ?? []) {
+        if (dependsOnCycle(next) !== null) {
+          result = `depends on "${next}", which cannot be resolved because of a reference cycle`;
+          break;
+        }
+      }
+    }
+    reaches.set(name, result);
+    return result;
+  };
+
+  // 2. Everything else is acyclic: resolve bottom-up, memoized, tracking how many tokens deep each chain is.
+  const memo = new Map<string, Expansion>();
+  const expand = (text: string): Expansion => {
     let out = '';
     let cursor = 0;
+    let height = 0;
     for (const call of varCalls(text)) {
       out += text.slice(cursor, call.start);
       cursor = call.end + 1;
@@ -97,18 +167,13 @@ export function resolveTokens(
       if (m === null)
         return { ok: false, code: 'invalid-reference', message: `"var(${call.inner})" is not a token reference` };
       const name = m[1] ?? '';
-      const target = byName.get(name);
-      if (target !== undefined) {
-        const resolved = resolve(name, stack);
-        if (!resolved.ok) return resolved;
-        out += resolved.value;
-      } else if (m[2] !== undefined) {
-        const fallback = expand(m[2].trim(), stack);
-        if (!fallback.ok) return fallback;
-        out += fallback.value;
-      } else {
-        return { ok: false, code: 'unknown-reference', message: `the token "${name}" does not exist` };
-      }
+      let piece: Expansion;
+      if (byName.has(name)) piece = resolve(name);
+      else if (m[2] !== undefined) piece = expand(m[2].trim());
+      else piece = { ok: false, code: 'unknown-reference', message: `the token "${name}" does not exist` };
+      if (!piece.ok) return piece;
+      out += piece.value;
+      height = Math.max(height, piece.height);
     }
     out += text.slice(cursor);
     return out.length > MAX_EXPANDED
@@ -117,40 +182,39 @@ export function resolveTokens(
           code: 'expansion-too-large',
           message: `the resolved value is longer than ${String(MAX_EXPANDED)} characters`,
         }
-      : { ok: true, value: out };
+      : { ok: true, value: out, height };
   };
-
-  const resolve = (name: string, stack: readonly string[]): Expansion => {
+  const resolve = (name: string): Expansion => {
     const cached = memo.get(name);
     if (cached !== undefined) return cached;
-    if (stack.includes(name)) {
-      return { ok: false, code: 'reference-cycle', message: `${[...stack, name].join(' -> ')} refers back to itself` };
-    }
-    if (stack.length >= MAX_DEPTH) {
-      return {
-        ok: false,
-        code: 'reference-too-deep',
-        message: `references are nested deeper than ${String(MAX_DEPTH)} levels`,
-      };
-    }
-    const entry = byName.get(name);
-    if (entry === undefined)
-      return { ok: false, code: 'unknown-reference', message: `the token "${name}" does not exist` };
-    const result = expand(tokenValueFor(entry.token, mode), [...stack, name]);
-    // A cycle is only a property of the chain being walked, so failures that depend on the path are not cached.
-    if (result.ok || result.code !== 'reference-cycle') memo.set(name, result);
+    const inner = expand(textOf(name));
+    const result: Expansion =
+      inner.ok && inner.height + 1 > MAX_DEPTH
+        ? {
+            ok: false,
+            code: 'reference-too-deep',
+            message: `references are nested deeper than ${String(MAX_DEPTH)} levels`,
+          }
+        : inner.ok
+          ? { ok: true, value: inner.value, height: inner.height + 1 }
+          : inner;
+    memo.set(name, result);
     return result;
   };
 
   const values = new Map<string, string>();
   const issues: TokenIssue[] = [];
-  for (const [name, { index }] of byName) {
-    const result = resolve(name, []);
-    if (result.ok) values.set(name, result.value);
-    else {
-      const field = mode === 'dark' && byName.get(name)?.token.dark !== undefined ? 'dark' : 'value';
-      issues.push({ code: result.code, path: `tokens[${String(index)}].${field}`, message: result.message });
+  for (const [name, { index: position }] of byName) {
+    const field = mode === 'dark' && byName.get(name)?.token.dark !== undefined ? 'dark' : 'value';
+    const path = `tokens[${String(position)}].${field}`;
+    const cycle = dependsOnCycle(name);
+    if (cycle !== null) {
+      issues.push({ code: 'reference-cycle', path, message: cycle });
+      continue;
     }
+    const result = resolve(name);
+    if (result.ok) values.set(name, result.value);
+    else issues.push({ code: result.code, path, message: result.message });
   }
   return { values, issues };
 }

@@ -2,6 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { checkTokenSet, referencesIn, resolveToken, resolveTokens } from './graph.ts';
 import type { Token } from './schema.ts';
 
+/** An element the test knows exists. */
+const get = <T>(list: readonly T[], index: number): T => {
+  const value = list[index];
+  if (value === undefined) throw new RangeError(`no element at ${String(index)}`);
+  return value;
+};
 const t = (name: string, value: string, extra: Partial<Token> = {}): Token => ({
   name,
   category: 'color',
@@ -97,6 +103,87 @@ describe('resolveTokens', () => {
   it('refuses a reference that is not a token reference', () => {
     expect(resolveTokens({ tokens: [t('a', 'var(--evil)')] }, 'light').issues[0]?.code).toBe('invalid-reference');
     expect(resolveTokens({ tokens: [t('a', 'var(x y)')] }, 'light').issues[0]?.code).toBe('invalid-reference');
+  });
+});
+
+describe('resolveTokens: results do not depend on token order', () => {
+  const chain = (n: number): Token[] =>
+    Array.from({ length: n }, (_v, i) => t(`n${String(i)}`, i === n - 1 ? 'red' : `var(--blx-n${String(i + 1)})`));
+
+  it('measures the depth of each chain itself: 16 tokens resolve, the 17th is too deep, wherever it appears', () => {
+    const tokens = chain(17);
+    const forward = resolveTokens({ tokens }, 'light');
+    const backward = resolveTokens({ tokens: [...tokens].reverse() }, 'light');
+    const shortFirst = resolveTokens(
+      { tokens: [get(tokens, 16), get(tokens, 1), ...tokens.slice(2, 16), get(tokens, 0)] },
+      'light',
+    );
+    for (const result of [forward, backward, shortFirst]) {
+      expect(result.issues.map((i) => i.code)).toEqual(['reference-too-deep']);
+      expect([...result.values.keys()].sort()).toEqual(
+        tokens
+          .slice(1)
+          .map((x) => x.name)
+          .sort(),
+      );
+    }
+    expect(forward.issues[0]?.path).toBe('tokens[0].value');
+  });
+
+  it('gives identical results for any permutation of a set with every kind of problem', () => {
+    const base: Token[] = [
+      t('ok', 'red'),
+      t('alias', 'var(--blx-ok)'),
+      t('c1', 'var(--blx-c2)'),
+      t('c2', 'var(--blx-c1)'),
+      t('onc', 'var(--blx-c1)'),
+      t('missing', 'var(--blx-nope)'),
+      t('fb', 'var(--blx-nope, blue)'),
+      t('self', 'var(--blx-self)'),
+    ];
+    const snapshot = (tokens: Token[]): string => {
+      const r = resolveTokens({ tokens }, 'light');
+      return JSON.stringify([
+        [...r.values].sort(),
+        r.issues.map((i) => `${i.code}:${tokens[Number(/\[(\d+)\]/.exec(i.path)?.[1])]?.name ?? '?'}`).sort(),
+      ]);
+    };
+    const expected = snapshot(base);
+    let seed = 11;
+    for (let n = 0; n < 40; n += 1) {
+      const shuffled = [...base];
+      for (let i = shuffled.length - 1; i > 0; i -= 1) {
+        seed = (seed * 1103515245 + 12345) % 2147483648;
+        const j = seed % (i + 1);
+        [shuffled[i], shuffled[j]] = [get(shuffled, j), get(shuffled, i)];
+      }
+      expect(snapshot(shuffled)).toBe(expected);
+    }
+  });
+
+  it('names the tokens on a cycle and the ones that depend on it', () => {
+    const tokens = [t('a', 'var(--blx-b)'), t('b', 'var(--blx-a)'), t('user', 'var(--blx-a)')];
+    const { issues } = resolveTokens({ tokens }, 'light');
+    expect(issues.map((i) => i.message)).toEqual([
+      'a, b refer back to each other',
+      'a, b refer back to each other',
+      'depends on "a", which cannot be resolved because of a reference cycle',
+    ]);
+  });
+
+  it('stays fast when a diamond feeds a cycle', () => {
+    const tokens: Token[] = [
+      t('loop-a', 'var(--blx-loop-b)'),
+      t('loop-b', 'var(--blx-loop-a)'),
+      t('d0', 'var(--blx-loop-a)'),
+    ];
+    for (let i = 1; i <= 40; i += 1) {
+      tokens.push(t(`d${String(i)}`, `min(var(--blx-d${String(i - 1)}), var(--blx-d${String(i - 1)}))`));
+    }
+    const started = Date.now();
+    const { issues } = resolveTokens({ tokens }, 'light');
+    expect(Date.now() - started).toBeLessThan(500);
+    expect(issues).toHaveLength(tokens.length);
   });
 });
 

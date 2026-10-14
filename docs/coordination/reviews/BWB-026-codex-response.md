@@ -1,0 +1,21 @@
+## Independent review: BWB-026
+
+**Blocker — resolution depends on token order.** In [graph.ts](packages/design-tokens/src/graph.ts:123), memoized successes and `reference-too-deep` failures are reused without accounting for the caller’s depth. I reproduced the same 16-token chain passing `validateTokenSet` when a short reference appears first and failing when a deep reference appears first. Cache only results whose validity is independent of the calling path, or include the remaining depth in the cache key. Add a test that reorders the same set and expects identical results.
+
+**Major — validated tokens can resolve to invalid category values.** [tokens.ts](packages/style-engine/src/tokens.ts:70) checks each raw value, but checks category compatibility only for an exact lone alias. A `color` token containing `rgb(var(--blx-space) 0 0)` passes when `space` is `1rem`; resolution produces `rgb(1rem 0 0)`, which `validateDeclaration('color', …)` rejects. `var( --blx-space )` and `var(--blx-space, red)` also bypass the lone-alias check. Validate resolved values against their category in **both modes**, and parse alias identity from the CSS parser rather than a separate exact-text regex. Add those three failing cases to [tokens.test.ts](packages/style-engine/src/tokens.test.ts:67).
+
+**Major — the PHP parity contract needs executable cases.** The committed [JSON Schema](packages/design-tokens/schema/token-set.schema.json:125) explicitly covers shape only; it cannot convey category grammars, duplicate names, reference resolution, cycles, or the hostile-input gate. Before BWB-027, add shared input/output fixtures for validation issues, resolved light/dark values, and emitted CSS, including fallback and depth boundaries. [DESIGN-TOKENS.md](docs/architecture/DESIGN-TOKENS.md:32) should specify canonicalization and issue ordering for the PHP implementation.
+
+**Minor — the compile API does not enforce full-set validation.** [tokensForCompile](packages/style-engine/src/tokens.ts:99) accepts any `TokenSet`. The [compiler](packages/style-engine/src/compile.ts:377) revalidates each value as a custom property, which prevents raw CSS syntax from slipping through, but does not enforce its token category or graph rules. Make the validated-set requirement enforceable at the API boundary, or document and test the required save-to-compile gate.
+
+**Minor — versioning and forward fields need a persistence rule.** [schema.ts](packages/design-tokens/src/schema.ts:47) requires `schemaVersion: 1` and a nonnegative `tokenVersion`, but cannot ensure that edits increment `tokenVersion`. Specify that save-side invariant and the migration path for version 2. The JSON Schema permits arbitrary nested unknown-field data, while `validateTokenSet` rejects reserved keys anywhere; document that PHP must apply the latter rule independently.
+
+### Agreements
+
+- `design-tokens` has only the Zod dependency; placing CSS-aware `validateTokenSet` in `style-engine` matches [ADR 0010](docs/architecture/adrs/0010-monorepo-layout-and-package-boundaries.md:23) and [boundaries.json](tooling/boundaries.json). The schema/resolver split is sound.
+- Sparse `dark` overrides, a dark reference to a base-only token, and the compiler’s explicit/`auto` dark selectors behave as documented. Fallback is used for a **missing** token; a present but unresolvable token produces an issue. A self-reference through a fallback is reported as a cycle.
+- The compiler validates token declarations before CSS emission. Quoted names are tightly scanned, and I found no route to break out of a quote or assemble `url(` from accepted pieces. `Map` avoids token-name prototype pollution; `Object.fromEntries` appears only in my read-only reproduction, not this production path.
+
+### Verification and limits
+
+The existing suites pass: design-tokens **30/30** and style-engine **382/382**. Read-only Node reproductions confirmed the order-dependent depth result and the resolved-value/category mismatch. No files changed. I could not verify PHP parity or real-browser computed CSS because BWB-027 and browser fixtures are not present; offline review also could not verify the remote issue’s approval state.

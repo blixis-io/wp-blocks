@@ -52,4 +52,5 @@ export {
   type TokenSetIssue,
   type TokenSetIssueCode,
   type TokenSetResult,
+  type ValidatedTokenSet,
 } from './tokens.ts';

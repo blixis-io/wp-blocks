@@ -1,3 +1,7 @@
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { resolveTokens } from '@blixis/wp-design-tokens';
 import { describe, expect, it } from 'vitest';
 import { parse, resolveRoot } from './cascade.test-helper.ts';
 import { compile } from './compile.ts';
@@ -89,7 +93,7 @@ describe('validateTokenSet', () => {
           { name: 'b', category: 'spacing', value: '1rem' },
         ]),
       ),
-    ).toEqual(['category-mismatch']);
+    ).toEqual(['category-mismatch', 'invalid-resolved-value']);
   });
 
   it('gives issue paths into the set', () => {
@@ -173,5 +177,43 @@ describe('tokensForCompile and the compiled stylesheet', () => {
     expect(resolveRoot(parsed, '--blx-color-primary', ctx(undefined, 'dark'))).toBe('#76a9fa');
     expect(resolveRoot(parsed, '--blx-color-link', ctx('dark', 'light'))).toBe('var(--blx-color-primary)');
     expect(compiled.css).toContain('--blx-font-body:"Source Sans 3", system-ui, sans-serif');
+  });
+});
+
+interface TokenCorpus {
+  cases: {
+    id: string;
+    input: unknown;
+    expect:
+      | {
+          ok: true;
+          light: Record<string, string>;
+          dark: Record<string, string>;
+          compile: { name: string; value: string; mode?: string }[];
+        }
+      | { ok: false; issues: { code: string; path: string }[] };
+  }[];
+}
+const corpus = JSON.parse(
+  readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'corpus', 'token-sets.json'), 'utf8'),
+) as TokenCorpus;
+
+describe('the token corpus (shared with the PHP twin)', () => {
+  it.each(corpus.cases.map((c) => [c.id, c] as const))('%s', (_id, c) => {
+    const result = validateTokenSet(c.input);
+    if (c.expect.ok) {
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(Object.fromEntries(resolveTokens(result.set, 'light').values)).toEqual(c.expect.light);
+      expect(Object.fromEntries(resolveTokens(result.set, 'dark').values)).toEqual(c.expect.dark);
+      expect(tokensForCompile(result.set)).toEqual(c.expect.compile);
+    } else {
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.issues.map((i) => ({ code: i.code, path: i.path }))).toEqual(c.expect.issues);
+    }
+  });
+
+  it('has the cases that matter', () => {
+    expect(corpus.cases.length).toBeGreaterThanOrEqual(28);
   });
 });
