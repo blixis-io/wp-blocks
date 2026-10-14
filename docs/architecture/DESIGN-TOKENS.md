@@ -61,7 +61,13 @@ The end-to-end test (`packages/style-engine/src/modes.test.ts`) validates a toke
 
 ## Output
 
-`tokensForCompile(set)` gives the compiler `--blx-<name>` values: base values on `:where(:root)` and dark values for an explicit `data-theme="dark"` and for `auto` with a dark system preference, all in layer `blx.tokens` (docs/architecture/CSS-COMPILER.md). Tailwind and `theme.json` mapping belong to the theme issues and read the same set.
+`tokensForCompile(set)` gives the compiler `--blx-<name>` values: base values on `:where(:root)` and dark values for an explicit `data-theme="dark"` and for `auto` with a dark system preference, all in layer `blx.tokens` (docs/architecture/CSS-COMPILER.md).
+
+## Theme defaults (BWB-031)
+
+`wordpress/theme/design/default-tokens.json` is the version-one default set for the classic theme. `wordpress/theme/build-tokens.mjs` validates it with `validateTokenSet`, passes `tokensForCompile(set)` to the style engine's `compile()` with an empty document, and commits the resulting `assets/css/tokens.css`. This keeps mode selectors, layer order and custom-property formatting identical to Builder CSS. The theme's own stylesheet rules use `var(--blx-...)` in `blx.theme`; the token layer follows it. With no `data-theme`, system preference selects the dark overrides. An explicit `light` or `dark` on `<html>` takes precedence.
+
+The same generator writes `theme.json` version 3: colors become `settings.color.palette`, type sizes and font stacks become `settings.typography.fontSizes` and `fontFamilies`, spacing becomes `settings.spacing.spacingSizes`, and content/wide widths become `settings.layout`. Every value is a `var(--blx-...)` reference. Radius and shadow tokens remain CSS variables for theme and Builder use; they have no corresponding required core preset in this bridge. Token names are stable slugs; changing a slug requires coordinated migration of any WordPress preset references. BWB-035 will replace these shipped defaults with persisted site settings where appropriate.
 
 ## Tests
 

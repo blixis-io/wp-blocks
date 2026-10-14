@@ -15,59 +15,63 @@ Tags: custom-menu, featured-images, threaded-comments, translation-ready
 Blixis-Compat: 1
 */
 
-/* Theme header and accessibility defaults. Layout utilities live in assets/css/theme.css. */
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
+/* Theme header and accessibility defaults. Design values live in assets/css/tokens.css. */
+@layer blx.theme {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
 
-body {
-  margin: 0;
-  font-family:
-    system-ui,
-    -apple-system,
-    'Segoe UI',
-    Roboto,
-    sans-serif;
-  line-height: 1.6;
-}
+  body {
+    margin: 0;
+    background: var(--blx-color-bg);
+    color: var(--blx-color-text);
+    font-family: var(--blx-font-body);
+    font-size: var(--blx-text-base);
+    line-height: 1.6;
+  }
 
-img,
-video {
-  max-width: 100%;
-  height: auto;
-}
+  a {
+    color: var(--blx-color-link);
+  }
 
-.screen-reader-text {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  padding: 0;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-  border: 0;
-}
+  img,
+  video {
+    max-width: 100%;
+    height: auto;
+  }
 
-.skip-link:focus {
-  position: fixed;
-  top: 0.5rem;
-  left: 0.5rem;
-  z-index: 100000;
-  width: auto;
-  height: auto;
-  margin: 0;
-  padding: 0.75rem 1rem;
-  overflow: visible;
-  clip-path: none;
-  background: #fff;
-  color: #000;
-  outline: 3px solid currentcolor;
-}
+  .screen-reader-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
 
-:focus-visible {
-  outline: 3px solid currentcolor;
-  outline-offset: 2px;
+  .skip-link:focus {
+    position: fixed;
+    inset-block-start: var(--blx-space-2);
+    inset-inline-start: var(--blx-space-2);
+    z-index: 100000;
+    width: auto;
+    height: auto;
+    margin: 0;
+    padding: var(--blx-space-3) var(--blx-space-4);
+    overflow: visible;
+    clip-path: none;
+    background: var(--blx-color-bg);
+    color: var(--blx-color-text);
+    outline: 3px solid currentcolor;
+  }
+
+  :focus-visible {
+    outline: 3px solid currentcolor;
+    outline-offset: 2px;
+  }
 }

@@ -6,7 +6,7 @@
       "kind": "theme",
       "source": "wordpress/theme",
       "main": "style.css",
-      "required": ["style.css", "index.php", "assets/css/theme.css"],
+      "required": ["style.css", "index.php", "theme.json", "assets/css/tokens.css", "assets/css/theme.css"],
       "tier": "free",
       "identity": "Theme Name"
     },
@@ -60,6 +60,8 @@
     "*.map",
     "theme.src.css",
     "build-css.mjs",
+    "build-tokens.mjs",
+    "default-tokens.json",
     "*.log",
     "*.test.*",
     "*.md.bak"

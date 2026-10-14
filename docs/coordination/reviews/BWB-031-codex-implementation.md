@@ -1,0 +1,3 @@
+Implemented BWB-031 on `feat/31-theme-json-design-variables`. The theme now has a validated default token set, generated `theme.json` and compiler-produced `tokens.css`, token-backed theme styles, and the required stylesheet enqueue order. Freshness, packaging, PHPUnit, and architecture documentation were updated. No commit or push was made.
+
+**Verification:** Prettier, focused tests, unit tests, PHP lint, serial PHPStan, PHPUnit, and two byte-identical `pnpm build` runs passed. `pnpm run check` and `composer run check` could not pass in this sandbox: PHPStan’s normal run cannot open a local worker socket, and pnpm’s license inventory cannot find package index files. The requested `node tooling/check-licenses.mjs` failed for that same pnpm store reason.

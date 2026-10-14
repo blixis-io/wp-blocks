@@ -37,7 +37,11 @@ function repo(extra = (r) => r) {
   put('wordpress/theme/index.php', '<?php // theme\n');
   put('wordpress/theme/assets/app.css', 'body{}\n');
   put('wordpress/theme/assets/css/theme.css', '.mx-auto{margin-inline:auto}\n');
+  put('wordpress/theme/assets/css/tokens.css', '@layer blx.theme, blx.tokens;\n');
   put('wordpress/theme/assets/css/theme.src.css', '@import "tailwindcss";\n');
+  put('wordpress/theme/theme.json', '{"version":3}\n');
+  put('wordpress/theme/design/default-tokens.json', '{"tokens":[]}\n');
+  put('wordpress/theme/build-tokens.mjs', '// source only\n');
   put('wordpress/theme/assets/app.css.map', '{"secret":"map"}');
   put('wordpress/theme/package.json', JSON.stringify({ name: '@blixis/wp-theme', version: '1.2.3' }));
   put('wordpress/theme/tests/ThemeTest.php', '<?php // test\n');
@@ -71,7 +75,14 @@ test('builds valid archives for scaffolded distributions and skips the others', 
   const entries = listZip(join(root, 'dist', 'blixis-1.2.3.zip'));
   assert.deepEqual(
     entries.map((e) => e[0]),
-    ['blixis/assets/app.css', 'blixis/assets/css/theme.css', 'blixis/index.php', 'blixis/style.css'],
+    [
+      'blixis/assets/app.css',
+      'blixis/assets/css/theme.css',
+      'blixis/assets/css/tokens.css',
+      'blixis/index.php',
+      'blixis/style.css',
+      'blixis/theme.json',
+    ],
   );
   assert.ok(
     entries.every((e) => e[0].startsWith('blixis/')),
@@ -147,7 +158,15 @@ test('development files, tests, source maps and dependencies are not shipped', (
   const names = listZip(join(root, 'dist', 'blixis-1.2.3.zip'))
     .map((e) => e[0])
     .join();
-  for (const bad of ['package.json', 'tests', 'node_modules', '.map', 'theme.src.css'])
+  for (const bad of [
+    'package.json',
+    'tests',
+    'node_modules',
+    '.map',
+    'theme.src.css',
+    'default-tokens.json',
+    'build-tokens.mjs',
+  ])
     assert.ok(!names.includes(bad), bad);
 });
 
