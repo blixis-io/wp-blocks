@@ -1,4 +1,4 @@
-import { admitValue, type ElementNode, type Json } from '@blixis/wp-core';
+import { admitValue, type ElementNode, type Json, type TranslationCheck } from '@blixis/wp-core';
 import {
   EXTENSION_API_VERSION,
   ElementDefinitionSchema,
@@ -138,6 +138,41 @@ export class ElementRegistry {
     const parentAccepts = parent === null ? true : parent.allowedChildren.some((entry) => matches(entry, child));
     const childAccepts = child.allowedParents.some((entry) => matches(entry, parent));
     return parentAccepts && childAccepts;
+  };
+
+  /**
+   * The properties whose values live in the translation streams (translatable and locale-specific), in definition order, with
+   * the ids that stored translations are keyed by. Ids are permanent (docs/architecture/VERSIONING-AND-COMPATIBILITY.md).
+   */
+  localizedProperties(
+    type: string,
+  ): { id: string; kind: string; classification: 'translatable' | 'locale-specific' }[] {
+    const def = this.#definitions.get(type);
+    if (def === undefined) return [];
+    return Object.entries(def.props).flatMap(([id, prop]) =>
+      prop.classification === 'invariant' ? [] : [{ id, kind: prop.kind, classification: prop.classification }],
+    );
+  }
+
+  /**
+   * May `property` of an element of `type` hold `value` in a translation entry? This is the `translationValue` hook of the
+   * document commands (`set-translation`) and the rule `checkAgainstRegistry` applies to stored translations: only translatable
+   * and locale-specific properties of registered types, with a value their definition accepts.
+   */
+  translationValue = (type: string, property: string, value: Json): TranslationCheck => {
+    const def = this.#definitions.get(type);
+    const prop = def !== undefined && Object.hasOwn(def.props, property) ? def.props[property] : undefined;
+    if (prop === undefined || prop.classification === 'invariant') {
+      return {
+        ok: false,
+        code: 'not-translatable',
+        message: `${property} is not a translatable or locale-specific property of ${type}`,
+      };
+    }
+    const messages = describe(property, prop, value);
+    return messages.length === 0
+      ? { ok: true }
+      : { ok: false, code: 'invalid-translation', message: messages.join('; ') };
   };
 
   /** Default values for a new element, split by where they are stored. */

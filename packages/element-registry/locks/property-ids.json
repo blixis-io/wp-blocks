@@ -1,0 +1,65 @@
+{
+  "lockVersion": 1,
+  "elements": {
+    "blixis/button": {
+      "href": {
+        "classification": "locale-specific",
+        "kind": "url"
+      },
+      "label": {
+        "classification": "translatable",
+        "kind": "string"
+      },
+      "newTab": {
+        "classification": "invariant",
+        "kind": "boolean"
+      },
+      "variant": {
+        "classification": "invariant",
+        "kind": "enum"
+      }
+    },
+    "blixis/container": {
+      "maxWidth": {
+        "classification": "invariant",
+        "kind": "enum"
+      }
+    },
+    "blixis/heading": {
+      "level": {
+        "classification": "invariant",
+        "kind": "integer"
+      },
+      "text": {
+        "classification": "translatable",
+        "kind": "string"
+      }
+    },
+    "blixis/image": {
+      "alt": {
+        "classification": "translatable",
+        "kind": "string"
+      },
+      "attachmentId": {
+        "classification": "invariant",
+        "kind": "media"
+      },
+      "decorative": {
+        "classification": "invariant",
+        "kind": "boolean"
+      }
+    },
+    "blixis/section": {
+      "tag": {
+        "classification": "invariant",
+        "kind": "enum"
+      }
+    },
+    "blixis/text": {
+      "text": {
+        "classification": "translatable",
+        "kind": "string"
+      }
+    }
+  }
+}

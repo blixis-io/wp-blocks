@@ -406,6 +406,84 @@ function setClassIds(doc: BuilderDocument, command: Extract<Command, { type: 'se
   };
 }
 
+function entryAllowed(doc: BuilderDocument, locale: string, elementId: string): CommandError | null {
+  if (!doc.locales.includes(locale))
+    return { code: 'locale-not-found', message: `${locale} is not a locale of this document` };
+  const path = findPath(doc.root, elementId);
+  if (path === null) return { code: 'element-not-found', message: `no element with id ${elementId}` };
+  if (entryOf(doc, locale, elementId)?.status === 'orphaned')
+    return { code: 'invalid-argument', message: `the translation of ${elementId} in ${locale} is orphaned` };
+  return null;
+}
+
+function withEntry(
+  doc: BuilderDocument,
+  locale: string,
+  elementId: string,
+  entry: BuilderDocument['translations'][string][string] | null,
+): BuilderDocument {
+  const stream = own(doc.translations, locale) ? { ...doc.translations[locale] } : {};
+  if (entry === null) Reflect.deleteProperty(stream, elementId);
+  else Object.defineProperty(stream, elementId, { value: entry, enumerable: true, writable: true, configurable: true });
+  return { ...doc, translations: { ...doc.translations, [locale]: stream } };
+}
+
+function setTranslation(
+  doc: BuilderDocument,
+  command: Extract<Command, { type: 'set-translation' }>,
+  ctx: CommandContext,
+): Outcome {
+  const problem = entryAllowed(doc, command.locale, command.elementId);
+  if (problem !== null) return { ok: false, error: problem };
+  const path = findPath(doc.root, command.elementId);
+  const node = path === null ? undefined : nodeAt(doc.root, path);
+  if (node === undefined) return fail('element-not-found', `no element with id ${command.elementId}`);
+  const set = command.set ?? {};
+  const unset = command.unset ?? [];
+  if (unset.some((k) => own(set, k)))
+    return fail('invalid-argument', 'a property cannot be set and unset in one command');
+  if (ctx.translationValue !== undefined) {
+    for (const key of Object.keys(set)) {
+      const checked = ctx.translationValue(node.type, key, set[key] as Json);
+      if (!checked.ok) return fail(checked.code, `${key}: ${checked.message}`);
+    }
+  }
+  const existing = entryOf(doc, command.locale, command.elementId);
+  const values: Record<string, Json> = { ...(existing?.values ?? {}) };
+  for (const key of unset) Reflect.deleteProperty(values, key);
+  for (const key of Object.keys(set)) {
+    Object.defineProperty(values, key, { value: set[key], enumerable: true, writable: true, configurable: true });
+  }
+  const status = command.status ?? (command.locale === doc.defaultLocale ? 'translated' : 'draft');
+  const entry = existing === undefined ? { values, status } : { ...existing, values, status };
+  return {
+    document: withEntry(doc, command.locale, command.elementId, entry),
+    inverse: {
+      type: 'restore-translation',
+      locale: command.locale,
+      elementId: command.elementId,
+      entry: existing ?? null,
+    },
+  };
+}
+
+function restoreTranslation(doc: BuilderDocument, command: Extract<Command, { type: 'restore-translation' }>): Outcome {
+  const problem = entryAllowed(doc, command.locale, command.elementId);
+  if (problem !== null) return { ok: false, error: problem };
+  if (command.entry?.status === 'orphaned')
+    return fail('invalid-argument', 'an orphaned entry cannot be restored on a live element');
+  const existing = entryOf(doc, command.locale, command.elementId);
+  return {
+    document: withEntry(doc, command.locale, command.elementId, command.entry),
+    inverse: {
+      type: 'restore-translation',
+      locale: command.locale,
+      elementId: command.elementId,
+      entry: existing ?? null,
+    },
+  };
+}
+
 /** Limits that must hold for the *result*, whatever the command did. */
 function checkResult(document: BuilderDocument): CommandError | null {
   const size = measure(document.root);
@@ -475,6 +553,12 @@ export function applyCommand(doc: BuilderDocument, input: unknown, ctx: CommandC
         break;
       case 'set-class-ids':
         outcome = setClassIds(doc, command);
+        break;
+      case 'set-translation':
+        outcome = setTranslation(doc, command, ctx);
+        break;
+      case 'restore-translation':
+        outcome = restoreTranslation(doc, command);
         break;
     }
     if (isError(outcome)) return outcome;
