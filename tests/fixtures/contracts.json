@@ -7,10 +7,9 @@
       "paths": ["tests/fixtures/documents"],
       "ts": ["packages/core/src/document/validate.test.ts"],
       "php": {
-        "level": "shape",
-        "runner": "tooling/php/tests/ContractsTest.php",
-        "issue": "BWB-043",
-        "covers": ["test_document_fixtures_match_the_json_schema"]
+        "level": "full",
+        "runner": "wordpress/plugin/tests/RegistryRenderTest.php",
+        "covers": ["test_document_fixtures"]
       }
     },
     {
@@ -102,11 +101,12 @@
     {
       "id": "element-manifest",
       "description": "The core element definitions the PHP registry and renderers are built from.",
-      "paths": ["packages/element-registry/manifest/core-elements.json"],
+      "paths": ["packages/element-registry/manifest/core-elements.json", "wordpress/plugin/data/core-elements.json"],
       "ts": ["packages/element-registry/src/registry.test.ts"],
       "php": {
-        "level": "pending",
-        "issue": "BWB-043"
+        "level": "full",
+        "runner": "wordpress/plugin/tests/RegistryRenderTest.php",
+        "covers": ["test_manifest_rejects_unknown_kind_and_fields", "test_nesting_categories_and_unknown_relocation"]
       }
     },
     {
@@ -128,6 +128,18 @@
         "level": "full",
         "runner": "wordpress/theme/tests/TokenDraftTest.php",
         "covers": ["test_contrast_parity"]
+      }
+    },
+    {
+      "id": "render-goldens",
+      "description": "PHP-only semantic HTML goldens; there is no TypeScript HTML renderer, so PHP is the source of this output contract.",
+      "paths": ["tests/fixtures/render"],
+      "ts": [],
+      "phpOnly": true,
+      "php": {
+        "level": "full",
+        "runner": "wordpress/plugin/tests/RegistryRenderTest.php",
+        "covers": ["test_render_corpus"]
       }
     }
   ]

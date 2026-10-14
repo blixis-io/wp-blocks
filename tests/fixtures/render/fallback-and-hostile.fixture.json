@@ -1,0 +1,69 @@
+{
+  "id": "fallback-and-hostile",
+  "description": "Invalid translation falls back; hostile text is escaped; missing media and unknown types stay inert.",
+  "registry": "core",
+  "locale": "nl_NL",
+  "mode": "dark",
+  "document": {
+    "defaultLocale": "en_US",
+    "root": [
+      {
+        "id": "txt",
+        "type": "blixis/text",
+        "props": {},
+        "children": []
+      },
+      {
+        "id": "btn",
+        "type": "blixis/button",
+        "props": {},
+        "children": []
+      },
+      {
+        "id": "img",
+        "type": "blixis/image",
+        "props": {
+          "attachmentId": 99
+        },
+        "children": []
+      },
+      {
+        "id": "unk",
+        "type": "vendor/unknown",
+        "props": {
+          "onclick": "oops"
+        },
+        "children": []
+      }
+    ],
+    "translations": {
+      "en_US": {
+        "txt": {
+          "values": {
+            "text": "data: onclick= <script>"
+          }
+        },
+        "btn": {
+          "values": {
+            "label": "<Go & see>",
+            "href": "/safe"
+          }
+        }
+      },
+      "nl_NL": {
+        "txt": {
+          "values": {
+            "text": ""
+          }
+        },
+        "btn": {
+          "values": {
+            "label": "",
+            "href": "javascript:alert(1)"
+          }
+        }
+      }
+    }
+  },
+  "expectedHtml": "<p data-blx-id=\"txt\" data-blx-type=\"blixis/text\">data: onclick= &lt;script&gt;</p><a data-blx-id=\"btn\" data-blx-type=\"blixis/button\" class=\"blx-button blx-button--solid\" href=\"/safe\">&lt;Go &amp; see&gt;</a><div data-blx-id=\"img\" data-blx-type=\"blixis/image\" data-blx-missing-media></div><div data-blx-invalid></div>"
+}

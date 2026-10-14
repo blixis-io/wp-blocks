@@ -47,6 +47,7 @@ describe('contract registry (tests/fixtures/contracts.json)', () => {
       'style-resolution',
       'compile-goldens',
       'element-manifest',
+      'render-goldens',
     ]) {
       expect(ids).toContain(id);
     }
@@ -60,6 +61,10 @@ describe('contract registry (tests/fixtures/contracts.json)', () => {
       checkRegistry({ ...base, suites: [{ ...first, ...patch }, ...base.suites.slice(1)] });
     expect(broken({ paths: ['tests/fixtures/nope'] }).join('\n')).toContain('has no JSON files');
     expect(broken({ ts: ['nope.test.ts'] }).join('\n')).toContain('does not exist');
+    expect(broken({ ts: [] }).join('\n')).toContain('no TypeScript runner');
+    expect(broken({ ts: ['packages/core/src/document/validate.test.ts'], phpOnly: true }).join('\n')).toContain(
+      'phpOnly needs an empty ts list and a full PHP runner',
+    );
     expect(broken({ php: { level: 'pending', issue: 'BWB-999' } }).join('\n')).toContain('roadmap issue');
     expect(broken({ php: { level: 'full' } }).join('\n')).toContain('php.runner is required');
     expect(checkRegistry({ ...base, suites: base.suites.slice(1) }).join('\n')).toContain(

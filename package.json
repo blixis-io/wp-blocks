@@ -20,7 +20,7 @@
     "commitlint": "commitlint --from origin/main --to HEAD",
     "check:boundaries": "node tooling/check-boundaries.mjs",
     "test:tooling": "node --test \"tooling/**/*.test.mjs\"",
-    "check": "pnpm run format:check && pnpm run lint && pnpm run typecheck && pnpm run check:boundaries && pnpm run test:tooling && pnpm run test:unit",
+    "check": "pnpm run format:check && pnpm run check:plugin-manifest && pnpm run lint && pnpm run typecheck && pnpm run check:boundaries && pnpm run test:tooling && pnpm run test:unit",
     "lint:php": "composer run lint",
     "stan": "composer run stan",
     "test:php": "composer run test",
@@ -38,7 +38,9 @@
     "wp:smoke": "node tooling/wp-env/wp-env.mjs smoke",
     "build": "pnpm --filter @blixis/wp-theme run build:tokens && pnpm --filter @blixis/wp-theme run build:css && node tooling/build/package.mjs --allow-missing --verify-reproducible",
     "build:packages": "pnpm --filter @blixis/wp-theme run build:tokens && pnpm --filter @blixis/wp-theme run build:css && node tooling/build/package.mjs",
-    "test:unit": "pnpm -r --if-present run test"
+    "test:unit": "pnpm -r --if-present run test",
+    "sync:plugin-manifest": "node tooling/build/sync-plugin-manifest.mjs",
+    "check:plugin-manifest": "node tooling/build/sync-plugin-manifest.mjs --check"
   },
   "devDependencies": {
     "@commitlint/cli": "21.2.3",

@@ -16,7 +16,7 @@ Golden outputs (rendered HTML, compiled CSS) live next to the fixture they belon
 
 ## Fixture envelope
 
-Every `*.fixture.json` is an object with exactly these keys: `fixtureVersion` (1), `id` (kebab-case, equal to the file name without `.fixture.json`, unique across the tree), `description` (why the fixture exists), `tags` (kebab-case labels such as `translation`, `dark-mode`, `hostile`), `input`, and `expected` (a value, `{ "error": "<code>" }` for invalid input, `{ "valid": true }`, or another documented outcome). Invalid and hostile inputs are fixtures too; every defect fix adds one (`TESTING.md`).
+Except for the PHP render corpus described below, every `*.fixture.json` is an object with exactly these keys: `fixtureVersion` (1), `id` (kebab-case, equal to the file name without `.fixture.json`, unique across the tree), `description` (why the fixture exists), `tags` (kebab-case labels such as `translation`, `dark-mode`, `hostile`), `input`, and `expected` (a value, `{ "error": "<code>" }` for invalid input, `{ "valid": true }`, or another documented outcome). Invalid and hostile inputs are fixtures too; every defect fix adds one (`TESTING.md`).
 
 ## Determinism rules
 
@@ -55,7 +55,7 @@ PHP requires `ext-intl` (NFC checks). The PHP helpers live under `tooling/php/sr
 | `shape` | PHP reads every file with its strict scanner and checks the suite's **instances** (document fixtures, token corpus cases) against the JSON Schemas generated from the TypeScript schemas; the schema files themselves are only strict-read. The semantics arrive with `php.issue`. |
 | `pending` | Nothing runs in PHP yet; `php.issue` is the roadmap issue that delivers it. |
 
-`full` and `shape` suites name their PHPUnit file (`php.runner`) and the test methods in it that check the suite (`php.covers`); both the TypeScript and the PHP contract tests verify that those methods exist, and a pending suite may not have a runner. The registry is tracking metadata: it cannot prove that a method really exercises a suite, so **the PR that delivers a pending suite's issue must change its level** (PR template checklist) and reviewers check that the named methods read the suite's files.
+`full` and `shape` suites name their PHPUnit file (`php.runner`) and the test methods in it that check the suite (`php.covers`); both the TypeScript and the PHP contract tests verify that those methods exist, and a pending suite may not have a runner. A PHP-only suite may declare `phpOnly: true` with `ts: []` and a full PHP runner when no TypeScript counterpart exists. The registry is tracking metadata: it cannot prove that a method really exercises a suite, so **the PR that delivers a pending suite's issue must change its level** (PR template checklist) and reviewers check that the named methods read the suite's files.
 
 Current suites: document fixtures and schema, design-token schema and corpus, the CSS declaration corpus and allow-list manifest, ADR 0005 resolution cases, the compile goldens and the element manifest. Rules enforced on both sides (`tests/fixtures/src/contracts.test.ts`, `tooling/php/tests/ContractsTest.php`):
 
@@ -73,3 +73,5 @@ Current suites: document fixtures and schema, design-token schema and corpus, th
 ## Checks
 
 `pnpm test:unit` (Vitest, includes the Prettier-stability and PHP parity tests), `composer test` (PHPUnit), and `pnpm check` run everything locally; CI runs the same.
+
+**PHP render corpus** (`tests/fixtures/render/*.fixture.json`): each file has `{ id, description, registry: "core", locale, mode, document, expectedHtml }`. Expected HTML is hand-derived and compared byte for byte by `RegistryRenderTest::test_render_corpus`. This corpus is PHP-only because there is no TypeScript HTML renderer; the contract registry marks it `phpOnly` with an empty `ts` runner list.

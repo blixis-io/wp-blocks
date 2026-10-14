@@ -1,0 +1,87 @@
+{
+  "id": "core-elements",
+  "description": "Each core renderer, nested order, and fixed output attributes.",
+  "registry": "core",
+  "locale": "en_US",
+  "mode": "light",
+  "document": {
+    "defaultLocale": "en_US",
+    "root": [
+      {
+        "id": "sec",
+        "type": "blixis/section",
+        "props": {
+          "tag": "section"
+        },
+        "children": [
+          {
+            "id": "con",
+            "type": "blixis/container",
+            "props": {
+              "maxWidth": "wide"
+            },
+            "children": [
+              {
+                "id": "hed",
+                "type": "blixis/heading",
+                "props": {
+                  "level": 1
+                },
+                "children": []
+              },
+              {
+                "id": "txt",
+                "type": "blixis/text",
+                "props": {},
+                "children": []
+              },
+              {
+                "id": "img",
+                "type": "blixis/image",
+                "props": {
+                  "attachmentId": 7
+                },
+                "children": []
+              },
+              {
+                "id": "btn",
+                "type": "blixis/button",
+                "props": {
+                  "variant": "outline",
+                  "newTab": true
+                },
+                "children": []
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "translations": {
+      "en_US": {
+        "hed": {
+          "values": {
+            "text": "Hello"
+          }
+        },
+        "txt": {
+          "values": {
+            "text": "Body"
+          }
+        },
+        "img": {
+          "values": {
+            "alt": "Photo"
+          }
+        },
+        "btn": {
+          "values": {
+            "label": "Visit",
+            "href": "/about"
+          }
+        }
+      }
+    }
+  },
+  "expectedHtml": "<section data-blx-id=\"sec\" data-blx-type=\"blixis/section\"><div data-blx-id=\"con\" data-blx-type=\"blixis/container\" data-blx-max-width=\"wide\"><h1 data-blx-id=\"hed\" data-blx-type=\"blixis/heading\">Hello</h1><p data-blx-id=\"txt\" data-blx-type=\"blixis/text\">Body</p><img data-blx-id=\"img\" data-blx-type=\"blixis/image\" src=\"https://example.test/image.jpg\" width=\"640\" height=\"480\" alt=\"Photo\" loading=\"lazy\" decoding=\"async\"><a data-blx-id=\"btn\" data-blx-type=\"blixis/button\" class=\"blx-button blx-button--outline\" href=\"/about\" target=\"_blank\" rel=\"noopener noreferrer\">Visit</a></div></section>"
+}

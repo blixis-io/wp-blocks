@@ -16,6 +16,8 @@ export interface ContractSuite {
   paths: string[];
   /** Test files that run the suite in TypeScript. */
   ts: string[];
+  /** Explicitly PHP-owned output corpus with no TypeScript renderer. */
+  phpOnly?: boolean;
   php: {
     /** `full`: PHP executes the suite's expectations. `shape`: PHP checks strict JSON and JSON Schema shape only. `pending`: not run yet. */
     level: PhpLevel;
@@ -131,7 +133,9 @@ export function checkRegistry(registry: ContractRegistry = loadRegistry()): stri
         }
       }
     }
-    if (suite.ts.length === 0) problems.push(`${where}: no TypeScript runner`);
+    if (suite.ts.length === 0 && suite.phpOnly !== true) problems.push(`${where}: no TypeScript runner`);
+    if (suite.phpOnly === true && (suite.ts.length > 0 || suite.php.level !== 'full'))
+      problems.push(`${where}: phpOnly needs an empty ts list and a full PHP runner`);
     for (const runner of [...suite.ts, ...(suite.php.runner === undefined ? [] : [suite.php.runner])]) {
       if (!existsSync(join(REPO_ROOT, runner))) problems.push(`${where}: runner ${runner} does not exist`);
     }

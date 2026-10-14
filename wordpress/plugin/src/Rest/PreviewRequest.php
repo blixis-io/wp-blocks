@@ -11,6 +11,7 @@ namespace Blixis\Builder\Rest;
 use Blixis\Builder\Preview\PreviewDocument;
 use Blixis\Builder\Preview\PreviewRenderer;
 use Blixis\Builder\Preview\PreviewResult;
+use Blixis\Builder\Render\RenderDocument;
 use Blixis\Builder\Storage\DocumentValidator;
 use Blixis\Builder\Storage\Envelope;
 use Blixis\Builder\Storage\MetaKeys;
@@ -86,6 +87,29 @@ final class PreviewRequest {
 				}
 				if ( null !== $content && ! $this->validator->accepts( $content['value'], MetaKeys::content( $locale ) ) ) {
 					return self::failed();
+				}
+				if ( null !== $document ) {
+					$content_by_locale = [];
+					if ( null !== $content ) {
+						$stream = Envelope::decode( $content['value'], MetaKeys::content( $locale ) );
+						if ( null !== $stream ) {
+							$content_by_locale[ $locale ] = $stream;
+						}
+					}
+					$default_locale = $document->{'defaultLocale'} ?? null;
+					if ( \is_string( $default_locale ) && $default_locale !== $locale && MetaKeys::is_valid_locale( $default_locale ) ) {
+						$default_content = $this->streams->read( $post_id, MetaKeys::content( $default_locale ) );
+						if ( null !== $default_content ) {
+							if ( ! $this->validator->accepts( $default_content['value'], MetaKeys::content( $default_locale ) ) ) {
+								return self::failed();
+							}
+							$stream = Envelope::decode( $default_content['value'], MetaKeys::content( $default_locale ) );
+							if ( null !== $stream ) {
+								$content_by_locale[ $default_locale ] = $stream;
+							}
+						}
+					}
+					$document = RenderDocument::from_streams( $document, $content_by_locale );
 				}
 			}
 			$output = null === $document ? new PreviewResult( '', '' ) : new PreviewResult( ...$this->render_output( $document, $locale, $mode ) );

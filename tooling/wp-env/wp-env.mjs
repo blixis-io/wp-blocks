@@ -510,7 +510,7 @@ async function smoke() {
           nonce: adminNonce,
           body: JSON.stringify({
             mode: 'dark',
-            document: treeDoc([node('a1', 'blixis/section', [node('a2', 'blixis/heading')])]),
+            document: treeDoc([node('el-a1', 'blixis/section', [node('el-a2', 'blixis/heading')])]),
           }),
         });
         const sentBody = await json(sent);
@@ -520,7 +520,7 @@ async function smoke() {
         );
         check(
           typeof sentBody.html === 'string' &&
-            sentBody.html.includes('data-blx-id="a2"') &&
+            sentBody.html.includes('data-blx-id="el-a2"') &&
             !/<script|onerror=/i.test(sentBody.html),
           'preview HTML is a structural fragment without scripts',
         );
@@ -531,9 +531,47 @@ async function smoke() {
           nonce: adminNonce,
           method: 'PUT',
           ifMatch: `"${currentLayout.revision}"`,
-          body: JSON.stringify({ ...treeDoc([node('w1', 'blixis/section')]), note: 'working' }),
+          body: JSON.stringify({ ...treeDoc([node('el-w1', 'blixis/section')]), note: 'working' }),
         });
         check(saved.status === 200, 'a layout with a tree can be saved for the working preview');
+        // Real element output (BWB-043): semantics, escaping, translation fallback and unsafe URLs.
+        const richDoc = {
+          ...treeDoc([
+            {
+              id: 'sec1',
+              type: 'blixis/section',
+              props: { tag: 'main' },
+              children: [
+                { id: 'h1x', type: 'blixis/heading', props: { level: 2 }, children: [] },
+                { id: 'b1x', type: 'blixis/button', props: { href: 'javascript:alert(1)' }, children: [] },
+              ],
+            },
+          ]),
+          defaultLocale: 'en_US',
+          locales: ['en_US', 'nl_NL'],
+          translations: {
+            en_US: { h1x: { status: 'translated', values: { text: 'Hello <b>there</b> data: onclick=1' } } },
+            nl_NL: {},
+          },
+        };
+        const rich = await preview(restPost, {
+          cookie: adminCookie,
+          nonce: adminNonce,
+          body: JSON.stringify({ locale: 'nl_NL', document: richDoc }),
+        });
+        const richBody = await json(rich);
+        check(rich.status === 200, `a real document previews (${rich.status})`);
+        check(
+          /<main[^>]*data-blx-id="sec1"/.test(richBody.html ?? '') &&
+            /<h2[^>]*data-blx-id="h1x"/.test(richBody.html ?? ''),
+          'sections and headings render with their semantic tags',
+        );
+        check(
+          (richBody.html ?? '').includes('Hello &lt;b&gt;there&lt;/b&gt;') &&
+            !(richBody.html ?? '').includes('<b>there'),
+          'translated text is escaped and falls back to the default locale',
+        );
+        check(!/javascript:/i.test(richBody.html ?? ''), 'an unsafe button URL never reaches the output');
         const working = await preview(restPost, { cookie: adminCookie, nonce: adminNonce, body: '{}' });
         const workingBody = await json(working);
         check(

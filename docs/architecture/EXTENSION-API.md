@@ -48,3 +48,11 @@ URL properties are validated by `isSafeUrl`: `http`, `https`, `mailto`, `tel` an
 ## Not here yet
 
 Rich text, per-element style schemas and editor controls (BWB-053/054), PHP renderers (BWB-043), and the enforcement of the deprecation window (BWB-075).
+
+## PHP registry and rendering (BWB-043)
+
+The distributable Builder loads `data/core-elements.json` through `ElementRegistry::from_manifest_file()`. `pnpm sync:plugin-manifest` copies the TypeScript manifest; `pnpm check:plugin-manifest` fails when the copy is stale. The loader caps bytes, checks API version, definitions, property kinds, defaults and nesting entries, and owns an immutable definition set. `with()` returns a new validated registry for a future extension issue; no registration filter is exposed yet.
+
+`DocumentChecker` walks at most 5,000 nodes and 32 tree levels, reporting the TypeScript semantic and registry issue codes. Unknown types are warnings and remain in storage. `CoreDocumentRenderer` uses the same bounds and renders the six core elements with fixed tags, fixed class names, escaped text and attributes, validated URLs, and `data-blx-id`/`data-blx-type` hooks. It emits inert placeholders for unknown types and unresolved attachments. `MediaResolver` isolates attachment lookup; `WordPressMediaResolver` uses the media library, while pure PHP tests use a fake.
+
+`ContentResolver` reads invariant values from node props. For translatable and locale-specific values it tries the selected content locale, then the default-locale stream, then the manifest default, validating each candidate before use. Empty localized values fall through. `RenderDocument::from_streams()` joins separately stored layout and content streams into this view without changing either stream. CSS generation remains BWB-044.
