@@ -15,7 +15,7 @@ interface MediaResolver {
 	 * Apply the documented contract.
 	 *
 	 * @param int $attachment_id Attachment id.
-	 * @return array{url:string,width:int,height:int,alt:string}|null Resolved media.
+	 * @return array{url:string,width:int,height:int,alt:string,srcset?:string,sizes?:string}|null Resolved media.
 	 */
 	public function resolve( int $attachment_id ): ?array;
 }

@@ -695,6 +695,75 @@ async function smoke() {
           'a broken publication falls back to the normal post content',
         );
         command('post', 'delete', pageId, '--force');
+        // Media (BWB-045): raster library images only, validated responsive attributes, alt text, picker route.
+        const mediaIds = JSON.parse(command('eval-file', '/fixtures/media-smoke.php').split('\n').pop());
+        const mediaApi = async (id, { cookie, nonce } = {}) =>
+          wrap(
+            await http(`${base}/?rest_route=/blixis/v1/media/${id}`, {
+              headers: { ...(cookie ? { cookie } : {}), ...(nonce ? { 'x-wp-nonce': nonce } : {}) },
+            }),
+          );
+        const picked = await mediaApi(mediaIds.raster, { cookie: adminCookie, nonce: adminNonce });
+        const pickedBody = await json(picked);
+        check(
+          picked.status === 200 &&
+            pickedBody.id === mediaIds.raster &&
+            pickedBody.width === 1200 &&
+            pickedBody.alt === 'Smoke alt' &&
+            /\d+w/.test(pickedBody.srcset ?? '') &&
+            typeof pickedBody.sizes === 'string',
+          'the media route describes a library image with alt text, srcset and sizes',
+        );
+        check((picked.headers.get('cache-control') ?? '').includes('no-store'), 'media descriptions are not cacheable');
+        check(
+          (await mediaApi(mediaIds.svg, { cookie: adminCookie, nonce: adminNonce })).status === 404,
+          'an SVG attachment is not served by the builder',
+        );
+        check(
+          (await mediaApi('99999999', { cookie: adminCookie, nonce: adminNonce })).status === 404,
+          'a missing attachment is 404',
+        );
+        check((await mediaApi(mediaIds.raster)).status === 401, 'the media route needs authentication');
+        check(
+          (await mediaApi(mediaIds.raster, { cookie: subscriberCookie, nonce: subscriberNonce })).status === 403,
+          'a subscriber cannot use the media route',
+        );
+        const imageDoc = (attachmentId) => ({
+          ...treeDoc([
+            {
+              id: 'sec1',
+              type: 'blixis/section',
+              props: { tag: 'section' },
+              children: [{ id: 'img1', type: 'blixis/image', props: { attachmentId }, children: [] }],
+            },
+          ]),
+          defaultLocale: 'en_US',
+          locales: ['en_US'],
+          translations: { en_US: {} },
+        });
+        const imagePreview = async (attachmentId) =>
+          json(
+            await preview(restPost, {
+              cookie: adminCookie,
+              nonce: adminNonce,
+              body: JSON.stringify({ document: imageDoc(attachmentId) }),
+            }),
+          );
+        const rasterHtml = (await imagePreview(mediaIds.raster)).html ?? '';
+        check(
+          /<img[^>]*srcset="[^"]*\d+w[^"]*"[^>]*sizes="[^"]+"[^>]*alt="Smoke alt"/.test(rasterHtml),
+          'a library image renders with srcset, sizes and its alt text',
+        );
+        check(!/data-blx-alt-missing/.test(rasterHtml), 'an image with alt text is not flagged');
+        const svgHtml = (await imagePreview(mediaIds.svg)).html ?? '';
+        check(
+          svgHtml.includes('data-blx-missing-media') && !svgHtml.includes('<img'),
+          'an SVG attachment renders the inert placeholder',
+        );
+        command(
+          'eval',
+          `wp_delete_attachment( ${mediaIds.raster}, true ); wp_delete_attachment( ${mediaIds.svg}, true );`,
+        );
         command('post', 'delete', restPost, '--force');
       }
       const adminThemes = await http(`${base}/wp-admin/themes.php`, {
