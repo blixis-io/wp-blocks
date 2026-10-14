@@ -1,6 +1,6 @@
 # ADR 0009: Distribution and package boundaries
 
-- Status: Reviewed
+- Status: Accepted (owner confirmed Pro-includes-Plus and the fallback classes, 2026-10-14)
 - Date: 2026-10-14
 - Issues: #6 (BWB-006); relates to #8, #74, #75, #76, #83
 - Deciders: owner (licensing, distribution), orchestrator
@@ -77,8 +77,8 @@ Superseding ADR; moving a capability from a paid add-on into Free is allowed, th
 - Owner: distribution channel for the theme and Builder (WordPress.org vs own site) and whether the review timeline is acceptable.
 - Counsel review of the GPL plus paid-services model and trademark policy.
 - Exact `Requires Plugins` handling for add-ons on WP 7.0 (verify behaviour in BWB-076).
-- Owner: confirm Pro-includes-Plus and the three fallback classes, in particular that dynamic premium output (e.g. query loops) is frozen or omitted, not live, when its add-on is inactive.
 
 ## Review log
 - 2026-10-14 orchestrator draft; guideline text read from developer.wordpress.org.
+- 2026-10-14 Owner decision: Pro includes Plus (confirmed); the three fallback classes are accepted, including that dynamic premium output is frozen or omitted, not live, when its add-on is inactive.
 - 2026-10-14 Codex review (`coordination/reviews/P0-BATCH2-codex-response.md`): Blocker (generic container cannot recreate premium output) accepted — fallback classes and compatibility states; Major (Pro vs Plus dependency) accepted — Pro declares Plus. Codex could not verify the guideline quotations offline; they were read from developer.wordpress.org by the orchestrator.

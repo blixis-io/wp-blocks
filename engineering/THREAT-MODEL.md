@@ -20,7 +20,7 @@ Scope: Blixis Theme, Builder (Free), Plus/Pro add-ons, editor, REST API, renderi
 |---|---|---|
 | Anonymous visitor | none | read published locale snapshots only |
 | Contributor/Author/Editor | `edit_post` on the specific post (object-level) | edit working streams of posts they may edit; publish only if `publish_posts`/`edit_published_posts` allows for that post |
-| Translator (future) | custom capability mapped to locale streams | edit a locale stream only; no layout or other locales |
+| Translator (Free 1.0) | capability `blixis_translate_locale`, checked per locale stream; no new WordPress role | edit that locale's content streams only; no layout, other locales, layout publish or design settings |
 | Administrator | `edit_theme_options`, `manage_options` | design system, locales, global classes, add-on screens |
 | Network/other plugins | arbitrary PHP | trusted code boundary: can do anything PHP can; we only protect against *accidental* misuse via validated APIs |
 | Premium add-on | registers elements via extension API | treated as trusted code but constrained by registry validation |
