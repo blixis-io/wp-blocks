@@ -1,6 +1,6 @@
 # Element registry and extension API (v1)
 
-Implements BWB-021 in `packages/element-registry`. The registry is the single list of element types the editor, the REST API and the PHP renderers know. It is also the public registration contract that Plus, Pro and third-party add-ons use (ADR 0009: add-ons depend on this API only). Versioning rules for the contract itself are written down in BWB-028; the current version is `EXTENSION_API_VERSION = 1`.
+Implements BWB-021 in `packages/element-registry`. The registry is the single list of element types the editor, the REST API and the PHP renderers know. It is also the public registration contract that Plus, Pro and third-party add-ons use (ADR 0009: add-ons depend on this API only). Versioning and compatibility rules for the contract itself are in `VERSIONING-AND-COMPATIBILITY.md`; the current version is `EXTENSION_API_VERSION = 1`.
 
 ## Definition
 
@@ -46,4 +46,4 @@ URL properties are validated by `isSafeUrl`: `http`, `https`, `mailto`, `tel` an
 
 ## Not here yet
 
-Rich text, per-element style schemas and editor controls (BWB-053/054), PHP renderers (BWB-043), the compatibility and deprecation rules for this API (BWB-028), and translation commands (BWB-104).
+Rich text, per-element style schemas and editor controls (BWB-053/054), PHP renderers (BWB-043), the enforcement of the deprecation window (BWB-075), and translation commands (BWB-104).

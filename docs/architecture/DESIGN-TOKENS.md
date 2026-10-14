@@ -48,7 +48,7 @@ A value may refer to other tokens with `var(--blx-name)` (optionally with a fall
 ## Persistence rules
 
 - `tokenVersion` is assigned by the server on every save (previous value + 1) and clients never choose it; it only invalidates caches (ADR 0004). A set is saved only after `validateTokenSet` accepts it.
-- `schemaVersion` is 1. A change of shape bumps it and ships a migration with fixtures, like documents (docs/architecture/DOCUMENT-SCHEMA.md); unknown fields in version 1 are kept as they are.
+- `schemaVersion` is 1. A breaking change of shape bumps it and ships a migration with fixtures, like documents (docs/architecture/DOCUMENT-SCHEMA.md); adding an optional field does not (unknown fields are kept as they are). The rules for both are in `VERSIONING-AND-COMPATIBILITY.md`.
 - The JSON Schema covers shape only. PHP must apply the reserved-key rule (`__proto__`, `constructor`, `prototype` anywhere, including in unknown fields), the category grammars, name uniqueness, reference resolution and the order of issues independently; `packages/style-engine/corpus/token-sets.json` is the executable contract.
 
 ## Output
