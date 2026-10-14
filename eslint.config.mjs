@@ -65,6 +65,39 @@ export default tseslint.config(
     },
   },
   {
+    // The core package runs in the browser editor and is mirrored by PHP: no Node APIs in its source (tests and scripts may).
+    files: ['packages/core/src/**/*.{ts,js,mjs}'],
+    ignores: ['packages/core/src/**/*.test.{ts,js,mjs}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['node:*'],
+              message: 'packages/core source must not use Node APIs (it runs in the browser editor).',
+            },
+            {
+              group: [
+                'react',
+                'react/*',
+                'react-dom',
+                'react-dom/*',
+                'zustand',
+                'zustand/*',
+                '@dnd-kit/*',
+                'tailwindcss',
+                'tailwindcss/*',
+              ],
+              message: 'This package must stay framework-free (ADR 0010).',
+            },
+            { group: ['gsap', 'gsap/*', '@gsap/*'], message: 'GSAP is not approved (ADR 0008).' },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: ['**/*.{js,mjs,cjs,ts,tsx}'],
     ignores: [
       'packages/{core,design-tokens,capabilities,element-registry,style-engine,canvas-bridge,extension-api}/**',
