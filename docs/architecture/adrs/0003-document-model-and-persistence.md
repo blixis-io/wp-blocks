@@ -1,6 +1,7 @@
 # ADR 0003: Document model and persistence
 
 - Status: Accepted (storage clause conditional on the BWB-040 spike, tracked in #40)
+- Spike result: [BWB-040 persistence spike](../spikes/BWB-040-persistence.md) (real-WordPress measurements pending).
 - Date: 2026-10-14
 - Issues: #7 (BWB-007), #19, #20, #40, #104
 - Deciders: owner, orchestrator

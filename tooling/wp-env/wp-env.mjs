@@ -4,7 +4,7 @@
 //   BLX_WP_IMAGE, BLX_CLI_IMAGE, BLX_DB_IMAGE  override the pinned images
 //   BLX_WP_PORT                                host port on 127.0.0.1 (default 8888)
 //   BLX_EXPECT_WP, BLX_EXPECT_PHP              smoke test expectations (version prefixes)
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -663,6 +663,102 @@ async function smoke() {
         command('option', 'delete', 'blixis_setup');
       }
     }
+
+    // Builder storage (BWB-040): compare-and-swap, revisions, recovery and authorization on real WordPress.
+    const storageRun = wpCmd('eval-file', '/fixtures/storage-smoke.php');
+    check(storageRun.status === 0, 'the storage smoke script runs');
+    let storage = {};
+    try {
+      storage = JSON.parse(String(storageRun.stdout).trim().split('\n').pop());
+    } catch {
+      check(false, `the storage smoke script printed JSON (${String(storageRun.stderr).slice(0, 200)})`);
+    }
+    for (const [name, label] of [
+      ['first', 'the first write to a stream succeeds'],
+      ['stale_blocked', 'a write with a stale revision is a conflict'],
+      ['second', 'a write with the current revision succeeds'],
+      ['nl_independent', 'another locale stream is independent of the layout stream'],
+      ['single_row', 'a stream stays a single postmeta row'],
+      ['revision_created', 'core created a post revision'],
+      ['restore_keeps_layout', 'restoring a core revision leaves the builder stream untouched'],
+      ['autosave_ran', 'core autosave ran'],
+      ['autosave_keeps_layout', 'autosave leaves the builder stream untouched'],
+      ['orphan_listed', 'an unreferenced snapshot (interrupted publish) is listed'],
+      ['live_pointer_none', 'the live pointer did not change after the interrupted publish'],
+      ['orphan_collected', 'collecting removes the orphan snapshot'],
+      ['publish_ok', 'publishing writes the snapshot and advances the pointer'],
+      ['snapshot_immutable', 'an existing snapshot cannot be overwritten'],
+      ['referenced_kept', 'collecting keeps referenced snapshots'],
+      ['hostile_rejected', 'a hostile meta key is rejected'],
+    ]) {
+      check(storage[name] === true, label);
+    }
+    check(storage.revision_has_builder_meta === false, 'core revisions do not copy builder meta');
+    check(storage.autosave_has_builder_meta === false, 'core autosaves do not copy builder meta');
+    check(
+      storage.auth?.admin_fixed === true && storage.auth?.editor_dynamic === true,
+      'administrators and editors may edit builder meta of the page',
+    );
+    check(
+      storage.auth?.author_other === false &&
+        storage.auth?.subscriber === false &&
+        storage.auth?.contributor === false &&
+        storage.auth?.foreign_protected === false,
+      'authors of other pages, contributors, subscribers and unknown _blixis_ keys may not',
+    );
+    console.log(`storage: MariaDB/MySQL ${storage.mysql}, PHP ${storage.php}, WordPress ${storage.wp}`);
+
+    // Concurrent writers: exactly one wins the first write, and exactly one wins each later revision.
+    const racePost = command(
+      'post',
+      'create',
+      '--post_type=page',
+      '--post_status=draft',
+      '--post_title=Race',
+      '--porcelain',
+    );
+    const race = (expected) =>
+      Promise.all(
+        Array.from(
+          { length: 6 },
+          () =>
+            new Promise((resolve) => {
+              const child = spawn(
+                'docker',
+                [
+                  'compose',
+                  '-p',
+                  PROJECT,
+                  ...files,
+                  'run',
+                  '--rm',
+                  '-T',
+                  'cli',
+                  'wp',
+                  'eval',
+                  `$s = new \\Blixis\\Builder\\Storage\\StreamStore( new \\Blixis\\Builder\\Storage\\WpdbDatabase( $GLOBALS['wpdb'] ) ); ` +
+                    `echo $s->write( ${racePost}, '_blixis_layout', '{"schemaVersion":1,"layoutRevision":1,"w":"' . getmypid() . '"}', ${expected} )->success ? 'WIN' : 'LOSE';`,
+                ],
+                { cwd: root, env, stdio: ['ignore', 'pipe', 'ignore'] },
+              );
+              let out = '';
+              child.stdout.on('data', (d) => (out += d));
+              child.on('close', () => resolve(out.includes('WIN')));
+            }),
+        ),
+      );
+    const firstRace = (await race(0)).filter(Boolean).length;
+    check(firstRace === 1, `exactly one of six concurrent first writes wins (${firstRace})`);
+    const nextRace = (await race(1)).filter(Boolean).length;
+    check(nextRace === 1, `exactly one of six concurrent updates of revision 1 wins (${nextRace})`);
+    check(
+      command(
+        'eval',
+        `echo get_post_meta( ${racePost}, '_blixis_layout' ) ? count( get_post_meta( ${racePost}, '_blixis_layout' ) ) : 0;`,
+      ) === '1',
+      'concurrent writers leave exactly one row',
+    );
+    command('post', 'delete', racePost, '--force');
 
     // Builder plugin lifecycle (BWB-039): activation stores the version once, deactivation keeps it, uninstall removes it.
     const builderOption = () => wpCmd('option', 'get', 'blixis_builder_version');
