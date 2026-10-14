@@ -11,11 +11,16 @@ declare(strict_types=1);
 // CLI tooling only: STDERR/STDOUT writes and file functions are intended.
 // phpcs:disable WordPress.WP.AlternativeFunctions,WordPress.PHP.DiscouragedPHPFunctions
 
+require_once dirname( __DIR__ ) . '/src/StrictJson.php';
 require_once dirname( __DIR__ ) . '/src/Fixtures.php';
 
 use Blixis\Tooling\Fixtures;
 
-$blixis_args = array_slice( $argv, 1 );
+$blixis_argv = $_SERVER['argv'] ?? array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- CLI argument list.
+if ( ! is_array( $blixis_argv ) ) {
+	$blixis_argv = array();
+}
+$blixis_args = array_values( array_map( 'strval', array_slice( $blixis_argv, 1 ) ) );
 if ( array() === $blixis_args ) {
 	fwrite( STDERR, "usage: canonicalize.php <file.fixture.json>...\n" );
 	exit( 2 );

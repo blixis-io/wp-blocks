@@ -36,8 +36,9 @@ final class Fixtures {
 	 * @throws InvalidArgumentException When the JSON is invalid or breaks a rule.
 	 */
 	public static function decode( string $json ): mixed {
+		StrictJson::assert_valid( $json );
 		try {
-			$value = json_decode( $json, false, 512, JSON_THROW_ON_ERROR );
+			$value = json_decode( $json, false, StrictJson::MAX_DEPTH + 1, JSON_THROW_ON_ERROR );
 		} catch ( JsonException $e ) {
 			throw new InvalidArgumentException( 'Invalid JSON: ' . $e->getMessage(), 0, $e ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- CLI tooling.
 		}
@@ -100,7 +101,48 @@ final class Fixtures {
 		if ( basename( $path, '.fixture.json' ) !== $fixture->id ) {
 			throw new InvalidArgumentException( 'id must equal the file name.' ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- CLI tooling.
 		}
+		if ( ! is_string( $fixture->description ) || '' === trim( $fixture->description ) ) {
+			throw new InvalidArgumentException( 'description is required.' ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- CLI tooling.
+		}
+		if ( ! is_array( $fixture->tags ) ) {
+			throw new InvalidArgumentException( 'tags must be an array of kebab-case strings.' ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- CLI tooling.
+		}
+		foreach ( $fixture->tags as $tag ) {
+			if ( ! is_string( $tag ) || 1 !== preg_match( '/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $tag ) ) {
+				throw new InvalidArgumentException( 'tags must be an array of kebab-case strings.' ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- CLI tooling.
+			}
+		}
 		return $fixture;
+	}
+
+	/**
+	 * Loads every `*.fixture.json` below a directory (sorted) and requires unique ids across the whole tree.
+	 *
+	 * @param string $dir Directory to scan recursively.
+	 * @return list<stdClass>
+	 * @throws InvalidArgumentException On an invalid envelope or a duplicate id.
+	 */
+	public static function load_all( string $dir ): array {
+		$files    = array();
+		$iterator = new \RecursiveIteratorIterator( new \RecursiveDirectoryIterator( $dir, \FilesystemIterator::SKIP_DOTS ) );
+		foreach ( $iterator as $file ) {
+			if ( $file instanceof \SplFileInfo && str_ends_with( $file->getFilename(), '.fixture.json' ) && ! str_contains( $file->getPathname(), 'node_modules' ) ) {
+				$files[] = $file->getPathname();
+			}
+		}
+		sort( $files, SORT_STRING );
+		$seen     = array();
+		$fixtures = array();
+		foreach ( $files as $file ) {
+			$fixture = self::load( $file );
+			$id      = (string) $fixture->id;
+			if ( isset( $seen[ $id ] ) ) {
+				throw new InvalidArgumentException( 'duplicate fixture id "' . $id . '" in ' . $file . ' and ' . $seen[ $id ] ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- CLI tooling.
+			}
+			$seen[ $id ] = $file;
+			$fixtures[]  = $fixture;
+		}
+		return $fixtures;
 	}
 
 	/**

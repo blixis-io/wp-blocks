@@ -95,4 +95,116 @@ final class FixturesTest extends TestCase {
 			$this->assertMatchesRegularExpression( '/^[0-9a-f]{64}$/', Fixtures::canonical_hash( $fixture ) );
 		}
 	}
+
+	/**
+	 * Number tokens that JSON decoders would silently normalise are rejected.
+	 *
+	 * @param string $json Input.
+	 */
+	#[DataProvider( 'strict_json_rejections' )]
+	public function test_strict_json_rejects_ambiguous_input( string $json ): void {
+		$this->expectException( InvalidArgumentException::class );
+		Fixtures::decode( $json );
+	}
+
+	/**
+	 * Inputs that must be rejected identically in TypeScript (see tests/fixtures/src/strict-json.test.ts).
+	 *
+	 * @return array<string, array{string}>
+	 */
+	public static function strict_json_rejections(): array {
+		return array(
+			'1.0'                  => array( '{"a":1.0}' ),
+			'1e3'                  => array( '{"a":1e3}' ),
+			'-0'                   => array( '{"a":-0}' ),
+			'-0.0'                 => array( '{"a":-0.0}' ),
+			'unsafe integer'       => array( '{"a":9007199254740992}' ),
+			'duplicate key'        => array( '{"a":1,"a":2}' ),
+			'duplicate nested key' => array( '{"x":{"a":1,"a":1}}' ),
+			'lone high surrogate'  => array( '{"a":"\\ud800"}' ),
+			'lone low surrogate'   => array( '{"\\udc00":1}' ),
+			'trailing comma'       => array( '[1,]' ),
+			'single quotes'        => array( "{'a':1}" ),
+			'trailing content'     => array( '{} {}' ),
+			'unquoted key'         => array( '{a:1}' ),
+			'raw control char'     => array( "[\"a\tb\"]" ),
+			'leading zero'         => array( '[01]' ),
+			'plus sign'            => array( '[+1]' ),
+		);
+	}
+
+	/**
+	 * Nesting at the shared limit is accepted, one level deeper is rejected.
+	 */
+	public function test_nesting_limit_is_shared_with_typescript(): void {
+		$ok = str_repeat( '[', 64 ) . str_repeat( ']', 64 );
+		$this->assertSame( $ok, Fixtures::canonical_json( Fixtures::decode( $ok ) ) );
+		$this->expectException( InvalidArgumentException::class );
+		Fixtures::decode( str_repeat( '[', 65 ) . str_repeat( ']', 65 ) );
+	}
+
+	/**
+	 * Duplicate ids across a fixture tree are rejected, and the committed tree loads.
+	 */
+	public function test_load_all_requires_unique_ids(): void {
+		$all = Fixtures::load_all( dirname( __DIR__, 3 ) . '/tests/fixtures' );
+		$this->assertGreaterThanOrEqual( 4, count( $all ) );
+		$dir = sys_get_temp_dir() . '/blx-fixtures-' . bin2hex( random_bytes( 4 ) );
+		mkdir( $dir . '/a', 0777, true );
+		mkdir( $dir . '/b', 0777, true );
+		$body = '{"description":"d","expected":{},"fixtureVersion":1,"id":"same","input":{},"tags":[]}' . "\n";
+		file_put_contents( $dir . '/a/same.fixture.json', $body );
+		file_put_contents( $dir . '/b/same.fixture.json', $body );
+		try {
+			$this->expectException( InvalidArgumentException::class );
+			$this->expectExceptionMessage( 'duplicate fixture id' );
+			Fixtures::load_all( $dir );
+		} finally {
+			unlink( $dir . '/a/same.fixture.json' );
+			unlink( $dir . '/b/same.fixture.json' );
+			rmdir( $dir . '/a' );
+			rmdir( $dir . '/b' );
+			rmdir( $dir );
+		}
+	}
+
+	/**
+	 * Envelope fields are validated like in TypeScript.
+	 *
+	 * @param string $body Fixture file content.
+	 */
+	#[DataProvider( 'bad_envelopes' )]
+	public function test_envelope_validation_matches_typescript( string $body ): void {
+		$dir = sys_get_temp_dir() . '/blx-env-' . bin2hex( random_bytes( 4 ) );
+		mkdir( $dir );
+		$file = $dir . '/sample.fixture.json';
+		file_put_contents( $file, $body );
+		try {
+			$this->expectException( InvalidArgumentException::class );
+			Fixtures::load( $file );
+		} finally {
+			unlink( $file );
+			rmdir( $dir );
+		}
+	}
+
+	/**
+	 * Malformed envelopes.
+	 *
+	 * @return array<string, array{string}>
+	 */
+	public static function bad_envelopes(): array {
+		$base = static fn ( string $patch ): string => '{"description":"d","expected":{},"fixtureVersion":1,"id":"sample","input":{},"tags":["a"]' . $patch . "}\n";
+		return array(
+			'blank description' => array( '{"description":" ","expected":{},"fixtureVersion":1,"id":"sample","input":{},"tags":[]}' . "\n" ),
+			'bad tag'           => array( '{"description":"d","expected":{},"fixtureVersion":1,"id":"sample","input":{},"tags":["Bad_Tag"]}' . "\n" ),
+			'non-string tag'    => array( '{"description":"d","expected":{},"fixtureVersion":1,"id":"sample","input":{},"tags":[1]}' . "\n" ),
+			'tags not array'    => array( '{"description":"d","expected":{},"fixtureVersion":1,"id":"sample","input":{},"tags":"a"}' . "\n" ),
+			'extra key'         => array( $base( ',"extra":1' ) ),
+			'wrong id'          => array( '{"description":"d","expected":{},"fixtureVersion":1,"id":"other","input":{},"tags":[]}' . "\n" ),
+			'wrong version'     => array( '{"description":"d","expected":{},"fixtureVersion":2,"id":"sample","input":{},"tags":[]}' . "\n" ),
+			'no final newline'  => array( '{"description":"d","expected":{},"fixtureVersion":1,"id":"sample","input":{},"tags":[]}' ),
+			'CRLF'              => array( "{\"description\":\"d\",\"expected\":{},\"fixtureVersion\":1,\"id\":\"sample\",\"input\":{},\"tags\":[]}\r\n" ),
+		);
+	}
 }

@@ -21,10 +21,21 @@ export function assertFixtureValue(value: unknown, path = '$'): Json {
     return value;
   }
   if (Array.isArray(value)) {
+    if (Object.keys(value).length !== value.length || Object.getOwnPropertySymbols(value).length > 0) {
+      throw new Error(`${path}: sparse arrays and arrays with extra properties are not JSON`);
+    }
     value.forEach((item, i) => assertFixtureValue(item, `${path}[${String(i)}]`));
     return value as Json;
   }
   if (typeof value === 'object') {
+    const proto: unknown = Object.getPrototypeOf(value);
+    if (proto !== Object.prototype && proto !== null) throw new Error(`${path}: only plain objects are allowed`);
+    if (
+      Object.getOwnPropertySymbols(value).length > 0 ||
+      Object.getOwnPropertyNames(value).length !== Object.keys(value).length
+    ) {
+      throw new Error(`${path}: objects with symbol or non-enumerable properties are not JSON`);
+    }
     for (const [key, item] of Object.entries(value)) {
       if (!key.isWellFormed() || key !== key.normalize('NFC'))
         throw new Error(`${path}: object keys must be well-formed, NFC-normalised Unicode (${key})`);

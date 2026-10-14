@@ -2,6 +2,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, dirname, relative, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { assertFixtureValue, type Json } from './canonical.ts';
+import { assertStrictJson } from './strict-json.ts';
 
 /** Absolute path of the fixtures directory (`tests/fixtures`). */
 export const FIXTURES_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -25,6 +26,7 @@ export function parseFixture(text: string, file: string): Fixture {
   if (text.includes('\r')) throw new Error(`${file}: fixtures must use LF line endings`);
   if (!text.endsWith('\n') || text.endsWith('\n\n'))
     throw new Error(`${file}: fixtures must end with exactly one newline`);
+  assertStrictJson(text);
   const raw: unknown = JSON.parse(text);
   assertFixtureValue(raw);
   if (raw === null || typeof raw !== 'object' || Array.isArray(raw))

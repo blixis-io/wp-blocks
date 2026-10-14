@@ -1,0 +1,19 @@
+## Independent review — BWB-018
+
+**Blocker — The documented number rules are not enforced equally.** [canonical.ts](tests/fixtures/src/canonical.ts:13) validates numbers *after* `JSON.parse`, which has already turned `1.0`, `1e3`, and `-0.0` into safe integers. [Fixtures.php](tooling/php/src/Fixtures.php:136) rejects those texts because PHP decodes them as floats. I reproduced all three TS acceptances; the PHP tests explicitly require rejection of `1.0` and `1e3`. **Fix:** validate number tokens in the JSON text before parsing, or change the stated rule and make both decoders implement it.
+
+**Major — Nesting has no shared limit.** PHP [decode()](tooling/php/src/Fixtures.php:38) uses the default depth of 512; TS accepts deeper values. A 512-level array succeeded in TS and failed in PHP in a direct probe. **Fix:** specify one depth limit, enforce it in both loaders and canonicalizers, and test the boundary.
+
+**Major — PHP accepts envelopes that TS rejects.** [Fixtures::load()](tooling/php/src/Fixtures.php:77) omits the nonblank `description` and kebab-case string `tags` checks in [parseFixture()](tests/fixtures/src/load.ts:41). PHP also has no equivalent of the tree-wide unique-ID check in `loadAllFixtures()`. **Fix:** share the full envelope contract, including duplicate-ID validation when loading a collection, and add PHP rejection tests.
+
+**Major — The TS canonicalizer accepts some non-JSON objects and can emit invalid JSON.** [assertFixtureValue()](tests/fixtures/src/canonical.ts:23) accepts sparse arrays; `canonicalJson(new Array(2))` emitted `[,]` in a direct probe. It also silently ignores inherited or non-enumerable properties. These cannot arise from `JSON.parse`, but the exported function accepts `unknown`. **Fix:** restrict its input to parsed JSON values or reject sparse arrays and unsupported object shapes.
+
+**Minor — Golden newline and path rules need tightening.** [assertGolden()](tests/fixtures/src/golden.ts:8) adds a missing final newline but accepts multiple final newlines when both actual and golden contain them. In update mode it writes to any supplied path and returns without comparison; that is deliberate update behavior, but a mistaken `UPDATE_GOLDEN=1` can make a run pass while rewriting the wrong file. The `CI` guard correctly rejects any *defined* `CI` value, including an empty string. **Fix:** enforce exactly one final newline and constrain or explicitly validate update paths.
+
+## Agreements and test gaps
+
+Key sorting, including integer-like, empty-string, and non-BMP keys, matched in the inspected code and probes. Control characters, DEL, `/`, U+2028/U+2029, and emoji also matched. Both sides canonicalized `-0` as `0`; duplicate JSON keys used the last value; `__proto__` survived as a key. Lone surrogates are rejected by TS validation and PHP JSON decoding. `seededRandom` follows mulberry32 and its hard-coded sequence test passed; `fixedClock` and `sequentialIds` behaved as documented.
+
+The parity suite would catch a serializer gutted on **either one side** for its existing cases. It does not cover the number-token mismatch, depth boundary, malformed PHP envelopes, sparse arrays, duplicate keys, or lone surrogates. Add failing-case tests for those contracts. Exact pins for Vitest 5.0.4 and `@types/node` 24.19.2 match the Node 24 setup and reduce dependency drift; this offline review cannot establish their current security status.
+
+**Verification limits:** PHP tests passed (10/10). Vitest passed 43 tests and failed five golden tests solely because this read-only environment forbids their temporary-directory creation. I could not verify golden writes or normalization parity across different Node/PHP ICU versions. The working tree remained clean.

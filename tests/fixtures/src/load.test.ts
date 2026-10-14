@@ -1,9 +1,19 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { loadAllFixtures, listFixtureFiles, parseFixture, FIXTURES_ROOT } from './load.ts';
+import { FIXTURES_ROOT, listFixtureFiles, loadAllFixtures, parseFixture } from './load.ts';
 import { canonicalJson } from './canonical.ts';
 
-const valid = (overrides: Record<string, unknown> = {}): string =>
-  `${JSON.stringify({ description: 'd', expected: { ok: true }, fixtureVersion: 1, id: 'sample', input: {}, tags: ['a'], ...overrides }, null, 2)}\n`;
+const envelope = (overrides: Record<string, unknown> = {}): Record<string, unknown> => ({
+  description: 'd',
+  expected: { ok: true },
+  fixtureVersion: 1,
+  id: 'sample',
+  input: {},
+  tags: ['a'],
+  ...overrides,
+});
+const valid = (overrides: Record<string, unknown> = {}): string => `${JSON.stringify(envelope(overrides), null, 2)}\n`;
+const withInput = (input: string): string => valid().replace('"input": {}', `"input": ${input}`);
 
 describe('fixture envelopes', () => {
   it('accepts a well-formed fixture', () => {
@@ -20,7 +30,12 @@ describe('fixture envelopes', () => {
     ['missing description text', valid({ description: ' ' }), 'sample.fixture.json', /description/],
     ['wrong fixtureVersion', valid({ fixtureVersion: 2 }), 'sample.fixture.json', /fixtureVersion/],
     ['bad tag', valid({ tags: ['Fine', 1] }), 'sample.fixture.json', /tags/],
-    ['float in input', valid({ input: { a: 1.5 } }), 'sample.fixture.json', /safe integers/],
+    ['tags not an array', valid({ tags: 'a' }), 'sample.fixture.json', /tags/],
+    ['float in input', valid({ input: { a: 1.5 } }), 'sample.fixture.json', /non-integer/],
+    ['1.0 written as a float token', withInput('{"a": 1.0}'), 'sample.fixture.json', /non-integer/],
+    ['1e3 written as an exponent', withInput('{"a": 1e3}'), 'sample.fixture.json', /non-integer/],
+    ['negative zero', withInput('{"a": -0}'), 'sample.fixture.json', /negative zero/],
+    ['duplicate keys', withInput('{"a": 1, "a": 2}'), 'sample.fixture.json', /duplicate key/],
     ['array instead of object', '[]\n', 'sample.fixture.json', /JSON object/],
   ])('rejects %s', (_name, text, file, message) => {
     expect(() => parseFixture(text, file)).toThrow(message);
@@ -37,7 +52,6 @@ describe('the committed fixtures', () => {
   });
 
   it('are exactly as Prettier would format them (stable diffs)', async () => {
-    const { readFileSync } = await import('node:fs');
     const prettier = await import('prettier');
     for (const file of files) {
       const text = readFileSync(file, 'utf8');
