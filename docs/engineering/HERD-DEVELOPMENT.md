@@ -51,3 +51,7 @@ herd php:list                       # installed PHP versions; `herd isolate 8.2`
 ```
 
 To start over: `wp db reset --yes && rm -rf ~/Sites/blixis` and run the script again. Volumes survive `pnpm dev:services:stop`; `docker compose -f docker/compose.dev-services.yml down --volumes` removes the data.
+
+## Builder demo page
+
+Before the editor exists (P5), `pnpm dev:demo` publishes a real builder page on the Herd site: it creates the page `/builder-demo/`, stores layout and Dutch/English content snapshots through the plugin's own storage classes, and publishes them with the publication pointer, so the public page shows the PHP renderers and the PHP CSS compiler at work (tokens from the design system, a breakpoint rule, a hover state and a library image). Run it again to publish a new revision; edit `tooling/herd/demo-page.php` to try other documents. Open https://blixis.test/builder-demo/ and try your system's dark mode. Development only.

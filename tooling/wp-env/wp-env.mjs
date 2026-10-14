@@ -660,6 +660,11 @@ async function smoke() {
           html.includes('data-blx-document') && html.includes('data-blx-id="el-001"') && html.includes('Published one'),
           'a published page renders its snapshot',
         );
+        const elementClass = /data-blx-id="el-001"[^>]*class="(blx-[0-9a-f]{12})"/.exec(html)?.[1];
+        check(
+          elementClass !== undefined && html.includes(`.${elementClass}{color:red}`),
+          'the element carries the generated class that the printed stylesheet targets',
+        );
         check(
           !html.includes('PLAIN CONTENT') && !html.includes('DRAFT-SECRET'),
           'the published output replaces the post content and ignores drafts',

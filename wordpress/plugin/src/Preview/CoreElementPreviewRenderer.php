@@ -7,6 +7,7 @@
 declare(strict_types=1);
 namespace Blixis\Builder\Preview;
 
+use Blixis\Builder\Css\Compiler;
 use Blixis\Builder\Registry\ElementRegistry;
 use Blixis\Builder\Render\CoreDocumentRenderer;
 use Blixis\Builder\Render\MediaResolver;
@@ -39,6 +40,7 @@ final class CoreElementPreviewRenderer implements PreviewRenderer {
 	 * @param string    $mode Mode.
 	 */
 	public function render( \stdClass $document, string $locale, string $mode ): PreviewOutput {
-		return new PreviewOutput( $this->renderer->render( $document, $locale, $mode ), '' );
+		$compiled = Compiler::compile( $document );
+		return new PreviewOutput( $this->renderer->render( $document, $locale, $mode, $compiled->class_names ), $compiled->css );
 	}
 }

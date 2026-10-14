@@ -29,6 +29,7 @@
     "dev:services": "docker compose -f docker/compose.dev-services.yml up --detach --wait",
     "dev:services:stop": "docker compose -f docker/compose.dev-services.yml down",
     "dev:site": "bash tooling/herd/setup-site.sh",
+    "dev:demo": "bash tooling/herd/demo.sh",
     "wp:start": "node tooling/wp-env/wp-env.mjs start",
     "wp:stop": "node tooling/wp-env/wp-env.mjs down",
     "wp:reset": "node tooling/wp-env/wp-env.mjs reset",
