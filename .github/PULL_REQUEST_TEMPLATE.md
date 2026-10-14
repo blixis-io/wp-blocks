@@ -29,6 +29,7 @@
 - [ ] WordPress / PHP backward compatibility considered (ADR 0001 floors)
 - [ ] Types are strict; no `any`, `@ts-ignore` or disabled lint rules without a linked reason
 - [ ] Schema or data change has a migration and fixture, or none is needed
+- [ ] Shared data is registered in `tests/fixtures/contracts.json`; if this PR delivers a PHP side, the suite's `php.level` is promoted
 - [ ] Accessibility considered (keyboard, focus, labels, contrast in both website modes)
 - [ ] No secrets, tokens or unapproved licences (GSAP is not approved)
 - [ ] Commit messages and PR text follow the attribution policy in `docs/engineering/GITFLOW.md`

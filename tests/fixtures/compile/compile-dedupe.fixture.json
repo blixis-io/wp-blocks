@@ -1,0 +1,73 @@
+{
+  "fixtureVersion": 1,
+  "id": "compile-dedupe",
+  "description": "Elements with identical rules share one block with a sorted selector list; output does not depend on document order.",
+  "tags": ["css", "compile", "dedupe"],
+  "input": {
+    "document": {
+      "schemaVersion": 1,
+      "documentId": "doc-001",
+      "layoutRevision": 1,
+      "defaultLocale": "en_US",
+      "locales": ["en_US"],
+      "root": [
+        {
+          "id": "el-c",
+          "type": "blixis/text",
+          "props": {},
+          "children": [],
+          "style": [
+            {
+              "declarations": {
+                "color": "blue"
+              }
+            }
+          ]
+        },
+        {
+          "id": "el-b",
+          "type": "blixis/text",
+          "props": {},
+          "children": [],
+          "style": [
+            {
+              "declarations": {
+                "color": "red"
+              }
+            }
+          ]
+        },
+        {
+          "id": "el-a",
+          "type": "blixis/text",
+          "props": {},
+          "children": [],
+          "style": [
+            {
+              "declarations": {
+                "color": "red"
+              }
+            }
+          ]
+        }
+      ],
+      "classListVersion": 0,
+      "classRefs": {},
+      "translations": {
+        "en_US": {}
+      },
+      "metadata": {
+        "updatedAt": "2026-01-01T00:00:00Z",
+        "editorVersion": "0.0.0"
+      }
+    }
+  },
+  "expected": {
+    "classNames": {
+      "el-a": ["blx-489a409aa93f"],
+      "el-b": ["blx-1ce0ddcdc7eb"],
+      "el-c": ["blx-e752473eb6f1"]
+    },
+    "issues": []
+  }
+}

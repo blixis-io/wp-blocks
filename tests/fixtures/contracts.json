@@ -1,0 +1,103 @@
+{
+  "contractVersion": 1,
+  "suites": [
+    {
+      "id": "document-fixtures",
+      "description": "Builder documents with the expected outcome of validation (valid, schema errors, semantic errors, hostile content).",
+      "paths": ["tests/fixtures/documents"],
+      "ts": ["packages/core/src/document/validate.test.ts"],
+      "php": {
+        "level": "shape",
+        "runner": "tooling/php/tests/ContractsTest.php",
+        "issue": "BWB-043",
+        "covers": ["test_document_fixtures_match_the_json_schema"]
+      }
+    },
+    {
+      "id": "document-schema",
+      "description": "JSON Schema generated from the document Zod schema; PHP validates with it.",
+      "paths": ["packages/core/schema/document.schema.json"],
+      "ts": ["packages/core/src/schema/schema.test.ts"],
+      "php": {
+        "level": "shape",
+        "runner": "tooling/php/tests/ContractsTest.php",
+        "issue": "BWB-043",
+        "covers": ["test_json_schema_features_behave_as_in_typescript"]
+      }
+    },
+    {
+      "id": "token-set-schema",
+      "description": "JSON Schema generated from the design token Zod schema.",
+      "paths": ["packages/design-tokens/schema/token-set.schema.json"],
+      "ts": ["packages/design-tokens/src/schema.test.ts"],
+      "php": {
+        "level": "shape",
+        "runner": "tooling/php/tests/ContractsTest.php",
+        "issue": "BWB-043",
+        "covers": ["test_token_corpus_matches_the_json_schema"]
+      }
+    },
+    {
+      "id": "token-set-corpus",
+      "description": "Design token sets with resolved light and dark values, compiler input and issue codes and paths (hand-derived).",
+      "paths": ["packages/style-engine/corpus/token-sets.json"],
+      "ts": ["packages/style-engine/src/tokens.test.ts"],
+      "php": {
+        "level": "shape",
+        "runner": "tooling/php/tests/ContractsTest.php",
+        "issue": "BWB-044",
+        "covers": ["test_token_corpus_matches_the_json_schema"]
+      }
+    },
+    {
+      "id": "css-declaration-corpus",
+      "description": "Valid declarations with their canonical form and invalid ones with the expected error code (CSS injection corpus).",
+      "paths": ["packages/style-engine/corpus/declarations.json"],
+      "ts": ["packages/style-engine/src/validate.test.ts"],
+      "php": {
+        "level": "pending",
+        "issue": "BWB-048"
+      }
+    },
+    {
+      "id": "css-properties-manifest",
+      "description": "Allow-list data (properties, units, functions, colours, limits) the PHP CSS validator is built from.",
+      "paths": ["packages/style-engine/manifest/css-properties.json"],
+      "ts": ["packages/style-engine/src/hardening.test.ts"],
+      "php": {
+        "level": "pending",
+        "issue": "BWB-048"
+      }
+    },
+    {
+      "id": "style-resolution",
+      "description": "ADR 0005 precedence cases (owner example, classes, states, tokens, invalid combinations, auto mode).",
+      "paths": ["tests/fixtures/style-resolution/cases.json"],
+      "ts": ["packages/style-engine/src/resolve.test.ts", "packages/style-engine/src/compile.test.ts"],
+      "php": {
+        "level": "pending",
+        "issue": "BWB-044"
+      }
+    },
+    {
+      "id": "compile-goldens",
+      "description": "Documents, classes and tokens with the exact stylesheet and render metadata (class names, issues) the compiler must produce.",
+      "paths": ["tests/fixtures/compile"],
+      "ts": ["tests/fixtures/src/compile.contract.test.ts"],
+      "php": {
+        "level": "pending",
+        "issue": "BWB-044"
+      }
+    },
+    {
+      "id": "element-manifest",
+      "description": "The core element definitions the PHP registry and renderers are built from.",
+      "paths": ["packages/element-registry/manifest/core-elements.json"],
+      "ts": ["packages/element-registry/src/registry.test.ts"],
+      "php": {
+        "level": "pending",
+        "issue": "BWB-043"
+      }
+    }
+  ]
+}

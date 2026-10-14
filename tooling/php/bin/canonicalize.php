@@ -26,8 +26,18 @@ if ( array() === $blixis_args ) {
 	exit( 2 );
 }
 foreach ( $blixis_args as $blixis_path ) {
-	$blixis_fixture = 'raw:' === substr( $blixis_path, 0, 4 )
-		? Fixtures::decode( (string) substr( $blixis_path, 4 ) )
-		: Fixtures::load( $blixis_path );
+	if ( 'raw:' === substr( $blixis_path, 0, 4 ) ) {
+		$blixis_fixture = Fixtures::decode( (string) substr( $blixis_path, 4 ) );
+	} elseif ( 'json:' === substr( $blixis_path, 0, 5 ) ) {
+		// Any JSON data file (contract suites): strict scan and canonical form, without the fixture envelope rules.
+		$blixis_text = file_get_contents( (string) substr( $blixis_path, 5 ) );
+		if ( false === $blixis_text ) {
+			fwrite( STDERR, "cannot read {$blixis_path}\n" );
+			exit( 2 );
+		}
+		$blixis_fixture = Fixtures::decode( $blixis_text );
+	} else {
+		$blixis_fixture = Fixtures::load( $blixis_path );
+	}
 	fwrite( STDOUT, $blixis_path . "\t" . Fixtures::canonical_hash( $blixis_fixture ) . "\t" . Fixtures::canonical_json( $blixis_fixture ) . "\n" );
 }

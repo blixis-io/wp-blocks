@@ -70,6 +70,30 @@ describe('validateDocument: accepting documents', () => {
     expect(result.ok && result.warnings).toEqual([]);
   });
 
+  it.each(
+    readdirSync(join(fixtures, 'invalid'))
+      .filter((f) => f.endsWith('.json'))
+      .map(
+        (f) =>
+          [
+            f,
+            JSON.parse(readFileSync(join(fixtures, 'invalid', f), 'utf8')) as {
+              input: unknown;
+              expected: { error?: string; path?: string };
+            },
+          ] as const,
+      )
+      .filter(([, fixture]) => fixture.expected.error === 'schema'),
+  )('rejects %s for the stated reason: a schema issue at the stated path', (_name, fixture) => {
+    const result = validateDocument(JSON.stringify(fixture.input));
+    expect(result.ok).toBe(false);
+    expect(fixture.expected.path).toBeDefined();
+    expect(result.ok ? [] : result.errors.map((e) => [e.code, e.path])).toContainEqual([
+      'schema',
+      fixture.expected.path,
+    ]);
+  });
+
   it("accepts hostile text as data (escaping is the renderer's job)", () => {
     const fixture = JSON.parse(
       readFileSync(join(fixtures, 'invalid', 'hostile-translation-markup.fixture.json'), 'utf8'),

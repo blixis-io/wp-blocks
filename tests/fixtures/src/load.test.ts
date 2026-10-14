@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { FIXTURES_ROOT, listFixtureFiles, loadAllFixtures, parseFixture } from './load.ts';
+import { FIXTURES_ROOT, listFixtureFiles, loadAllFixtures, loadFixture, parseFixture } from './load.ts';
 import { canonicalJson } from './canonical.ts';
 
 const envelope = (overrides: Record<string, unknown> = {}): Record<string, unknown> => ({
@@ -64,8 +65,11 @@ describe('the committed fixtures', () => {
     for (const file of files) expect(file.startsWith(FIXTURES_ROOT)).toBe(true);
   });
 
-  it('invalid fixtures declare an error or an escaped output; valid ones declare validity', () => {
-    for (const f of loadAllFixtures()) {
+  it('document fixtures declare an error or an escaped output; valid ones declare validity', () => {
+    // Other fixture families (for example compile goldens) have their own expected shapes and contract tests.
+    const documents = files.filter((file) => file.startsWith(join(FIXTURES_ROOT, 'documents')));
+    expect(documents.length).toBeGreaterThanOrEqual(4);
+    for (const f of documents.map((file) => loadFixture(file))) {
       const expected = JSON.parse(canonicalJson(f.expected)) as Record<string, unknown>;
       expect(
         Object.keys(expected).some((k) => ['valid', 'error', 'escapedOutput'].includes(k)),

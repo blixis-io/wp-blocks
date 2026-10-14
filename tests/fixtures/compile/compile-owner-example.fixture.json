@@ -1,0 +1,64 @@
+{
+  "fixtureVersion": 1,
+  "id": "compile-owner-example",
+  "description": "Owner example (ADR 0005): base black, mobile gray, dark white, dark+mobile light gray.",
+  "tags": ["css", "compile", "dark-mode", "breakpoints"],
+  "input": {
+    "document": {
+      "schemaVersion": 1,
+      "documentId": "doc-001",
+      "layoutRevision": 1,
+      "defaultLocale": "en_US",
+      "locales": ["en_US"],
+      "root": [
+        {
+          "id": "el-a",
+          "type": "blixis/text",
+          "props": {},
+          "children": [],
+          "style": [
+            {
+              "declarations": {
+                "color": "black"
+              }
+            },
+            {
+              "breakpoint": "mobile",
+              "declarations": {
+                "color": "gray"
+              }
+            },
+            {
+              "mode": "dark",
+              "declarations": {
+                "color": "white"
+              }
+            },
+            {
+              "mode": "dark",
+              "breakpoint": "mobile",
+              "declarations": {
+                "color": "lightgray"
+              }
+            }
+          ]
+        }
+      ],
+      "classListVersion": 0,
+      "classRefs": {},
+      "translations": {
+        "en_US": {}
+      },
+      "metadata": {
+        "updatedAt": "2026-01-01T00:00:00Z",
+        "editorVersion": "0.0.0"
+      }
+    }
+  },
+  "expected": {
+    "classNames": {
+      "el-a": ["blx-489a409aa93f"]
+    },
+    "issues": []
+  }
+}

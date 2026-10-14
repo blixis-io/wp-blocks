@@ -1,0 +1,66 @@
+{
+  "fixtureVersion": 1,
+  "id": "compile-invalid-declarations",
+  "description": "Unsafe or invalid declarations are dropped and reported; valid ones in the same rule survive.",
+  "tags": ["css", "compile", "hostile"],
+  "input": {
+    "document": {
+      "schemaVersion": 1,
+      "documentId": "doc-001",
+      "layoutRevision": 1,
+      "defaultLocale": "en_US",
+      "locales": ["en_US"],
+      "root": [
+        {
+          "id": "el-a",
+          "type": "blixis/text",
+          "props": {},
+          "children": [],
+          "style": [
+            {
+              "declarations": {
+                "color": "red",
+                "behavior": "url(https://x.example/a)",
+                "width": "calc(",
+                "background-image": "url(x)",
+                "z-index": "99999"
+              }
+            }
+          ]
+        }
+      ],
+      "classListVersion": 0,
+      "classRefs": {},
+      "translations": {
+        "en_US": {}
+      },
+      "metadata": {
+        "updatedAt": "2026-01-01T00:00:00Z",
+        "editorVersion": "0.0.0"
+      }
+    }
+  },
+  "expected": {
+    "classNames": {
+      "el-a": ["blx-489a409aa93f"]
+    },
+    "issues": [
+      {
+        "code": "invalid-declaration",
+        "path": "$.root[0].style[0].declarations.background-image"
+      },
+      {
+        "code": "invalid-declaration",
+        "path": "$.root[0].style[0].declarations.behavior"
+      },
+      {
+        "code": "invalid-declaration",
+        "path": "$.root[0].style[0].declarations.width"
+      },
+      {
+        "code": "invalid-declaration",
+        "path": "$.root[0].style[0].declarations.z-index"
+      }
+    ]
+  }
+}

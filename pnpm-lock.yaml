@@ -154,6 +154,9 @@ importers:
       '@blixis/wp-core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@blixis/wp-style-engine':
+        specifier: workspace:*
+        version: link:../../packages/style-engine
 
   tooling: {}
 

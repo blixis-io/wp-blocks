@@ -1,0 +1,95 @@
+{
+  "fixtureVersion": 1,
+  "id": "compile-classes",
+  "description": "Two global classes used in reverse order: precedence follows the global list, not classIds; unused classes are not emitted.",
+  "tags": ["css", "compile", "classes"],
+  "input": {
+    "document": {
+      "schemaVersion": 1,
+      "documentId": "doc-001",
+      "layoutRevision": 1,
+      "defaultLocale": "en_US",
+      "locales": ["en_US"],
+      "root": [
+        {
+          "id": "el-a",
+          "type": "blixis/text",
+          "props": {},
+          "children": [],
+          "style": [
+            {
+              "declarations": {
+                "margin": "0"
+              }
+            }
+          ],
+          "classIds": ["cls-b", "cls-a"]
+        },
+        {
+          "id": "el-b",
+          "type": "blixis/text",
+          "props": {},
+          "children": [],
+          "classIds": ["cls-a"]
+        }
+      ],
+      "classListVersion": 0,
+      "classRefs": {
+        "cls-a": 1,
+        "cls-b": 1
+      },
+      "translations": {
+        "en_US": {}
+      },
+      "metadata": {
+        "updatedAt": "2026-01-01T00:00:00Z",
+        "editorVersion": "0.0.0"
+      }
+    },
+    "classes": [
+      {
+        "id": "cls-a",
+        "rules": [
+          {
+            "declarations": {
+              "color": "red"
+            }
+          },
+          {
+            "breakpoint": "mobile",
+            "declarations": {
+              "color": "maroon"
+            }
+          }
+        ]
+      },
+      {
+        "id": "cls-b",
+        "rules": [
+          {
+            "declarations": {
+              "color": "blue"
+            }
+          }
+        ]
+      },
+      {
+        "id": "cls-unused",
+        "rules": [
+          {
+            "declarations": {
+              "color": "teal"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "expected": {
+    "classNames": {
+      "el-a": ["blx-489a409aa93f", "blx-c-f88d951d3634", "blx-c-17ef5b9d37e8"],
+      "el-b": ["blx-c-17ef5b9d37e8"]
+    },
+    "issues": []
+  }
+}

@@ -13,6 +13,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@blixis/wp-core": "workspace:*"
+    "@blixis/wp-core": "workspace:*",
+    "@blixis/wp-style-engine": "workspace:*"
   }
 }

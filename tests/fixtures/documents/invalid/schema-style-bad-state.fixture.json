@@ -1,0 +1,49 @@
+{
+  "description": "Only hover, focus, focus-visible and active are states.",
+  "expected": {
+    "error": "schema",
+    "path": "$.root[0].style[0].state"
+  },
+  "fixtureVersion": 1,
+  "id": "schema-style-bad-state",
+  "input": {
+    "defaultLocale": "en_US",
+    "documentId": "doc-001",
+    "layoutRevision": 1,
+    "locales": ["en_US"],
+    "root": [
+      {
+        "children": [],
+        "id": "el-001",
+        "props": {},
+        "type": "blixis/heading",
+        "style": [
+          {
+            "state": "visited",
+            "declarations": {
+              "color": "red"
+            }
+          }
+        ]
+      }
+    ],
+    "schemaVersion": 1,
+    "translations": {
+      "en_US": {
+        "el-001": {
+          "status": "translated",
+          "values": {
+            "text": "Hello"
+          }
+        }
+      }
+    },
+    "classListVersion": 0,
+    "classRefs": {},
+    "metadata": {
+      "updatedAt": "2026-01-01T00:00:00Z",
+      "editorVersion": "0.0.0"
+    }
+  },
+  "tags": ["document", "invalid", "style"]
+}
