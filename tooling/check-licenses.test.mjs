@@ -1,9 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { evaluate, classify } from './check-licenses.mjs';
+import { evaluate, classify, pnpmDeps, composerDeps } from './check-licenses.mjs';
 
 const policy = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'licenses.json'), 'utf8'));
 const dep = (license, name = 'x') => ({ ecosystem: 'npm', name, version: '1.0.0', license });
@@ -50,4 +51,90 @@ test('"or later" shorthand maps to the -or-later id', () => {
 test('violations name the offending package', () => {
   const [v] = classify([dep('SSPL-1.0', 'evil')], 'dev', policy);
   assert.match(v, /npm:evil@1\.0\.0/);
+});
+
+test('SPDX parentheses and precedence are honoured', () => {
+  const ok = new Set(['MIT']);
+  assert.equal(evaluate('(MIT OR GPL-2.0-only) AND GPL-2.0-only', ok), false);
+  assert.equal(evaluate('MIT OR GPL-2.0-only AND AGPL-3.0-only', ok), true); // AND binds tighter: MIT OR (A AND B)
+  assert.equal(evaluate('(MIT OR GPL-2.0-only) AND MIT', ok), true);
+  assert.equal(evaluate('MIT AND (GPL-2.0-only OR AGPL-3.0-only)', ok), false);
+  assert.equal(evaluate('((MIT))', ok), true);
+});
+
+test('WITH exceptions, LicenseRef ids and malformed expressions are rejected', () => {
+  const ok = new Set(['MIT', 'GPL-2.0-or-later']);
+  for (const e of [
+    'GPL-2.0-or-later WITH Classpath-exception-2.0',
+    'LicenseRef-custom',
+    'MIT AND',
+    'OR MIT',
+    '(MIT',
+    'MIT)',
+    'MIT MIT',
+    'MIT OR (',
+    '',
+  ])
+    assert.equal(evaluate(e, ok), false, e);
+});
+
+const okExec = (stdout) => () => ({ status: 0, stdout, stderr: '' });
+const failExec = () => ({ status: 1, stdout: '{"MIT":[{"name":"a","versions":["1"]}]}', stderr: 'boom' });
+
+test('pnpm inventory: multiple versions, missing versions, empty production list', () => {
+  const deps = pnpmDeps(
+    '.',
+    false,
+    okExec(JSON.stringify({ MIT: [{ name: 'a', versions: ['1.0.0', '2.0.0'] }], ISC: [{ name: 'b' }] })),
+  );
+  assert.deepEqual(
+    deps.map((d) => `${d.name}@${d.version}:${d.license}`),
+    ['a@1.0.0:MIT', 'a@2.0.0:MIT', 'b@unknown:ISC'],
+  );
+  assert.deepEqual(pnpmDeps('.', true, okExec('No licenses in packages found')), []);
+});
+
+test('pnpm inventory fails on a nonzero exit even when stdout looks valid, and on unexpected output', () => {
+  assert.throws(() => pnpmDeps('.', false, failExec), /failed \(status 1\)/);
+  assert.throws(() => pnpmDeps('.', false, okExec('Something else entirely')), /unexpected pnpm licenses output/);
+  assert.throws(() => pnpmDeps('.', false, okExec('{"MIT":"oops"}')), /unexpected pnpm licenses entry/);
+});
+
+test('composer inventory joins licence arrays as alternatives and rejects bad output', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'blx-lic-'));
+  writeFileSync(join(dir, 'composer.lock'), '{}');
+  try {
+    const deps = composerDeps(
+      dir,
+      false,
+      okExec(
+        JSON.stringify({
+          dependencies: { 'a/b': { version: '1.0', license: ['MIT', 'GPL-2.0-or-later'] }, 'c/d': { version: '2.0' } },
+        }),
+      ),
+    );
+    assert.deepEqual(
+      deps.map((d) => d.license),
+      ['MIT OR GPL-2.0-or-later', ''],
+    );
+    assert.equal(classify(deps, 'dev', policy).length, 1); // c/d has no licence
+    assert.throws(() => composerDeps(dir, false, failExec), /failed/);
+    assert.throws(() => composerDeps(dir, false, okExec('{"nope":1}')), /unexpected composer licenses output/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('the real inventory is not vacuous and passes the policy', () => {
+  const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+  const all = [...pnpmDeps(root, false), ...composerDeps(root, false)];
+  assert.ok(all.length > 50, `only ${all.length} dependencies found`);
+  assert.deepEqual(
+    classify(
+      all.filter((d) => d.name !== 'blixis/wp-blocks-dev'),
+      'dev',
+      policy,
+    ),
+    [],
+  );
 });

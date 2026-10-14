@@ -1,0 +1,24 @@
+## Blocker
+
+- [tooling/check-licenses.mjs:14](tooling/check-licenses.mjs:14) removes parentheses before evaluating SPDX expressions. For example, `(MIT OR GPL-2.0-only) AND GPL-2.0-only` returns **true** when only MIT is allowed; I reproduced this locally. **Fix:** parse SPDX expressions with their grouping intact, and add nested `AND`/`OR` rejection tests.
+
+## Major
+
+- [.github/workflows/ci.yml:153](.github/workflows/ci.yml:153) treats *every* skipped job as success. Skipping `commits` on `push` and `workflow_dispatch` is appropriate; skipping JavaScript, PHP, or Security should fail the aggregate. Failed and cancelled results do fail. **Fix:** require those three jobs to succeed, and allow `commits` to be skipped only outside PRs.
+- [tooling/boundaries.json:111](tooling/boundaries.json:111) bans `gsap` and `@gsap/react`, but ADR 0008 bans `@gsap/*`, vendored copies, and docs examples too. The boundary check therefore does not enforce the stated ban. **Fix:** check the scoped package family throughout manifests and lockfiles, and add checks for vendored files and examples.
+- [tooling/check-licenses.mjs:34](tooling/check-licenses.mjs:34) accepts a nonzero `pnpm` or Composer exit status whenever stdout is nonempty; the pnpm parser can also turn non-JSON output into an empty inventory. **Fix:** fail on every nonzero status, reject unexpected output shapes, and test command failures and empty inventories. The current tests exercise only `evaluate` and `classify`, so they would not catch gutted dependency collection.
+- [docs/architecture/adrs/0008-dependency-licensing-and-gsap.md:20](docs/architecture/adrs/0008-dependency-licensing-and-gsap.md:20) calls for bundled-asset inventory, recorded decisions in `LICENSES.md`, and NOTICE generation. The current checker covers npm and Composer metadata only; neither `LICENSES.md` nor NOTICE is present. **Fix:** add asset inventory and review records before claiming ADR-wide compliance, or explicitly track the deferred gates. Likewise, [BWB-015’s catalogued acceptance criteria](docs/roadmap/issues.csv:16) include build and WordPress integration smoke, while [CI-CD.md](docs/engineering/CI-CD.md:39) explicitly defers them.
+
+## Minor
+
+- [tooling/check-licenses.test.mjs:38](tooling/check-licenses.test.mjs:38) misses parentheses precedence, `WITH`, `LicenseRef-*`, malformed expressions, multiple package versions, and missing-version metadata. `WITH` and `LicenseRef-*` currently reject conservatively; Composer licence arrays are joined as alternatives, and listed `devOnly` exceptions have recorded reasons. **Fix:** test these boundaries and the CLI inventory path.
+- [.github/workflows/ci.yml:21](.github/workflows/ci.yml:21) runs commitlint only on PRs. That checks PR commits and squash titles, but a direct push to `main` has no commit-policy gate; PR descriptions are also outside the automated attribution check. **Fix:** retain the procedural review rule and add technical enforcement when branch protection is available.
+- [.github/workflows/ci.yml:94](.github/workflows/ci.yml:94) keys Composer cache entries by PHP version and lockfile, but the broad `restore-keys` can restore older dependency data after a lockfile change. **Fix:** remove the fallback key if exact-lockfile cache reuse is the intended policy.
+
+## Agreements and limits
+
+Every `${{ }}` use is in workflow metadata, action input, cache configuration, or an environment variable; PR title and SHA values are not interpolated into shell source. `pull_request`, read-only `contents` permission, and `persist-credentials: false` are appropriate for fork PRs. PR concurrency cancels older PR runs; pushes to `main` are not cancelled by `cancel-in-progress`. The PHP 8.2/8.3/8.5 matrix and pinned Node 24 match ADR 0001’s current PHP and Node decisions.
+
+Gitleaks uses a versioned URL, a fixed SHA-256 check before extraction, `fetch-depth: 0`, and `--redact`. On a PR merge ref it scans reachable Git history, including the PR commits, but this is not a scan of unrelated refs, unreachable history, or uncommitted material. A secret already present in a commit can still appear in earlier install or test logs before the scan runs.
+
+I could not verify action SHA-to-tag matches, the gitleaks archive checksum, live Dependabot schema behavior, actual GitHub labels, or the reported PR job results offline. Dependabot’s `ci` and `build` prefixes fit the local commitlint types; `area:dx` is listed in repository label conventions, but its live existence is unverified. The six licence unit tests passed. Running pnpm’s inventory under the required read-only filesystem hit an `EPERM` temporary-file error, so I did not validate its live output.

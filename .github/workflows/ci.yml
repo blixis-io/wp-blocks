@@ -92,7 +92,6 @@ jobs:
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
           key: composer-${{ matrix.php }}-${{ hashFiles('composer.lock') }}
-          restore-keys: composer-${{ matrix.php }}-
       - run: composer install --no-interaction --no-progress --prefer-dist
       - run: composer validate --strict
       - run: composer run check
@@ -146,9 +145,20 @@ jobs:
     steps:
       - name: Fail unless every required job succeeded
         env:
-          RESULTS: ${{ join(needs.*.result, ' ') }}
+          EVENT: ${{ github.event_name }}
+          COMMITS: ${{ needs.commits.result }}
+          JAVASCRIPT: ${{ needs.javascript.result }}
+          PHP: ${{ needs.php.result }}
+          SECURITY: ${{ needs.security.result }}
         run: |
-          echo "job results: $RESULTS"
-          for r in $RESULTS; do
-            case "$r" in success|skipped) ;; *) echo "a required job did not succeed"; exit 1 ;; esac
+          echo "event=$EVENT commits=$COMMITS javascript=$JAVASCRIPT php=$PHP security=$SECURITY"
+          # javascript, php and security must always succeed: a skipped or cancelled job is a failure.
+          for r in "$JAVASCRIPT" "$PHP" "$SECURITY"; do
+            [ "$r" = "success" ] || { echo "a required job did not succeed"; exit 1; }
           done
+          # The commit policy only runs on pull requests; there it must succeed, elsewhere it must be skipped.
+          if [ "$EVENT" = "pull_request" ]; then
+            [ "$COMMITS" = "success" ] || { echo "commit policy did not succeed"; exit 1; }
+          else
+            [ "$COMMITS" = "skipped" ] || { echo "commit policy unexpectedly ran"; exit 1; }
+          fi
