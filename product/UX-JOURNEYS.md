@@ -1,6 +1,6 @@
 # Product UX Journeys and Prototype Acceptance (draft)
 
-Status: **Draft, awaiting owner approval** (three open questions resolved 2026-10-14, see Decisions recorded) · Issue: #9 (BWB-009) · Sources: `PRD.md` §6, `PRD-ADDENDUM-MULTILINGUAL-THEMES.md` §4, ADR 0004–0006, `engineering/ACCESSIBILITY-BASELINE.md`.
+Status: **Approved by the owner, 2026-10-14** (journeys J1–J7, prototype acceptance rule and the recorded decisions) · Issue: #9 (BWB-009) · Sources: `PRD.md` §6, `PRD-ADDENDUM-MULTILINGUAL-THEMES.md` §4, ADR 0004–0006, `engineering/ACCESSIBILITY-BASELINE.md`.
 This document defines *behaviour and acceptance*, not visual design. Screens are described by purpose; a clickable prototype is a later deliverable (P5) and must satisfy the acceptance checks below.
 
 Personas: **Agency developer (D)**, **Designer/site creator (C)**, **Site owner (O)**, **Translator (T)** (uses Free manual translation).
@@ -45,5 +45,5 @@ Owner delegated these to the orchestrator, except the appearance default, which 
 2. **Publish UI:** the first release exposes both the separate actions (*Publish layout*, *Publish locale <X>*) and the combined shortcut *Publish layout + current locale* (ADR 0004 §7); the shortcut is the primary button and always shows what it will advance.
 3. **Default website appearance for new sites: `auto`** (follows the visitor's system preference; owner decision). Presets must therefore ship both light and dark token sets, and the wizard previews both.
 
-## Still open
-Approval of this document as a whole (J1–J7 and the prototype acceptance rule) by the owner.
+## Approval
+Approved by the owner on 2026-10-14. Changes after approval go through a pull request that references BWB-009 and records the reason.
