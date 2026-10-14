@@ -20,7 +20,18 @@ const u32 = (n) => {
  * @param {{ path: string, data: Buffer, mode: number }[]} entries  POSIX paths without a leading slash
  * @returns {Buffer}
  */
-export function createZip(entries) {
+export const ZIP32_LIMIT = 0xfffffffe; // 4 GiB - 2: larger values need ZIP64, which this writer does not implement
+export const ZIP_MAX_ENTRIES = 0xfffe;
+
+export function createZip(entries, limits = {}) {
+  const maxValue = limits.maxValue ?? ZIP32_LIMIT;
+  const maxEntries = limits.maxEntries ?? ZIP_MAX_ENTRIES;
+  if (entries.length > maxEntries)
+    throw new Error(`too many zip entries (${entries.length} > ${maxEntries}); ZIP64 is not supported`);
+  const fit = (n, what) => {
+    if (n > maxValue) throw new Error(`${what} (${n}) exceeds the ZIP32 limit; ZIP64 is not supported`);
+    return n;
+  };
   const sorted = [...entries].sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
   const seen = new Set();
   const locals = [];
@@ -34,7 +45,9 @@ export function createZip(entries) {
     const name = Buffer.from(entry.path, 'utf8');
     const isDir = entry.path.endsWith('/');
     const data = isDir ? Buffer.alloc(0) : entry.data;
+    fit(data.length, `entry ${entry.path} size`);
     const compressed = data.length === 0 ? data : deflateRawSync(data, { level: 9 });
+    fit(compressed.length, `entry ${entry.path} compressed size`);
     const method = data.length === 0 ? 0 : 8;
     const crc = data.length === 0 ? 0 : crc32(data);
     const header = Buffer.concat([
@@ -75,9 +88,11 @@ export function createZip(entries) {
         name,
       ]),
     );
-    offset += header.length + compressed.length;
+    offset = fit(offset + header.length + compressed.length, 'archive offset');
   }
   const central = Buffer.concat(centrals);
+  fit(central.length, 'central directory size');
+  fit(offset + central.length, 'archive size');
   const end = Buffer.concat([
     u32(0x06054b50),
     u16(0),

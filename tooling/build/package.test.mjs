@@ -10,13 +10,14 @@ import {
   symlinkSync,
   utimesSync,
   chmodSync,
+  existsSync,
 } from 'node:fs';
-import { createHash } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createZip } from './zip.mjs';
-import { buildAll, matches, readVersion, collectFiles } from './package.mjs';
+import { createZip, ZIP32_LIMIT, ZIP_MAX_ENTRIES } from './zip.mjs';
+import { buildAll, matches, readVersion, collectFiles, isSemver, hasHeader } from './package.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const config = JSON.parse(readFileSync(join(here, 'distributions.json'), 'utf8'));
@@ -40,7 +41,7 @@ function repo(extra = (r) => r) {
   put('wordpress/theme/tests/ThemeTest.php', '<?php // test\n');
   put('wordpress/theme/node_modules/x/index.js', 'x');
   put('wordpress/plugin/blixis-builder.php', '<?php\n/**\n * Plugin Name: Blixis Builder\n * Version: 0.1.0\n */\n');
-  put('wordpress/plugin/bin/tool.sh', '#!/bin/sh\n', 0o755);
+  put('wordpress/plugin/bin/tool.php', '<?php // cli\n', 0o755);
   put('wordpress/plugin/package.json', JSON.stringify({ name: '@blixis/wp-plugin', version: '0.1.0' }));
   extra({ root, put });
   return root;
@@ -63,7 +64,7 @@ test('builds valid archives for scaffolded distributions and skips the others', 
   const results = build(root, 'dist');
   assert.deepEqual(
     results.map((r) => `${r.slug}:${r.status}`),
-    ['blixis:built', 'blixis-builder:built', 'blixis-plus:missing', 'blixis-pro:missing'],
+    ['blixis:built', 'blixis-builder:built', 'blixis-plus:not-built-paid', 'blixis-pro:not-built-paid'],
   );
   const entries = listZip(join(root, 'dist', 'blixis-1.2.3.zip'));
   assert.deepEqual(
@@ -91,7 +92,7 @@ test('entries are sorted, timestamps fixed to the DOS epoch, permissions normali
   const entries = listZip(join(root, 'dist', 'blixis-builder-0.1.0.zip'));
   assert.deepEqual(
     entries.map((e) => e[0]),
-    ['blixis-builder/bin/tool.sh', 'blixis-builder/blixis-builder.php'],
+    ['blixis-builder/bin/tool.php', 'blixis-builder/blixis-builder.php'],
   );
   for (const [, date] of entries) assert.deepEqual(date, [1980, 1, 1, 0, 0, 0]);
   assert.deepEqual(
@@ -148,7 +149,23 @@ test('development files, tests, source maps and dependencies are not shipped', (
 });
 
 test('secret-like files abort the build, even inside excluded-looking folders', () => {
-  for (const name of ['.env', '.env.local', 'deploy.pem', 'server.key', 'dump.sql', 'id_rsa']) {
+  for (const name of [
+    '.env',
+    '.env.local',
+    'deploy.pem',
+    'server.key',
+    'dump.sql',
+    'id_rsa',
+    '.npmrc',
+    'auth.json',
+    'cert.pfx',
+    'credentials.json',
+    'vault.kdbx',
+    'wp-config.php',
+    '.aws',
+    '.htpasswd',
+    'store.jks',
+  ]) {
     const root = repo(({ put }) => put(`wordpress/theme/assets/${name}`, 'secret'));
     assert.throws(() => build(root, 'dist'), /forbidden file would be packaged/, name);
   }
@@ -166,7 +183,7 @@ test('version problems abort the build: no header, or header differs from packag
         repo(({ put }) => put('wordpress/theme/style.css', '/* Theme Name: x */')),
         'dist',
       ),
-    /no "Version:" header/,
+    /no valid SemVer "Version:" header/,
   );
   assert.throws(
     () =>
@@ -178,11 +195,30 @@ test('version problems abort the build: no header, or header differs from packag
   );
 });
 
-test('missing required files fail unless missing distributions are allowed, and nothing partial is reported as built', () => {
-  const root = repo();
-  assert.throws(() => build(root, 'dist', { allowMissing: false }), /not scaffolded yet: blixis-plus/);
-  const only = build(root, 'dist', { only: 'blixis-plus' });
-  assert.equal(only[0].status, 'missing');
+test('missing required files fail unless missing distributions are allowed', () => {
+  const root = repo(({ root: r }) => rmSync(join(r, 'wordpress/theme/index.php')));
+  assert.throws(
+    () => build(root, 'dist', { allowMissing: false }),
+    /not scaffolded yet: blixis \(missing index\.php\)/,
+  );
+  assert.equal(build(root, 'dist', { only: 'blixis' })[0].status, 'missing');
+});
+
+test('paid distributions are never built by default, even when scaffolded (ADR 0009: no paid source in public PR builds)', () => {
+  const root = repo(({ put }) => {
+    put('wordpress/plus/blixis-plus.php', '<?php\n/**\n * Plugin Name: Plus\n * Version: 1.0.0\n */\n');
+    put('wordpress/plus/package.json', JSON.stringify({ version: '1.0.0' }));
+  });
+  const results = build(root, 'dist');
+  assert.equal(results.find((r) => r.slug === 'blixis-plus').status, 'not-built-paid');
+  assert.ok(!existsSync(join(root, 'dist', 'blixis-plus-1.0.0.zip')));
+  const paid = build(root, 'dist2', { includePaid: true });
+  assert.equal(paid.find((r) => r.slug === 'blixis-plus').status, 'built');
+  assert.ok(existsSync(join(root, 'dist2', 'blixis-plus-1.0.0.zip')));
+  assert.deepEqual(
+    config.distributions.map((d) => `${d.slug}:${d.tier}`),
+    ['blixis:free', 'blixis-builder:free', 'blixis-plus:paid', 'blixis-pro:paid'],
+  );
 });
 
 test('a required file that is excluded by the exclude list is an error', () => {
@@ -234,6 +270,7 @@ test('helpers: glob-lite matching and version header parsing', () => {
   assert.equal(readVersion('/*\nVersion: 2.0.0-beta.1\n*/'), '2.0.0-beta.1');
   assert.equal(readVersion(' * Version: 1.0.0\n'), '1.0.0');
   assert.equal(readVersion('Version: not-semver'), null);
+  assert.equal(readVersion('Version: 1.2.3+build.5'), '1.2.3+build.5');
 });
 
 test('collectFiles never leaves the source directory', () => {
@@ -262,4 +299,83 @@ test('zip bytes do not depend on the order entries are supplied in', () => {
   const forward = createZip(entries);
   assert.ok(forward.equals(createZip([...entries].reverse())));
   assert.ok(forward.equals(createZip([entries[2], entries[0], entries[3], entries[1]])));
+});
+
+test('the packaging allow-list is deny-by-default: unknown file types abort the build', () => {
+  for (const name of ['run.sh', 'tool.exe', 'notes.bak', 'archive.zip', 'data.db', 'Makefile']) {
+    const root = repo(({ put }) => put(`wordpress/theme/assets/${name}`, 'x'));
+    assert.throws(() => build(root, 'dist'), /not on the packaging allow-list/, name);
+  }
+  const ok = repo(
+    ({ put }) =>
+      put('wordpress/theme/LICENSE', 'GPL') &&
+      put('wordpress/theme/readme.txt', 'readme') &&
+      put('wordpress/theme/fonts/a.woff2', 'f'),
+  );
+  assert.equal(build(ok, 'dist')[0].status, 'built');
+});
+
+test('SemVer validation is complete', () => {
+  for (const v of ['1.2.3', '0.0.0', '1.0.0-rc.1', '1.0.0-alpha-1', '1.0.0+20260101', '1.0.0-beta.2+exp.sha.5114f85'])
+    assert.equal(isSemver(v), true, v);
+  for (const v of ['1.2', '01.2.3', '1.2.3-', '1.2.3-foo..bar', '1.2.3-01', '1.2.3+', 'v1.2.3', '1.2.3.4'])
+    assert.equal(isSemver(v), false, v);
+  assert.equal(readVersion('Version: 1.2.3-foo..bar'), null);
+});
+
+test('the WordPress identity header, valid SemVer and package.json are all required', () => {
+  assert.equal(hasHeader('/*\nTheme Name: Blixis\n*/', 'Theme Name'), true);
+  assert.equal(hasHeader('/*\nTheme Name:\n*/', 'Theme Name'), false);
+  assert.throws(
+    () =>
+      build(
+        repo(({ put }) => put('wordpress/theme/style.css', '/*\nVersion: 1.2.3\n*/')),
+        'dist',
+      ),
+    /no "Theme Name:" header/,
+  );
+  assert.throws(
+    () =>
+      build(
+        repo(({ put }) => put('wordpress/plugin/blixis-builder.php', '<?php\n/**\n * Version: 0.1.0\n */\n')),
+        'dist',
+      ),
+    /no "Plugin Name:" header/,
+  );
+  assert.throws(
+    () =>
+      build(
+        repo(({ root: r }) => rmSync(join(r, 'wordpress/theme/package.json'))),
+        'dist',
+      ),
+    /package\.json is required/,
+  );
+});
+
+test('size and count limits abort the build before reading files', () => {
+  const root = repo(({ put }) => put('wordpress/theme/assets/big.js', 'x'.repeat(2000)));
+  const small = (limits) => ({ ...config, limits: { ...config.limits, ...limits } });
+  const run = (cfg) => buildAll({ root, config: cfg, outDir: join(root, 'dist'), allowMissing: true, only: 'blixis' });
+  assert.throws(() => run(small({ maxFileBytes: 1000 })), /per-file size limit/);
+  assert.throws(() => run(small({ maxTotalBytes: 1500 })), /total size limit/);
+  assert.throws(() => run(small({ maxFiles: 2 })), /file count limit/);
+  assert.equal(run(config)[0].status, 'built');
+});
+
+test('ZIP32 limits are enforced instead of silently wrapping', () => {
+  const entry = (path, size) => ({ path, data: Buffer.alloc(size, 1), mode: 0o644 });
+  assert.equal(ZIP32_LIMIT, 0xfffffffe);
+  assert.equal(ZIP_MAX_ENTRIES, 0xfffe);
+  assert.throws(() => createZip([entry('a', 10)], { maxValue: 5 }), /exceeds the ZIP32 limit/);
+  assert.throws(
+    () => createZip([entry('a', 1), entry('b', 1), entry('c', 1)], { maxEntries: 2 }),
+    /too many zip entries/,
+  );
+  const noise = (path) => ({ path, data: randomBytes(1000), mode: 0o644 });
+  assert.throws(() => createZip([noise('a'), noise('b')], { maxValue: 1500 }), /ZIP32 limit/); // incompressible data: offsets add up
+  assert.throws(
+    () => createZip(Array.from({ length: ZIP_MAX_ENTRIES + 1 }, (_, i) => entry(`f${i}`, 0))),
+    /too many zip entries/,
+  );
+  assert.ok(createZip([entry('a', 10)], { maxValue: 1000 }).length > 0);
 });

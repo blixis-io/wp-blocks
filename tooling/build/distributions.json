@@ -1,33 +1,41 @@
 {
-  "$comment": "Distributable packages (ADR 0009). Each is built from a workspace directory into <slug>-<version>.zip with a manifest and checksums. 'main' is the file whose header carries the version.",
+  "$comment": "Distributable packages (ADR 0009). 'tier' is free or paid: paid packages are built only with --include-paid, which the public CI never uses (ADR 0009: Plus/Pro source is not published from public PR builds). 'main' carries the version header; 'identity' is the WordPress header every main file must also contain.",
   "distributions": [
     {
       "slug": "blixis",
       "kind": "theme",
       "source": "wordpress/theme",
       "main": "style.css",
-      "required": ["style.css", "index.php"]
+      "required": ["style.css", "index.php"],
+      "tier": "free",
+      "identity": "Theme Name"
     },
     {
       "slug": "blixis-builder",
       "kind": "plugin",
       "source": "wordpress/plugin",
       "main": "blixis-builder.php",
-      "required": ["blixis-builder.php"]
+      "required": ["blixis-builder.php"],
+      "tier": "free",
+      "identity": "Plugin Name"
     },
     {
       "slug": "blixis-plus",
       "kind": "plugin",
       "source": "wordpress/plus",
       "main": "blixis-plus.php",
-      "required": ["blixis-plus.php"]
+      "required": ["blixis-plus.php"],
+      "tier": "paid",
+      "identity": "Plugin Name"
     },
     {
       "slug": "blixis-pro",
       "kind": "plugin",
       "source": "wordpress/pro",
       "main": "blixis-pro.php",
-      "required": ["blixis-pro.php"]
+      "required": ["blixis-pro.php"],
+      "tier": "paid",
+      "identity": "Plugin Name"
     }
   ],
   "exclude": [
@@ -54,5 +62,61 @@
     "*.test.*",
     "*.md.bak"
   ],
-  "forbidden": [".env", ".env.*", "*.pem", "*.key", "*.p12", "id_rsa", "id_ed25519", "*.sqlite", "*.sql"]
+  "forbidden": [
+    ".env",
+    ".env.*",
+    "*.pem",
+    "*.key",
+    "*.p12",
+    "*.pfx",
+    "*.jks",
+    "*.kdbx",
+    "id_rsa",
+    "id_ed25519",
+    "*.sqlite",
+    "*.sql",
+    ".npmrc",
+    ".netrc",
+    ".htpasswd",
+    ".git-credentials",
+    "auth.json",
+    "credentials*",
+    ".aws",
+    "wp-config.php",
+    "*.crt",
+    "*.cer"
+  ],
+  "allowedExtensions": [
+    "php",
+    "css",
+    "js",
+    "mjs",
+    "json",
+    "svg",
+    "png",
+    "jpg",
+    "jpeg",
+    "gif",
+    "webp",
+    "avif",
+    "ico",
+    "woff",
+    "woff2",
+    "ttf",
+    "otf",
+    "eot",
+    "txt",
+    "md",
+    "pot",
+    "po",
+    "mo",
+    "html",
+    "xml"
+  ],
+  "allowedNames": ["LICENSE", "NOTICE", "README", "readme.txt", "CHANGELOG"],
+  "limits": {
+    "maxFileBytes": 20971520,
+    "maxTotalBytes": 104857600,
+    "maxFiles": 10000
+  }
 }
