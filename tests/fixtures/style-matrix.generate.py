@@ -4,7 +4,8 @@
 One document holds the whole precedence matrix, so a single compile and a single golden stylesheet pin the output:
   group M (el-m00 .. el-m15): every presence combination of the four rule layers (base, mobile, dark, dark+mobile) = 2^4;
   group S (el-s00 .. el-s15): the same combinations plus a base hover rule, to show that a state beats every layer;
-  group C (el-c0 .. el-c3): global classes against element rules (precedence follows the class list, not classIds order).
+  group C (el-c0 .. el-c3): global classes against element rules (precedence follows the class list, not classIds order);
+  group T (el-t0 .. el-t3): two breakpoints (tablet and mobile) together, with dark and hover combinations.
 Class names are computed with hashlib, independently of the TypeScript implementation. Expected values are NOT stored here:
 style-matrix.test.ts derives them from a hand-written formula and checks them against the compiled stylesheet.
 Usage: python3 -I tests/fixtures/style-matrix.generate.py
@@ -49,6 +50,27 @@ root.append(element("el-c0", None, ["cls-a"])); names["el-c0"] = [cls("cls-a")]
 root.append(element("el-c1", None, ["cls-b", "cls-a"])); names["el-c1"] = [cls("cls-b"), cls("cls-a")]
 root.append(element("el-c2", [{"declarations": {"color": "navy"}}], ["cls-a", "cls-b"])); names["el-c2"] = [own("el-c2"), cls("cls-a"), cls("cls-b")]
 root.append(element("el-c3", [{"mode": "dark", "declarations": {"color": "teal"}}], ["cls-b"])); names["el-c3"] = [own("el-c3"), cls("cls-b")]
+# group T: tablet (<= 1024px) and mobile (<= 640px) rules together
+root.append(element("el-t0", [
+    {"declarations": {"color": "black"}},
+    {"breakpoint": "mobile", "declarations": {"color": "green"}},
+    {"breakpoint": "tablet", "declarations": {"color": "blue"}},
+])); names["el-t0"] = [own("el-t0")]
+root.append(element("el-t1", [
+    {"declarations": {"color": "black"}},
+    {"breakpoint": "tablet", "declarations": {"color": "blue"}},
+    {"breakpoint": "mobile", "declarations": {"color": "green"}},
+    {"mode": "dark", "breakpoint": "tablet", "declarations": {"color": "white"}},
+])); names["el-t1"] = [own("el-t1")]
+root.append(element("el-t2", [
+    {"mode": "dark", "breakpoint": "mobile", "declarations": {"color": "silver"}},
+    {"mode": "dark", "breakpoint": "tablet", "declarations": {"color": "white"}},
+])); names["el-t2"] = [own("el-t2")]
+root.append(element("el-t3", [
+    {"declarations": {"color": "black"}},
+    {"state": "hover", "breakpoint": "tablet", "declarations": {"color": "red"}},
+    {"state": "hover", "mode": "dark", "breakpoint": "mobile", "declarations": {"color": "orange"}},
+])); names["el-t3"] = [own("el-t3")]
 classes = [
     {"id": "cls-a", "rules": [{"declarations": {"color": "olive"}}, {"breakpoint": "mobile", "declarations": {"color": "maroon"}}]},
     {"id": "cls-b", "rules": [{"declarations": {"color": "purple"}}, {"mode": "dark", "declarations": {"color": "pink"}}]},

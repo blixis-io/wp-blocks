@@ -20,7 +20,8 @@ const css = parse(result.css);
 
 type Theme = 'explicit' | 'auto' | 'unset';
 const THEMES: Theme[] = ['explicit', 'auto', 'unset'];
-const WIDTHS = [1440, 1024, 900, 641, 640, 400];
+const WIDTHS = [1440, 1025, 1024, 900, 641, 640, 400];
+const TABLET = (width: number): boolean => width <= 1024;
 const MOBILE = (width: number): boolean => width <= 640;
 
 function context(id: string, mode: 'light' | 'dark', theme: Theme, width: number): Context {
@@ -84,6 +85,37 @@ describe('group S: a hover rule beats every layer, for every combination', () =>
   });
 });
 
+describe('group T: tablet and mobile rules together (nested max-width conditions, narrower wins)', () => {
+  // Hand-derived. Widths: > 1024 is desktop, 641..1024 tablet, <= 640 mobile (a phone also matches tablet).
+  const tablet = (mode: 'light' | 'dark', width: number, hovering: boolean) => ({
+    el_t0: (): string => (MOBILE(width) ? 'green' : TABLET(width) ? 'blue' : 'black'),
+    // dark+tablet beats the light mobile and tablet rules at every width it matches
+    el_t1: (): string =>
+      mode === 'dark' && TABLET(width) ? 'white' : MOBILE(width) ? 'green' : TABLET(width) ? 'blue' : 'black',
+    // within dark+breakpoint the narrower breakpoint wins; light has no rule at all
+    el_t2: (): string | undefined =>
+      mode !== 'dark' ? undefined : MOBILE(width) ? 'silver' : TABLET(width) ? 'white' : undefined,
+    // a hover rule beats the non-hover rule; among hover rules dark+mobile beats tablet; above 1024px no hover rule matches
+    el_t3: (): string =>
+      hovering && mode === 'dark' && MOBILE(width) ? 'orange' : hovering && TABLET(width) ? 'red' : 'black',
+  });
+  it.each(['el-t0', 'el-t1', 'el-t2', 'el-t3'])('%s', (id) => {
+    for (const mode of ['light', 'dark'] as const) {
+      for (const theme of THEMES) {
+        for (const width of WIDTHS) {
+          for (const hovering of [false, true]) {
+            const ctx = { ...context(id, mode, theme, width), states: hovering ? ['hover'] : [] };
+            const key = id.replace('-', '_') as keyof ReturnType<typeof tablet>;
+            expect(resolve(css, 'color', ctx), `${id} ${mode} ${theme} ${String(width)} ${String(hovering)}`).toBe(
+              tablet(mode, width, hovering)[key](),
+            );
+          }
+        }
+      }
+    }
+  });
+});
+
 describe('group C: global classes against element rules (origin first, then layer, then the order of the class list)', () => {
   // cls-a (order 1): base olive, mobile maroon. cls-b (order 2): base purple, dark pink.
   const expectations: Record<string, (mode: 'light' | 'dark', mobile: boolean) => string> = {
@@ -129,6 +161,8 @@ describe('deterministic output', () => {
       'blx.class.s0.bp',
       'blx.class.s0.mode',
       'blx.el.hover.base',
+      'blx.el.hover.bp',
+      'blx.el.hover.modebp',
       'blx.el.s0.base',
       'blx.el.s0.bp',
       'blx.el.s0.mode',

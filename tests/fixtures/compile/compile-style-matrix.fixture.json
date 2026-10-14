@@ -787,6 +787,113 @@
             }
           ],
           "classIds": ["cls-b"]
+        },
+        {
+          "id": "el-t0",
+          "type": "blixis/text",
+          "props": {},
+          "children": [],
+          "style": [
+            {
+              "declarations": {
+                "color": "black"
+              }
+            },
+            {
+              "breakpoint": "mobile",
+              "declarations": {
+                "color": "green"
+              }
+            },
+            {
+              "breakpoint": "tablet",
+              "declarations": {
+                "color": "blue"
+              }
+            }
+          ]
+        },
+        {
+          "id": "el-t1",
+          "type": "blixis/text",
+          "props": {},
+          "children": [],
+          "style": [
+            {
+              "declarations": {
+                "color": "black"
+              }
+            },
+            {
+              "breakpoint": "tablet",
+              "declarations": {
+                "color": "blue"
+              }
+            },
+            {
+              "breakpoint": "mobile",
+              "declarations": {
+                "color": "green"
+              }
+            },
+            {
+              "mode": "dark",
+              "breakpoint": "tablet",
+              "declarations": {
+                "color": "white"
+              }
+            }
+          ]
+        },
+        {
+          "id": "el-t2",
+          "type": "blixis/text",
+          "props": {},
+          "children": [],
+          "style": [
+            {
+              "mode": "dark",
+              "breakpoint": "mobile",
+              "declarations": {
+                "color": "silver"
+              }
+            },
+            {
+              "mode": "dark",
+              "breakpoint": "tablet",
+              "declarations": {
+                "color": "white"
+              }
+            }
+          ]
+        },
+        {
+          "id": "el-t3",
+          "type": "blixis/text",
+          "props": {},
+          "children": [],
+          "style": [
+            {
+              "declarations": {
+                "color": "black"
+              }
+            },
+            {
+              "state": "hover",
+              "breakpoint": "tablet",
+              "declarations": {
+                "color": "red"
+              }
+            },
+            {
+              "state": "hover",
+              "mode": "dark",
+              "breakpoint": "mobile",
+              "declarations": {
+                "color": "orange"
+              }
+            }
+          ]
         }
       ],
       "classListVersion": 0,
@@ -873,7 +980,11 @@
       "el-c0": ["blx-c-17ef5b9d37e8"],
       "el-c1": ["blx-c-f88d951d3634", "blx-c-17ef5b9d37e8"],
       "el-c2": ["blx-352af2c924fb", "blx-c-17ef5b9d37e8", "blx-c-f88d951d3634"],
-      "el-c3": ["blx-69ae05be9eda", "blx-c-f88d951d3634"]
+      "el-c3": ["blx-69ae05be9eda", "blx-c-f88d951d3634"],
+      "el-t0": ["blx-0657476aee8c"],
+      "el-t1": ["blx-238cbb9965e6"],
+      "el-t2": ["blx-24c0e32d6b01"],
+      "el-t3": ["blx-620ce3cea0d8"]
     },
     "issues": []
   }
