@@ -98,6 +98,16 @@
         "level": "pending",
         "issue": "BWB-043"
       }
+    },
+    {
+      "id": "source-digest-corpus",
+      "description": "Translation source markers: the digest of default-locale source text, independently computed.",
+      "paths": ["packages/core/corpus/source-digest.json"],
+      "ts": ["packages/core/src/translation/source.test.ts"],
+      "php": {
+        "level": "pending",
+        "issue": "BWB-112"
+      }
     }
   ]
 }

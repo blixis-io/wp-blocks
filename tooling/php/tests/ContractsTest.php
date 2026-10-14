@@ -88,7 +88,7 @@ final class ContractsTest extends TestCase {
 	 * Every registered file is readable by the strict PHP scanner, runners exist and PHP gaps point at roadmap issues.
 	 */
 	public function test_registry_is_consistent_for_php(): void {
-		$roadmap = (string) file_get_contents( self::root() . '/docs/roadmap/issues.csv' );
+		$roadmap = (string) file_get_contents( self::root() . '/docs/roadmap/issues.csv' ) . "\n" . (string) file_get_contents( self::root() . '/docs/roadmap/issues-addendum.csv' );
 		$levels  = array();
 		foreach ( self::suites() as $suite ) {
 			$this->assertNotSame( '', trim( $suite->description ), $suite->id );

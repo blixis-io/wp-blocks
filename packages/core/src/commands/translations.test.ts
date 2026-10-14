@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import {
   applyCommand,
@@ -12,6 +13,12 @@ import {
   type ElementNode,
   type TranslationCheck,
 } from '../index.ts';
+
+/** The expected source marker, computed independently of the implementation (flat string values only). */
+const H = (values: Record<string, string>): string => {
+  const sorted = Object.fromEntries(Object.entries(values).sort(([a], [b]) => (a < b ? -1 : 1)));
+  return createHash('sha256').update(JSON.stringify(sorted), 'utf8').digest('hex').slice(0, 16);
+};
 
 const el = (id: string, type: string, children: ElementNode[] = []): ElementNode => ({ id, type, props: {}, children });
 
@@ -64,7 +71,11 @@ const hook: CommandContext = {
 describe('set-translation', () => {
   it('creates an entry: draft in a translation locale, translated in the default locale', () => {
     const nl = ok(baseDoc(), { type: 'set-translation', locale: 'nl_NL', elementId: 'el-b', set: { text: 'Tekst' } });
-    expect(nl.document.translations['nl_NL']?.['el-b']).toEqual({ values: { text: 'Tekst' }, status: 'draft' });
+    expect(nl.document.translations['nl_NL']?.['el-b']).toEqual({
+      values: { text: 'Tekst' },
+      status: 'draft',
+      sourceHash: H({ text: 'Body' }),
+    });
     const en = ok(baseDoc(), { type: 'set-translation', locale: 'en_US', elementId: 'el-c', set: { alt: 'Logo' } });
     expect(en.document.translations['en_US']?.['el-c']).toEqual({ values: { alt: 'Logo' }, status: 'translated' });
   });
@@ -73,7 +84,7 @@ describe('set-translation', () => {
     const merged = ok(baseDoc(), { type: 'set-translation', locale: 'nl_NL', elementId: 'el-a', set: { alt: 'Een' } });
     expect(merged.document.translations['nl_NL']?.['el-a']).toEqual({
       values: { text: 'Hallo', alt: 'Een' },
-      sourceHash: 'abcdef12',
+      sourceHash: H({ text: 'Hello' }),
       status: 'draft',
     });
     const kept = ok(baseDoc(), { type: 'set-translation', locale: 'en_US', elementId: 'el-a', set: { text: 'Hi' } });
@@ -109,7 +120,7 @@ describe('set-translation', () => {
     });
     expect(statusOnly.document.translations['nl_NL']?.['el-a']).toEqual({
       values: { text: 'Hallo' },
-      sourceHash: 'abcdef12',
+      sourceHash: H({ text: 'Hello' }),
       status: 'translated',
     });
   });
@@ -259,7 +270,11 @@ describe('set-translation: no-ops, unset rules and the restore boundary', () => 
       { type: 'set-translation', locale: 'nl_NL', elementId: 'el-a', unset: ['level'] },
       hook,
     );
-    expect(repaired.document.translations['nl_NL']?.['el-a']).toEqual({ values: { text: 'Hallo' }, status: 'draft' });
+    expect(repaired.document.translations['nl_NL']?.['el-a']).toEqual({
+      values: { text: 'Hallo' },
+      status: 'draft',
+      sourceHash: H({ text: 'Hello' }),
+    });
     expect(code(d, { type: 'set-translation', locale: 'nl_NL', elementId: 'el-a', unset: ['level'] }, hook)).toBe(
       'not-translatable',
     );
@@ -365,7 +380,7 @@ describe('set-translation with history', () => {
     const restored = ok(removed.document, removed.inverse);
     expect(restored.document.translations['nl_NL']?.['el-a']).toEqual({
       values: { text: 'Nieuw' },
-      sourceHash: 'abcdef12',
+      sourceHash: H({ text: 'Hello' }),
       status: 'draft',
     });
   });

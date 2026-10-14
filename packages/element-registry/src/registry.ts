@@ -155,6 +155,16 @@ export class ElementRegistry {
   }
 
   /**
+   * The ids of the properties of `type` that count as source text when deciding whether a translation is stale: the
+   * translatable ones. Locale-specific values (links, media) are meant to differ per language. This is the `sourceProperties`
+   * hook of the document commands.
+   */
+  sourceProperties = (type: string): string[] =>
+    this.localizedProperties(type)
+      .filter((p) => p.classification === 'translatable')
+      .map((p) => p.id);
+
+  /**
    * May `property` of an element of `type` hold `value` in a translation entry? This is the `translationValue` hook of the
    * document commands (`set-translation`) and the rule `checkAgainstRegistry` applies to stored translations: only translatable
    * and locale-specific properties of registered types, with a value their definition accepts.
