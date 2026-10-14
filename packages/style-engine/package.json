@@ -11,7 +11,8 @@
   },
   "exports": {
     ".": "./src/index.ts",
-    "./manifest/css-properties.json": "./manifest/css-properties.json"
+    "./manifest/css-properties.json": "./manifest/css-properties.json",
+    "./testing": "./src/cascade.test-helper.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",

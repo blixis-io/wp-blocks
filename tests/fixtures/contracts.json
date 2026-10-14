@@ -83,7 +83,7 @@
       "id": "compile-goldens",
       "description": "Documents, classes and tokens with the exact stylesheet and render metadata (class names, issues) the compiler must produce.",
       "paths": ["tests/fixtures/compile"],
-      "ts": ["tests/fixtures/src/compile.contract.test.ts"],
+      "ts": ["tests/fixtures/src/compile.contract.test.ts", "tests/fixtures/src/style-matrix.test.ts"],
       "php": {
         "level": "pending",
         "issue": "BWB-044"

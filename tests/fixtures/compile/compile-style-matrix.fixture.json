@@ -1,0 +1,880 @@
+{
+  "fixtureVersion": 1,
+  "id": "compile-style-matrix",
+  "description": "The precedence matrix of ADR 0005: all 16 presence combinations of base, mobile, dark and dark+mobile rules, the same with a hover rule, and global classes against element rules, in one document so one golden stylesheet pins the output.",
+  "tags": ["css", "compile", "dark-mode", "breakpoints", "states", "classes", "matrix"],
+  "input": {
+    "document": {
+      "schemaVersion": 1,
+      "documentId": "doc-001",
+      "layoutRevision": 1,
+      "defaultLocale": "en_US",
+      "locales": ["en_US"],
+      "root": [
+        {
+          "id": "el-m00",
+          "type": "blixis/text",
+          "props": {},
+          "children": []
+        },
+        {
+          "id": "el-m01",
+          "type": "blixis/text",
+          "props": {},
+          "children": [],
+          "style": [
+            {
+              "declarations": {
+                "color": "black"
+              }
+            }
+          ]
+        },
+        {
+          "id": "el-m02",
+          "type": "blixis/text",
+          "props": {},
+          "children": [],
+          "style": [
+            {
+              "breakpoint": "mobile",
+              "declarations": {
+                "color": "gray"
+              }
+            }
+          ]
+        },
+        {
+          "id": "el-m03",
+          "type": "blixis/text",
+          "props": {},
+          "children": [],
+          "style": [
+            {
+              "declarations": {
+                "color": "black"
+              }
+            },
+            {
+              "breakpoint": "mobile",
+              "declarations": {
+                "color": "gray"
+              }
+            }
+          ]
+        },
+        {
+          "id": "el-m04",
+          "type": "blixis/text",
+          "props": {},
+          "children": [],
+          "style": [
+            {
+              "mode": "dark",
+              "declarations": {
+                "color": "white"
+              }
+            }
+          ]
+        },
+        {
+          "id": "el-m05",
+          "type": "blixis/text",
+          "props": {},
+          "children": [],
+          "style": [
+            {
+              "declarations": {
+                "color": "black"
+              }
+            },
+            {
+              "mode": "dark",
+              "declarations": {
+                "color": "white"
+              }
+            }
+          ]
+        },
+        {
+          "id": "el-m06",
+          "type": "blixis/text",
+          "props": {},
+          "children": [],
+          "style": [
+            {
+              "breakpoint": "mobile",
+              "declarations": {
+                "color": "gray"
+              }
+            },
+            {
+              "mode": "dark",
+              "declarations": {
+                "color": "white"
+              }
+            }
+          ]
+        },
+        {
+          "id": "el-m07",
+          "type": "blixis/text",
+          "props": {},
+          "children": [],
+          "style": [
+            {
+              "declarations": {
+                "color": "black"
+              }
+            },
+            {
+              "breakpoint": "mobile",
+              "declarations": {
+                "color": "gray"
+              }
+            },
+            {
+              "mode": "dark",
+              "declarations": {
+                "color": "white"
+              }
+            }
+          ]
+        },
+        {
+          "id": "el-m08",
+          "type": "blixis/text",
+          "props": {},
+          "children": [],
+          "style": [
+            {
+              "mode": "dark",
+              "breakpoint": "mobile",
+              "declarations": {
+                "color": "silver"
+              }
+            }
+          ]
+        },
+        {
+          "id": "el-m09",
+          "type": "blixis/text",
+          "props": {},
+          "children": [],
+          "style": [
+            {
+              "declarations": {
+                "color": "black"
+              }
+            },
+            {
+              "mode": "dark",
+              "breakpoint": "mobile",
+              "declarations": {
+                "color": "silver"
+              }
+            }
+          ]
+        },
+        {
+          "id": "el-m10",
+          "type": "blixis/text",
+          "props": {},
+          "children": [],
+          "style": [
+            {
+              "breakpoint": "mobile",
+              "declarations": {
+                "color": "gray"
+              }
+            },
+            {
+              "mode": "dark",
+              "breakpoint": "mobile",
+              "declarations": {
+                "color": "silver"
+              }
+            }
+          ]
+        },
+        {
+          "id": "el-m11",
+          "type": "blixis/text",
+          "props": {},
+          "children": [],
+          "style": [
+            {
+              "declarations": {
+                "color": "black"
+              }
+            },
+            {
+              "breakpoint": "mobile",
+              "declarations": {
+                "color": "gray"
+              }
+            },
+            {
+              "mode": "dark",
+              "breakpoint": "mobile",
+              "declarations": {
+                "color": "silver"
+              }
+            }
+          ]
+        },
+        {
+          "id": "el-m12",
+          "type": "blixis/text",
+          "props": {},
+          "children": [],
+          "style": [
+            {
+              "mode": "dark",
+              "declarations": {
+                "color": "white"
+              }
+            },
+            {
+              "mode": "dark",
+              "breakpoint": "mobile",
+              "declarations": {
+                "color": "silver"
+              }
+            }
+          ]
+        },
+        {
+          "id": "el-m13",
+          "type": "blixis/text",
+          "props": {},
+          "children": [],
+          "style": [
+            {
+              "declarations": {
+                "color": "black"
+              }
+            },
+            {
+              "mode": "dark",
+              "declarations": {
+                "color": "white"
+              }
+            },
+            {
+              "mode": "dark",
+              "breakpoint": "mobile",
+              "declarations": {
+                "color": "silver"
+              }
+            }
+          ]
+        },
+        {
+          "id": "el-m14",
+          "type": "blixis/text",
+          "props": {},
+          "children": [],
+          "style": [
+            {
+              "breakpoint": "mobile",
+              "declarations": {
+                "color": "gray"
+              }
+            },
+            {
+              "mode": "dark",
+              "declarations": {
+                "color": "white"
+              }
+            },
+            {
+              "mode": "dark",
+              "breakpoint": "mobile",
+              "declarations": {
+                "color": "silver"
+              }
+            }
+          ]
+        },
+        {
+          "id": "el-m15",
+          "type": "blixis/text",
+          "props": {},
+          "children": [],
+          "style": [
+            {
+              "declarations": {
+                "color": "black"
+              }
+            },
+            {
+              "breakpoint": "mobile",
+              "declarations": {
+                "color": "gray"
+              }
+            },
+            {
+              "mode": "dark",
+              "declarations": {
+                "color": "white"
+              }
+            },
+            {
+              "mode": "dark",
+              "breakpoint": "mobile",
+              "declarations": {
+                "color": "silver"
+              }
+            }
+          ]
+        },
+        {
+          "id": "el-s00",
+          "type": "blixis/text",
+          "props": {},
+          "children": [],
+          "style": [
+            {
+              "state": "hover",
+              "declarations": {
+                "color": "red"
+              }
+            }
+          ]
+        },
+        {
+          "id": "el-s01",
+          "type": "blixis/text",
+          "props": {},
+          "children": [],
+          "style": [
+            {
+              "declarations": {
+                "color": "black"
+              }
+            },
+            {
+              "state": "hover",
+              "declarations": {
+                "color": "red"
+              }
+            }
+          ]
+        },
+        {
+          "id": "el-s02",
+          "type": "blixis/text",
+          "props": {},
+          "children": [],
+          "style": [
+            {
+              "breakpoint": "mobile",
+              "declarations": {
+                "color": "gray"
+              }
+            },
+            {
+              "state": "hover",
+              "declarations": {
+                "color": "red"
+              }
+            }
+          ]
+        },
+        {
+          "id": "el-s03",
+          "type": "blixis/text",
+          "props": {},
+          "children": [],
+          "style": [
+            {
+              "declarations": {
+                "color": "black"
+              }
+            },
+            {
+              "breakpoint": "mobile",
+              "declarations": {
+                "color": "gray"
+              }
+            },
+            {
+              "state": "hover",
+              "declarations": {
+                "color": "red"
+              }
+            }
+          ]
+        },
+        {
+          "id": "el-s04",
+          "type": "blixis/text",
+          "props": {},
+          "children": [],
+          "style": [
+            {
+              "mode": "dark",
+              "declarations": {
+                "color": "white"
+              }
+            },
+            {
+              "state": "hover",
+              "declarations": {
+                "color": "red"
+              }
+            }
+          ]
+        },
+        {
+          "id": "el-s05",
+          "type": "blixis/text",
+          "props": {},
+          "children": [],
+          "style": [
+            {
+              "declarations": {
+                "color": "black"
+              }
+            },
+            {
+              "mode": "dark",
+              "declarations": {
+                "color": "white"
+              }
+            },
+            {
+              "state": "hover",
+              "declarations": {
+                "color": "red"
+              }
+            }
+          ]
+        },
+        {
+          "id": "el-s06",
+          "type": "blixis/text",
+          "props": {},
+          "children": [],
+          "style": [
+            {
+              "breakpoint": "mobile",
+              "declarations": {
+                "color": "gray"
+              }
+            },
+            {
+              "mode": "dark",
+              "declarations": {
+                "color": "white"
+              }
+            },
+            {
+              "state": "hover",
+              "declarations": {
+                "color": "red"
+              }
+            }
+          ]
+        },
+        {
+          "id": "el-s07",
+          "type": "blixis/text",
+          "props": {},
+          "children": [],
+          "style": [
+            {
+              "declarations": {
+                "color": "black"
+              }
+            },
+            {
+              "breakpoint": "mobile",
+              "declarations": {
+                "color": "gray"
+              }
+            },
+            {
+              "mode": "dark",
+              "declarations": {
+                "color": "white"
+              }
+            },
+            {
+              "state": "hover",
+              "declarations": {
+                "color": "red"
+              }
+            }
+          ]
+        },
+        {
+          "id": "el-s08",
+          "type": "blixis/text",
+          "props": {},
+          "children": [],
+          "style": [
+            {
+              "mode": "dark",
+              "breakpoint": "mobile",
+              "declarations": {
+                "color": "silver"
+              }
+            },
+            {
+              "state": "hover",
+              "declarations": {
+                "color": "red"
+              }
+            }
+          ]
+        },
+        {
+          "id": "el-s09",
+          "type": "blixis/text",
+          "props": {},
+          "children": [],
+          "style": [
+            {
+              "declarations": {
+                "color": "black"
+              }
+            },
+            {
+              "mode": "dark",
+              "breakpoint": "mobile",
+              "declarations": {
+                "color": "silver"
+              }
+            },
+            {
+              "state": "hover",
+              "declarations": {
+                "color": "red"
+              }
+            }
+          ]
+        },
+        {
+          "id": "el-s10",
+          "type": "blixis/text",
+          "props": {},
+          "children": [],
+          "style": [
+            {
+              "breakpoint": "mobile",
+              "declarations": {
+                "color": "gray"
+              }
+            },
+            {
+              "mode": "dark",
+              "breakpoint": "mobile",
+              "declarations": {
+                "color": "silver"
+              }
+            },
+            {
+              "state": "hover",
+              "declarations": {
+                "color": "red"
+              }
+            }
+          ]
+        },
+        {
+          "id": "el-s11",
+          "type": "blixis/text",
+          "props": {},
+          "children": [],
+          "style": [
+            {
+              "declarations": {
+                "color": "black"
+              }
+            },
+            {
+              "breakpoint": "mobile",
+              "declarations": {
+                "color": "gray"
+              }
+            },
+            {
+              "mode": "dark",
+              "breakpoint": "mobile",
+              "declarations": {
+                "color": "silver"
+              }
+            },
+            {
+              "state": "hover",
+              "declarations": {
+                "color": "red"
+              }
+            }
+          ]
+        },
+        {
+          "id": "el-s12",
+          "type": "blixis/text",
+          "props": {},
+          "children": [],
+          "style": [
+            {
+              "mode": "dark",
+              "declarations": {
+                "color": "white"
+              }
+            },
+            {
+              "mode": "dark",
+              "breakpoint": "mobile",
+              "declarations": {
+                "color": "silver"
+              }
+            },
+            {
+              "state": "hover",
+              "declarations": {
+                "color": "red"
+              }
+            }
+          ]
+        },
+        {
+          "id": "el-s13",
+          "type": "blixis/text",
+          "props": {},
+          "children": [],
+          "style": [
+            {
+              "declarations": {
+                "color": "black"
+              }
+            },
+            {
+              "mode": "dark",
+              "declarations": {
+                "color": "white"
+              }
+            },
+            {
+              "mode": "dark",
+              "breakpoint": "mobile",
+              "declarations": {
+                "color": "silver"
+              }
+            },
+            {
+              "state": "hover",
+              "declarations": {
+                "color": "red"
+              }
+            }
+          ]
+        },
+        {
+          "id": "el-s14",
+          "type": "blixis/text",
+          "props": {},
+          "children": [],
+          "style": [
+            {
+              "breakpoint": "mobile",
+              "declarations": {
+                "color": "gray"
+              }
+            },
+            {
+              "mode": "dark",
+              "declarations": {
+                "color": "white"
+              }
+            },
+            {
+              "mode": "dark",
+              "breakpoint": "mobile",
+              "declarations": {
+                "color": "silver"
+              }
+            },
+            {
+              "state": "hover",
+              "declarations": {
+                "color": "red"
+              }
+            }
+          ]
+        },
+        {
+          "id": "el-s15",
+          "type": "blixis/text",
+          "props": {},
+          "children": [],
+          "style": [
+            {
+              "declarations": {
+                "color": "black"
+              }
+            },
+            {
+              "breakpoint": "mobile",
+              "declarations": {
+                "color": "gray"
+              }
+            },
+            {
+              "mode": "dark",
+              "declarations": {
+                "color": "white"
+              }
+            },
+            {
+              "mode": "dark",
+              "breakpoint": "mobile",
+              "declarations": {
+                "color": "silver"
+              }
+            },
+            {
+              "state": "hover",
+              "declarations": {
+                "color": "red"
+              }
+            }
+          ]
+        },
+        {
+          "id": "el-c0",
+          "type": "blixis/text",
+          "props": {},
+          "children": [],
+          "classIds": ["cls-a"]
+        },
+        {
+          "id": "el-c1",
+          "type": "blixis/text",
+          "props": {},
+          "children": [],
+          "classIds": ["cls-b", "cls-a"]
+        },
+        {
+          "id": "el-c2",
+          "type": "blixis/text",
+          "props": {},
+          "children": [],
+          "style": [
+            {
+              "declarations": {
+                "color": "navy"
+              }
+            }
+          ],
+          "classIds": ["cls-a", "cls-b"]
+        },
+        {
+          "id": "el-c3",
+          "type": "blixis/text",
+          "props": {},
+          "children": [],
+          "style": [
+            {
+              "mode": "dark",
+              "declarations": {
+                "color": "teal"
+              }
+            }
+          ],
+          "classIds": ["cls-b"]
+        }
+      ],
+      "classListVersion": 0,
+      "classRefs": {
+        "cls-a": 1,
+        "cls-b": 1
+      },
+      "translations": {
+        "en_US": {}
+      },
+      "metadata": {
+        "updatedAt": "2026-01-01T00:00:00Z",
+        "editorVersion": "0.0.0"
+      }
+    },
+    "classes": [
+      {
+        "id": "cls-a",
+        "rules": [
+          {
+            "declarations": {
+              "color": "olive"
+            }
+          },
+          {
+            "breakpoint": "mobile",
+            "declarations": {
+              "color": "maroon"
+            }
+          }
+        ]
+      },
+      {
+        "id": "cls-b",
+        "rules": [
+          {
+            "declarations": {
+              "color": "purple"
+            }
+          },
+          {
+            "mode": "dark",
+            "declarations": {
+              "color": "pink"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "expected": {
+    "classNames": {
+      "el-m01": ["blx-2cf2ced64dbc"],
+      "el-m02": ["blx-3db110b4c5bb"],
+      "el-m03": ["blx-3e492b669658"],
+      "el-m04": ["blx-b9fdde9eeba4"],
+      "el-m05": ["blx-1d1cf27f5f1c"],
+      "el-m06": ["blx-61f5026e7390"],
+      "el-m07": ["blx-88a7676f4230"],
+      "el-m08": ["blx-f725b62a25ca"],
+      "el-m09": ["blx-2b1d4e5c1483"],
+      "el-m10": ["blx-783b1535e44c"],
+      "el-m11": ["blx-bae75666cb52"],
+      "el-m12": ["blx-555b12081528"],
+      "el-m13": ["blx-5b220ac7d3a4"],
+      "el-m14": ["blx-bda508201dbc"],
+      "el-m15": ["blx-93159e24ca97"],
+      "el-s00": ["blx-ea9c1d93f225"],
+      "el-s01": ["blx-db96fa9f4f92"],
+      "el-s02": ["blx-93d918e4ea49"],
+      "el-s03": ["blx-4e3947d8990f"],
+      "el-s04": ["blx-4a6b7ea0580b"],
+      "el-s05": ["blx-0fc37e1090fc"],
+      "el-s06": ["blx-a0fbacf9d41e"],
+      "el-s07": ["blx-bf2fe7902fe8"],
+      "el-s08": ["blx-f0506cb6377a"],
+      "el-s09": ["blx-d90ee8bdf5b7"],
+      "el-s10": ["blx-a34f0ae5fb33"],
+      "el-s11": ["blx-712d7472b34c"],
+      "el-s12": ["blx-d79957407289"],
+      "el-s13": ["blx-ddd70af70b12"],
+      "el-s14": ["blx-5c18646bc4a5"],
+      "el-s15": ["blx-2add0b5c5330"],
+      "el-c0": ["blx-c-17ef5b9d37e8"],
+      "el-c1": ["blx-c-f88d951d3634", "blx-c-17ef5b9d37e8"],
+      "el-c2": ["blx-352af2c924fb", "blx-c-17ef5b9d37e8", "blx-c-f88d951d3634"],
+      "el-c3": ["blx-69ae05be9eda", "blx-c-f88d951d3634"]
+    },
+    "issues": []
+  }
+}
