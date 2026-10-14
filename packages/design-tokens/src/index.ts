@@ -1,11 +1,14 @@
 export {
   checkTokenSet,
+  duplicateNameIssues,
+  resolveExpression,
   referencesIn,
   resolveToken,
   resolveTokens,
   type TokenIssue,
   type TokenIssueCode,
 } from './graph.ts';
+export { resolveModes, sparseTokens, type ModeResolution } from './modes.ts';
 export {
   CURRENT_TOKEN_SCHEMA_VERSION,
   RESERVED_KEYS,

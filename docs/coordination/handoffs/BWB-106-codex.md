@@ -1,0 +1,12 @@
+# Handoff: independent review of BWB-106 (light/dark base tokens and sparse overrides)
+
+READ-ONLY, offline. Branch `feat/106-light-dark-token-modes`. Read: `docs/architecture/DESIGN-TOKENS.md` (section "Light and dark modes"), ADR 0005 (modes, tokens, `auto`, specificity), ADR 0007 (light/dark in Free), `packages/design-tokens/src/modes.ts`, `modes.test.ts`, `graph.ts` (resolveTokens), `packages/style-engine/src/tokens.ts` (sparse emission), `modes.test.ts` (end to end), `compile.ts` (token output), `packages/style-engine/corpus/token-sets.json` (new `sparse-dark` case).
+
+Questions:
+1. Does the implementation meet "token engine computes both modes without cloning nodes"? Look for any path that copies elements, classes or rules per mode; verify the end-to-end test really proves it (it evaluates compiled CSS with my own cascade evaluator: is that adequate for token custom properties, `var()` substitution including aliases, and the `auto` cases?).
+2. Sparse semantics: a dark value equal to the base is dropped by `tokensForCompile` and `sparseTokens`. Is exact string equality the right test (versus resolved equality, whitespace/case normalisation, aliases that resolve to the same value)? Does dropping it change behaviour anywhere (alias chain where the target has a dark override: token `a` base `X` dark `X` while `X` is `var(--blx-b)` and b differs per mode)? Think carefully: a redundant dark value that is an alias would be dropped although it would follow its target... both base and dark say the same text, so the alias follows its target in both modes; is that equivalent?
+3. `resolveModes`: `overrides` vs `differing`, duplicate token names, issues deduplication, performance, behaviour with cycles in one mode only. `resolveExpression`: probe token name collision handling, categories, a value that is not a valid CSS value, fallbacks, and whether using a probe token inside `resolveToken` can leak into issues or results.
+4. CSS output for tokens: `:where(:root)` base, explicit light/dark overrides and the `auto` media query forms (ADR 0005). Missing: a light override when the base is dark-first? Order of the generated rules vs layers. Any inconsistency between the explicit `light` form and the base value (a token with only a dark value and the page forced to light)?
+5. Docs accuracy and test strength: which mutations (sparse rule, `differing` computation, dark selector, auto media query) would still pass?
+
+Output: Blocker/Major/Minor with file + fix wording; agreements; what you could not verify.
