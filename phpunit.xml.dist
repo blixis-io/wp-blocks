@@ -16,5 +16,8 @@
 		<testsuite name="tooling">
 			<directory>tooling/php/tests</directory>
 		</testsuite>
+		<testsuite name="theme">
+			<directory>wordpress/theme/tests</directory>
+		</testsuite>
 	</testsuites>
 </phpunit>

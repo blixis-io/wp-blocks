@@ -35,7 +35,7 @@
   "scripts": {
     "lint": "phpcs",
     "lint:fix": "phpcbf",
-    "stan": "phpstan analyse --no-progress",
+    "stan": "phpstan analyse --no-progress --memory-limit=1G",
     "test": "phpunit",
     "check": [
       "@lint",

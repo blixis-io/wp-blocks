@@ -3,7 +3,7 @@
 // set BLX_SKIP_DOCKER=1 to skip them deliberately.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -15,7 +15,18 @@ const read = (f) => readFileSync(join(root, f), 'utf8');
 function resolved() {
   const r = spawnSync(
     'docker',
-    ['compose', '-f', join(root, 'docker', 'compose.yml'), '--profile', 'tools', 'config', '--format', 'json'],
+    [
+      'compose',
+      '-f',
+      join(root, 'docker', 'compose.yml'),
+      '-f',
+      join(root, 'docker', 'compose.packages.yml'),
+      '--profile',
+      'tools',
+      'config',
+      '--format',
+      'json',
+    ],
     { cwd: root, encoding: 'utf8' },
   );
   assert.equal(r.status, 0, `docker compose config failed (is Docker installed?): ${r.stderr}`);
@@ -80,3 +91,26 @@ test('development credentials are labelled as development-only', () => {
   const compose = read('docker/compose.yml');
   for (const secret of ['wordpress-dev-only', 'root-dev-only']) assert.ok(compose.includes(secret));
 });
+
+test(
+  'package mounts are read-only binds of existing directories under wp-content, for the web and the CLI container',
+  { skip },
+  () => {
+    const { services } = resolved();
+    for (const service of ['wordpress', 'cli']) {
+      const mounts = (services[service].volumes ?? []).filter((v) =>
+        String(v.target).startsWith('/var/www/html/wp-content/'),
+      );
+      assert.ok(mounts.length >= 1, `${service} mounts at least the theme`);
+      for (const m of mounts) {
+        assert.equal(m.type, 'bind', `${service}: ${m.target}`);
+        assert.equal(m.read_only, true, `${service}: ${m.target} must be read-only`);
+        assert.ok(existsSync(m.source), `${service}: host directory ${m.source} exists, so Docker never creates it`);
+      }
+    }
+    assert.ok(
+      services.wordpress.volumes.some((v) => v.target === '/var/www/html/wp-content/themes/blixis'),
+      'the theme is mounted under its slug',
+    );
+  },
+);

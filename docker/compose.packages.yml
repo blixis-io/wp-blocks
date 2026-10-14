@@ -1,0 +1,10 @@
+# Package mounts for the development stack (BWB-012, BWB-029). Merged after compose.yml by tooling/wp-env/wp-env.mjs.
+# Each package is added once it contains PHP code, so Docker never creates an empty host directory. Read-only: the container
+# must not be able to change source files (edit them on the host).
+services:
+  wordpress:
+    volumes:
+      - ../wordpress/theme:/var/www/html/wp-content/themes/blixis:ro
+  cli:
+    volumes:
+      - ../wordpress/theme:/var/www/html/wp-content/themes/blixis:ro
