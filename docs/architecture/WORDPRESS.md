@@ -83,3 +83,13 @@ The [canvas contract](CANVAS-CONTRACT.md) specifies the preview request and resp
 
 - GPL-compatible files and source availability where required.
 - WordPress.org theme/plugin review guidelines apply if submitted; premium add-ons distributed independently. Keep security patch policy across all packages.
+
+## Frontend rendering and cache (BWB-044)
+
+On a singular view of an opted-in post type, the plugin replaces the post content with the **published** builder output and prints the compiled stylesheet once as an inline style (`blixis-builder-frontend`). `Frontend\PublishedReader` resolves the publication pointer to immutable snapshots (ADR 0004); working streams are never read, so drafts cannot reach visitors. A post with no pointer, a missing or invalid snapshot, unsafe or oversized output, a password requirement, or the filter `blixis_builder_render_frontend` returning false keeps its normal content: every failure falls back to WordPress's own output.
+
+The locale is the site locale (`get_locale()`); if the pointer has no published content for it, the pointer's default locale is used. Locale URL routing and the 404 for unpublished locales are separate work (ADR 0006).
+
+**Cache.** The rendered `{html, css}` pair is stored as a transient (so a persistent object cache is used automatically) under a key made of every input: post, selected locale, published layout and content snapshot numbers, a site-wide **epoch**, the CSS compiler version, the plugin version and the active theme with its version (`Frontend\RenderCacheKey`). A new publication changes the snapshot numbers, so the old entry is simply never read again. Changes that affect every page start a new epoch (`Frontend\Invalidation`: a random value in the autoloaded option `blixis_builder_epoch`): saving or deleting the design system or global classes, switching the theme, and updating or deleting an attachment. Entries expire after a day, so abandoned keys do not accumulate.
+
+Verified on real WordPress by the smoke test: normal content without a pointer, no draft leak, snapshot output and CSS, a new revision visible without flushing, epoch change on design system save, and fallback after a snapshot is removed.

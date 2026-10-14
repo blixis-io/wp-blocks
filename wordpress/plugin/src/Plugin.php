@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Blixis\Builder;
 
+use Blixis\Builder\Frontend\Frontend;
 use Blixis\Builder\Storage\MetaRegistration;
 use Blixis\Builder\Rest\DocumentController;
 
@@ -24,6 +25,7 @@ final class Plugin {
 		\add_action( 'init', [ self::class, 'load_text_domain' ] );
 		MetaRegistration::hooks();
 		\add_action( 'rest_api_init', [ DocumentController::class, 'register' ] );
+		Frontend::hooks();
 	}
 
 	/** Load translations after WordPress has initialized. */

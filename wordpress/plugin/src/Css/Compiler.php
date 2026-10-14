@@ -87,7 +87,7 @@ final class Compiler {
 			[ $node, $path ] = array_pop( $stack );
 			$attached        = [];
 			$own             = self::usable( $node['style'] ?? [], $path, 'style', $rank, $issues );
-			$digest          = [] !== $own ? self::digest( $doc['documentId'] . ':' . $node['id'], $hash ) : '';
+			$digest          = [] !== $own ? ( \is_string( $doc['documentId'] ?? null ) ? self::digest( $doc['documentId'] . ':' . $node['id'], $hash ) : null ) : '';
 			if ( null === $digest ) {
 				$issues[] = self::issue( 'invalid-identifier', $path, 'document and element ids must be ASCII' );
 			} elseif ( [] !== $own ) {
