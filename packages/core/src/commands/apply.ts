@@ -20,6 +20,13 @@ import type {
 
 const MAX_STYLE_RULES = 256;
 
+/**
+ * The inverse commands this module returned. `restore-translation` and `restore-statuses` can put an entry into states no
+ * ordinary command can reach, so they are accepted only as the very object a previous result handed out (what the history
+ * stores), never from a deserialized command: identity does not survive a copy, a REST body or a macro.
+ */
+const TRUSTED_INVERSES = new WeakSet<object>();
+
 const own = (object: object, key: string): boolean => Object.hasOwn(object, key);
 const fail = (code: CommandErrorCode, message: string): { ok: false; error: CommandError } => ({
   ok: false,
@@ -429,7 +436,9 @@ function withEntry(
   if (entry === null) Reflect.deleteProperty(stream, elementId);
   else Object.defineProperty(stream, elementId, { value: entry, enumerable: true, writable: true, configurable: true });
   const translations = { ...doc.translations };
-  if (entry === null && dropStream && Object.keys(stream).length === 0) Reflect.deleteProperty(translations, locale);
+  // The default locale always keeps its stream (a document must have one); other locales drop a stream the edit created.
+  if (entry === null && dropStream && locale !== doc.defaultLocale && Object.keys(stream).length === 0)
+    Reflect.deleteProperty(translations, locale);
   else
     Object.defineProperty(translations, locale, {
       value: stream,
@@ -448,7 +457,23 @@ const MARKABLE = new Set(['draft', 'translated', 'reviewed']);
 /** The digest of the default-locale source text of an element, or `null` when it has no default-locale entry. */
 function sourceOf(doc: BuilderDocument, node: ElementNode, ctx: CommandContext): string | null {
   const entry = entryOf(doc, doc.defaultLocale, node.id);
-  return entry === undefined ? null : sourceDigest(entry.values, ctx.sourceProperties?.(node.type));
+  if (entry === undefined) return null;
+  const ids = ctx.sourceProperties?.(node.type);
+  // The hook answering `undefined` means the type is unknown (its add-on is gone): there is no way to tell what the source
+  // text is, so nothing is judged stale and no marker is written.
+  if (ctx.sourceProperties !== undefined && ids === undefined) return null;
+  return sourceDigest(entry.values, ids);
+}
+
+/** The values of the listed properties only (all of them without a list). */
+function pick(values: Record<string, Json>, ids: readonly string[] | undefined): Record<string, Json> {
+  if (ids === undefined) return values;
+  const out: Record<string, Json> = {};
+  for (const id of ids) {
+    if (own(values, id))
+      Object.defineProperty(out, id, { value: values[id], enumerable: true, writable: true, configurable: true });
+  }
+  return out;
 }
 
 /** Sets the status of existing, live entries; returns the previous statuses so the change can be undone exactly. */
@@ -456,22 +481,32 @@ function applyStatuses(
   doc: BuilderDocument,
   records: readonly StatusRecord[],
 ): { document: BuilderDocument; previous: StatusRecord[] } | CommandError {
-  const translations: BuilderDocument['translations'] = { ...doc.translations };
   const previous: StatusRecord[] = [];
   const seen = new Set<string>();
+  const changes = new Map<string, Map<string, TranslationEntry>>();
+  // First validate every record against the unchanged document, then copy each affected stream once (linear in the records).
   for (const r of records) {
     const key = `${r.locale}\u0000${r.elementId}`;
     if (seen.has(key)) return { code: 'invalid-argument', message: 'duplicate status record' };
     seen.add(key);
-    const stream = own(translations, r.locale) ? translations[r.locale] : undefined;
-    const entry = stream !== undefined && own(stream, r.elementId) ? stream[r.elementId] : undefined;
-    if (stream === undefined || entry === undefined || entry.status === 'orphaned')
+    const entry = entryOf(doc, r.locale, r.elementId);
+    if (entry === undefined || entry.status === 'orphaned')
       return { code: 'stale-restore', message: `${r.locale}/${r.elementId} has no live translation entry` };
     if (r.status === 'orphaned')
       return { code: 'invalid-argument', message: 'a status record cannot set the orphaned status' };
     previous.push({ locale: r.locale, elementId: r.elementId, status: entry.status });
-    Object.defineProperty(translations, r.locale, {
-      value: { ...stream, [r.elementId]: { ...entry, status: r.status } },
+    const forLocale = changes.get(r.locale) ?? new Map<string, TranslationEntry>();
+    forLocale.set(r.elementId, { ...entry, status: r.status as TranslationEntry['status'] });
+    changes.set(r.locale, forLocale);
+  }
+  const translations: BuilderDocument['translations'] = { ...doc.translations };
+  for (const [locale, entries] of changes) {
+    const stream = { ...doc.translations[locale] };
+    for (const [elementId, entry] of entries) {
+      Object.defineProperty(stream, elementId, { value: entry, enumerable: true, writable: true, configurable: true });
+    }
+    Object.defineProperty(translations, locale, {
+      value: stream,
       enumerable: true,
       writable: true,
       configurable: true,
@@ -532,13 +567,23 @@ function setTranslation(
       },
     };
   }
-  const status = command.status ?? (isDefault ? 'translated' : 'draft');
+  let status: TranslationEntry['status'] = command.status ?? (isDefault ? 'translated' : 'draft');
   const entry: TranslationEntry = existing === undefined ? { values, status } : { ...existing, values, status };
   if (!isDefault) {
-    // A translation written now is made from the source text as it is now (this also confirms a stale one).
+    // A translation records the source text it was made from, but only when the translator has seen that text: a new entry,
+    // an edit of translatable text, or an explicit translated/reviewed confirmation. Editing a link or choosing draft must not
+    // silently make a stale translation look current, so then the old marker stays and the entry cannot claim to be up to date.
     const digest = sourceOf(doc, node, ctx);
-    if (digest === null) Reflect.deleteProperty(entry, 'sourceHash');
-    else entry.sourceHash = digest;
+    const ids = ctx.sourceProperties?.(node.type);
+    const textChanged = !sameValues(pick(values, ids), pick(previous, ids));
+    const confirms = command.status === 'translated' || command.status === 'reviewed';
+    const refresh = existing === undefined || textChanged || confirms;
+    if (refresh) {
+      if (digest === null) Reflect.deleteProperty(entry, 'sourceHash');
+      else entry.sourceHash = digest;
+    }
+    if (digest !== null && entry.sourceHash !== digest && MARKABLE.has(status)) status = 'stale';
+    entry.status = status;
   }
   let next = withEntry(doc, command.locale, command.elementId, entry);
   let statuses: StatusRecord[] = [];
@@ -580,8 +625,8 @@ function restoreTranslation(
   if (problem !== null) return { ok: false, error: problem };
   if (command.entry?.status === 'orphaned')
     return fail('invalid-argument', 'an orphaned entry cannot be restored on a live element');
-  if (command.dropStream === true && command.entry !== null)
-    return fail('invalid-argument', 'dropStream only applies when the entry is removed');
+  if (command.dropStream === true && (command.entry !== null || command.locale === doc.defaultLocale))
+    return fail('invalid-argument', 'dropStream only applies when an entry of a translation locale is removed');
   const records = command.statuses ?? [];
   if (records.some((r) => r.elementId !== command.elementId || r.locale === command.locale))
     return fail('invalid-argument', 'status records must name the same element in other locales');
@@ -696,6 +741,7 @@ function checkResult(document: BuilderDocument): CommandError | null {
  */
 export function applyCommand(doc: BuilderDocument, input: unknown, ctx: CommandContext = {}): CommandResult {
   try {
+    const trusted = typeof input === 'object' && input !== null && TRUSTED_INVERSES.has(input);
     const admitted = admitValue(input);
     if (!admitted.ok)
       return fail(
@@ -711,6 +757,12 @@ export function applyCommand(doc: BuilderDocument, input: unknown, ctx: CommandC
       );
     }
     const command = parsed.data as Command;
+    if (!trusted && (command.type === 'restore-translation' || command.type === 'restore-statuses')) {
+      return fail(
+        'invalid-argument',
+        `${command.type} is an internal command: it is only accepted as the inverse returned by a previous command`,
+      );
+    }
     let outcome: Outcome;
     switch (command.type) {
       case 'insert':
@@ -751,6 +803,7 @@ export function applyCommand(doc: BuilderDocument, input: unknown, ctx: CommandC
     if (isError(outcome)) return outcome;
     const problem = outcome.document === doc ? null : checkResult(outcome.document);
     if (problem !== null) return { ok: false, error: problem };
+    TRUSTED_INVERSES.add(outcome.inverse);
     return { ok: true, document: outcome.document, inverse: outcome.inverse, command };
   } catch (error) {
     return fail(

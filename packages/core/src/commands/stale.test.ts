@@ -205,6 +205,108 @@ describe('a source edit flags dependent translations as stale and keeps their te
   });
 });
 
+describe('the source marker is only refreshed when the translator has seen the source', () => {
+  const staleDoc = (): BuilderDocument =>
+    ok(fresh(), { type: 'set-translation', locale: 'en_US', elementId: 'el-a', set: { label: 'Hi there' } }).document;
+
+  it('editing a link or choosing draft does not make a stale translation look current', () => {
+    const link = ok(staleDoc(), {
+      type: 'set-translation',
+      locale: 'nl_NL',
+      elementId: 'el-a',
+      set: { href: '/nl/nieuw' },
+    });
+    expect(link.document.translations['nl_NL']?.['el-a']).toMatchObject({
+      status: 'stale',
+      sourceHash: H({ label: 'Hello' }),
+      values: { href: '/nl/nieuw' },
+    });
+    const draft = ok(staleDoc(), { type: 'set-translation', locale: 'nl_NL', elementId: 'el-a', status: 'draft' });
+    expect(draft.document.translations['nl_NL']?.['el-a']).toMatchObject({
+      status: 'stale',
+      sourceHash: H({ label: 'Hello' }),
+    });
+  });
+
+  it('editing translatable text refreshes it; translated and reviewed confirm explicitly', () => {
+    const text = ok(staleDoc(), {
+      type: 'set-translation',
+      locale: 'nl_NL',
+      elementId: 'el-a',
+      set: { label: 'Hoi daar' },
+    });
+    expect(text.document.translations['nl_NL']?.['el-a']).toMatchObject({
+      status: 'draft',
+      sourceHash: H({ label: 'Hi there' }),
+    });
+    for (const status of ['translated', 'reviewed'] as const) {
+      const confirmed = ok(staleDoc(), { type: 'set-translation', locale: 'nl_NL', elementId: 'el-a', status });
+      expect(confirmed.document.translations['nl_NL']?.['el-a']).toMatchObject({
+        status,
+        sourceHash: H({ label: 'Hi there' }),
+      });
+    }
+  });
+
+  it('editing a link on an up-to-date reviewed translation leaves review but stays current', () => {
+    const link = ok(fresh(), {
+      type: 'set-translation',
+      locale: 'nl_NL',
+      elementId: 'el-a',
+      set: { href: '/nl/nieuw' },
+    });
+    expect(link.document.translations['nl_NL']?.['el-a']).toMatchObject({
+      status: 'draft',
+      sourceHash: H({ label: 'Hello' }),
+    });
+  });
+});
+
+describe('edge cases of the source', () => {
+  it('an element of an unknown type is never judged stale (the add-on is gone)', () => {
+    const unknownCtx: CommandContext = { sourceProperties: () => undefined };
+    const edited = ok(
+      fresh(),
+      { type: 'set-translation', locale: 'en_US', elementId: 'el-a', set: { label: 'Changed' } },
+      unknownCtx,
+    );
+    expect(statusOf(edited.document, 'nl_NL', 'el-a')).toBe('reviewed');
+    expect(ok(edited.document, { type: 'mark-stale' }, unknownCtx).document).toBe(edited.document);
+    const written = ok(
+      fresh(),
+      { type: 'set-translation', locale: 'nl_NL', elementId: 'el-b', set: { text: 'z' } },
+      unknownCtx,
+    );
+    expect(written.document.translations['nl_NL']?.['el-b']).toEqual({ values: { text: 'z' }, status: 'draft' });
+  });
+
+  it('a source that appears after the translations flags them (they were made without any source)', () => {
+    const base = fresh();
+    const withoutSource = build({ ...base.translations, en_US: {} });
+    const created = ok(withoutSource, {
+      type: 'set-translation',
+      locale: 'en_US',
+      elementId: 'el-b',
+      set: { text: 'Body' },
+    });
+    expect(statusOf(created.document, 'nl_NL', 'el-b')).toBe('draft'); // marker equals the new source: made from it
+    const other = ok(withoutSource, {
+      type: 'set-translation',
+      locale: 'en_US',
+      elementId: 'el-b',
+      set: { text: 'Different' },
+    });
+    expect(statusOf(other.document, 'nl_NL', 'el-b')).toBe('stale');
+  });
+
+  it('a default entry holding only a link counts as an empty source', () => {
+    const base = fresh();
+    const noText = build({ ...base.translations, en_US: {} });
+    const created = ok(noText, { type: 'set-translation', locale: 'en_US', elementId: 'el-a', set: { href: '/en' } });
+    expect(statusOf(created.document, 'nl_NL', 'el-a')).toBe('stale');
+  });
+});
+
 describe('mark-stale', () => {
   const drifted = (): BuilderDocument => {
     const base = fresh();
@@ -254,9 +356,17 @@ describe('mark-stale', () => {
     expect(statusOf(ok(orphaned, { type: 'mark-stale' }).document, 'nl_NL', 'el-gone')).toBe('orphaned');
   });
 
-  it('restore-statuses only touches live entries and cannot orphan', () => {
+  it('restore-statuses is internal; even as a trusted inverse it only touches live entries and cannot orphan', () => {
+    const untrusted = applyCommand(
+      fresh(),
+      { type: 'restore-statuses', statuses: [{ locale: 'nl_NL', elementId: 'el-a', status: 'reviewed' }] },
+      ctx,
+    );
+    expect(untrusted.ok ? 'ok' : untrusted.error.code).toBe('invalid-argument');
     const codeOf = (statuses: unknown[]): string => {
-      const r = applyCommand(fresh(), { type: 'restore-statuses', statuses }, ctx);
+      const real = ok(drifted(), { type: 'mark-stale' });
+      (real.inverse as unknown as { statuses: unknown[] }).statuses = statuses;
+      const r = applyCommand(real.document, real.inverse, ctx);
       return r.ok ? 'ok' : r.error.code;
     };
     expect(codeOf([{ locale: 'nl_NL', elementId: 'el-a', status: 'draft' }])).toBe('ok');
@@ -269,6 +379,41 @@ describe('mark-stale', () => {
       ]),
     ).toBe('invalid-argument');
     expect(codeOf([{ locale: 'nl_NL', elementId: 'el-a', status: 'nope' }])).toBe('invalid-argument');
+  });
+
+  it('marks a 2,500-element, two-locale document in linear time', () => {
+    const elements = Array.from({ length: 2500 }, (_v, i) => ({
+      id: `el-${String(i).padStart(4, '0')}`,
+      type: 'blixis/text',
+      props: {},
+      children: [],
+    }));
+    const en: BuilderDocument['translations'][string] = {};
+    const nl: BuilderDocument['translations'][string] = {};
+    const de: BuilderDocument['translations'][string] = {};
+    for (const e of elements) {
+      en[e.id] = { status: 'translated', values: { text: `Source ${e.id}` } };
+      nl[e.id] = { status: 'translated', values: { text: 'x' }, sourceHash: 'deadbeefdeadbeef' };
+      de[e.id] = { status: 'reviewed', values: { text: 'y' } };
+    }
+    const result = validateDocument({
+      schemaVersion: 1,
+      documentId: 'doc-001',
+      layoutRevision: 1,
+      defaultLocale: 'en_US',
+      locales: ['en_US', 'nl_NL', 'de_DE'],
+      root: elements,
+      classListVersion: 0,
+      classRefs: {},
+      translations: { en_US: en, nl_NL: nl, de_DE: de },
+      metadata: { updatedAt: '2026-01-01T00:00:00Z', editorVersion: '0.0.0' },
+    });
+    if (!result.ok) throw new Error(JSON.stringify(result.errors));
+    const started = Date.now();
+    const marked = ok(result.document, { type: 'mark-stale' });
+    expect(Date.now() - started).toBeLessThan(400);
+    expect(Object.values(marked.document.translations['nl_NL'] ?? {}).every((e) => e.status === 'stale')).toBe(true);
+    expect(ok(marked.document, marked.inverse).document).toEqual(result.document);
   });
 
   it('a seeded random mix keeps the invariant: no draft, translated or reviewed entry has a marker different from the source', () => {

@@ -159,7 +159,7 @@ describe('stale detection with the registry as its hook', () => {
     expect(registry.sourceProperties('blixis/button')).toEqual(['label']);
     expect(registry.sourceProperties('blixis/heading')).toEqual(['text']);
     expect(registry.sourceProperties('blixis/section')).toEqual([]);
-    expect(registry.sourceProperties('acme/unknown')).toEqual([]);
+    expect(registry.sourceProperties('acme/unknown')).toBeUndefined();
   });
 
   it('a changed button label makes the Dutch button stale, a changed link target does not', () => {

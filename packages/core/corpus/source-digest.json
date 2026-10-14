@@ -104,6 +104,62 @@
       },
       "expected": "44136fa355b3678a",
       "propertyIds": ["text"]
+    },
+    {
+      "id": "integer-like-keys",
+      "description": "keys are ordered by bytes, not numerically",
+      "values": {
+        "10": "a",
+        "2": "b",
+        "a": "c",
+        "B": "d"
+      },
+      "expected": "175e02b018350779"
+    },
+    {
+      "id": "unicode-keys",
+      "description": "keys with accents and astral characters are ordered by UTF-8 bytes",
+      "values": {
+        "z": "1",
+        "\u00e9": "2",
+        "\ud83d\ude00": "3",
+        "\uff5e": "4"
+      },
+      "expected": "b6cc7ad6890f5421"
+    },
+    {
+      "id": "line-separators",
+      "description": "U+2028, U+2029, DEL and U+0085 are written as they are",
+      "values": {
+        "text": "a\u2028b\u2029c\u007fd\u0085e"
+      },
+      "expected": "b8903477224b43df"
+    },
+    {
+      "id": "control-characters",
+      "description": "control characters use lower-case \\u escapes and the short forms",
+      "values": {
+        "text": "\u0000\b\t\n\f\r\u001f"
+      },
+      "expected": "b12d043a83e21178"
+    },
+    {
+      "id": "empty-containers",
+      "description": "empty arrays and objects keep their type",
+      "values": {
+        "a": [],
+        "o": {},
+        "n": null
+      },
+      "expected": "5d37bdb92992c244"
+    },
+    {
+      "id": "long-text",
+      "description": "a long value",
+      "values": {
+        "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. "
+      },
+      "expected": "9acdf8cf82f1c650"
     }
   ]
 }

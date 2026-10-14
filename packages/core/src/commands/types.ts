@@ -124,7 +124,8 @@ export interface CommandContext {
   /**
    * The ids of the properties of `type` that count as source text when deciding whether a translation is stale (the registry
    * returns the translatable ones; locale-specific values such as links are meant to differ per language). Without the hook
-   * every default-locale value counts. Must be pure.
+   * every default-locale value counts. `undefined` means the type is unknown (its add-on is gone): nothing is judged stale
+   * for it. Must be pure.
    */
-  sourceProperties?: (type: string) => readonly string[];
+  sourceProperties?: (type: string) => readonly string[] | undefined;
 }

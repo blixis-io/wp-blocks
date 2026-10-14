@@ -27,6 +27,8 @@ Implements the command model of [SYSTEM.md](SYSTEM.md) ("Editor") for BWB-022, i
 
 Property ids such as `toString`, `valueOf` and `hasOwnProperty` are valid and exist on every object's prototype, so all lookups use own-property checks.
 
+**Internal commands.** `restore-translation` and `restore-statuses` are accepted only as the inverse object a previous result handed out (identity, which does not survive copying or serialization); anything else is `invalid-argument`. The older internal inverses (`restore`, `restore-style-rule`) validate their payload against the current state instead.
+
 ## Errors
 
 `element-not-found`, `parent-not-found`, `duplicate-id`, `id-has-orphaned-translations` (a new element may not reuse the id of a removed element that still has orphaned translations; undo is the way back), `index-out-of-range`, `cycle` (moving an element into itself or its descendants), `depth-exceeded` (32), `node-limit-exceeded` (5 000), `document-too-large` (2 MiB), `disallowed-parent`, `invalid-argument` (malformed command or payload), `stale-restore`, `locale-not-found` (the locale is not one of the document's `locales`), `not-translatable` (the registry says the property is not translatable or locale-specific, or the type is unknown) and `invalid-translation` (a value its definition refuses). Codes are stable.
@@ -35,7 +37,7 @@ Property ids such as `toString`, `valueOf` and `hasOwnProperty` are valid and ex
 
 `ctx.canNest(parentType | null, childType, intent)` is the seam for the element registry (BWB-021). For `insert` (intent `create`) every nesting inside the new subtree is checked, so a disallowed parent anywhere in it rejects the command. For `move` and `restore` (intent `relocate`) only the subtree root's new nesting is checked: nestings already inside the subtree were valid before and are not re-judged, so a container holding an element of a removed add-on can still be rearranged. Without a hook everything is allowed.
 
-`ctx.sourceProperties(type)` returns the ids that count as source text for stale detection (BWB-105; `registry.sourceProperties`).
+`ctx.sourceProperties(type)` returns the ids that count as source text for stale detection, or `undefined` for an unknown type (BWB-105; `registry.sourceProperties`).
 
 `ctx.translationValue(type, property, value)` is the registry seam for `set-translation` (BWB-104): it returns `{ ok: true }` or `{ ok: false, code: 'not-translatable' | 'invalid-translation', message }`. `registry.translationValue` is that hook. Without a hook any property id is accepted.
 
