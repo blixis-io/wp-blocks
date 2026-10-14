@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { resolveExpression, resolveModes, sparseTokens } from './modes.ts';
+import { resolveExpression } from './graph.ts';
+import { resolveModes, sparseTokens } from './modes.ts';
 import type { Token } from './schema.ts';
 
 const t = (name: string, value: string, extra: Partial<Token> = {}): Token => ({
@@ -68,6 +69,22 @@ describe('resolveModes', () => {
     const r = resolveModes({ tokens: many });
     expect(Date.now() - started).toBeLessThan(500);
     expect(r.issues.some((i) => i.code === 'reference-too-deep')).toBe(true);
+  });
+});
+
+describe('resolveModes: duplicates and fallbacks', () => {
+  it('reports a repeated name and counts only the first definition', () => {
+    const r = resolveModes({ tokens: [t('a', 'red', { dark: 'blue' }), t('a', 'green', { dark: 'black' })] });
+    expect(r.issues.map((i) => i.code)).toEqual(['duplicate-name']);
+    expect(r.overrides).toEqual(['a']);
+    expect(r.light.get('a')).toBe('red');
+    expect(r.dark.get('a')).toBe('blue');
+  });
+
+  it('treats a reference inside a fallback as a dependency even when the fallback would not be used (conservative)', () => {
+    const r = resolveModes({ tokens: [t('a', 'var(--blx-b, var(--blx-a))'), t('b', 'red')] });
+    expect(r.issues.map((i) => i.code)).toEqual(['reference-cycle']);
+    expect([...r.light.keys()]).toEqual(['b']);
   });
 });
 

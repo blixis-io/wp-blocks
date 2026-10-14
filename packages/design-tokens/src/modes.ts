@@ -1,5 +1,5 @@
-import { resolveToken, resolveTokens, type TokenIssue } from './graph.ts';
-import type { Mode, Token, TokenSet } from './schema.ts';
+import { duplicateNameIssues, resolveTokens, type TokenIssue } from './graph.ts';
+import type { Token, TokenSet } from './schema.ts';
 
 export interface ModeResolution {
   /** Every token that resolves, per mode: references substituted, dark overrides applied. */
@@ -24,18 +24,21 @@ export function resolveModes(set: Pick<TokenSet, 'tokens'>): ModeResolution {
   const dark = resolveTokens(set, 'dark');
   const seen = new Set<string>();
   const issues: TokenIssue[] = [];
-  for (const issue of [...light.issues, ...dark.issues]) {
+  for (const issue of [...duplicateNameIssues(set), ...light.issues, ...dark.issues]) {
     const key = `${issue.code}|${issue.path}`;
     if (!seen.has(key)) {
       seen.add(key);
       issues.push(issue);
     }
   }
-  const overrides = set.tokens.filter((t) => t.dark !== undefined && t.dark !== t.value).map((t) => t.name);
+  // Only the first definition of a name counts (a later duplicate is reported and ignored).
+  const first = new Map<string, Token>();
+  for (const token of set.tokens) if (!first.has(token.name)) first.set(token.name, token);
+  const overrides = [...first.values()].filter((t) => t.dark !== undefined && t.dark !== t.value).map((t) => t.name);
   const differing = [...light.values.keys()].filter(
     (name) => dark.values.has(name) && dark.values.get(name) !== light.values.get(name),
   );
-  return { light: light.values, dark: dark.values, issues, overrides: [...new Set(overrides)], differing };
+  return { light: light.values, dark: dark.values, issues, overrides, differing };
 }
 
 /** The tokens with redundant dark values removed (a dark value equal to the base value says nothing). Order is kept. */
@@ -46,22 +49,4 @@ export function sparseTokens<T extends Pick<Token, 'value' | 'dark'>>(tokens: re
     Reflect.deleteProperty(rest, 'dark');
     return rest as T;
   });
-}
-
-/**
- * Resolves a free-standing CSS value that may refer to tokens (for example an element's `color: var(--blx-color-text)`) for
- * one mode, for previews and inspectors. The editor canvas uses real CSS custom properties; this exists for the places that
- * show a value as text.
- */
-export function resolveExpression(
-  set: Pick<TokenSet, 'tokens'>,
-  text: string,
-  mode: Mode,
-): { ok: true; value: string } | { ok: false; issue: TokenIssue } {
-  let name = 'preview-value';
-  const names = new Set(set.tokens.map((t) => t.name));
-  for (let i = 0; names.has(name); i += 1) name = `preview-value-${String(i)}`;
-  const probe: Token = { name, category: 'color', value: text };
-  const result = resolveToken({ tokens: [...set.tokens, probe] }, name, mode);
-  return result.ok ? result : { ok: false, issue: { ...result.issue, path: 'value' } };
 }

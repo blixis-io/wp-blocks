@@ -134,3 +134,29 @@ describe('light and dark tokens end to end (tokens -> compiler -> cascade)', () 
     expect(modes.overrides.sort()).toEqual(['color-bg', 'color-text']);
   });
 });
+
+describe('light overrides over a dark base (direct compiler input)', () => {
+  it('a light value wins on a page forced to light and on auto with a light system preference, whatever the base', () => {
+    const { css } = compile({
+      document: document(),
+      tokens: [
+        { name: '--blx-color-bg', value: '#101418' },
+        { name: '--blx-color-bg', value: '#ffffff', mode: 'light' },
+        { name: '--blx-color-bg', value: '#000000', mode: 'dark' },
+      ],
+    });
+    const parsed = parse(css);
+    const ctx = (dataTheme: Context['dataTheme'], system: 'light' | 'dark'): Context => ({
+      dataTheme,
+      system,
+      width: 1000,
+      states: [],
+      classes: [],
+    });
+    expect(resolveRoot(parsed, '--blx-color-bg', ctx('light', 'dark'))).toBe('#ffffff');
+    expect(resolveRoot(parsed, '--blx-color-bg', ctx(undefined, 'light'))).toBe('#ffffff');
+    expect(resolveRoot(parsed, '--blx-color-bg', ctx('auto', 'light'))).toBe('#ffffff');
+    expect(resolveRoot(parsed, '--blx-color-bg', ctx('dark', 'light'))).toBe('#000000');
+    expect(resolveRoot(parsed, '--blx-color-bg', ctx(undefined, 'dark'))).toBe('#000000');
+  });
+});

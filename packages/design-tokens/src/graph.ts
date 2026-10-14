@@ -82,10 +82,7 @@ type Expansion = { ok: true; value: string; height: number } | { ok: false; code
  * resolved first: cycles are found up front on the whole graph and the rest is resolved bottom-up with memoization, so the
  * work is linear in the references.
  */
-export function resolveTokens(
-  set: Pick<TokenSet, 'tokens'>,
-  mode: Mode,
-): { values: Map<string, string>; issues: TokenIssue[] } {
+function analyze(set: Pick<TokenSet, 'tokens'>, mode: Mode) {
   const byName = new Map<string, { token: Token; index: number }>();
   set.tokens.forEach((token, index) => {
     if (!byName.has(token.name)) byName.set(token.name, { token, index });
@@ -187,6 +184,8 @@ export function resolveTokens(
   const resolve = (name: string): Expansion => {
     const cached = memo.get(name);
     if (cached !== undefined) return cached;
+    const cycle = dependsOnCycle(name);
+    if (cycle !== null) return { ok: false, code: 'reference-cycle', message: cycle };
     const inner = expand(textOf(name));
     const result: Expansion =
       inner.ok && inner.height + 1 > MAX_DEPTH
@@ -202,6 +201,14 @@ export function resolveTokens(
     return result;
   };
 
+  return { byName, dependsOnCycle, resolve, expand };
+}
+
+export function resolveTokens(
+  set: Pick<TokenSet, 'tokens'>,
+  mode: Mode,
+): { values: Map<string, string>; issues: TokenIssue[] } {
+  const { byName, dependsOnCycle, resolve } = analyze(set, mode);
   const values = new Map<string, string>();
   const issues: TokenIssue[] = [];
   for (const [name, { index: position }] of byName) {
@@ -219,11 +226,8 @@ export function resolveTokens(
   return { values, issues };
 }
 
-/**
- * Whole-set checks that the per-token schema cannot express: unique names, and references that exist and do not cycle in
- * either mode. Limits are applied by the schema; this function is bounded by them (500 tokens, 16 levels).
- */
-export function checkTokenSet(set: Pick<TokenSet, 'tokens'>): TokenIssue[] {
+/** `duplicate-name` issues: a name used twice (the first definition is the one that counts). */
+export function duplicateNameIssues(set: Pick<TokenSet, 'tokens'>): TokenIssue[] {
   const issues: TokenIssue[] = [];
   const seen = new Set<string>();
   set.tokens.forEach((token, index) => {
@@ -236,6 +240,30 @@ export function checkTokenSet(set: Pick<TokenSet, 'tokens'>): TokenIssue[] {
     }
     seen.add(token.name);
   });
+  return issues;
+}
+
+/**
+ * Resolves a free-standing CSS value that may refer to tokens (an element's `color: var(--blx-color-text)`) for one mode,
+ * without adding anything to the set: it counts toward depth only through the tokens it names. It does not check that the
+ * text is a valid CSS value.
+ */
+export function resolveExpression(
+  set: Pick<TokenSet, 'tokens'>,
+  text: string,
+  mode: Mode,
+): { ok: true; value: string } | { ok: false; issue: TokenIssue } {
+  const result = analyze(set, mode).expand(text);
+  if (result.ok) return { ok: true, value: result.value };
+  return { ok: false, issue: { code: result.code, path: 'value', message: result.message } };
+}
+
+/**
+ * Whole-set checks that the per-token schema cannot express: unique names, and references that exist and do not cycle in
+ * either mode. Limits are applied by the schema; this function is bounded by them (500 tokens, 16 levels).
+ */
+export function checkTokenSet(set: Pick<TokenSet, 'tokens'>): TokenIssue[] {
+  const issues: TokenIssue[] = duplicateNameIssues(set);
   const reported = new Set<string>();
   for (const mode of ['light', 'dark'] as const) {
     for (const issue of resolveTokens(set, mode).issues) {
