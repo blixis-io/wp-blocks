@@ -18,7 +18,7 @@
 
 **Plus/Pro candidates (separately distributed add-ons):** automated AI translation; translation provider integrations; advanced translation workflows (bulk, XLIFF, review queues); translation memory; advanced localisation rules; conditional rendering; advanced animation; professional theme-builder features; WooCommerce integrations. Tier assignment of each is decided when its issue is scheduled (P8/P9); this ADR only fixes the Free floor.
 
-**Lifecycle invariants:** deactivating or letting a paid add-on expire never removes translations or mode styles, and public rendering of published content never depends on an add-on or a license check (FEATURE-MATRIX invariants). Paid features that add *editing* controls degrade to read-only/hidden controls, not data loss. Pricing, billing and license mechanics are separate business decisions.
+**Lifecycle invariants:** deactivating or letting a paid add-on expire never removes translations or mode styles, and public rendering never calls a licence server. Premium *output* is preserved according to the fallback classes in [ADR 0009](0009-distribution-and-package-boundaries.md) §3 (static, retained snapshot, or explicitly unavailable) — translations and appearance modes are Free and unaffected. Paid features that add *editing* controls degrade to read-only/hidden controls, not data loss. Pricing, billing and license mechanics are separate business decisions.
 
 ## Alternatives considered
 Gating light/dark or additional locales in Plus: rejected by owner as an artificial restriction of fundamental capability (and a WordPress.org risk).

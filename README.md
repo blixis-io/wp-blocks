@@ -15,6 +15,7 @@ Status: planning blueprint · 2026-10-13
 | File | Purpose |
 |---|---|
 | `product/PRD.md` | Scope, audience, personas, capabilities, non-goals, release criteria |
+| `product/UX-JOURNEYS.md` | Draft user journeys and prototype acceptance (BWB-009) |
 | `product/FEATURE-MATRIX.md` | Free / Plus / Pro packaging and entitlement rules |
 | `architecture/SYSTEM.md` | Modules, rendering, CSS strategy, editor, theme contracts |
 | `architecture/SCHEMAS-AND-APIS.md` | Initial document contracts, endpoints, migrations and plugin extension API |
@@ -23,6 +24,10 @@ Status: planning blueprint · 2026-10-13
 | `engineering/GITFLOW.md` | GitHub Flow, Conventional Commits, PR policy, no AI attribution |
 | `engineering/CODE-STANDARDS.md` | TypeScript, React, PHP, REST and architectural conventions |
 | `engineering/STYLEGUIDES.md` | UI, token, accessibility, visual-editor UX, CSS conventions |
+| `engineering/THREAT-MODEL.md` | Assets, roles, trust boundaries, STRIDE threats and required controls (BWB-010) |
+| `engineering/ACCESSIBILITY-BASELINE.md` | WCAG 2.2 AA requirements, verification and performance rules (BWB-010) |
+| `architecture/adrs/` | Architecture decision records |
+| `tests/fixtures/style-resolution/` | Reference fixtures and verifier for ADR 0005 |
 | `engineering/SECURITY.md` | Threat model, supply chain, sandboxing, licensing |
 | `engineering/CI-CD.md` | GitHub Actions, builds, release and versioning |
 | `roadmap/ROADMAP.md` | Phases, gates, dependencies, deliverables |

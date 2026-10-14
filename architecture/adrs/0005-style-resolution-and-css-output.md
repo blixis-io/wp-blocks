@@ -73,6 +73,8 @@ Declarations are validated by a **tokenizing CSS value parser** (not regexes) ag
 - `auto` mode doubles dark rules in size; measured in BWB-069.
 
 ## Test strategy
+Reference fixtures and an executable verifier live in `tests/fixtures/style-resolution/` (`python3 -I tests/fixtures/style-resolution/verify.py`): hand-derived expected values, a 192-combination presence matrix, and 3000 seeded random rule sets comparing the lexicographic-key evaluator with a simulation of the emitted cascade layers. The production compiler (BWB-024/107) must reproduce `cases.json` and additionally be checked in real browsers.
+
 - Generated test matrix covering **every presence combination** of the four rule layers (2⁴ = 16) × contexts {light,dark} × {desktop,tablet,mobile} × {normal,hover}, comparing the reference resolver, the compiled CSS evaluated in a real browser (Playwright, computed styles), the PHP compiler and the editor canvas.
 - Fixtures from the owner example plus: class vs element origin, two classes (order), narrower-breakpoint wins, token mode values, `auto` with system dark/light and with manual override, JS disabled, duplicate-rule rejection, byte-stable output.
 - Specificity assertion: every generated selector is (0,1,0).

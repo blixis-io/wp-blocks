@@ -25,7 +25,8 @@ Decision record: [ADR 0007](../architecture/adrs/0007-free-plus-pro-allocation-t
 ## Entitlement and lifecycle invariants
 
 - A premium element may be created or edited only when required add-on and authorized feature are active; enforce server-side.
-- Rendering contracts must not depend on a temporary license API response for each public request.
+- Rendering contracts must not depend on a temporary license API response for each public request. Premium output follows the fallback classes (static / retained / unavailable) in ADR 0009 §3.
+- Pro is a superset tier and declares Plus as a dependency (ADR 0009).
 - Define and document continuation semantics after expiry, deactivation or downgrade; never erase JSON or silently replace premium elements.
 - Free core includes all shared rendering primitives needed to avoid a white screen when premium editor controls are absent, subject to an approved portability ADR.
 - Avoid artificial limitations in code hosted on WordPress.org. Read the latest directory guidelines before submission.

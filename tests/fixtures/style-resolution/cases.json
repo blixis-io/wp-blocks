@@ -1,0 +1,191 @@
+{
+  "$comment": "Reference fixtures for ADR 0005 (BWB-102). Values are the expected winning `color` for each context. Derived by hand from the ADR and checked by verify.py against two independent evaluators (lexicographic key and simulated cascade layers).",
+  "breakpoints": ["base", "tablet", "mobile"],
+  "viewports": { "desktop": ["base"], "tablet": ["base", "tablet"], "mobile": ["base", "tablet", "mobile"] },
+  "cases": [
+    {
+      "id": "owner-example",
+      "description": "Owner decision 2026-10-14: base black, mobile gray, dark white, dark+mobile light gray.",
+      "rules": [
+        { "origin": "element", "value": "black" },
+        { "origin": "element", "breakpoint": "mobile", "value": "gray" },
+        { "origin": "element", "mode": "dark", "value": "white" },
+        { "origin": "element", "mode": "dark", "breakpoint": "mobile", "value": "lightgray" }
+      ],
+      "expect": [
+        { "mode": "light", "viewport": "desktop", "value": "black" },
+        { "mode": "light", "viewport": "tablet", "value": "black" },
+        { "mode": "light", "viewport": "mobile", "value": "gray" },
+        { "mode": "dark", "viewport": "desktop", "value": "white" },
+        { "mode": "dark", "viewport": "tablet", "value": "white" },
+        { "mode": "dark", "viewport": "mobile", "value": "lightgray" }
+      ]
+    },
+    {
+      "id": "owner-example-without-combined",
+      "description": "Without the dark+mobile rule, dark mobile resolves to white (dark beats mobile).",
+      "rules": [
+        { "origin": "element", "value": "black" },
+        { "origin": "element", "breakpoint": "mobile", "value": "gray" },
+        { "origin": "element", "mode": "dark", "value": "white" }
+      ],
+      "expect": [
+        { "mode": "light", "viewport": "mobile", "value": "gray" },
+        { "mode": "dark", "viewport": "mobile", "value": "white" },
+        { "mode": "dark", "viewport": "desktop", "value": "white" }
+      ]
+    },
+    {
+      "id": "narrower-breakpoint-wins",
+      "description": "Phone matches tablet and mobile; the narrower breakpoint wins. Tablet width ignores mobile.",
+      "rules": [
+        { "origin": "element", "value": "black" },
+        { "origin": "element", "breakpoint": "tablet", "value": "blue" },
+        { "origin": "element", "breakpoint": "mobile", "value": "green" }
+      ],
+      "expect": [
+        { "mode": "light", "viewport": "desktop", "value": "black" },
+        { "mode": "light", "viewport": "tablet", "value": "blue" },
+        { "mode": "light", "viewport": "mobile", "value": "green" }
+      ]
+    },
+    {
+      "id": "mode-breakpoint-narrower-wins",
+      "description": "Within the mode+breakpoint layer the narrower breakpoint also wins.",
+      "rules": [
+        { "origin": "element", "mode": "dark", "breakpoint": "tablet", "value": "navy" },
+        { "origin": "element", "mode": "dark", "breakpoint": "mobile", "value": "teal" },
+        { "origin": "element", "value": "black" }
+      ],
+      "expect": [
+        { "mode": "dark", "viewport": "tablet", "value": "navy" },
+        { "mode": "dark", "viewport": "mobile", "value": "teal" },
+        { "mode": "light", "viewport": "mobile", "value": "black" }
+      ]
+    },
+    {
+      "id": "element-beats-class-dark",
+      "description": "Origin outranks layer: an element base value beats a class dark+mobile value.",
+      "rules": [
+        { "origin": "class", "classOrder": 1, "mode": "dark", "breakpoint": "mobile", "value": "classdarkmobile" },
+        { "origin": "element", "value": "elementbase" }
+      ],
+      "expect": [
+        { "mode": "dark", "viewport": "mobile", "value": "elementbase" },
+        { "mode": "light", "viewport": "desktop", "value": "elementbase" }
+      ]
+    },
+    {
+      "id": "class-beats-token",
+      "description": "Class origin beats token origin regardless of layer.",
+      "rules": [
+        { "origin": "token", "mode": "dark", "breakpoint": "mobile", "value": "tokendarkmobile" },
+        { "origin": "class", "classOrder": 1, "value": "classbase" }
+      ],
+      "expect": [
+        { "mode": "dark", "viewport": "mobile", "value": "classbase" }
+      ]
+    },
+    {
+      "id": "later-class-wins-by-global-order",
+      "description": "Two classes: precedence is the site-wide class list position, not per-element classIds order.",
+      "rules": [
+        { "origin": "class", "classOrder": 1, "value": "first" },
+        { "origin": "class", "classOrder": 2, "value": "second" }
+      ],
+      "expect": [ { "mode": "light", "viewport": "desktop", "value": "second" } ]
+    },
+    {
+      "id": "class-state-vs-later-class-base",
+      "description": "Regression for review blocker 1: earlier class hover beats later class base when hovered (state before class order).",
+      "rules": [
+        { "origin": "class", "classOrder": 1, "state": "hover", "value": "red" },
+        { "origin": "class", "classOrder": 2, "value": "blue" }
+      ],
+      "expect": [
+        { "mode": "light", "viewport": "desktop", "states": [], "value": "blue" },
+        { "mode": "light", "viewport": "desktop", "states": ["hover"], "value": "red" }
+      ]
+    },
+    {
+      "id": "state-beats-layer",
+      "description": "State outranks layer: element hover (base layer) beats element dark+mobile when hovered.",
+      "rules": [
+        { "origin": "element", "mode": "dark", "breakpoint": "mobile", "value": "lightgray" },
+        { "origin": "element", "state": "hover", "value": "orange" }
+      ],
+      "expect": [
+        { "mode": "dark", "viewport": "mobile", "states": [], "value": "lightgray" },
+        { "mode": "dark", "viewport": "mobile", "states": ["hover"], "value": "orange" }
+      ]
+    },
+    {
+      "id": "dark-mobile-hover-most-specific",
+      "description": "An explicit dark+mobile+hover rule beats a plain hover rule.",
+      "rules": [
+        { "origin": "element", "state": "hover", "value": "orange" },
+        { "origin": "element", "state": "hover", "mode": "dark", "breakpoint": "mobile", "value": "gold" }
+      ],
+      "expect": [
+        { "mode": "dark", "viewport": "mobile", "states": ["hover"], "value": "gold" },
+        { "mode": "light", "viewport": "mobile", "states": ["hover"], "value": "orange" }
+      ]
+    },
+    {
+      "id": "state-order",
+      "description": "Fixed state order: hover < focus < focus-visible < active.",
+      "rules": [
+        { "origin": "element", "state": "hover", "value": "h" },
+        { "origin": "element", "state": "focus", "value": "f" },
+        { "origin": "element", "state": "focus-visible", "value": "fv" },
+        { "origin": "element", "state": "active", "value": "a" }
+      ],
+      "expect": [
+        { "mode": "light", "viewport": "desktop", "states": ["hover", "focus"], "value": "f" },
+        { "mode": "light", "viewport": "desktop", "states": ["hover", "focus-visible"], "value": "fv" },
+        { "mode": "light", "viewport": "desktop", "states": ["hover", "active"], "value": "a" }
+      ]
+    },
+    {
+      "id": "no-matching-rule",
+      "description": "A property with no matching rule resolves to nothing (inherits from CSS).",
+      "rules": [ { "origin": "element", "mode": "dark", "value": "white" } ],
+      "expect": [ { "mode": "light", "viewport": "desktop", "value": null } ]
+    },
+    {
+      "id": "light-mode-override",
+      "description": "Light-specific override beats base in light only.",
+      "rules": [
+        { "origin": "element", "value": "black" },
+        { "origin": "element", "mode": "light", "value": "ivory" }
+      ],
+      "expect": [
+        { "mode": "light", "viewport": "desktop", "value": "ivory" },
+        { "mode": "dark", "viewport": "desktop", "value": "black" }
+      ]
+    }
+  ],
+  "invalid": [
+    {
+      "id": "duplicate-rule",
+      "description": "Two rules with an identical key are a validation error (no source-order tiebreak).",
+      "rules": [
+        { "origin": "element", "mode": "dark", "value": "white" },
+        { "origin": "element", "mode": "dark", "value": "black" }
+      ],
+      "error": "duplicate-rule"
+    }
+  ],
+  "autoMode": {
+    "$comment": "ADR 0005 §3: html[data-theme] absent or 'auto' follows the system preference. Expected effective mode per (dataTheme, systemPreference), with JavaScript disabled.",
+    "cases": [
+      { "dataTheme": "light", "system": "dark", "effective": "light" },
+      { "dataTheme": "dark", "system": "light", "effective": "dark" },
+      { "dataTheme": "auto", "system": "dark", "effective": "dark" },
+      { "dataTheme": "auto", "system": "light", "effective": "light" },
+      { "dataTheme": "auto", "system": "no-preference", "effective": "light" },
+      { "dataTheme": null, "system": "dark", "effective": "dark" },
+      { "dataTheme": null, "system": "light", "effective": "light" }
+    ]
+  }
+}
