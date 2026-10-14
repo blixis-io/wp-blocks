@@ -49,6 +49,21 @@ Rules are sparse: a rule sets only the properties it changes, and every other pr
 
 `hover`, `focus`, `focus-visible` and `active` are selected through `:where()` so they add no specificity, and a state rule only matches while the state is active. A state outranks the layer, so hover beats the non-hover value even when the non-hover value comes from a `dark + mobile` rule; to change the hover colour in dark mobile, add a `dark + mobile + hover` rule. Touch devices and the relative order of `focus-visible` and `hover` are an open question in ADR 0005.
 
+## The precedence matrix (BWB-107)
+
+`tests/fixtures/compile/compile-style-matrix.fixture.json` holds the whole matrix in one document, so one compile and one golden stylesheet (`compile-style-matrix.golden.css`, 36 elements) pin the output byte for byte for the PHP twin:
+
+- **Group M:** every presence combination of the four rule layers (base, mobile, dark, dark+mobile): 2^4 = 16 elements with distinct colours per layer.
+- **Group S:** the same 16 combinations plus a base hover rule: a state beats every layer.
+- **Group C:** two global classes against element rules: precedence follows the class list, not `classIds` order; a layer beats the base layer inside one origin; an element rule beats every class rule.
+- **Group T:** tablet (up to 1024px) and mobile (up to 640px) rules together, with dark+tablet, dark+mobile and hover rules: nested conditions, the narrower breakpoint wins, dark+breakpoint beats light breakpoints, a hover rule beats non-hover rules and does not match above 1024px.
+
+`tests/fixtures/src/style-matrix.test.ts` evaluates the stylesheet for both modes, the three ways a mode is selected (explicit `data-theme`, `auto` with the system preference, no attribute), widths 1440, 1025, 1024, 900, 641, 640 and 400 (1024 is the last tablet width and 640 the last mobile width) and with and without hover, and compares with expectations written out by hand in the test (dark+mobile > dark > mobile > base; state first; origin first for classes; narrower breakpoint first), not with the library's resolver. Reordering the elements, repeating the compile or reordering object keys gives byte-identical CSS. `tests/fixtures/style-matrix.generate.py` regenerates the fixture (class names computed with `hashlib`); the golden stylesheet is produced by the compiler and its meaning is checked by the hand-written expectations.
+
+**Mutation check** (done by hand with each single edit in `packages/style-engine/src/compile.ts`, reverted afterwards; `pnpm --filter @blixis/wp-fixtures test` reports failures in every case): swapping the `bp` and `mode` layer kinds (`const k = mode ? (bp ? 3 : 1) : bp ? 2 : 0`) fails 13 tests; swapping class and element origins in `layerIndex` fails 15; using `(prefers-color-scheme:light)` for the dark `auto` query fails 45; reversing the breakpoint sort (`b.bp - a.bp`) fails 5; dropping `:where()` from the state suffix fails 43. Not covered by this matrix: focus, focus-visible and active order (reference cases and the state compile golden), tokens (their own fixtures), and the order of class or token inputs (class-list order is semantic).
+
+Browser computed styles for the same matrix are tracked in #147.
+
 ## Tests
 
 `resolve.test.ts` runs every case of `tests/fixtures/style-resolution/cases.json` (token origins included, which the compiler tests skip), the invalid-combination list, order-independence on seeded random rule sets, the owner example per inspector target, class precedence and breakpoint registries. The compiler tests use the same resolver as their oracle in 6,000 random contexts.
