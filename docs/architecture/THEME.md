@@ -1,6 +1,6 @@
 # The Blixis theme (BWB-029)
 
-`wordpress/theme` is a classic (PHP template) theme, as decided in ADR 0002. It renders posts and pages with plain templates and leaves page design to the Builder plugin, which replaces `the_content()` output for pages built with it. The theme stores no documents. BWB-031 adds `theme.json` and CSS design variables; BWB-032 adds preset seed data. Later issues add the setup wizard (BWB-033/034), design-system persistence (BWB-035), the Font Library (BWB-036), and the child-theme and accessibility audits (BWB-037/038).
+`wordpress/theme` is a classic (PHP template) theme, as decided in ADR 0002. It renders posts and pages with plain templates and leaves page design to the Builder plugin, which replaces `the_content()` output for pages built with it. The theme stores no documents. BWB-031 adds `theme.json` and CSS design variables; BWB-032 adds preset seed data. BWB-033 adds the setup entry point; BWB-034 adds the wizard interface. Later issues add design-system persistence (BWB-035), the Font Library (BWB-036), and the child-theme and accessibility audits (BWB-037/038).
 The BWB-032 Ocean, Forest, Sunset and Minimal preset files live in `design/presets/`. They are validated light/dark token seeds; selecting one copies its tokens into the site's canonical setting. The `custom` choice starts from `design/default-tokens.json` without a preset file. New sites default to website appearance `auto`, independent of editor chrome and locale. Setup and persistence remain BWB-033 through BWB-035.
 
 ## Files
@@ -13,6 +13,7 @@ The BWB-032 Ocean, Forest, Sunset and Minimal preset files live in `design/prese
 | `assets/css/theme.src.css`, `assets/css/theme.css` | Tailwind v4 source and minified output. Theme rules and Tailwind imports sit in `blx.theme`; the source disables automatic scanning and explicitly scans theme PHP templates. The generated CSS is committed for the mounted development theme and packaged for production. |
 | `functions.php`, `src/Setup.php` | Bootstrap and hooks: theme support (`title-tag`, `post-thumbnails`, `responsive-embeds`, `automatic-feed-links`, HTML5 markup), the text domain, the `primary` menu, and the header, token and theme stylesheets in dependency order, versioned by the theme version. No output at load time. |
 | `src/Compat.php` | The compatibility declaration (below). |
+| `src/SetupState.php`, `src/SetupAdmin.php` | Site setup status and per-user resume step; the Appearance page, notice, and POST actions. |
 | `header.php`, `footer.php` | Document start and end: `language_attributes()`, charset and viewport, `wp_head()`, `wp_body_open()`, a skip link, banner with site name and the primary navigation (labelled `<nav>`), the `<main id="content" tabindex="-1">` landmark, footer and `wp_footer()`. |
 | `index.php`, `single.php`, `page.php`, `archive.php`, `search.php`, `404.php`, `comments.php` | The template hierarchy needed by a classic theme, using `template-parts/content*.php`. Every output is escaped; strings are translatable. |
 | `readme.txt` | WordPress.org style readme with the GPL statement. |
@@ -21,6 +22,14 @@ The BWB-032 Ocean, Forest, Sunset and Minimal preset files live in `design/prese
 ## The compatibility declaration
 
 A theme is Blixis-compatible when its `style.css` header, or its parent's, contains `Blixis-Compat: <integer>` (ADR 0002). `Blixis\Theme\Compat::from_value()` defines the accepted value: a positive integer in plain digits, 1 to 9999, no sign, no leading zero, no spaces inside; anything else counts as "not declared". `Compat::declared($directory)` reads a theme directory with `get_file_data()` and `Compat::active()` answers for the active theme, falling back to the parent for a child theme without its own header. This theme declares 1 (`Compat::CURRENT`). The plugin's `ThemeCompat` service (BWB-047) implements the same parsing rule and uses the integer to decide whether editing is allowed.
+
+## Setup entry point
+
+`after_switch_theme` adds the per-site `blixis_setup` option only if absent; it is never replaced on reactivation, including when its data is invalid or from a newer schema. The option has autoload disabled and stores `{version: 1, status: 'not_started'|'in_progress'|'completed'|'dismissed', updated_at: UTC RFC3339 string, preset?: lowercase slug}`. `SetupState::normalize()` validates reads without WordPress calls; invalid data disables entry actions safely. BWB-034 owns wizard completion and preset application.
+
+Each user's wizard position is separate in user meta `blixis_setup_ui` as `{resume_step: 1..6}`. A missing or invalid value reads as step 1. It never determines the site's setup status. Site option APIs operate in the current site's context on multisite.
+
+Administrators with `edit_theme_options` see a non-blocking notice on admin screens while setup is `not_started` or `in_progress`. Appearance → Blixis setup (`blixis-setup`) displays the current status and a placeholder until BWB-034. Start and Dismiss are `admin-post.php` POST forms protected by `wp_nonce_field()` and `check_admin_referer()`; handlers enforce the capability and redirect through `wp_safe_redirect()`. Output is escaped. Requests without the capability or valid nonce return 403. No public frontend route or forced redirect is involved.
 
 ## Development and tests
 
@@ -33,4 +42,4 @@ A theme is Blixis-compatible when its `style.css` header, or its parent's, conta
 
 ## Not here yet
 
-`screenshot.png` (required for WordPress.org; with the design work), presets and the setup entry point (see the issues above), translation files (`languages/`, BWB-071) and the WordPress.org theme-review checks (release phase).
+`screenshot.png` (required for WordPress.org; with the design work), the setup wizard UI (BWB-034), translation files (`languages/`, BWB-071) and the WordPress.org theme-review checks (release phase).
