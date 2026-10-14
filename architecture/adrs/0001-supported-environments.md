@@ -1,6 +1,6 @@
 # ADR 0001: Supported environments
 
-- Status: Reviewed
+- Status: Accepted (owner delegated the decision to the orchestrator, 2026-10-14)
 - Date: 2026-10-14
 - Issues: #4 (BWB-004)
 - Deciders: owner (approves floors), orchestrator
@@ -41,7 +41,7 @@ The blueprint proposed WordPress 7.0+ because of the Font Library, and left PHP/
 Raise or lower floors by superseding ADR, following the one-release notice rule above.
 
 ## Open questions
-- Owner: accept PHP 8.2 floor (vs 8.3)?
+- Decided 2026-10-14 (owner delegation): PHP 8.2 floor stays, revisit when 8.2 reaches end of life on 2026-12-31 (expected move to 8.3 per the one-release-notice rule).
 - Verify WordPress 7.0 stable release date and current stable version against wordpress.org before release; search results disagreed on whether 7.1 exists.
 
 ## Review log

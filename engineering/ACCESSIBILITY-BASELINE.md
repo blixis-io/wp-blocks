@@ -1,6 +1,6 @@
 # Accessibility and Performance Baseline (P0)
 
-Status: Draft for review · Issue: #10 (BWB-010) · Standards: WCAG 2.2 Level AA (PRD NFR-003), ARIA Authoring Practices for composite widgets.
+Status: Accepted (2026-10-14); performance numbers are set from measurements in BWB-069 · Issue: #10 (BWB-010) · Standards: WCAG 2.2 Level AA (PRD NFR-003), ARIA Authoring Practices for composite widgets.
 
 ## 1. Scope
 - **Editor** (application chrome): tree, inspector, canvas controls, dialogs, wizard, toolbars.

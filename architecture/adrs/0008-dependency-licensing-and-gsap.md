@@ -1,6 +1,6 @@
 # ADR 0008: Dependency licensing and GSAP
 
-- Status: Reviewed
+- Status: Accepted (owner delegated the decision to the orchestrator, 2026-10-14)
 - Date: 2026-10-14
 - Issues: #8 (BWB-008), #87, #88 (Pro animation)
 - Deciders: owner (legal), orchestrator
@@ -35,7 +35,7 @@ Dependency denylist test in CI (fails if `gsap` or `@gsap/*` resolves in any loc
 Superseding ADR with written consent.
 
 ## Open questions
-- Owner: commission legal review or request Webflow consent if advanced animation becomes a differentiator.
+- Decided 2026-10-14 (owner delegation): GSAP stays excluded and no legal review or consent request is started now. Reopening requires a superseding ADR with written consent or counsel opinion (see Decision 3). Counsel review of the overall GPL plus paid-services model remains an owner action before launch (ADR 0009).
 - Confirm compatibility of each planned dependency licence with GPL distribution (done by the inventory job).
 
 ## Review log

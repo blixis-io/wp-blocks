@@ -1,6 +1,6 @@
 # Threat Model (P0 baseline)
 
-Status: Draft for review · Issue: #10 (BWB-010) · Companion: [ACCESSIBILITY-BASELINE.md](ACCESSIBILITY-BASELINE.md), [SECURITY.md](SECURITY.md), ADRs 0003–0006, 0009.
+Status: Accepted (2026-10-14); updated whenever an ADR changes a boundary · Issue: #10 (BWB-010) · Companion: [ACCESSIBILITY-BASELINE.md](ACCESSIBILITY-BASELINE.md), [SECURITY.md](SECURITY.md), ADRs 0003–0006, 0009.
 Scope: Blixis Theme, Builder (Free), Plus/Pro add-ons, editor, REST API, rendering, update/licence channels. Not a penetration test: it lists what must be designed and tested; findings feed BWB-048 and BWB-070.
 
 ## 1. Assets
