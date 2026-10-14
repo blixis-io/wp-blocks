@@ -16,7 +16,7 @@
 - Safe dynamic data providers with query caps; prepared SQL, no arbitrary PHP execution; cache appropriately.
 - Content Security Policy where feasible, no unsafe remote scripts, strict dependency pinning and secret scanning.
 - Redact tokens/PII from logs, limit retention, opt-in analytics with disclosure, GDPR review before analytics.
-- Security advisories policy, severity SLA and responsible disclosure address selected before public launch.
+- Security advisories policy, severity SLA and responsible disclosure address selected before public launch. Interim channel (owner decision 2026-10-14): private email to the repository owner, published in `.github/SECURITY.md`; replace it with a dedicated address and GitHub private vulnerability reporting before the first public release.
 
 ## Dependency and license gates
 
