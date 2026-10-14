@@ -487,6 +487,116 @@ async function smoke() {
           body: doc('author'),
         });
         check(authorWrite.status === 403, 'an author cannot write another user page');
+        // Preview API (BWB-042): working vs request source, auth, caps and no leaking of other posts or the published state.
+        const previewUrl = (id) => `${base}/?rest_route=/blixis/v1/documents/${id}/preview`;
+        const preview = async (id, { cookie, nonce, body, contentType = 'application/json' } = {}) =>
+          wrap(
+            await http(previewUrl(id), {
+              method: 'POST',
+              headers: {
+                ...(cookie ? { cookie } : {}),
+                ...(nonce ? { 'x-wp-nonce': nonce } : {}),
+                'content-type': contentType,
+              },
+              body,
+            }),
+          );
+        const node = (id, type, children = []) => ({ id, type, props: {}, children });
+        const treeDoc = (children) => ({ schemaVersion: 1, layoutRevision: 1, root: children });
+        const anonPreview = await preview(restPost, { body: '{}' });
+        check(anonPreview.status === 401, 'an anonymous preview is 401');
+        const sent = await preview(restPost, {
+          cookie: adminCookie,
+          nonce: adminNonce,
+          body: JSON.stringify({
+            mode: 'dark',
+            document: treeDoc([node('a1', 'blixis/section', [node('a2', 'blixis/heading')])]),
+          }),
+        });
+        const sentBody = await json(sent);
+        check(
+          sent.status === 200 && sentBody.source === 'request' && sentBody.mode === 'dark',
+          'a preview of a sent document is 200 and marked as request',
+        );
+        check(
+          typeof sentBody.html === 'string' &&
+            sentBody.html.includes('data-blx-id="a2"') &&
+            !/<script|onerror=/i.test(sentBody.html),
+          'preview HTML is a structural fragment without scripts',
+        );
+        check((sent.headers.get('cache-control') ?? '').includes('no-store'), 'preview responses are not cacheable');
+        const currentLayout = await json(await api(layout, { cookie: adminCookie, nonce: adminNonce }));
+        const saved = await api(layout, {
+          cookie: adminCookie,
+          nonce: adminNonce,
+          method: 'PUT',
+          ifMatch: `"${currentLayout.revision}"`,
+          body: JSON.stringify({ ...treeDoc([node('w1', 'blixis/section')]), note: 'working' }),
+        });
+        check(saved.status === 200, 'a layout with a tree can be saved for the working preview');
+        const working = await preview(restPost, { cookie: adminCookie, nonce: adminNonce, body: '{}' });
+        const workingBody = await json(working);
+        check(
+          working.status === 200 && workingBody.source === 'working',
+          'a preview without a document uses the working layout',
+        );
+        const hostile = await preview(restPost, {
+          cookie: adminCookie,
+          nonce: adminNonce,
+          body: JSON.stringify({ document: treeDoc([node('x" onmouseover="alert(1)', '<script>alert(1)</script>')]) }),
+        });
+        const hostileBody = await json(hostile);
+        check(
+          hostile.status === 200 && !/<script|onmouseover=/i.test(hostileBody.html ?? ''),
+          'hostile ids and types never reach the preview HTML as markup',
+        );
+        const dup = await preview(restPost, {
+          cookie: adminCookie,
+          nonce: adminNonce,
+          body: JSON.stringify({ document: treeDoc([node('d', 't'), node('d', 't')]) }),
+        });
+        check(dup.status === 422, 'duplicate element ids are 422');
+        let deep = node('n0', 't');
+        for (let i = 1; i < 40; i += 1) deep = node(`n${i}`, 't', [deep]);
+        const tooDeep = await preview(restPost, {
+          cookie: adminCookie,
+          nonce: adminNonce,
+          body: JSON.stringify({ document: treeDoc([deep]) }),
+        });
+        check(tooDeep.status === 422, 'a tree deeper than 32 is 422');
+        const badMode = await preview(restPost, {
+          cookie: adminCookie,
+          nonce: adminNonce,
+          body: JSON.stringify({ mode: 'sepia' }),
+        });
+        check(badMode.status === 400, 'an unknown mode is 400');
+        const badPreviewLocale = await preview(restPost, {
+          cookie: adminCookie,
+          nonce: adminNonce,
+          body: JSON.stringify({ locale: 'nl;x' }),
+        });
+        check(badPreviewLocale.status === 400, 'an invalid locale is 400');
+        const bigPreview = await preview(restPost, {
+          cookie: adminCookie,
+          nonce: adminNonce,
+          body: JSON.stringify({ document: { schemaVersion: 1, layoutRevision: 1, pad: 'a'.repeat(2200000) } }),
+        });
+        check(bigPreview.status === 413, 'an oversized preview body is 413');
+        const previewForbidden = await Promise.all([
+          preview(restPost, { cookie: subscriberCookie, nonce: subscriberNonce, body: '{}' }),
+          preview(restPost, { cookie: authorCookie, nonce: authorNonce, body: '{}' }),
+          preview('99999999', { cookie: adminCookie, nonce: adminNonce, body: '{}' }),
+        ]);
+        check(
+          previewForbidden.every((r) => r.status === 403),
+          'preview is 403 for a subscriber, an author of another page and a missing post',
+        );
+        command(
+          'eval',
+          `update_post_meta( ${restPost}, '_blixis_published', '{"schemaVersion":1,"pointerRevision":1,"publishedLayoutRevision":7}' );`,
+        );
+        const afterPointer = await preview(restPost, { cookie: adminCookie, nonce: adminNonce, body: '{}' });
+        check(afterPointer.status === 200, 'a pointer to a missing snapshot does not affect the editor preview');
         command('post', 'delete', restPost, '--force');
       }
       const adminThemes = await http(`${base}/wp-admin/themes.php`, {

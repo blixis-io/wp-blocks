@@ -38,7 +38,7 @@ This table remains a superseded sketch. The implemented BWB-041 layout and local
 | `GET /status` | compatible theme, feature flags, editor config | `edit_posts` equivalent, nonce |
 | `GET, PUT /documents/{post_id}/layout` | **Implemented BWB-041** working layout stream; [contract](WORDPRESS.md#document-rest-api) | `edit_post(post_id)`; cookie nonce on PUT |
 | `GET, PUT /documents/{post_id}/content/{locale}` | **Implemented BWB-041** locale stream; [contract](WORDPRESS.md#document-rest-api) | `edit_post(post_id)`; cookie nonce on PUT |
-| `POST /documents/{postId}/preview` | sanitized preview markup and CSS | `edit_post(postId)` + nonce |
+| `POST /documents/{post_id}/preview` | **Implemented BWB-042** safe structural canvas fragment; [contract](CANVAS-CONTRACT.md) and [errors](WORDPRESS.md#document-rest-api) | `edit_post(post_id)`; cookie nonce via WordPress core |
 | `GET /design-system` | effective tokens, fonts and presets | authorized editors |
 | `PUT /design-system` | persist global design tokens | `edit_theme_options` |
 | `GET /elements` | registry manifest, no executable PHP | authorized editors |

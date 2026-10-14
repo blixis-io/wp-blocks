@@ -26,6 +26,7 @@ BWB-041 registers these working-stream routes under `blixis/v1`:
 |---|---|---|
 | `GET`, `PUT` | `/documents/{post_id}/layout` | Shared layout stream |
 | `GET`, `PUT` | `/documents/{post_id}/content/{locale}` | One locale content stream |
+| `POST` | `/documents/{post_id}/preview` | Non-cacheable structural canvas fragment from request document or working streams |
 
 Every route checks authentication, an existing post of a type in `MetaRegistration::post_types()`, and `edit_post` for that exact post. The post must be an opted-in public REST type. For THREAT-MODEL T2, missing posts, excluded post types, and insufficient capability all return the **same 403** `blixis_forbidden`, so the response does not reveal post existence. Anonymous requests return 401 `blixis_unauthenticated`. Per-locale capability checks are reserved for a later issue; `edit_post` is the current policy. Locale syntax follows `MetaKeys::is_valid_locale`.
 
@@ -35,17 +36,20 @@ PUT requires `Content-Type: application/json`, a JSON envelope object of at most
 
 | Status | Code | Cause |
 |---|---|---|
-| 400 | `blixis_invalid_post_id`, `blixis_invalid_locale`, `blixis_invalid_revision` | Invalid route argument or If-Match value; WordPress reports route arguments as `rest_invalid_param` with the `blixis_*` code under `data.details.<arg>.code` |
+| 400 | `blixis_invalid_post_id`, `blixis_invalid_locale`, `blixis_invalid_mode`, `blixis_invalid_revision` | Invalid route argument, preview locale/mode, or If-Match value; WordPress reports route arguments as `rest_invalid_param` with the `blixis_*` code under `data.details.<arg>.code` |
 | 401 | `blixis_unauthenticated` | No authenticated user |
 | 403 | `blixis_forbidden` | Post inaccessible, absent, or type excluded |
 | 403 | `rest_cookie_invalid_nonce` | WordPress core rejects cookie nonce |
 | 409 | `blixis_conflict` | CAS mismatch; error data has `currentRevision` and `expectedRevision` |
 | 413 | `blixis_too_large` | Body exceeds 2 MiB |
-| 422 | `blixis_invalid_document` | Invalid content type or envelope/validator rejection |
+| 422 | `blixis_invalid_document` | Invalid content type, envelope/validator rejection, or preview tree limit violation |
 | 428 | `blixis_precondition_required` | If-Match absent |
 | 500 | `blixis_storage_error` | Storage failure, with no exception details disclosed or logged |
+| 500 | `blixis_preview_failed` | Preview storage, renderer, sanitizer, or output cap failure, with no internal details disclosed |
 
 Plugin errors use `WP_Error` with stable codes and `data.status`. A real-WordPress smoke test must verify nonce behavior and route registration; the isolated PHPUnit suite tests the request policy and storage mapping.
+
+The [canvas contract](CANVAS-CONTRACT.md) specifies the preview request and response, iframe sandbox, size limits and renderer boundary. Preview shares the permission policy above. Its request body is JSON (2 MiB maximum) with optional `locale` (site locale by default), `mode` (`light` by default) and `document` (unsaved envelope). It never reads published pointers or snapshots. Preview-specific errors are 400 `blixis_invalid_locale` / `blixis_invalid_mode`, 413 `blixis_too_large`, 422 `blixis_invalid_document`, and generic 500 `blixis_preview_failed`; authentication errors and core nonce errors are as above. Successful responses carry `Cache-Control: private, no-store`.
 
 ## Theme first-run wizard
 

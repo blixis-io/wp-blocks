@@ -31,6 +31,16 @@ final class FakeDatabase implements Database {
 	 * @var bool
 	 */
 	public bool $fail_pointer_insert = false;
+	/** Keys read by the repository.
+	 *
+	 * @var list<string>
+	 */
+	public array $read_keys = [];
+	/** Exact post/key addresses read by the repository.
+	 *
+	 * @var list<array{int,string}>
+	 */
+	public array $read_addresses = [];
 
 	/**
 	 * Implement the storage contract.
@@ -40,6 +50,8 @@ final class FakeDatabase implements Database {
 	 * @return list<array{id:int,value:string}> Values.
 	 */
 	public function rows( int $post_id, string $key ): array {
+		$this->read_keys[]      = $key;
+		$this->read_addresses[] = [ $post_id, $key ];
 		return \array_slice( $this->data[ $post_id ][ $key ] ?? [], 0, 2 );
 	}
 
