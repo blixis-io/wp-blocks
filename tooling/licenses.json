@@ -1,0 +1,25 @@
+{
+  "$comment": "Licence policy (ADR 0008). 'distributed' lists SPDX ids acceptable for anything shipped in a Free artifact (GPL-compatible per the FSF list; Apache-2.0 is compatible with GPL-2.0-or-later and GPL-3.0). 'devOnly' lists ids acceptable only for tooling that is never distributed. Anything else, or a missing licence, fails CI until a recorded decision adds it here.",
+  "distributed": [
+    "MIT",
+    "ISC",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "Apache-2.0",
+    "0BSD",
+    "CC0-1.0",
+    "Unlicense",
+    "Zlib",
+    "GPL-2.0-or-later",
+    "GPL-3.0-or-later",
+    "LGPL-2.1-or-later",
+    "LGPL-3.0-or-later"
+  ],
+  "devOnly": {
+    "MPL-2.0": "axe-core (accessibility testing). Weak copyleft, file-level; review before any distribution.",
+    "Python-2.0": "argparse (transitive dev dependency of tooling).",
+    "CC-BY-4.0": "caniuse-lite (browser data used by tooling).",
+    "BlueOak-1.0.0": "minimatch (permissive licence, not on the FSF GPL-compatibility list; dev-only).",
+    "LGPL-3.0-or-later": "PHP_CodeSniffer standards (WPCS, PHPCSUtils): run in development and CI, never shipped."
+  }
+}

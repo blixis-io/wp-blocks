@@ -21,3 +21,19 @@ Release: human approval → verify changelog/versions, migration and license com
 ## Separation of concerns
 
 Do not deploy Plus/Pro source or credentials from public fork PR builds. Use environment protections and least-privilege tokens. Initial project provisioning requires separate permissions from regular CI.
+
+## Implemented pipeline (BWB-015)
+
+Workflow: `.github/workflows/ci.yml`, run on every pull request and on pushes to `main`.
+
+| Job | What it enforces |
+|---|---|
+| Commit and PR title policy (PRs only) | commitlint on every commit in the PR and on the PR title (squash merges use the title as the commit subject): Conventional Commits and the no-AI-attribution rule |
+| JavaScript | `pnpm check`: format, lint, typecheck, workspace boundaries, tooling tests; style-resolution fixtures (ADR 0005) |
+| PHP 8.2 / 8.3 / 8.5 | `composer validate --strict` and `composer run check` (PHPCS, PHPStan, PHPUnit) on the floor, the WordPress-recommended and the latest PHP (ADR 0001) |
+| Security | `pnpm audit` (high+), `composer audit`, licence policy (`tooling/check-licenses.mjs`, ADR 0008), GSAP/boundary check, gitleaks secret scan (pinned release, checksum-verified) |
+| CI | Aggregate status that fails unless every job above succeeded; this is the single check to require when branch protection becomes available (BWB-125) |
+
+Hardening: top-level `permissions: contents: read`, no secrets, `pull_request` (never `pull_request_target`), `persist-credentials: false`, every third-party action pinned to a full commit SHA (the repository also enforces SHA pinning), PR text passed through environment variables, concurrency cancellation for PR runs. Repository Actions settings: default workflow token is read-only and Actions cannot approve pull requests. Dependabot (`.github/dependabot.yml`) proposes weekly, cooldown-delayed updates for actions, npm and Composer.
+
+Not yet in the pipeline, on purpose: the WordPress matrix and integration smoke (needs the local WordPress environment, BWB-012), build and packaging (BWB-017), end-to-end and accessibility suites (BWB-058, BWB-066), nightly jobs. Each of those issues adds its job to this workflow rather than a parallel one. Until branch protection exists the rule is procedural: no merge while the CI check is red (`GITFLOW.md`).
