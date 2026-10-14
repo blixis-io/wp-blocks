@@ -41,16 +41,16 @@ describe('assertStrictJson', () => {
     }).not.toThrow();
   });
 
-  it('shares the nesting limit with PHP: 64 levels pass, 65 fail', () => {
-    expect(MAX_DEPTH).toBe(64);
+  it('shares the nesting limit with PHP: 128 levels pass, 129 fail', () => {
+    expect(MAX_DEPTH).toBe(128);
     expect(() => {
-      assertStrictJson('['.repeat(64) + ']'.repeat(64));
+      assertStrictJson('['.repeat(128) + ']'.repeat(128));
     }).not.toThrow();
     expect(() => {
-      assertStrictJson('['.repeat(65) + ']'.repeat(65));
+      assertStrictJson('['.repeat(129) + ']'.repeat(129));
     }).toThrow(/nesting/);
     expect(() => {
-      assertStrictJson('{"a":'.repeat(64) + '1' + '}'.repeat(64));
+      assertStrictJson('{"a":'.repeat(128) + '1' + '}'.repeat(128));
     }).not.toThrow();
   });
 });

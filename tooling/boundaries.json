@@ -96,7 +96,7 @@
     },
     "tests/fixtures": {
       "name": "@blixis/wp-fixtures",
-      "allow": [],
+      "allow": ["core"],
       "forbidExternal": [],
       "description": "Deterministic fixtures shared by TS and PHP tests."
     },
