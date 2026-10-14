@@ -85,7 +85,7 @@ final class FixturesTest extends TestCase {
 		$all      = [];
 		$iterator = new \RecursiveIteratorIterator( new \RecursiveDirectoryIterator( dirname( __DIR__, 3 ) . '/tests/fixtures', \FilesystemIterator::SKIP_DOTS ) );
 		foreach ( $iterator as $file ) {
-			if ( $file instanceof \SplFileInfo && str_ends_with( $file->getFilename(), '.fixture.json' ) && ! str_contains( $file->getPathname(), 'node_modules' ) ) {
+			if ( $file instanceof \SplFileInfo && str_ends_with( $file->getFilename(), '.fixture.json' ) && ! str_contains( $file->getPathname(), 'node_modules' ) && ! str_contains( $file->getPathname(), '/tests/fixtures/render/' ) ) {
 				$all[] = $file->getPathname();
 			}
 		}

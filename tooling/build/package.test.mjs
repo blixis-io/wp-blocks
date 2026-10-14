@@ -50,6 +50,7 @@ function repo(extra = (r) => r) {
   put('wordpress/theme/node_modules/x/index.js', 'x');
   put('wordpress/plugin/blixis-builder.php', '<?php\n/**\n * Plugin Name: Blixis Builder\n * Version: 0.1.0\n */\n');
   put('wordpress/plugin/bin/tool.php', '<?php // cli\n', 0o755);
+  put('wordpress/plugin/data/core-elements.json', '{"apiVersion":1,"elements":[]}\n');
   put('wordpress/plugin/package.json', JSON.stringify({ name: '@blixis/wp-plugin', version: '0.1.0' }));
   extra({ root, put });
   return root;
@@ -112,12 +113,12 @@ test('entries are sorted, timestamps fixed to the DOS epoch, permissions normali
   const entries = listZip(join(root, 'dist', 'blixis-builder-0.1.0.zip'));
   assert.deepEqual(
     entries.map((e) => e[0]),
-    ['blixis-builder/bin/tool.php', 'blixis-builder/blixis-builder.php'],
+    ['blixis-builder/bin/tool.php', 'blixis-builder/blixis-builder.php', 'blixis-builder/data/core-elements.json'],
   );
   for (const [, date] of entries) assert.deepEqual(date, [1980, 1, 1, 0, 0, 0]);
   assert.deepEqual(
     entries.map((e) => e[2]),
-    [0o755, 0o644],
+    [0o755, 0o644, 0o644],
   );
   assert.ok(
     entries.every((e) => e[3] === 0x800),

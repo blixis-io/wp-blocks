@@ -126,7 +126,7 @@ final class Fixtures {
 		$files    = [];
 		$iterator = new \RecursiveIteratorIterator( new \RecursiveDirectoryIterator( $dir, \FilesystemIterator::SKIP_DOTS ) );
 		foreach ( $iterator as $file ) {
-			if ( $file instanceof \SplFileInfo && str_ends_with( $file->getFilename(), '.fixture.json' ) && ! str_contains( $file->getPathname(), 'node_modules' ) ) {
+			if ( $file instanceof \SplFileInfo && str_ends_with( $file->getFilename(), '.fixture.json' ) && ! str_contains( $file->getPathname(), 'node_modules' ) && ! str_contains( $file->getPathname(), '/tests/fixtures/render/' ) ) {
 				$files[] = $file->getPathname();
 			}
 		}

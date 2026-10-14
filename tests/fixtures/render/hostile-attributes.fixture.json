@@ -1,0 +1,56 @@
+{
+  "id": "hostile-attributes",
+  "description": "Alt and label markup are escaped, unsafe links use the registry default, and decorative media has empty alt.",
+  "registry": "core",
+  "locale": "en_US",
+  "mode": "light",
+  "document": {
+    "defaultLocale": "en_US",
+    "root": [
+      {
+        "id": "img",
+        "type": "blixis/image",
+        "props": {
+          "attachmentId": 7
+        },
+        "children": []
+      },
+      {
+        "id": "dec",
+        "type": "blixis/image",
+        "props": {
+          "attachmentId": 7,
+          "decorative": true
+        },
+        "children": []
+      },
+      {
+        "id": "btn",
+        "type": "blixis/button",
+        "props": {},
+        "children": []
+      }
+    ],
+    "translations": {
+      "en_US": {
+        "img": {
+          "values": {
+            "alt": "<img onerror=x>"
+          }
+        },
+        "dec": {
+          "values": {
+            "alt": "Ignored"
+          }
+        },
+        "btn": {
+          "values": {
+            "label": "<Go>",
+            "href": "javascript:alert(1)"
+          }
+        }
+      }
+    }
+  },
+  "expectedHtml": "<img data-blx-id=\"img\" data-blx-type=\"blixis/image\" src=\"https://example.test/image.jpg\" width=\"640\" height=\"480\" alt=\"&lt;img onerror=x&gt;\" loading=\"lazy\" decoding=\"async\"><img data-blx-id=\"dec\" data-blx-type=\"blixis/image\" src=\"https://example.test/image.jpg\" width=\"640\" height=\"480\" alt=\"\" role=\"presentation\" loading=\"lazy\" decoding=\"async\"><a data-blx-id=\"btn\" data-blx-type=\"blixis/button\" class=\"blx-button blx-button--solid\" href=\"#\">&lt;Go&gt;</a>"
+}

@@ -9,6 +9,7 @@ declare(strict_types=1);
 namespace Blixis\Builder\Rest;
 
 use Blixis\Builder\Autoloader;
+use Blixis\Builder\Preview\CoreElementPreviewRenderer;
 use Blixis\Builder\Preview\PreviewDocument;
 use Blixis\Builder\Preview\PreviewOutput;
 use Blixis\Builder\Preview\PreviewRenderer;
@@ -42,6 +43,10 @@ final class PreviewTest extends TestCase {
 			$this->assertFalse( PreviewSanitizer::accepts( $html ), $html );
 		}
 		$this->assertTrue( PreviewSanitizer::accepts( '<div data-blx-id="a">Safe &amp; sound</div>' ) );
+		$this->assertTrue( PreviewSanitizer::accepts( '<p>data: onclick= &lt;script&gt;</p>' ) );
+		foreach ( [ '<a href=javascript&colon;alert(1)>', '<img src=x onerror=alert(1)>', '<div title="data:x">', '<div title="onclick=x">', '<div title="style=x">', '<div title="&lt;script&gt;">', '<div title=`bad`>', "<div a=\"x\0y\">", '<svg onload=x>' ] as $html ) {
+			$this->assertFalse( PreviewSanitizer::accepts( $html ), $html );
+		}
 	}
 
 	/** Structural output never interpolates hostile attributes or props. */
@@ -158,6 +163,20 @@ final class PreviewTest extends TestCase {
 			$this->assertSame( 'blixis_forbidden', $policy->preview( 5, '{}', 'application/json' )->error_code );
 			$access->$property = true;
 		}
+	}
+
+	/** Working preview merges the chosen and default content streams. */
+	public function test_core_preview_uses_separate_locale_streams(): void {
+		$db      = new FakeDatabase();
+		$streams = new StreamStore( $db );
+		$layout  = '{"schemaVersion":1,"layoutRevision":1,"defaultLocale":"en_US","root":[{"id":"sec","type":"blixis/section","props":{},"children":[{"id":"hed","type":"blixis/heading","props":{"level":2},"children":[]}]}]}';
+		$db->insert( 5, MetaKeys::LAYOUT, $layout );
+		$db->insert( 5, MetaKeys::content( 'en_US' ), '{"schemaVersion":1,"contentRevision":1,"entries":{"hed":{"values":{"text":"Source"}}}}' );
+		$db->insert( 5, MetaKeys::content( 'nl_NL' ), '{"schemaVersion":1,"contentRevision":1,"entries":{"hed":{"values":{"text":""}}}}' );
+		$policy = new PreviewRequest( new DocumentRequest( $streams, new FakePostAccess() ), $streams, new EnvelopeValidator(), new CoreElementPreviewRenderer(), new FakeSiteLocale() );
+		$result = $policy->preview( 5, '{"locale":"nl_NL"}', 'application/json' );
+		$this->assertNull( $result->error_code );
+		$this->assertSame( '<section data-blx-id="sec" data-blx-type="blixis/section"><h2 data-blx-id="hed" data-blx-type="blixis/heading">Source</h2></section>', $result->body['html'] );
 	}
 
 	/** Validation and output failures have stable, generic codes. */

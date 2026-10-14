@@ -52,7 +52,7 @@ export function listFixtureFiles(dir: string = FIXTURES_ROOT): string[] {
   const out: string[] = [];
   const walk = (current: string): void => {
     for (const name of readdirSync(current).sort()) {
-      if (name === 'node_modules' || name.startsWith('.')) continue;
+      if (name === 'node_modules' || name.startsWith('.') || (current === FIXTURES_ROOT && name === 'render')) continue;
       const path = join(current, name);
       if (statSync(path).isDirectory()) walk(path);
       else if (name.endsWith('.fixture.json')) out.push(path);

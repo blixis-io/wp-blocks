@@ -10,6 +10,7 @@ namespace Blixis\Builder\Rest;
 
 use Blixis\Builder\Preview\PreviewRenderer;
 use Blixis\Builder\Preview\StructurePreviewRenderer;
+use Blixis\Builder\Preview\CoreElementPreviewRenderer;
 use Blixis\Builder\Storage\EnvelopeValidator;
 use Blixis\Builder\Storage\StreamStore;
 use Blixis\Builder\Storage\WpdbDatabase;
@@ -30,7 +31,7 @@ final class PreviewController {
 		global $wpdb;
 		$streams    = new StreamStore( new WpdbDatabase( $wpdb ) );
 		$documents  = new DocumentRequest( $streams, new WordPressPostAccess() );
-		$renderer   = self::select_renderer( \apply_filters( 'blixis_builder_preview_renderer', new StructurePreviewRenderer() ) );
+		$renderer   = self::select_renderer( \apply_filters( 'blixis_builder_preview_renderer', new CoreElementPreviewRenderer() ) );
 		$controller = new self( new PreviewRequest( $documents, $streams, new EnvelopeValidator(), $renderer, new WordPressSiteLocale() ), $documents );
 		\register_rest_route(
 			'blixis/v1',
