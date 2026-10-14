@@ -1,0 +1,124 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .: {}
+
+  apps/editor:
+    dependencies:
+      '@blixis/wp-canvas-bridge':
+        specifier: workspace:*
+        version: link:../../packages/canvas-bridge
+      '@blixis/wp-capabilities':
+        specifier: workspace:*
+        version: link:../../packages/capabilities
+      '@blixis/wp-core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@blixis/wp-design-tokens':
+        specifier: workspace:*
+        version: link:../../packages/design-tokens
+      '@blixis/wp-editor-ui':
+        specifier: workspace:*
+        version: link:../../packages/editor-ui
+      '@blixis/wp-element-registry':
+        specifier: workspace:*
+        version: link:../../packages/element-registry
+      '@blixis/wp-style-engine':
+        specifier: workspace:*
+        version: link:../../packages/style-engine
+
+  packages/canvas-bridge:
+    dependencies:
+      '@blixis/wp-core':
+        specifier: workspace:*
+        version: link:../core
+
+  packages/capabilities: {}
+
+  packages/core: {}
+
+  packages/design-tokens: {}
+
+  packages/editor-ui:
+    dependencies:
+      '@blixis/wp-capabilities':
+        specifier: workspace:*
+        version: link:../capabilities
+      '@blixis/wp-core':
+        specifier: workspace:*
+        version: link:../core
+      '@blixis/wp-design-tokens':
+        specifier: workspace:*
+        version: link:../design-tokens
+      '@blixis/wp-element-registry':
+        specifier: workspace:*
+        version: link:../element-registry
+
+  packages/element-registry:
+    dependencies:
+      '@blixis/wp-core':
+        specifier: workspace:*
+        version: link:../core
+
+  packages/extension-api:
+    dependencies:
+      '@blixis/wp-capabilities':
+        specifier: workspace:*
+        version: link:../capabilities
+      '@blixis/wp-core':
+        specifier: workspace:*
+        version: link:../core
+      '@blixis/wp-element-registry':
+        specifier: workspace:*
+        version: link:../element-registry
+
+  packages/style-engine:
+    dependencies:
+      '@blixis/wp-core':
+        specifier: workspace:*
+        version: link:../core
+      '@blixis/wp-design-tokens':
+        specifier: workspace:*
+        version: link:../design-tokens
+
+  tests/e2e:
+    dependencies:
+      '@blixis/wp-core':
+        specifier: workspace:*
+        version: link:../../packages/core
+
+  tests/fixtures: {}
+
+  tooling: {}
+
+  wordpress/plugin:
+    dependencies:
+      '@blixis/wp-design-tokens':
+        specifier: workspace:*
+        version: link:../../packages/design-tokens
+      '@blixis/wp-editor':
+        specifier: workspace:*
+        version: link:../../apps/editor
+
+  wordpress/plus:
+    dependencies:
+      '@blixis/wp-extension-api':
+        specifier: workspace:*
+        version: link:../../packages/extension-api
+
+  wordpress/pro:
+    dependencies:
+      '@blixis/wp-extension-api':
+        specifier: workspace:*
+        version: link:../../packages/extension-api
+
+  wordpress/theme:
+    dependencies:
+      '@blixis/wp-design-tokens':
+        specifier: workspace:*
+        version: link:../../packages/design-tokens

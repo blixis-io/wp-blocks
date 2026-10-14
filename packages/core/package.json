@@ -1,0 +1,8 @@
+{
+  "name": "@blixis/wp-core",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Document schema, commands, migrations, snapshots. Pure TypeScript, no UI, no DOM.",
+  "license": "GPL-2.0-or-later",
+  "type": "module"
+}

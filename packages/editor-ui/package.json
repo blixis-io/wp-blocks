@@ -1,0 +1,14 @@
+{
+  "name": "@blixis/wp-editor-ui",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Shared editor components and inspector controls (shadcn/ui-based).",
+  "license": "GPL-2.0-or-later",
+  "type": "module",
+  "dependencies": {
+    "@blixis/wp-core": "workspace:*",
+    "@blixis/wp-design-tokens": "workspace:*",
+    "@blixis/wp-capabilities": "workspace:*",
+    "@blixis/wp-element-registry": "workspace:*"
+  }
+}

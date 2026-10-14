@@ -1,0 +1,191 @@
+{
+  "$comment": "Single source of truth for workspace package boundaries (ADR 0010, BWB-011). 'allow' lists the internal packages a workspace may depend on; 'forbidExternal' lists third-party packages it must never depend on.",
+  "scope": "@blixis/wp-",
+  "workspaces": {
+    "packages/core": {
+      "name": "@blixis/wp-core",
+      "allow": [],
+      "forbidExternal": [
+        "react",
+        "react-dom",
+        "zustand",
+        "@dnd-kit/core",
+        "tailwindcss"
+      ],
+      "description": "Document schema, commands, migrations, snapshots. Pure TypeScript, no UI, no DOM."
+    },
+    "packages/design-tokens": {
+      "name": "@blixis/wp-design-tokens",
+      "allow": [],
+      "forbidExternal": [
+        "react",
+        "react-dom",
+        "zustand",
+        "@dnd-kit/core"
+      ],
+      "description": "Versioned token schema and resolution shared by theme, editor and style engine."
+    },
+    "packages/capabilities": {
+      "name": "@blixis/wp-capabilities",
+      "allow": [],
+      "forbidExternal": [
+        "react",
+        "react-dom",
+        "zustand",
+        "@dnd-kit/core"
+      ],
+      "description": "Feature registry types and capability maps (Free/Plus/Pro). Hints only; the server is authoritative."
+    },
+    "packages/extension-api": {
+      "name": "@blixis/wp-extension-api",
+      "allow": [
+        "core",
+        "element-registry",
+        "capabilities"
+      ],
+      "forbidExternal": [
+        "react",
+        "react-dom",
+        "zustand",
+        "@dnd-kit/core"
+      ],
+      "description": "Public, versioned extension API types and registration contract for Plus, Pro and third-party add-ons (ADR 0009). Add-on builds treat it as external: the Builder provides it at runtime, add-ons never bundle Builder code."
+    },
+    "packages/element-registry": {
+      "name": "@blixis/wp-element-registry",
+      "allow": [
+        "core"
+      ],
+      "forbidExternal": [
+        "react",
+        "react-dom",
+        "zustand",
+        "@dnd-kit/core"
+      ],
+      "description": "Element definitions, property classification (invariant, translatable, locale-specific) and defaults."
+    },
+    "packages/style-engine": {
+      "name": "@blixis/wp-style-engine",
+      "allow": [
+        "core",
+        "design-tokens"
+      ],
+      "forbidExternal": [
+        "react",
+        "react-dom",
+        "zustand",
+        "@dnd-kit/core"
+      ],
+      "description": "CSS validation and deterministic compiler per ADR 0005. Shared with PHP through fixtures."
+    },
+    "packages/canvas-bridge": {
+      "name": "@blixis/wp-canvas-bridge",
+      "allow": [
+        "core"
+      ],
+      "forbidExternal": [
+        "react",
+        "react-dom",
+        "zustand",
+        "@dnd-kit/core"
+      ],
+      "description": "Validated postMessage protocol between editor and canvas iframe."
+    },
+    "packages/editor-ui": {
+      "name": "@blixis/wp-editor-ui",
+      "allow": [
+        "core",
+        "design-tokens",
+        "capabilities",
+        "element-registry"
+      ],
+      "forbidExternal": [],
+      "description": "Shared editor components and inspector controls (shadcn/ui-based)."
+    },
+    "apps/editor": {
+      "name": "@blixis/wp-editor",
+      "allow": [
+        "core",
+        "element-registry",
+        "style-engine",
+        "design-tokens",
+        "canvas-bridge",
+        "editor-ui",
+        "capabilities"
+      ],
+      "forbidExternal": [],
+      "description": "React editor application. Never loaded on public pages."
+    },
+    "wordpress/theme": {
+      "name": "@blixis/wp-theme",
+      "allow": [
+        "design-tokens"
+      ],
+      "forbidExternal": [
+        "react",
+        "react-dom",
+        "zustand",
+        "@dnd-kit/core"
+      ],
+      "description": "Blixis theme assets (Tailwind v4 build). No editor code."
+    },
+    "wordpress/plugin": {
+      "name": "@blixis/wp-plugin",
+      "allow": [
+        "editor",
+        "design-tokens"
+      ],
+      "forbidExternal": [],
+      "description": "Builder plugin JS build: packages the editor bundle for admin screens only."
+    },
+    "wordpress/plus": {
+      "name": "@blixis/wp-plus",
+      "allow": [
+        "extension-api"
+      ],
+      "forbidExternal": [
+        "gsap",
+        "@gsap/react"
+      ],
+      "description": "Plus add-on JS. Depends on the public extension API only (ADR 0009); it must be externalised in the add-on build."
+    },
+    "wordpress/pro": {
+      "name": "@blixis/wp-pro",
+      "allow": [
+        "extension-api"
+      ],
+      "forbidExternal": [
+        "gsap",
+        "@gsap/react"
+      ],
+      "description": "Pro add-on JS. Depends on the public extension API only (ADR 0009); it must be externalised in the add-on build."
+    },
+    "tests/e2e": {
+      "name": "@blixis/wp-e2e",
+      "allow": [
+        "core"
+      ],
+      "forbidExternal": [],
+      "description": "Playwright end-to-end suites."
+    },
+    "tests/fixtures": {
+      "name": "@blixis/wp-fixtures",
+      "allow": [],
+      "forbidExternal": [],
+      "description": "Deterministic fixtures shared by TS and PHP tests."
+    },
+    "tooling": {
+      "name": "@blixis/wp-tooling",
+      "allow": [],
+      "forbidExternal": [],
+      "description": "Repository scripts and checks."
+    }
+  },
+  "reserved": [
+    "apps/docs"
+  ],
+  "globalForbidExternal": [
+    "gsap",
+    "@gsap/react"
+  ]
+}

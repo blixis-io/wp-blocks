@@ -10,6 +10,19 @@ Status: planning blueprint · 2026-10-13
 3. Review the resulting Project backlog; then explicitly authorize implementation.
 4. Follow [PRD](product/PRD.md), [Architecture](architecture/SYSTEM.md), and the engineering standards.
 
+## Development setup
+
+Requires Node 24 (`.nvmrc`) and pnpm (version pinned in `package.json`; `corepack enable` or install pnpm 11).
+
+```bash
+pnpm install --frozen-lockfile   # or: pnpm setup
+pnpm check:boundaries            # workspace dependency rules (ADR 0010)
+pnpm test:tooling                # tests for the repository tooling (20 tests)
+python3 -I tests/fixtures/style-resolution/verify.py   # style-resolution reference fixtures (ADR 0005)
+```
+
+Further scripts (lint, typecheck, build, e2e) arrive with BWB-013 to BWB-018.
+
 ## Documents
 
 | File | Purpose |

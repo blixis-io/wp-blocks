@@ -1,0 +1,11 @@
+{
+  "name": "@blixis/wp-pro",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Pro add-on JS. Depends on the public extension API only (ADR 0009); it must be externalised in the add-on build.",
+  "license": "GPL-2.0-or-later",
+  "type": "module",
+  "dependencies": {
+    "@blixis/wp-extension-api": "workspace:*"
+  }
+}

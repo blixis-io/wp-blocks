@@ -1,0 +1,17 @@
+{
+  "name": "blixis-wp-blocks",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Blixis WP Blocks monorepo root. See README.md.",
+  "license": "GPL-2.0-or-later",
+  "type": "module",
+  "packageManager": "pnpm@11.25.0",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "setup": "pnpm install --frozen-lockfile",
+    "check:boundaries": "node tooling/check-boundaries.mjs",
+    "test:tooling": "node --test \"tooling/**/*.test.mjs\""
+  }
+}

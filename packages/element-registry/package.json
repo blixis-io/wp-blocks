@@ -1,0 +1,11 @@
+{
+  "name": "@blixis/wp-element-registry",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Element definitions, property classification (invariant, translatable, locale-specific) and defaults.",
+  "license": "GPL-2.0-or-later",
+  "type": "module",
+  "dependencies": {
+    "@blixis/wp-core": "workspace:*"
+  }
+}

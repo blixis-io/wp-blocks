@@ -1,0 +1,17 @@
+{
+  "name": "@blixis/wp-editor",
+  "version": "0.0.0",
+  "private": true,
+  "description": "React editor application. Never loaded on public pages.",
+  "license": "GPL-2.0-or-later",
+  "type": "module",
+  "dependencies": {
+    "@blixis/wp-core": "workspace:*",
+    "@blixis/wp-element-registry": "workspace:*",
+    "@blixis/wp-style-engine": "workspace:*",
+    "@blixis/wp-design-tokens": "workspace:*",
+    "@blixis/wp-canvas-bridge": "workspace:*",
+    "@blixis/wp-editor-ui": "workspace:*",
+    "@blixis/wp-capabilities": "workspace:*"
+  }
+}
