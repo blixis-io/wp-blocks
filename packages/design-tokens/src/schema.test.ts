@@ -2,8 +2,16 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { generate } from '../scripts/generate-schema.ts';
-import { TOKEN_CATEGORIES, TOKEN_LIMITS, TokenSetSchema, tokenProperty, tokenValueFor } from './schema.ts';
+import { generate, generatePresetSchema } from '../scripts/generate-schema.ts';
+import {
+  CUSTOM_PRESET_ID,
+  PresetSchema,
+  TOKEN_CATEGORIES,
+  TOKEN_LIMITS,
+  TokenSetSchema,
+  tokenProperty,
+  tokenValueFor,
+} from './schema.ts';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const good = {
@@ -73,5 +81,25 @@ describe('TokenSetSchema', () => {
 
   it('matches the committed JSON Schema', () => {
     expect(readFileSync(join(here, '..', 'schema', 'token-set.schema.json'), 'utf8')).toBe(generate());
+  });
+});
+
+describe('PresetSchema', () => {
+  const preset = { schemaVersion: 1, id: 'ocean', label: 'Ocean', description: 'A blue palette.', tokens: good.tokens };
+  it('accepts a versioned seed while reserving custom for the default-token path', () => {
+    expect(PresetSchema.safeParse(preset).success).toBe(true);
+    expect(CUSTOM_PRESET_ID).toBe('custom');
+  });
+  it.each([
+    { ...preset, schemaVersion: 2 },
+    { ...preset, id: 'Ocean' },
+    { ...preset, id: 'ocean_' },
+    { ...preset, label: '' },
+    { ...preset, description: '' },
+  ])('rejects malformed metadata', (input) => {
+    expect(PresetSchema.safeParse(input).success).toBe(false);
+  });
+  it('matches the committed JSON Schema', () => {
+    expect(readFileSync(join(here, '..', 'schema', 'preset.schema.json'), 'utf8')).toBe(generatePresetSchema());
   });
 });

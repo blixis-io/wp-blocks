@@ -10,6 +10,7 @@
   },
   "exports": {
     ".": "./src/index.ts",
+    "./schema/preset.schema.json": "./schema/preset.schema.json",
     "./schema/token-set.schema.json": "./schema/token-set.schema.json"
   },
   "scripts": {
