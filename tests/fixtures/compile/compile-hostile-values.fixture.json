@@ -1,0 +1,58 @@
+{
+  "fixtureVersion": 1,
+  "id": "compile-hostile-values",
+  "description": "Attempts to close the rule, the style element or the layer never reach the output.",
+  "tags": ["css", "compile", "hostile"],
+  "input": {
+    "document": {
+      "schemaVersion": 1,
+      "documentId": "doc-001",
+      "layoutRevision": 1,
+      "defaultLocale": "en_US",
+      "locales": ["en_US"],
+      "root": [
+        {
+          "id": "el-a",
+          "type": "blixis/text",
+          "props": {},
+          "children": [],
+          "style": [
+            {
+              "declarations": {
+                "color": "red;}</style><script>alert(1)</script>",
+                "margin": "0 !important",
+                "content": "x"
+              }
+            }
+          ]
+        }
+      ],
+      "classListVersion": 0,
+      "classRefs": {},
+      "translations": {
+        "en_US": {}
+      },
+      "metadata": {
+        "updatedAt": "2026-01-01T00:00:00Z",
+        "editorVersion": "0.0.0"
+      }
+    }
+  },
+  "expected": {
+    "classNames": {},
+    "issues": [
+      {
+        "code": "invalid-declaration",
+        "path": "$.root[0].style[0].declarations.color"
+      },
+      {
+        "code": "invalid-declaration",
+        "path": "$.root[0].style[0].declarations.content"
+      },
+      {
+        "code": "invalid-declaration",
+        "path": "$.root[0].style[0].declarations.margin"
+      }
+    ]
+  }
+}

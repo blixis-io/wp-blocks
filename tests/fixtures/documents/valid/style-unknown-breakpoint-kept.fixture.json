@@ -1,0 +1,48 @@
+{
+  "description": "A breakpoint id the site no longer has is valid data; the compiler reports and skips it.",
+  "expected": {
+    "valid": true
+  },
+  "fixtureVersion": 1,
+  "id": "style-unknown-breakpoint-kept",
+  "input": {
+    "defaultLocale": "en_US",
+    "documentId": "doc-001",
+    "layoutRevision": 1,
+    "locales": ["en_US"],
+    "root": [
+      {
+        "children": [],
+        "id": "el-001",
+        "props": {},
+        "type": "blixis/heading",
+        "style": [
+          {
+            "breakpoint": "watch",
+            "declarations": {
+              "color": "red"
+            }
+          }
+        ]
+      }
+    ],
+    "schemaVersion": 1,
+    "translations": {
+      "en_US": {
+        "el-001": {
+          "status": "translated",
+          "values": {
+            "text": "Hello"
+          }
+        }
+      }
+    },
+    "classListVersion": 0,
+    "classRefs": {},
+    "metadata": {
+      "updatedAt": "2026-01-01T00:00:00Z",
+      "editorVersion": "0.0.0"
+    }
+  },
+  "tags": ["document", "valid", "style"]
+}

@@ -1,0 +1,47 @@
+{
+  "description": "Declaration values are strings or integers (decimals are strings), never booleans.",
+  "expected": {
+    "error": "schema"
+  },
+  "fixtureVersion": 1,
+  "id": "schema-style-boolean-declaration",
+  "input": {
+    "defaultLocale": "en_US",
+    "documentId": "doc-001",
+    "layoutRevision": 1,
+    "locales": ["en_US"],
+    "root": [
+      {
+        "children": [],
+        "id": "el-001",
+        "props": {},
+        "type": "blixis/heading",
+        "style": [
+          {
+            "declarations": {
+              "opacity": true
+            }
+          }
+        ]
+      }
+    ],
+    "schemaVersion": 1,
+    "translations": {
+      "en_US": {
+        "el-001": {
+          "status": "translated",
+          "values": {
+            "text": "Hello"
+          }
+        }
+      }
+    },
+    "classListVersion": 0,
+    "classRefs": {},
+    "metadata": {
+      "updatedAt": "2026-01-01T00:00:00Z",
+      "editorVersion": "0.0.0"
+    }
+  },
+  "tags": ["document", "invalid", "style"]
+}

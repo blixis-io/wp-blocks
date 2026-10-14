@@ -1,0 +1,76 @@
+{
+  "fixtureVersion": 1,
+  "id": "compile-states",
+  "description": "All four states plus a dark hover rule; states live in :where() so specificity stays (0,1,0).",
+  "tags": ["css", "compile", "states"],
+  "input": {
+    "document": {
+      "schemaVersion": 1,
+      "documentId": "doc-001",
+      "layoutRevision": 1,
+      "defaultLocale": "en_US",
+      "locales": ["en_US"],
+      "root": [
+        {
+          "id": "el-a",
+          "type": "blixis/text",
+          "props": {},
+          "children": [],
+          "style": [
+            {
+              "declarations": {
+                "color": "black"
+              }
+            },
+            {
+              "state": "hover",
+              "declarations": {
+                "color": "red"
+              }
+            },
+            {
+              "state": "focus",
+              "declarations": {
+                "color": "green"
+              }
+            },
+            {
+              "state": "focus-visible",
+              "declarations": {
+                "opacity": "0.8"
+              }
+            },
+            {
+              "state": "active",
+              "declarations": {
+                "color": "blue"
+              }
+            },
+            {
+              "mode": "dark",
+              "state": "hover",
+              "declarations": {
+                "color": "white"
+              }
+            }
+          ]
+        }
+      ],
+      "classListVersion": 0,
+      "classRefs": {},
+      "translations": {
+        "en_US": {}
+      },
+      "metadata": {
+        "updatedAt": "2026-01-01T00:00:00Z",
+        "editorVersion": "0.0.0"
+      }
+    }
+  },
+  "expected": {
+    "classNames": {
+      "el-a": ["blx-489a409aa93f"]
+    },
+    "issues": []
+  }
+}

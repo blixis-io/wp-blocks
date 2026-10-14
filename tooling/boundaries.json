@@ -96,9 +96,9 @@
     },
     "tests/fixtures": {
       "name": "@blixis/wp-fixtures",
-      "allow": ["core"],
+      "allow": ["core", "design-tokens", "style-engine"],
       "forbidExternal": [],
-      "description": "Deterministic fixtures shared by TS and PHP tests."
+      "description": "Deterministic fixtures shared by TS and PHP tests, and the cross-language contract suite (it runs the golden compile fixtures through the libraries they describe)."
     },
     "tooling": {
       "name": "@blixis/wp-tooling",

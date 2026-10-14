@@ -2,3 +2,13 @@ export { assertFixtureValue, canonicalHash, canonicalJson, compareCodePoints, ty
 export { FIXED_NOW, fixedClock, sequentialIds, seededRandom } from './deterministic.ts';
 export { FIXTURES_ROOT, listFixtureFiles, loadAllFixtures, loadFixture, parseFixture, type Fixture } from './load.ts';
 export { assertGolden } from './golden.ts';
+export {
+  REGISTRY_PATH,
+  REPO_ROOT,
+  checkRegistry,
+  jsonFilesUnder,
+  loadRegistry,
+  type ContractRegistry,
+  type ContractSuite,
+  type PhpLevel,
+} from './contracts.ts';

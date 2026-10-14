@@ -1,0 +1,51 @@
+{
+  "fixtureVersion": 1,
+  "id": "compile-border-order",
+  "description": "Border declarations are ordered broad to narrow so the narrower setting wins.",
+  "tags": ["css", "compile"],
+  "input": {
+    "document": {
+      "schemaVersion": 1,
+      "documentId": "doc-001",
+      "layoutRevision": 1,
+      "defaultLocale": "en_US",
+      "locales": ["en_US"],
+      "root": [
+        {
+          "id": "el-a",
+          "type": "blixis/text",
+          "props": {},
+          "children": [],
+          "style": [
+            {
+              "declarations": {
+                "border-top-width": "4px",
+                "border-top": "1px solid blue",
+                "border-color": "green",
+                "border-width": "2px",
+                "border": "3px solid black",
+                "border-radius": "4px",
+                "border-top-left-radius": "8px"
+              }
+            }
+          ]
+        }
+      ],
+      "classListVersion": 0,
+      "classRefs": {},
+      "translations": {
+        "en_US": {}
+      },
+      "metadata": {
+        "updatedAt": "2026-01-01T00:00:00Z",
+        "editorVersion": "0.0.0"
+      }
+    }
+  },
+  "expected": {
+    "classNames": {
+      "el-a": ["blx-489a409aa93f"]
+    },
+    "issues": []
+  }
+}
