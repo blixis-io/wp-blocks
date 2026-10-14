@@ -7,8 +7,12 @@
 export const DOCUMENT_LIMITS = {
   /** Serialised size of one document. Check before decoding. */
   maxBytes: 2 * 1024 * 1024,
-  /** Container nesting of the JSON text (the element tree is further limited by `maxTreeDepth`). */
-  maxJsonDepth: 64,
+  /**
+   * Container nesting of the JSON text. Every element level costs two (the element object and its `children` array), plus
+   * the document object and the `root` array and some room for nested property values, so this must stay above
+   * `2 * maxTreeDepth + 2` (a test enforces it).
+   */
+  maxJsonDepth: 128,
   /** Element tree depth. */
   maxTreeDepth: 32,
   /** Elements in one document. */

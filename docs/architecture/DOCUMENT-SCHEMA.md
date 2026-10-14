@@ -32,11 +32,11 @@ Element: `id`, `type`, `props` (invariant values only), `children`, optional `cl
 
 ## Limits are a required gate at every entry point
 
-Shape validation alone does not make input safe. `DOCUMENT_LIMITS` (exported by `@blixis/wp-core`): 2 MiB serialised size, 64 levels of JSON nesting, element tree depth 32, 5 000 elements, 64 declarations per style rule (the last is also in the JSON Schema as `maxProperties`). Every entry point (editor load, REST save and preview, the PHP renderer) MUST check the byte limit **before** decoding and the nesting/node limits before trusting the structure; `validateDocument` (BWB-020) applies all of them and is the only supported way to accept a document. Unknown fields are allowed but count toward the byte limit.
+Shape validation alone does not make input safe. `DOCUMENT_LIMITS` (exported by `@blixis/wp-core`): 2 MiB serialised size, 128 levels of JSON nesting, element tree depth 32, 5 000 elements, 64 declarations per style rule (the last is also in the JSON Schema as `maxProperties`). Every entry point (editor load, REST save and preview, the PHP renderer) MUST check the byte limit **before** decoding and the nesting/node limits before trusting the structure; `validateDocument` (BWB-020) applies all of them and is the only supported way to accept a document. Unknown fields are allowed but count toward the byte limit.
 
 ## What the schema does not check
 
-JSON Schema cannot express these; `validateDocument` (BWB-020) checks them and returns structured errors:
+JSON Schema cannot express these; `validateDocument` (BWB-020, implemented) checks them and returns structured errors:
 
 - unique element ids across the whole tree, and legal parents/children per the element registry (BWB-021); `blixis/*` types belong to core, other namespaces to registered vendors; breakpoints and state names must be registered
 - tree depth (limit 32), total node count (5 000), serialised size (2 MB) and declarations per rule (64)
@@ -46,6 +46,18 @@ JSON Schema cannot express these; `validateDocument` (BWB-020) checks them and r
 - NFC-normalised, well-formed Unicode in strings and keys
 - duplicate style rules (same breakpoint/mode/state combination on one element)
 - the value allow-list for declarations (BWB-023) and registered property ids per element type
+
+## Validation API (BWB-020)
+
+`validateDocument(input, options?)` in `@blixis/wp-core` is the only supported way to accept a document. It takes the stored or received **text** (preferred: the byte limit is checked before decoding and the strict scanner rejects what decoding would hide) or an already-parsed value (the caller must then have enforced the byte limit). The pipeline, in order: byte limit -> strict JSON text (no decimal/exponent tokens, `-0`, duplicate keys, lone surrogates) -> JSON depth (iterative, so cycles and hostile nesting cannot exhaust the stack) -> value rules (safe integers, NFC, plain objects) -> reserved keys -> schema version and migration -> shape (Zod) -> semantic checks. It returns `{ ok: true, document, warnings, fromVersion, migrated }` or `{ ok: false, errors }`; every issue has a stable `code` (`ISSUE_CODES`), a JSON `path` and a message, and at most 50 are reported.
+
+Issue codes: `too-large`, `invalid-json`, `too-deep`, `invalid-value`, `reserved-key`, `unsupported-schema-version`, `migration-failed`, `schema`, `duplicate-element-id`, `tree-too-deep`, `too-many-nodes`, `duplicate-locale`, `default-locale-not-listed`, `missing-default-locale-stream`, `translation-locale-not-listed`, `translation-for-missing-element`, `orphaned-entry-for-existing-element` (warning), `unknown-class-reference`, `duplicate-style-rule`, `invalid-timestamp`. Codes are never renamed.
+
+`serializeDocument(document)` gives the deterministic text form (canonical JSON) used for storage, revision hashes and equality; `validateDocument(serializeDocument(d))` returns an equal document.
+
+Migrations (`migrateDocument`, registry `MIGRATIONS`, empty while version 1 is the only version) are pure, append-only steps `vN -> vN+1` applied to a private copy. A newer schema version fails with `unsupported-schema-version` and the input is left untouched; gaps in the chain, steps that throw and steps that do not set the new `schemaVersion` fail with `migration-failed`. Each real migration ships with golden fixtures for the last two versions and a no-data-loss test (unknown fields must survive).
+
+Not covered yet: element registry checks (legal parents/children, registered properties and types: BWB-021) and the CSS value allow-list (BWB-023). The PHP twin of this pipeline is part of the parity work (BWB-027).
 
 ## Versioning rules
 

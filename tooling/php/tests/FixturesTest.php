@@ -137,10 +137,10 @@ final class FixturesTest extends TestCase {
 	 * Nesting at the shared limit is accepted, one level deeper is rejected.
 	 */
 	public function test_nesting_limit_is_shared_with_typescript(): void {
-		$ok = str_repeat( '[', 64 ) . str_repeat( ']', 64 );
+		$ok = str_repeat( '[', 128 ) . str_repeat( ']', 128 );
 		$this->assertSame( $ok, Fixtures::canonical_json( Fixtures::decode( $ok ) ) );
 		$this->expectException( InvalidArgumentException::class );
-		Fixtures::decode( str_repeat( '[', 65 ) . str_repeat( ']', 65 ) );
+		Fixtures::decode( str_repeat( '[', 129 ) . str_repeat( ']', 129 ) );
 	}
 
 	/**

@@ -31,3 +31,16 @@ export {
   TimestampSchema,
   type Json,
 } from './schema/primitives.ts';
+export { ISSUE_CODES, type DocumentIssue, type IssueCode } from './document/issues.ts';
+export { migrateDocument, type Migration, type MigrationResult } from './document/migrate.ts';
+export {
+  MIGRATIONS,
+  serializeDocument,
+  validateDocument,
+  type ValidateOptions,
+  type ValidationResult,
+} from './document/validate.ts';
+export { checkSemantics, type SemanticResult } from './document/semantic.ts';
+export { assertStrictJson, MAX_DEPTH } from './json/strict.ts';
+export { assertJsonValue, canonicalJson, compareCodePoints } from './json/canonical.ts';
+export { utf8Length } from './json/utf8.ts';

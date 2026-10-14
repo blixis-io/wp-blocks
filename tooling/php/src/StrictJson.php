@@ -22,7 +22,7 @@ use InvalidArgumentException;
  */
 final class StrictJson {
 
-	public const MAX_DEPTH = 64;
+	public const MAX_DEPTH = 128;
 
 	private const MAX_SAFE_DIGITS = '9007199254740991';
 

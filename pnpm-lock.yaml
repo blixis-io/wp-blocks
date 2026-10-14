@@ -142,7 +142,11 @@ importers:
         specifier: workspace:*
         version: link:../../packages/core
 
-  tests/fixtures: {}
+  tests/fixtures:
+    dependencies:
+      '@blixis/wp-core':
+        specifier: workspace:*
+        version: link:../../packages/core
 
   tooling: {}
 
