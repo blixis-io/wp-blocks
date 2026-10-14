@@ -24,8 +24,9 @@ final class StreamStore {
 	 *
 	 * @param Database           $database Value.
 	 * @param ?DocumentValidator $validator Value.
+	 * @param ?RevisionRing      $ring Revision history of working streams, if kept.
 	 */
-	public function __construct( private Database $database, ?DocumentValidator $validator = null ) {
+	public function __construct( private Database $database, ?DocumentValidator $validator = null, private ?RevisionRing $ring = null ) {
 		$this->validator = $validator ?? new EnvelopeValidator();
 	}
 
@@ -122,9 +123,29 @@ final class StreamStore {
 			throw new \RuntimeException( 'Invalid stored builder stream.' );
 		}
 		if ( $expected_revision === $current && $this->database->compare_and_swap( $post_id, $key, $rows[0]['id'], $rows[0]['value'], $new_value ) ) {
+			$this->keep_history( $post_id, $key, $rows[0]['value'] );
 			return WriteResult::success( $current + 1, $expected_revision );
 		}
 		return WriteResult::conflict( $this->read( $post_id, $key )['revision'] ?? 0, $expected_revision );
+	}
+
+	/**
+	 * Keep the replaced value of a working stream in the revision ring; history problems never fail the write.
+	 *
+	 * @param int    $post_id Post ID.
+	 * @param string $key Stream key.
+	 * @param string $previous Value before the write.
+	 * @return void
+	 */
+	private function keep_history( int $post_id, string $key, string $previous ): void {
+		if ( null === $this->ring || MetaKeys::PUBLISHED === $key ) {
+			return;
+		}
+		try {
+			$this->ring->record( $post_id, $key, $previous );
+		} catch ( \Throwable $error ) {
+			unset( $error ); // The write already succeeded; losing one history row is acceptable.
+		}
 	}
 
 	/**

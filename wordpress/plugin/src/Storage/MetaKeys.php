@@ -66,6 +66,40 @@ final class MetaKeys {
 	}
 
 	/**
+	 * History row for an earlier value of a working stream (the revision ring).
+	 *
+	 * @param string $stream_key Layout or content stream key.
+	 * @param int    $revision Revision the stored value had.
+	 * @throws \InvalidArgumentException When input is invalid.
+	 */
+	public static function rev( string $stream_key, int $revision ): string {
+		if ( $revision < 1 || ! self::is_valid_key( $stream_key ) || self::is_snapshot( $stream_key ) || self::is_revision( $stream_key ) || self::PUBLISHED === $stream_key ) {
+			throw new \InvalidArgumentException( 'Invalid revision key.' );
+		}
+		$family = self::LAYOUT === $stream_key ? 'layout' : 'content_' . \substr( $stream_key, \strlen( '_blixis_content_' ) );
+		return '_blixis_rev_' . $family . '_' . $revision;
+	}
+
+	/**
+	 * Prefix shared by the history rows of one working stream.
+	 *
+	 * @param string $stream_key Layout or content stream key.
+	 * @throws \InvalidArgumentException When input is invalid.
+	 */
+	public static function rev_prefix( string $stream_key ): string {
+		return \substr( self::rev( $stream_key, 1 ), 0, -1 );
+	}
+
+	/**
+	 * Whether a key is a revision-ring history row.
+	 *
+	 * @param string $key Value.
+	 */
+	public static function is_revision( string $key ): bool {
+		return 1 === \preg_match( '/^_blixis_rev_(?:layout|content_.+)_[1-9][0-9]*$/D', $key ) && self::is_valid_key( $key );
+	}
+
+	/**
 	 * Check the complete key, excluding zero-padded revision numbers.
 	 *
 	 * @param string $key Value.
@@ -77,8 +111,11 @@ final class MetaKeys {
 		if ( 1 === \preg_match( '/^_blixis_content_(.+)$/D', $key, $parts ) ) {
 			return self::is_valid_locale( $parts[1] );
 		}
-		if ( 1 === \preg_match( '/^_blixis_snap_layout_([1-9][0-9]*)$/D', $key ) ) {
+		if ( 1 === \preg_match( '/^_blixis_snap_layout_([1-9][0-9]*)$/D', $key ) || 1 === \preg_match( '/^_blixis_rev_layout_[1-9][0-9]*$/D', $key ) ) {
 			return true;
+		}
+		if ( 1 === \preg_match( '/^_blixis_rev_content_(.+)_[1-9][0-9]*$/D', $key, $parts ) ) {
+			return self::is_valid_locale( $parts[1] );
 		}
 		if ( 1 === \preg_match( '/^_blixis_snap_content_(.+)_([1-9][0-9]*)$/D', $key, $parts ) ) {
 			return self::is_valid_locale( $parts[1] );

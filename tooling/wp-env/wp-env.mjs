@@ -700,6 +700,100 @@ async function smoke() {
           'a broken publication falls back to the normal post content',
         );
         command('post', 'delete', pageId, '--force');
+        // Revision ring (BWB-046): history of working streams, bounded, restore as a new revision, conflicts.
+        const histPost = command(
+          'post',
+          'create',
+          '--post_type=page',
+          '--post_status=draft',
+          '--post_title=History',
+          '--porcelain',
+        );
+        const histLayout = `${histPost}/layout`;
+        const save = (note, expected) =>
+          api(histLayout, {
+            cookie: adminCookie,
+            nonce: adminNonce,
+            method: 'PUT',
+            ifMatch: `"${expected}"`,
+            body: JSON.stringify({ schemaVersion: 1, layoutRevision: 1, note }),
+          });
+        check((await save('A', 0)).status === 200, 'the first save creates revision 1');
+        check(
+          (await save('B', 1)).status === 200 && (await save('C', 2)).status === 200,
+          'later saves advance the revision',
+        );
+        const history = await json(await api(`${histLayout}/revisions`, { cookie: adminCookie, nonce: adminNonce }));
+        check(
+          history.current === 3 && history.revisions?.map((r) => r.revision).join() === '2,1',
+          'the history lists the replaced revisions, newest first',
+        );
+        check(
+          history.revisions?.every((r) => typeof r.author === 'number' && /^\d{4}-\d\d-\d\dT/.test(r.savedAt)),
+          'each history entry records who saved and when',
+        );
+        const restoreWith = (revision, expected) =>
+          api(`${histLayout}/restore`, {
+            cookie: adminCookie,
+            nonce: adminNonce,
+            method: 'POST',
+            ...(expected === null ? {} : { ifMatch: `"${expected}"` }),
+            body: JSON.stringify({ revision }),
+          });
+        check((await restoreWith(1, null)).status === 428, 'a restore without If-Match is 428');
+        check((await restoreWith(99, 3)).status === 404, 'restoring an unknown revision is 404');
+        const staleRestore = await restoreWith(1, 2);
+        check(
+          staleRestore.status === 409 && (await json(staleRestore)).data?.currentRevision === 3,
+          'a stale restore is a 409 conflict',
+        );
+        const restoredResult = await restoreWith(1, 3);
+        check(
+          restoredResult.status === 200 && (await json(restoredResult)).revision === 4,
+          'restoring creates a new revision (append-only)',
+        );
+        check(
+          (await json(await api(histLayout, { cookie: adminCookie, nonce: adminNonce }))).document?.note === 'A',
+          'the restored content is what was saved as revision 1',
+        );
+        const afterRestore = await json(
+          await api(`${histLayout}/revisions`, { cookie: adminCookie, nonce: adminNonce }),
+        );
+        check(afterRestore.revisions?.[0]?.revision === 3, 'the content that was restored over stays recoverable');
+        let expectedRevision = 4;
+        for (let i = 0; i < 23; i += 1) {
+          const saved = await save(`bulk-${i}`, expectedRevision);
+          if (saved.status !== 200) break;
+          expectedRevision += 1;
+        }
+        const bounded = await json(await api(`${histLayout}/revisions`, { cookie: adminCookie, nonce: adminNonce }));
+        check(
+          bounded.revisions?.length === 20 && bounded.current === 27,
+          'the history keeps only the newest 20 revisions',
+        );
+        check(
+          (await api(`${histLayout}/revisions`, { cookie: subscriberCookie, nonce: subscriberNonce })).status === 403 &&
+            (await api(`${histLayout}/revisions`)).status === 401,
+          'history needs the same access as the document (401 anonymous, 403 without edit rights)',
+        );
+        const nlPath = `${histPost}/content/nl_NL`;
+        await api(nlPath, {
+          cookie: adminCookie,
+          nonce: adminNonce,
+          method: 'PUT',
+          ifMatch: '"0"',
+          body: JSON.stringify({ schemaVersion: 1, contentRevision: 1 }),
+        });
+        await api(nlPath, {
+          cookie: adminCookie,
+          nonce: adminNonce,
+          method: 'PUT',
+          ifMatch: '"1"',
+          body: JSON.stringify({ schemaVersion: 1, contentRevision: 1 }),
+        });
+        const nlHistory = await json(await api(`${nlPath}/revisions`, { cookie: adminCookie, nonce: adminNonce }));
+        check(nlHistory.current === 2 && nlHistory.revisions?.length === 1, 'a locale stream has its own history');
+        command('post', 'delete', histPost, '--force');
         // Media (BWB-045): raster library images only, validated responsive attributes, alt text, picker route.
         const mediaIds = JSON.parse(command('eval-file', '/fixtures/media-smoke.php').split('\n').pop());
         const mediaApi = async (id, { cookie, nonce } = {}) =>

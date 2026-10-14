@@ -103,3 +103,13 @@ Images come only from the WordPress media library, by attachment ID (THREAT-MODE
 **Alt text.** The alt property is translatable (FR-056). Order: the translated or default-locale alt, then the library's alt text. An image marked decorative gets `alt=""` and `role="presentation"`. Any other image without alt text still gets `alt=""` and the hook `data-blx-alt-missing`, which the editor uses to ask for text (ACCESSIBILITY-BASELINE rule 9).
 
 **Picker support.** `GET /blixis/v1/media/{id}` (users who can edit posts; 401 anonymous, 403 otherwise) returns `{ id, url, width, height, alt, srcset, sizes }` for a chosen attachment, `private, no-store`. Missing, non-image and SVG attachments are the same 404. The picker UI is the WordPress media modal inside the editor (BWB-054).
+
+## Revision history of working streams (BWB-046)
+
+Every successful write of a working stream (layout or one locale's content) keeps the value it replaced as an immutable history row `_blixis_rev_<stream>_<n>` (`Storage\RevisionRing`): who saved it (user ID), when (UTC), and the stream value, bounded to the newest 20 per stream, oldest pruned first. Streams never share a ring, a conflicting write records nothing, and a history problem never fails a save. Core WordPress revisions are not used (spike BWB-040).
+
+**Restore is an ordinary write.** `POST /documents/{id}/layout/restore` and `.../content/{locale}/restore` take `{ "revision": n }` and `If-Match: "<current>"`; the old value is written as a new revision (append-only), so a restore can itself be undone, and a stale `If-Match` is the usual 409. Unknown revisions are 404 `blixis_revision_not_found`. `GET .../revisions` returns `{ current, revisions: [{ revision, savedAt, author }] }`, newest first. Access is the same as the document routes (401, uniform 403).
+
+**Save recovery.** The editor keeps working data only in these streams (autosave never publishes, ADR 0004): after a crash or a lost connection the last saved revision is in the stream and earlier ones in the history. Conflict handling is the `If-Match`/409 contract of the document routes.
+
+Publishing and rollback of published snapshots are the next part of BWB-046.

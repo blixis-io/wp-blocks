@@ -11,6 +11,7 @@ namespace Blixis\Builder\Rest;
 
 use Blixis\Builder\Storage\Envelope;
 use Blixis\Builder\Storage\MetaKeys;
+use Blixis\Builder\Storage\RevisionRing;
 use Blixis\Builder\Storage\StreamStore;
 
 \defined( 'ABSPATH' ) || exit;
@@ -20,10 +21,11 @@ final class DocumentRequest {
 	/**
 	 * Create the request policy.
 	 *
-	 * @param StreamStore $streams Working stream repository.
-	 * @param PostAccess  $access Post access policy.
+	 * @param StreamStore   $streams Working stream repository.
+	 * @param PostAccess    $access Post access policy.
+	 * @param ?RevisionRing $ring Revision history, if kept.
 	 */
-	public function __construct( private StreamStore $streams, private PostAccess $access ) {}
+	public function __construct( private StreamStore $streams, private PostAccess $access, private ?RevisionRing $ring = null ) {}
 
 	/** Check access without revealing whether a forbidden post exists.
 	 *
@@ -129,6 +131,89 @@ final class DocumentRequest {
 		}
 		try {
 			$result = $this->streams->write( $post_id, $key, $body, $expected );
+			if ( ! $result->success ) {
+				return DocumentResult::error(
+					409,
+					'blixis_conflict',
+					'Document revision conflict.',
+					[
+						'currentRevision'  => $result->revision,
+						'expectedRevision' => $result->expected_revision,
+					]
+				);
+			}
+			return DocumentResult::success( [ 'revision' => $result->revision ], $result->revision );
+		} catch ( \InvalidArgumentException $exception ) {
+			return DocumentResult::error( 422, 'blixis_invalid_document', 'Invalid document.' );
+		} catch ( \RuntimeException $exception ) {
+			return self::storage_error();
+		}
+	}
+
+	/**
+	 * List the saved history of a stream, newest first.
+	 *
+	 * @param int     $post_id Post ID.
+	 * @param ?string $locale Locale, or null for the layout.
+	 * @return DocumentResult
+	 */
+	public function revisions( int $post_id, ?string $locale ): DocumentResult {
+		$key = self::key( $locale );
+		if ( null === $key ) {
+			return DocumentResult::error( 400, 'blixis_invalid_locale', 'Invalid locale.' );
+		}
+		if ( null === $this->ring ) {
+			return self::storage_error();
+		}
+		try {
+			$current = $this->streams->read( $post_id, $key );
+			return DocumentResult::success(
+				[
+					'current'   => $current['revision'] ?? 0,
+					'revisions' => $this->ring->list( $post_id, $key ),
+				],
+				$current['revision'] ?? 0
+			);
+		} catch ( \RuntimeException $exception ) {
+			return self::storage_error();
+		}
+	}
+
+	/**
+	 * Restore an earlier revision as a new one (append-only), with the usual conflict check.
+	 *
+	 * @param int     $post_id Post ID.
+	 * @param ?string $locale Locale, or null for the layout.
+	 * @param ?string $if_match Expected current revision (`"n"`).
+	 * @param string  $body JSON body `{ "revision": n }`.
+	 * @return DocumentResult
+	 */
+	public function restore( int $post_id, ?string $locale, ?string $if_match, string $body ): DocumentResult {
+		$key = self::key( $locale );
+		if ( null === $key ) {
+			return DocumentResult::error( 400, 'blixis_invalid_locale', 'Invalid locale.' );
+		}
+		if ( null === $if_match || '' === $if_match ) {
+			return DocumentResult::error( 428, 'blixis_precondition_required', 'If-Match is required.' );
+		}
+		$expected = self::parse_if_match( $if_match );
+		$request  = \strlen( $body ) <= 64 ? \json_decode( $body, true, 4 ) : null;
+		$target   = \is_array( $request ) && \array_keys( $request ) === [ 'revision' ] && \is_int( $request['revision'] ) && $request['revision'] > 0 ? $request['revision'] : null;
+		if ( null === $expected ) {
+			return DocumentResult::error( 400, 'blixis_invalid_revision', 'Invalid revision.' );
+		}
+		if ( null === $target ) {
+			return DocumentResult::error( 422, 'blixis_invalid_document', 'Invalid restore request.' );
+		}
+		if ( null === $this->ring ) {
+			return self::storage_error();
+		}
+		try {
+			$value = $this->ring->fetch( $post_id, $key, $target );
+			if ( null === $value ) {
+				return DocumentResult::error( 404, 'blixis_revision_not_found', 'Revision not found.' );
+			}
+			$result = $this->streams->write( $post_id, $key, $value, $expected );
 			if ( ! $result->success ) {
 				return DocumentResult::error(
 					409,

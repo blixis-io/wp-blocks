@@ -9,7 +9,9 @@ declare(strict_types=1);
 
 namespace Blixis\Builder\Rest;
 
+use Blixis\Builder\Storage\RevisionRing;
 use Blixis\Builder\Storage\StreamStore;
+use Blixis\Builder\Storage\WordPressRevisionContext;
 use Blixis\Builder\Storage\WpdbDatabase;
 
 \defined( 'ABSPATH' ) || exit;
@@ -26,7 +28,9 @@ final class DocumentController {
 	/** Register routes on rest_api_init. */
 	public static function register(): void {
 		global $wpdb;
-		$controller = new self( new DocumentRequest( new StreamStore( new WpdbDatabase( $wpdb ) ), new WordPressPostAccess() ) );
+		$database   = new WpdbDatabase( $wpdb );
+		$ring       = new RevisionRing( $database, new WordPressRevisionContext() );
+		$controller = new self( new DocumentRequest( new StreamStore( $database, null, $ring ), new WordPressPostAccess(), $ring ) );
 		foreach ( [
 			'/documents/(?P<post_id>\d+)/layout' => false,
 			'/documents/(?P<post_id>\d+)/content/(?P<locale>[A-Za-z_]+)' => true,
@@ -45,6 +49,26 @@ final class DocumentController {
 					'validate_callback' => [ self::class, 'validate_locale' ],
 				];
 			}
+			\register_rest_route(
+				'blixis/v1',
+				$route . '/revisions',
+				[
+					'methods'             => 'GET',
+					'callback'            => [ $controller, 'revisions' ],
+					'permission_callback' => [ $controller, 'permission' ],
+					'args'                => $args,
+				]
+			);
+			\register_rest_route(
+				'blixis/v1',
+				$route . '/restore',
+				[
+					'methods'             => 'POST',
+					'callback'            => [ $controller, 'restore' ],
+					'permission_callback' => [ $controller, 'permission' ],
+					'args'                => $args,
+				]
+			);
 			\register_rest_route(
 				'blixis/v1',
 				$route,
@@ -106,6 +130,25 @@ final class DocumentController {
 	 */
 	public function get( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
 		return self::response( $this->documents->get( (int) $request->get_param( 'post_id' ), self::locale( $request ) ) );
+	}
+
+	/**
+	 * List saved history.
+	 *
+	 * @param \WP_REST_Request $request REST request.
+	 */
+	public function revisions( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
+		return self::response( $this->documents->revisions( (int) $request->get_param( 'post_id' ), self::locale( $request ) ) );
+	}
+
+	/**
+	 * Restore an earlier revision as a new one.
+	 *
+	 * @param \WP_REST_Request $request REST request.
+	 */
+	public function restore( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
+		$if_match = $request->get_header( 'if-match' );
+		return self::response( $this->documents->restore( (int) $request->get_param( 'post_id' ), self::locale( $request ), '' === $if_match ? null : $if_match, $request->get_body() ) );
 	}
 
 	/** Write a working stream using the If-Match precondition.

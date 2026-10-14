@@ -132,6 +132,18 @@ final class FakeDatabase implements Database {
 	 * Implement the storage contract.
 	 *
 	 * @param int    $post_id Value.
+	 * @param string $stream_key Value.
+	 * @return list<string> Values.
+	 */
+	public function revision_keys( int $post_id, string $stream_key ): array {
+		$prefix = MetaKeys::rev_prefix( $stream_key );
+		return \array_values( \array_filter( \array_keys( $this->data[ $post_id ] ?? [] ), static fn ( $key ): bool => \is_string( $key ) && MetaKeys::is_revision( $key ) && 0 === \strpos( $key, $prefix ) ) );
+	}
+
+	/**
+	 * Implement the storage contract.
+	 *
+	 * @param int    $post_id Value.
 	 * @param string $key Value.
 	 * @param int    $row_id Value.
 	 */
