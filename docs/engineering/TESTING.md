@@ -13,6 +13,8 @@ Testing is a release criterion, not a post-release activity. Test features at th
 - Visual snapshots: Playwright screenshots of deterministic fixtures, reviewed on intentional changes.
 - Security scanning: dependency scanning, secret scanning, static analysis; fuzz CSS and document input.
 
+Fixture conventions and shared helpers: [FIXTURES.md](FIXTURES.md).
+
 ## Required suites
 
 | Layer | Scenarios | Minimum gate |

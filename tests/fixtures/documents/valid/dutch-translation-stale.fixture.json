@@ -1,0 +1,19 @@
+{
+  "description": "A Dutch entry marked stale after the English source changed; the Dutch text must be preserved (FR-053).",
+  "expected": { "valid": true },
+  "fixtureVersion": 1,
+  "id": "dutch-translation-stale",
+  "input": {
+    "defaultLocale": "en_US",
+    "documentId": "doc-002",
+    "layoutRevision": 3,
+    "locales": ["en_US", "nl_NL"],
+    "root": [{ "children": [], "id": "el-001", "props": {}, "type": "blixis/heading" }],
+    "schemaVersion": 1,
+    "translations": {
+      "en_US": { "el-001": { "status": "translated", "values": { "text": "Welcome back" } } },
+      "nl_NL": { "el-001": { "sourceHash": "d41d8cd9", "status": "stale", "values": { "text": "Welkom" } } }
+    }
+  },
+  "tags": ["document", "translation", "stale"]
+}

@@ -1,0 +1,19 @@
+{
+  "description": "A translated value carrying script markup: stored as data, never rendered unescaped (threat T4).",
+  "expected": { "escapedOutput": "&lt;script&gt;alert(1)&lt;/script&gt;" },
+  "fixtureVersion": 1,
+  "id": "hostile-translation-markup",
+  "input": {
+    "defaultLocale": "en_US",
+    "documentId": "doc-004",
+    "layoutRevision": 1,
+    "locales": ["en_US", "nl_NL"],
+    "root": [{ "children": [], "id": "el-001", "props": {}, "type": "blixis/heading" }],
+    "schemaVersion": 1,
+    "translations": {
+      "en_US": { "el-001": { "status": "translated", "values": { "text": "Safe" } } },
+      "nl_NL": { "el-001": { "status": "draft", "values": { "text": "<script>alert(1)</script>" } } }
+    }
+  },
+  "tags": ["document", "hostile", "xss"]
+}

@@ -3,6 +3,8 @@
 	<description>WordPress coding standards, WordPress docs rules and PHP 8.2+ compatibility for all Blixis PHP (BWB-014).</description>
 
 	<!-- Scanned by default. wordpress/ holds the theme, Builder, Plus and Pro. Fixtures are not listed on purpose. -->
+	<file>tooling/php/src</file>
+	<file>tooling/php/bin</file>
 	<file>tooling/php/tests</file>
 	<file>wordpress</file>
 
