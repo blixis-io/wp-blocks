@@ -1,0 +1,60 @@
+<?xml version="1.0"?>
+<ruleset name="Blixis" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/squizlabs/PHP_CodeSniffer/master/phpcs.xsd">
+	<description>WordPress coding standards, WordPress docs rules and PHP 8.2+ compatibility for all Blixis PHP (BWB-014).</description>
+
+	<!-- Scanned by default. wordpress/ holds the theme, Builder, Plus and Pro. Fixtures are not listed on purpose. -->
+	<file>tooling/php/tests</file>
+	<file>wordpress</file>
+
+	<exclude-pattern>*/vendor/*</exclude-pattern>
+	<exclude-pattern>*/node_modules/*</exclude-pattern>
+	<exclude-pattern>*/dist/*</exclude-pattern>
+
+	<arg name="extensions" value="php"/>
+	<arg name="basepath" value="."/>
+	<arg name="parallel" value="8"/>
+	<arg value="ps"/>
+
+	<!-- ADR 0001: PHP 8.2 floor, WordPress 7.0 floor. -->
+	<config name="testVersion" value="8.2-"/>
+	<config name="minimum_wp_version" value="7.0"/>
+	<rule ref="PHPCompatibilityWP"/>
+
+	<rule ref="WordPress-Extra"/>
+	<rule ref="WordPress-Docs"/>
+
+	<!-- PSR-4 autoloading (docs/engineering/CODE-STANDARDS.md) replaces the class-*.php file naming convention. -->
+	<rule ref="WordPress.Files.FileName">
+		<properties>
+			<property name="strict_class_file_names" value="false"/>
+		</properties>
+		<exclude name="WordPress.Files.FileName.NotHyphenatedLowercase"/>
+		<exclude name="WordPress.Files.FileName.InvalidClassFileName"/>
+	</rule>
+
+	<!-- Collision-safe global names (ADR 0009: namespaces `Blixis\...`, handles `blixis-*`). -->
+	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+		<properties>
+			<property name="prefixes" type="array">
+				<element value="Blixis"/>
+				<element value="blixis"/>
+			</property>
+		</properties>
+	</rule>
+
+	<!-- Reading local repository files in tests is fine; the rule targets remote URLs in plugin runtime code. -->
+	<rule ref="WordPress.WP.AlternativeFunctions">
+		<exclude-pattern>*/tests/*</exclude-pattern>
+	</rule>
+
+	<rule ref="WordPress.WP.I18n">
+		<properties>
+			<property name="text_domain" type="array">
+				<element value="blixis"/>
+				<element value="blixis-builder"/>
+				<element value="blixis-plus"/>
+				<element value="blixis-pro"/>
+			</property>
+		</properties>
+	</rule>
+</ruleset>

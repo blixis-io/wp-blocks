@@ -20,7 +20,11 @@
     "commitlint": "commitlint --from origin/main --to HEAD",
     "check:boundaries": "node tooling/check-boundaries.mjs",
     "test:tooling": "node --test \"tooling/**/*.test.mjs\"",
-    "check": "pnpm run format:check && pnpm run lint && pnpm run typecheck && pnpm run check:boundaries && pnpm run test:tooling"
+    "check": "pnpm run format:check && pnpm run lint && pnpm run typecheck && pnpm run check:boundaries && pnpm run test:tooling",
+    "lint:php": "composer run lint",
+    "stan": "composer run stan",
+    "test:php": "composer run test",
+    "check:php": "composer run check"
   },
   "devDependencies": {
     "@commitlint/cli": "21.2.3",
