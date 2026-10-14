@@ -326,7 +326,47 @@ async function smoke() {
             );
             response = await submit(2, html, colorFields);
             check(response.status === 302, 'valid colors advance');
-            for (let step = 3; step <= 6; step++) {
+            const fontPost = command(
+              'post',
+              'create',
+              '--post_type=wp_font_family',
+              '--post_status=publish',
+              '--post_title=Smoke Inter',
+              '--post_content={"slug":"smoke-inter","name":"Smoke Inter","fontFamily":"Smoke Inter","fontFace":[{"fontWeight":"400","fontStyle":"normal"}]}',
+              '--porcelain',
+            );
+            html = await stepPage(3);
+            check(
+              html.includes('Smoke Inter (400 normal)'),
+              'installed Font Library family and variant appear in Typography',
+            );
+            const typographyBefore = command('user', 'meta', 'get', 'admin', 'blixis_setup_draft');
+            const typography = JSON.parse(typographyBefore).tokens;
+            const typographyFields = {
+              'tokens[font-body][value]': '"Smoke Inter", system-ui, sans-serif',
+              'tokens[font-heading][value]': typography['font-heading'].value,
+              'tokens[text-base][value]': typography['text-base'].value,
+            };
+            response = await submit(3, html, {
+              ...typographyFields,
+              'tokens[font-body][value]': 'Evil; background:url(x)',
+            });
+            check(
+              response.status === 302 && response.headers.get('location')?.includes('error=invalid'),
+              'hostile font stack rejected',
+            );
+            check(
+              command('user', 'meta', 'get', 'admin', 'blixis_setup_draft') === typographyBefore,
+              'rejected font leaves draft unchanged',
+            );
+            response = await submit(3, html, typographyFields);
+            check(response.status === 302, 'installed Font Library family accepted');
+            check(
+              JSON.parse(command('user', 'meta', 'get', 'admin', 'blixis_setup_draft')).tokens['font-body'].value ===
+                typographyFields['tokens[font-body][value]'],
+              'font choice saved in draft',
+            );
+            for (let step = 4; step <= 6; step++) {
               html = await stepPage(step);
               if (step < 5) {
                 const current = JSON.parse(command('user', 'meta', 'get', 'admin', 'blixis_setup_draft'));
@@ -411,6 +451,7 @@ async function smoke() {
               restored.tokenVersion === 3 && restored.tokens['color-bg'].value === '#f8fbff',
               'restore brings back the first design system under a new, higher version',
             );
+            command('post', 'delete', fontPost.trim(), '--force');
             command('option', 'delete', 'blixis_design_system');
             command('option', 'delete', 'blixis_design_system_history');
             command('user', 'meta', 'delete', 'admin', 'blixis_setup_ui');

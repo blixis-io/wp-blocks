@@ -48,16 +48,17 @@ final class DesignSystemStore {
 	 *
 	 * @param mixed                $value Stored value.
 	 * @param array<string, mixed> $seed  Default token set (the allowed names and option lists).
+	 * @param array<string>        $extra_fonts Server-derived installed font stacks.
 	 * @return array{version: 1, tokenVersion: int, preset: string, updated_at: string, tokens: array<string, mixed>}|null
 	 */
-	public static function normalize( mixed $value, array $seed ): ?array {
+	public static function normalize( mixed $value, array $seed, array $extra_fonts = array() ): ?array {
 		if ( ! \is_array( $value ) || 1 !== ( $value['version'] ?? null ) || ! \is_int( $value['tokenVersion'] ?? null ) || $value['tokenVersion'] < 1 ) {
 			return null;
 		}
 		if ( ! \is_string( $value['preset'] ?? null ) || 1 !== \preg_match( '/^[a-z][a-z0-9-]{0,31}$/', $value['preset'] ) ) {
 			return null;
 		}
-		if ( ! \is_string( $value['updated_at'] ?? null ) || ! \is_array( $value['tokens'] ?? null ) || array() !== TokenDraft::validate( $value['tokens'], $seed ) ) {
+		if ( ! \is_string( $value['updated_at'] ?? null ) || ! \is_array( $value['tokens'] ?? null ) || array() !== TokenDraft::validate( $value['tokens'], $seed, $extra_fonts ) ) {
 			return null;
 		}
 		return array(
@@ -174,7 +175,7 @@ final class DesignSystemStore {
 	 */
 	public static function current(): ?array {
 		$seed = self::seed();
-		return null === $seed ? null : self::normalize( get_option( self::OPTION, false ), $seed );
+		return null === $seed ? null : self::normalize( get_option( self::OPTION, false ), $seed, FontLibrary::allowed_stacks() );
 	}
 
 	/**
@@ -190,7 +191,7 @@ final class DesignSystemStore {
 		}
 		$out = array();
 		foreach ( $raw as $entry ) {
-			$state = self::normalize( $entry, $seed );
+			$state = self::normalize( $entry, $seed, FontLibrary::allowed_stacks() );
 			if ( null !== $state ) {
 				$out[] = $state;
 			}
@@ -208,7 +209,7 @@ final class DesignSystemStore {
 	 */
 	public static function apply( array $tokens, string $preset = 'custom' ): array {
 		$seed = self::seed();
-		if ( null === $seed || array() !== TokenDraft::validate( $tokens, $seed ) ) {
+		if ( null === $seed || array() !== TokenDraft::validate( $tokens, $seed, FontLibrary::allowed_stacks() ) ) {
 			return array(
 				'ok'     => false,
 				'reason' => 'invalid',
