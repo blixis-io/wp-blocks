@@ -1,0 +1,57 @@
+# Backing services for a hands-on development site served by Laravel Herd (docs/engineering/HERD-DEVELOPMENT.md).
+# Separate from docker/compose.yml, which is the reproducible stack used by CI and `pnpm wp:smoke`. Development only:
+# loopback ports, no authentication, never expose. Images are pinned by digest.
+name: blixis-dev-services
+
+services:
+  db:
+    image: mariadb:11.4@sha256:1292844148b311e4ed4300022a996d39083f415a963e970cf47cad1b3b18e3a6
+    environment:
+      MARIADB_DATABASE: blixis
+      MARIADB_USER: blixis
+      MARIADB_PASSWORD: blixis-dev-only
+      MARIADB_ROOT_PASSWORD: root-dev-only
+    ports:
+      - '127.0.0.1:3307:3306'
+    volumes:
+      - db-data:/var/lib/mysql
+    healthcheck:
+      test: ['CMD', 'healthcheck.sh', '--connect', '--innodb_initialized']
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  redis:
+    image: redis:8-alpine@sha256:3811787313eba226a2ef38658c6ccb91cd5e110edc89c37767de373120a0e5a0
+    command: ['redis-server', '--save', '', '--appendonly', 'no']
+    ports:
+      - '127.0.0.1:6380:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  opensearch:
+    image: opensearchproject/opensearch:2@sha256:e321cb03c643874c42240458a618db56bc1e4fc143b10c41bec653542bc6851b
+    environment:
+      discovery.type: single-node
+      DISABLE_SECURITY_PLUGIN: 'true'
+      DISABLE_INSTALL_DEMO_CONFIG: 'true'
+      OPENSEARCH_JAVA_OPTS: -Xms512m -Xmx512m
+    ulimits:
+      memlock: { soft: -1, hard: -1 }
+      nofile: { soft: 65536, hard: 65536 }
+    ports:
+      - '127.0.0.1:9200:9200'
+    volumes:
+      - search-data:/usr/share/opensearch/data
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -fs http://localhost:9200/_cluster/health || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+volumes:
+  db-data:
+  search-data:
