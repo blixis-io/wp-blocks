@@ -33,7 +33,7 @@ Administrators with `edit_theme_options` see a non-blocking notice on admin scre
 
 ## Setup wizard
 
-Appearance → Blixis setup has six server-rendered steps: preset or Custom, colors, typography, spacing/radius/layout, a side-by-side light/dark preview, and Apply. Every POST checks `edit_theme_options` and a step-specific nonce, then redirects safely. Back, Next and Cancel work without JavaScript. The per-user `blixis_setup_ui` resume step is separate from the site-wide status. `blixis_setup_draft` stores bounded JSON in user meta; invalid values and low-contrast semantic pairs are rejected before writing it. The preview uses scoped variables and reports contrast in each mode. The Apply button validates the saved draft and calls `DesignSystemStore::apply()`; BWB-035 will implement that boundary. Until then it leaves the site in progress and explains that publishing is unavailable. The wizard does not select fonts from WordPress Font Library (BWB-036).
+Appearance → Blixis setup has six server-rendered steps: preset or Custom, colors, typography, spacing/radius/layout, a side-by-side light/dark preview, and Apply. Every POST checks `edit_theme_options` and a step-specific nonce, then redirects safely. Back, Next and Cancel work without JavaScript. The per-user `blixis_setup_ui` resume step is separate from the site-wide status. `blixis_setup_draft` stores bounded JSON in user meta; invalid values and low-contrast semantic pairs are rejected before writing it. The preview uses scoped variables and reports contrast in each mode. The Apply button validates the saved draft and calls `DesignSystemStore::apply()` (below); only after that succeeds is setup marked `completed` and the draft deleted. The wizard does not select fonts from WordPress Font Library (BWB-036).
 
 ## Development and tests
 
@@ -47,3 +47,14 @@ Appearance → Blixis setup has six server-rendered steps: preset or Custom, col
 ## Not here yet
 
 `screenshot.png` (required for WordPress.org; with the design work), translation files (`languages/`, BWB-071) and the WordPress.org theme-review checks (release phase).
+
+## Design system persistence (BWB-035)
+
+`DesignSystemStore` keeps the site's design system in one option, `blixis_design_system`: `{ version: 1, tokenVersion, preset, updated_at, tokens }` with the wizard's token shape (`name => { value, dark? }`). It is autoloaded because every public page prints it. `tokenVersion` starts at 1 and only ever increases (also on rollback); it exists for cache invalidation (ADR 0004). Tokens are live: saving or restoring changes every page at once, and the wizard's preview step plus the Apply button are the confirmation.
+
+- **Validation.** Saving and reading both validate against the bundled default token set (`TokenDraft::validate`); invalid or corrupted data is ignored, never repaired, and the bundled `tokens.css` stays in force.
+- **History and rollback.** The replaced state is pushed onto `blixis_design_system_history` (not autoloaded, newest first, at most 5). "Restore the previous design system" (POST, nonce, `edit_theme_options`) puts the newest earlier content back under a new, higher `tokenVersion`; the state it replaces is not kept, so a second restore goes one step further back.
+- **Atomicity.** The current option is the source of truth. The history is written first (a failure in between leaves a harmless duplicate); success is reported only after the current option was written, and a failed save changes nothing and shows an error.
+- **Output.** `Setup::enqueue` adds the saved tokens as inline CSS after `tokens.css` (`DesignSystemStore::css`), in the same layer `blx.tokens`, in the exact form the compiler emits (a test compares them for the bundled defaults). Values are restricted to a safe character set (no `;`, braces, angle brackets, backslashes or `url()`); anything else is skipped.
+- **Bundled defaults.** `design/default-tokens.json` now includes `color-on-primary` and a border color with enough contrast; a test checks that the default set passes the accessibility rules in both modes.
+

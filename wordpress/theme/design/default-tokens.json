@@ -8,7 +8,14 @@
     { "name": "color-muted", "category": "color", "value": "#4b5563", "dark": "#d1d5db", "label": "Muted text" },
     { "name": "color-link", "category": "color", "value": "#1d4ed8", "dark": "#93c5fd", "label": "Link" },
     { "name": "color-primary", "category": "color", "value": "#1e40af", "dark": "#60a5fa", "label": "Primary" },
-    { "name": "color-line", "category": "color", "value": "#d1d5db", "dark": "#4b5563", "label": "Border" },
+    { "name": "color-line", "category": "color", "value": "#767676", "dark": "#9ca3af", "label": "Border" },
+    {
+      "name": "color-on-primary",
+      "category": "color",
+      "value": "#ffffff",
+      "dark": "#111827",
+      "label": "Text on primary"
+    },
     {
       "name": "font-body",
       "category": "font-family",

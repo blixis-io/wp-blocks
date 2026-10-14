@@ -38,7 +38,7 @@ final class SetupAdmin {
 	public static function register(): void {
 		add_action( 'admin_menu', array( self::class, 'menu' ) );
 		add_action( 'admin_notices', array( self::class, 'notice' ) );
-		foreach ( array( 'start', 'dismiss', 'wizard' ) as $action ) {
+		foreach ( array( 'start', 'dismiss', 'wizard', 'rollback' ) as $action ) {
 			add_action( 'admin_post_blixis_setup_' . $action, array( self::class, $action ) );
 		}
 	}
@@ -87,12 +87,15 @@ final class SetupAdmin {
 				$errors['tokens'] = __( 'Color contrast is too low.', 'blixis' );
 			} elseif ( 'invalid' === $code ) {
 				$errors = $errors ? $errors : array( 'tokens' => __( 'The submitted values were invalid. Check every field and try again.', 'blixis' ) );
+			} elseif ( 'not-saved' === $code ) {
+				$errors['tokens'] = __( 'The design system could not be saved. Nothing was changed; try again.', 'blixis' );
 			} elseif ( 'unavailable' === $code ) {
 				$errors['tokens'] = __( 'The bundled design data is unavailable.', 'blixis' );
 			}
 		}
 		?>
 		<div class="wrap blixis-setup"><h1><?php echo esc_html__( 'Blixis setup', 'blixis' ); ?></h1>
+		<?php self::saved_panel(); ?>
 		<?php if ( null === $state ) : ?>
 			<p><?php echo esc_html__( 'Setup status is unavailable.', 'blixis' ); ?></p>
 		<?php else : ?>
@@ -115,7 +118,7 @@ final class SetupAdmin {
 			<?php
 			if ( 6 === $step ) :
 				?>
-				<p><?php echo esc_html__( 'Your validated draft is saved. Publishing the design system is not implemented yet (BWB-035).', 'blixis' ); ?></p><?php endif; ?>
+				<p><?php echo esc_html__( 'Applying saves this design system for the whole site. Every page changes at once; you can restore the previous version afterwards.', 'blixis' ); ?></p><?php endif; ?>
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 				<input type="hidden" name="action" value="blixis_setup_wizard"><input type="hidden" name="step" value="<?php echo esc_attr( (string) $step ); ?>">
 				<?php wp_nonce_field( 'blixis_setup_step_' . $step, 'blixis_setup_nonce_wizard' ); ?>
@@ -226,6 +229,42 @@ else :
 		exit;
 	}
 
+	/** Show the saved design system, a confirmation after applying and the restore form. */
+	private static function saved_panel(): void {
+		$saved = DesignSystemStore::current();
+		if ( isset( $_GET['applied'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Fixed post-redirect message.
+			echo '<div class="notice notice-success"><p>' . esc_html__( 'The design system was saved.', 'blixis' ) . '</p></div>';
+		}
+		if ( isset( $_GET['restored'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Fixed post-redirect message.
+			echo '<div class="notice notice-success"><p>' . esc_html__( 'The previous design system was restored.', 'blixis' ) . '</p></div>';
+		}
+		if ( null === $saved ) {
+			return;
+		}
+		?>
+		<section aria-labelledby="blixis-saved"><h2 id="blixis-saved"><?php echo esc_html__( 'Saved design system', 'blixis' ); ?></h2>
+		<p>
+		<?php
+		/* translators: 1: preset, 2: version number, 3: date. */
+		printf( esc_html__( 'Preset %1$s, version %2$s, saved %3$s.', 'blixis' ), esc_html( $saved['preset'] ), esc_html( (string) $saved['tokenVersion'] ), esc_html( $saved['updated_at'] ) );
+		?>
+		</p>
+		<?php
+		if ( array() !== DesignSystemStore::history() ) {
+			self::action_form( 'rollback', __( 'Restore the previous design system', 'blixis' ) );
+		}
+		echo '</section>';
+	}
+
+	/** Restore the previous design system. */
+	public static function rollback(): void {
+		self::require_post();
+		check_admin_referer( self::NONCE_ACTION, 'blixis_setup_nonce_rollback' );
+		$result = DesignSystemStore::rollback();
+		wp_safe_redirect( admin_url( 'themes.php?page=blixis-setup' . ( $result['ok'] ? '&restored=1' : '&error=not-saved' ) ) );
+		exit;
+	}
+
 	/** Handle a wizard POST. */
 	public static function wizard(): void {
 		self::require_post();
@@ -295,10 +334,19 @@ else :
 			if ( null === $seed || TokenDraft::validate( $draft['tokens'], $seed ) ) {
 				self::redirect_step( 6, 'invalid' );
 			}
-			$result = DesignSystemStore::apply( $draft['tokens'] );
+			$result = DesignSystemStore::apply( $draft['tokens'], $draft['preset'] );
 			if ( ! $result['ok'] ) {
-				self::redirect_step( 6 );
+				self::redirect_step( 6, 'not-saved' );
 			}
+			// Setup counts as completed only after the design system was persisted.
+			$state = SetupState::transition( get_option( SetupState::OPTION, false ), 'complete', gmdate( DATE_ATOM ) );
+			if ( null !== $state ) {
+				update_option( SetupState::OPTION, $state, false );
+			}
+			delete_user_meta( $user_id, self::DRAFT_META );
+			SetupState::save_resume_step( $user_id, 1 );
+			wp_safe_redirect( admin_url( 'themes.php?page=blixis-setup&applied=1' ) );
+			exit;
 		} else {
 			self::save_draft( $user_id, $draft );
 			$state = SetupState::transition( get_option( SetupState::OPTION, false ), 'start', gmdate( DATE_ATOM ) );

@@ -61,18 +61,8 @@ final class TokenDraft {
 				$tokens[ $token['name'] ]['dark'] = $token['dark'];
 			}
 		}
-		if ( \count( $tokens ) !== ( 'custom' === $preset ? 25 : 26 ) ) {
+		if ( \count( $tokens ) !== 26 ) {
 			return null;
-		}
-		if ( 'custom' === $preset ) {
-			$tokens['color-on-primary'] = array(
-				'value' => '#ffffff',
-				'dark'  => '#111827',
-			);
-			$tokens['color-line']       = array(
-				'value' => '#767676',
-				'dark'  => '#9ca3af',
-			);
 		}
 		$result = self::validate( $tokens, $tokens );
 		return array() === $result ? $tokens : null;

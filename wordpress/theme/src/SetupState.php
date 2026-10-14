@@ -66,12 +66,18 @@ final class SetupState {
 	 * Apply an entry-point action to a valid status. Completed and dismissed setups remain untouched.
 	 *
 	 * @param mixed  $value      Stored status.
-	 * @param string $action     start or dismiss.
+	 * @param string $action     start, dismiss or complete.
 	 * @param string $updated_at UTC RFC3339 timestamp.
 	 * @return array{version: 1, status: string, updated_at: string, preset?: string}|null
 	 */
 	public static function transition( mixed $value, string $action, string $updated_at ): ?array {
 		$state = self::normalize( $value );
+		if ( null !== $state && 'complete' === $action ) {
+			// Applying a design system completes setup from any state, also when it is re-run later.
+			$state['status']     = 'completed';
+			$state['updated_at'] = $updated_at;
+			return null === self::normalize( $state ) ? null : $state;
+		}
 		if ( null === $state || ! in_array( $state['status'], array( 'not_started', 'in_progress' ), true ) ) {
 			return null;
 		}

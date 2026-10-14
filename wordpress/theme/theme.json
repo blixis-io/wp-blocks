@@ -38,6 +38,11 @@
           "slug": "color-line",
           "name": "Border",
           "color": "var(--blx-color-line)"
+        },
+        {
+          "slug": "color-on-primary",
+          "name": "Text on primary",
+          "color": "var(--blx-color-on-primary)"
         }
       ]
     },
