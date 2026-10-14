@@ -52,10 +52,10 @@ Branch protection, PR templates, status checks, commitlint, secret scan, CODEOWN
 
 ## Temporary procedural safeguards (no branch protection available)
 
-The organisation is on the GitHub free plan and the repository is private, so branch protection and rulesets are not available (the API returns 403). Until BWB-125 is done, these rules are enforced by process instead:
+The organisation is on the GitHub free plan and the repository is private, so branch protection and rulesets are not available (the API returns 403). Until BWB-125 is done, these rules are enforced by process instead (the prepared technical rules are in [`BRANCH-PROTECTION.md`](BRANCH-PROTECTION.md)):
 
 - The initial bootstrap commit was the only direct push to `main`. Every later change goes through a feature branch and a pull request.
 - No force pushes to `main`; no direct pushes to `main` unless the owner explicitly approves.
-- Required checks (once CI exists, P1) must be green before merge; until CI exists the PR must list the checks that were run locally. A PR with failing tests is not merged.
+- The aggregate `CI` check (`.github/workflows/ci.yml`) must be green before merge; a PR with a red `CI` is not merged. A PR with failing tests is not merged.
 - Significant changes (architecture, security, REST, renderer, licensing) need at least one independent review recorded in the PR or `docs/coordination/reviews/`. An agent never counts as the independent reviewer of its own work.
 - Commit and PR text follows the identity and attribution policy above.

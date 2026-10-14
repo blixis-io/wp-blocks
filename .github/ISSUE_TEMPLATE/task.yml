@@ -1,0 +1,45 @@
+name: Task or feature
+description: Planned work that follows the issue conventions (docs/roadmap/ISSUE-CONVENTIONS.md)
+title: 'BWB-XXX: '
+labels: []
+body:
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Outcome
+      description: What is true when this is done?
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Testable criteria, one per line.
+      placeholder: |
+        - [ ] ...
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies
+      description: Issue numbers this depends on, or "None".
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Delivery notes
+      description: Phase, epic, priority (P0/P1/P2), size, area, type.
+      placeholder: 'Phase: P? · Epic: ... · Priority: P? · Size: ? · Area: ? · Type: ?'
+    validations:
+      required: true
+  - type: checkboxes
+    id: dod
+    attributes:
+      label: Definition of Done
+      options:
+        - label: Tests and relevant docs updated
+        - label: CI green
+        - label: Reviewed by someone other than the implementer
+        - label: Meets docs/engineering/CODE-STANDARDS.md
