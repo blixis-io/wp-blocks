@@ -134,13 +134,16 @@ export function validateTokenSet(input: unknown): TokenSetResult {
 
 /**
  * The compiler's token input for a validated set: `--blx-<name>` with the base value, plus a dark-mode value where the
- * token has one. References stay as `var(--blx-x)`; CSS resolves them, so a changed alias target updates its users.
+ * token has a dark value that differs from the base value (modes are sparse). References stay as `var(--blx-x)`; CSS resolves them, so a changed alias target updates its users.
  */
 export function tokensForCompile(set: ValidatedTokenSet): TokenValue[] {
   const out: TokenValue[] = [];
   for (const token of set.tokens) {
     out.push({ name: tokenProperty(token.name), value: token.value });
-    if (token.dark !== undefined) out.push({ name: tokenProperty(token.name), value: token.dark, mode: 'dark' });
+    // Modes are sparse: a dark value equal to the base value says nothing and is not emitted.
+    if (token.dark !== undefined && token.dark !== token.value) {
+      out.push({ name: tokenProperty(token.name), value: token.dark, mode: 'dark' });
+    }
   }
   return out;
 }

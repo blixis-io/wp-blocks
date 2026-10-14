@@ -1087,6 +1087,54 @@
           }
         ]
       }
+    },
+    {
+      "id": "sparse-dark",
+      "description": "a dark value equal to the base value is redundant and is not emitted; a different one is",
+      "input": {
+        "schemaVersion": 1,
+        "tokenVersion": 1,
+        "tokens": [
+          {
+            "name": "line",
+            "category": "color",
+            "value": "#cccccc",
+            "dark": "#cccccc"
+          },
+          {
+            "name": "bg",
+            "category": "color",
+            "value": "#ffffff",
+            "dark": "#111111"
+          }
+        ]
+      },
+      "expect": {
+        "ok": true,
+        "light": {
+          "line": "#cccccc",
+          "bg": "#ffffff"
+        },
+        "dark": {
+          "line": "#cccccc",
+          "bg": "#111111"
+        },
+        "compile": [
+          {
+            "name": "--blx-line",
+            "value": "#cccccc"
+          },
+          {
+            "name": "--blx-bg",
+            "value": "#ffffff"
+          },
+          {
+            "name": "--blx-bg",
+            "value": "#111111",
+            "mode": "dark"
+          }
+        ]
+      }
     }
   ]
 }

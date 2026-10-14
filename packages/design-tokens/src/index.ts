@@ -6,6 +6,7 @@ export {
   type TokenIssue,
   type TokenIssueCode,
 } from './graph.ts';
+export { resolveExpression, resolveModes, sparseTokens, type ModeResolution } from './modes.ts';
 export {
   CURRENT_TOKEN_SCHEMA_VERSION,
   RESERVED_KEYS,
