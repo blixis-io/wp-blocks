@@ -36,6 +36,7 @@ Further scripts (lint, typecheck, build, e2e) arrive with BWB-013 to BWB-018.
 | `docs/product/FEATURE-MATRIX.md`                    | Free / Plus / Pro packaging and entitlement rules                                            |
 | `docs/architecture/SYSTEM.md`                       | Modules, rendering, CSS strategy, editor, theme contracts                                    |
 | `docs/architecture/DOCUMENT-SCHEMA.md`              | Document schema v1: shape, formats, versioning rules, what `validateDocument` adds (BWB-019) |
+| `docs/architecture/COMMANDS.md`                     | Document commands, inverses and undo/redo history (BWB-022)                                  |
 | `docs/architecture/SCHEMAS-AND-APIS.md`             | Initial document contracts, endpoints, migrations and plugin extension API                   |
 | `docs/architecture/WORDPRESS.md`                    | Theme activation, font library, persistence, access and portability                          |
 | `docs/engineering/TESTING.md`                       | Test layers, coverage, CI gates, E2E matrix                                                  |
