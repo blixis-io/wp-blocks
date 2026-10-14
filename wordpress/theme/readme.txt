@@ -6,7 +6,7 @@ Requires PHP: 8.2
 Stable tag: 0.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
-Tags: accessibility-ready, custom-menu, featured-images, threaded-comments, translation-ready
+Tags: custom-menu, featured-images, threaded-comments, translation-ready
 
 A lean, accessible classic theme for the Blixis Builder.
 

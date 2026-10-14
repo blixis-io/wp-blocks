@@ -65,6 +65,37 @@ final class CompatTest extends TestCase {
 	}
 
 	/**
+	 * Child theme precedence: absent inherits, valid wins (even when different), invalid means not compatible.
+	 *
+	 * @return array<string, array{string, string, int|null}>
+	 */
+	public static function child_cases(): array {
+		return array(
+			'no headers at all'                     => array( '', '', null ),
+			'child absent, parent valid'            => array( '', '2', 2 ),
+			'child absent, parent invalid'          => array( '', 'x', null ),
+			'child valid, parent absent'            => array( '3', '', 3 ),
+			'child valid and different'             => array( '3', '2', 3 ),
+			'child valid and equal'                 => array( '2', '2', 2 ),
+			'child invalid, parent valid'           => array( 'x', '2', null ),
+			'child zero, parent valid'              => array( '0', '2', null ),
+			'child only whitespace counts as empty' => array( "  \t", '2', 2 ),
+		);
+	}
+
+	/**
+	 * Resolves the declaration of a child theme and its parent.
+	 *
+	 * @param string   $own      Own raw header value.
+	 * @param string   $inherited   Parent raw header value.
+	 * @param int|null $expected Result.
+	 */
+	#[DataProvider( 'child_cases' )]
+	public function test_child_theme_precedence( string $own, string $inherited, ?int $expected ): void {
+		$this->assertSame( $expected, Compat::resolve( $own, $inherited ) );
+	}
+
+	/**
 	 * The theme implements the version it declares, and style.css declares it.
 	 */
 	public function test_style_css_declares_the_current_version(): void {

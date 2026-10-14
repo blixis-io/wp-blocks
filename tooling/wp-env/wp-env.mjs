@@ -18,9 +18,11 @@ const PROJECT = 'blixis-wp-blocks';
 const env = { ...process.env };
 delete env.COMPOSE_PROJECT_NAME;
 // compose.packages.yml mounts the packages that contain PHP code (theme, plugin, ...) into wp-content.
-const files = ['compose.yml', 'compose.packages.yml']
-  .filter((name) => existsSync(join(root, 'docker', name)))
-  .flatMap((name) => ['-f', join(root, 'docker', name)]);
+const hasPackages = existsSync(join(root, 'docker', 'compose.packages.yml'));
+const files = ['compose.yml', ...(hasPackages ? ['compose.packages.yml'] : [])].flatMap((name) => [
+  '-f',
+  join(root, 'docker', name),
+]);
 const compose = (args, opts = {}) =>
   spawnSync('docker', ['compose', '-p', PROJECT, ...files, ...args], {
     cwd: root,
@@ -72,8 +74,13 @@ async function install() {
   must(wp('language', 'core', 'install', 'nl_NL'), 'install nl_NL language pack');
   must(wp('eval-file', '/fixtures/seed.php'), 'seed fixtures');
   // Packages that are mounted into wp-content are activated here; the theme defines what the public pages look like.
-  if (wp('theme', 'is-installed', 'blixis').status === 0)
+  if (hasPackages) {
+    must(
+      wp('theme', 'is-installed', 'blixis'),
+      'find the Blixis theme (the package mount in docker/compose.packages.yml did not work)',
+    );
     must(wp('theme', 'activate', 'blixis'), 'activate the Blixis theme');
+  }
   console.log(`\nWordPress is ready at ${base} (admin / password; development only, bound to localhost).`);
 }
 
@@ -88,6 +95,15 @@ async function smoke() {
     return { status: r.status, text: await r.text() };
   };
 
+  const logSize = capture([
+    'exec',
+    '-T',
+    'wordpress',
+    'sh',
+    '-c',
+    'wc -c < /var/www/html/wp-content/debug.log 2>/dev/null || echo 0',
+  ]);
+  const logOffset = Number.parseInt(String(logSize.stdout ?? '0').trim(), 10) || 0;
   const home = await get('/');
   check(home.status === 200, 'front page returns 200');
   check(home.text.includes('Blixis fixture home'), 'front page shows the seeded home content');
@@ -143,14 +159,15 @@ async function smoke() {
     missing.text.includes('Page not found') && missing.text.includes('class="skip-link'),
     'the 404 page is rendered by the theme',
   );
-  // WP_DEBUG_LOG writes PHP warnings, notices and deprecations to wp-content/debug.log; none may point into the theme.
+  // WP_DEBUG_LOG writes PHP warnings, notices and deprecations to wp-content/debug.log. Only what this run appended counts
+  // (the log may hold older entries), and nothing in it may point into the theme.
   const themeErrors = out([
     'exec',
     '-T',
     'wordpress',
     'sh',
     '-c',
-    "cat /var/www/html/wp-content/debug.log 2>/dev/null | grep -c '/themes/blixis/' || true",
+    `tail -c +${String(logOffset + 1)} /var/www/html/wp-content/debug.log 2>/dev/null | grep -c '/themes/blixis/' || true`,
   ]);
   check(
     themeErrors === '0',

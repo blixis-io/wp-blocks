@@ -15,7 +15,7 @@ if ( have_posts() ) {
 			printf(
 				/* translators: %s: search query. */
 				esc_html__( 'Search results for: %s', 'blixis' ),
-				'<span>' . esc_html( get_search_query() ) . '</span>'
+				'<span>' . esc_html( get_search_query( false ) ) . '</span>'
 			);
 			?>
 		</h1>
