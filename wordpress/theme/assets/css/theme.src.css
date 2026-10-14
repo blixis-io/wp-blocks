@@ -2,6 +2,24 @@
 @import 'tailwindcss/utilities.css' layer(blx.theme) source(none);
 
 @layer blx.theme {
+  html {
+    color-scheme: light dark;
+  }
+
+  html[data-theme='light'] {
+    color-scheme: light;
+  }
+
+  html[data-theme='dark'] {
+    color-scheme: dark;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    html:not([data-theme='light']):not([data-theme='dark']) {
+      color-scheme: dark;
+    }
+  }
+
   .site-shell {
     width: min(100%, var(--blx-container-wide));
     margin-inline: auto;
