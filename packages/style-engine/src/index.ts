@@ -45,3 +45,12 @@ export {
   type ResolveRule,
   type StyleSource,
 } from './resolve.ts';
+export {
+  TOKEN_GRAMMAR,
+  tokensForCompile,
+  validateTokenSet,
+  type TokenSetIssue,
+  type TokenSetIssueCode,
+  type TokenSetResult,
+  type ValidatedTokenSet,
+} from './tokens.ts';

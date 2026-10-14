@@ -1,0 +1,1092 @@
+{
+  "cases": [
+    {
+      "id": "empty",
+      "description": "an empty set is valid",
+      "input": {
+        "schemaVersion": 1,
+        "tokenVersion": 1,
+        "tokens": []
+      },
+      "expect": {
+        "ok": true,
+        "light": {},
+        "dark": {},
+        "compile": []
+      }
+    },
+    {
+      "id": "basic",
+      "description": "base and dark values; the compiler gets base values and dark overrides",
+      "input": {
+        "schemaVersion": 1,
+        "tokenVersion": 1,
+        "tokens": [
+          {
+            "name": "color-primary",
+            "category": "color",
+            "value": "#1a56db",
+            "dark": "#76a9fa"
+          },
+          {
+            "name": "space-4",
+            "category": "spacing",
+            "value": "1rem"
+          }
+        ]
+      },
+      "expect": {
+        "ok": true,
+        "light": {
+          "color-primary": "#1a56db",
+          "space-4": "1rem"
+        },
+        "dark": {
+          "color-primary": "#76a9fa",
+          "space-4": "1rem"
+        },
+        "compile": [
+          {
+            "name": "--blx-color-primary",
+            "value": "#1a56db"
+          },
+          {
+            "name": "--blx-color-primary",
+            "value": "#76a9fa",
+            "mode": "dark"
+          },
+          {
+            "name": "--blx-space-4",
+            "value": "1rem"
+          }
+        ]
+      }
+    },
+    {
+      "id": "alias-chain-per-mode",
+      "description": "an alias follows the dark value of its target in dark mode",
+      "input": {
+        "schemaVersion": 1,
+        "tokenVersion": 1,
+        "tokens": [
+          {
+            "name": "brand",
+            "category": "color",
+            "value": "#111111",
+            "dark": "#eeeeee"
+          },
+          {
+            "name": "text",
+            "category": "color",
+            "value": "var(--blx-brand)"
+          },
+          {
+            "name": "link",
+            "category": "color",
+            "value": "var(--blx-text)"
+          }
+        ]
+      },
+      "expect": {
+        "ok": true,
+        "light": {
+          "brand": "#111111",
+          "text": "#111111",
+          "link": "#111111"
+        },
+        "dark": {
+          "brand": "#eeeeee",
+          "text": "#eeeeee",
+          "link": "#eeeeee"
+        },
+        "compile": [
+          {
+            "name": "--blx-brand",
+            "value": "#111111"
+          },
+          {
+            "name": "--blx-brand",
+            "value": "#eeeeee",
+            "mode": "dark"
+          },
+          {
+            "name": "--blx-text",
+            "value": "var(--blx-brand)"
+          },
+          {
+            "name": "--blx-link",
+            "value": "var(--blx-text)"
+          }
+        ]
+      }
+    },
+    {
+      "id": "composite",
+      "description": "references inside a longer value are substituted",
+      "input": {
+        "schemaVersion": 1,
+        "tokenVersion": 1,
+        "tokens": [
+          {
+            "name": "gap",
+            "category": "spacing",
+            "value": "1rem"
+          },
+          {
+            "name": "pad",
+            "category": "spacing",
+            "value": "clamp(var(--blx-gap), 2vw, calc(var(--blx-gap) * 2))"
+          }
+        ]
+      },
+      "expect": {
+        "ok": true,
+        "light": {
+          "gap": "1rem",
+          "pad": "clamp(1rem, 2vw, calc(1rem * 2))"
+        },
+        "dark": {
+          "gap": "1rem",
+          "pad": "clamp(1rem, 2vw, calc(1rem * 2))"
+        },
+        "compile": [
+          {
+            "name": "--blx-gap",
+            "value": "1rem"
+          },
+          {
+            "name": "--blx-pad",
+            "value": "clamp(var(--blx-gap), 2vw, calc(var(--blx-gap) * 2))"
+          }
+        ]
+      }
+    },
+    {
+      "id": "fallback-used",
+      "description": "a fallback is used only when the token does not exist",
+      "input": {
+        "schemaVersion": 1,
+        "tokenVersion": 1,
+        "tokens": [
+          {
+            "name": "a",
+            "category": "color",
+            "value": "var(--blx-missing, #fff)"
+          }
+        ]
+      },
+      "expect": {
+        "ok": true,
+        "light": {
+          "a": "#fff"
+        },
+        "dark": {
+          "a": "#fff"
+        },
+        "compile": [
+          {
+            "name": "--blx-a",
+            "value": "var(--blx-missing, #fff)"
+          }
+        ]
+      }
+    },
+    {
+      "id": "fallback-ignored",
+      "description": "an existing token wins over the fallback",
+      "input": {
+        "schemaVersion": 1,
+        "tokenVersion": 1,
+        "tokens": [
+          {
+            "name": "b",
+            "category": "color",
+            "value": "#000000"
+          },
+          {
+            "name": "a",
+            "category": "color",
+            "value": "var(--blx-b, #fff)"
+          }
+        ]
+      },
+      "expect": {
+        "ok": true,
+        "light": {
+          "b": "#000000",
+          "a": "#000000"
+        },
+        "dark": {
+          "b": "#000000",
+          "a": "#000000"
+        },
+        "compile": [
+          {
+            "name": "--blx-b",
+            "value": "#000000"
+          },
+          {
+            "name": "--blx-a",
+            "value": "var(--blx-b, #fff)"
+          }
+        ]
+      }
+    },
+    {
+      "id": "font-stack",
+      "description": "quoted plain font names are allowed",
+      "input": {
+        "schemaVersion": 1,
+        "tokenVersion": 1,
+        "tokens": [
+          {
+            "name": "font-body",
+            "category": "font-family",
+            "value": "\"Source Sans 3\", system-ui, sans-serif"
+          }
+        ]
+      },
+      "expect": {
+        "ok": true,
+        "light": {
+          "font-body": "\"Source Sans 3\", system-ui, sans-serif"
+        },
+        "dark": {
+          "font-body": "\"Source Sans 3\", system-ui, sans-serif"
+        },
+        "compile": [
+          {
+            "name": "--blx-font-body",
+            "value": "\"Source Sans 3\", system-ui, sans-serif"
+          }
+        ]
+      }
+    },
+    {
+      "id": "not-a-colour",
+      "description": "a colour token must be a colour",
+      "input": {
+        "schemaVersion": 1,
+        "tokenVersion": 1,
+        "tokens": [
+          {
+            "name": "a",
+            "category": "color",
+            "value": "12px"
+          }
+        ]
+      },
+      "expect": {
+        "ok": false,
+        "issues": [
+          {
+            "code": "invalid-value",
+            "path": "tokens[0].value"
+          }
+        ]
+      }
+    },
+    {
+      "id": "url-injection",
+      "description": "url() is never allowed",
+      "input": {
+        "schemaVersion": 1,
+        "tokenVersion": 1,
+        "tokens": [
+          {
+            "name": "a",
+            "category": "color",
+            "value": "url(https://x.example/a.png)"
+          }
+        ]
+      },
+      "expect": {
+        "ok": false,
+        "issues": [
+          {
+            "code": "invalid-value",
+            "path": "tokens[0].value"
+          }
+        ]
+      }
+    },
+    {
+      "id": "dark-invalid",
+      "description": "a dark value is checked too",
+      "input": {
+        "schemaVersion": 1,
+        "tokenVersion": 1,
+        "tokens": [
+          {
+            "name": "a",
+            "category": "color",
+            "value": "red"
+          },
+          {
+            "name": "b",
+            "category": "color",
+            "value": "red",
+            "dark": "notacolor"
+          }
+        ]
+      },
+      "expect": {
+        "ok": false,
+        "issues": [
+          {
+            "code": "invalid-value",
+            "path": "tokens[1].dark"
+          }
+        ]
+      }
+    },
+    {
+      "id": "quote-breakout",
+      "description": "a quoted name cannot hold a statement",
+      "input": {
+        "schemaVersion": 1,
+        "tokenVersion": 1,
+        "tokens": [
+          {
+            "name": "a",
+            "category": "font-family",
+            "value": "\"a;b\""
+          }
+        ]
+      },
+      "expect": {
+        "ok": false,
+        "issues": [
+          {
+            "code": "invalid-value",
+            "path": "tokens[0].value"
+          }
+        ]
+      }
+    },
+    {
+      "id": "negative-spacing",
+      "description": "spacing cannot be negative",
+      "input": {
+        "schemaVersion": 1,
+        "tokenVersion": 1,
+        "tokens": [
+          {
+            "name": "a",
+            "category": "spacing",
+            "value": "-1rem"
+          }
+        ]
+      },
+      "expect": {
+        "ok": false,
+        "issues": [
+          {
+            "code": "invalid-value",
+            "path": "tokens[0].value"
+          }
+        ]
+      }
+    },
+    {
+      "id": "duplicate",
+      "description": "a name may be used once",
+      "input": {
+        "schemaVersion": 1,
+        "tokenVersion": 1,
+        "tokens": [
+          {
+            "name": "a",
+            "category": "color",
+            "value": "red"
+          },
+          {
+            "name": "a",
+            "category": "color",
+            "value": "blue"
+          }
+        ]
+      },
+      "expect": {
+        "ok": false,
+        "issues": [
+          {
+            "code": "duplicate-name",
+            "path": "tokens[1].name"
+          }
+        ]
+      }
+    },
+    {
+      "id": "unknown-reference",
+      "description": "a reference without a fallback needs its token",
+      "input": {
+        "schemaVersion": 1,
+        "tokenVersion": 1,
+        "tokens": [
+          {
+            "name": "a",
+            "category": "color",
+            "value": "var(--blx-nope)"
+          }
+        ]
+      },
+      "expect": {
+        "ok": false,
+        "issues": [
+          {
+            "code": "unknown-reference",
+            "path": "tokens[0].value"
+          }
+        ]
+      }
+    },
+    {
+      "id": "cycle",
+      "description": "a cycle fails every token on it and every user of it",
+      "input": {
+        "schemaVersion": 1,
+        "tokenVersion": 1,
+        "tokens": [
+          {
+            "name": "a",
+            "category": "color",
+            "value": "var(--blx-b)"
+          },
+          {
+            "name": "b",
+            "category": "color",
+            "value": "var(--blx-a)"
+          },
+          {
+            "name": "user",
+            "category": "color",
+            "value": "var(--blx-a)"
+          }
+        ]
+      },
+      "expect": {
+        "ok": false,
+        "issues": [
+          {
+            "code": "reference-cycle",
+            "path": "tokens[0].value"
+          },
+          {
+            "code": "reference-cycle",
+            "path": "tokens[1].value"
+          },
+          {
+            "code": "reference-cycle",
+            "path": "tokens[2].value"
+          }
+        ]
+      }
+    },
+    {
+      "id": "dark-only-cycle",
+      "description": "a cycle that exists only in dark mode is found",
+      "input": {
+        "schemaVersion": 1,
+        "tokenVersion": 1,
+        "tokens": [
+          {
+            "name": "a",
+            "category": "color",
+            "value": "red",
+            "dark": "var(--blx-b)"
+          },
+          {
+            "name": "b",
+            "category": "color",
+            "value": "var(--blx-a)"
+          }
+        ]
+      },
+      "expect": {
+        "ok": false,
+        "issues": [
+          {
+            "code": "reference-cycle",
+            "path": "tokens[0].dark"
+          },
+          {
+            "code": "reference-cycle",
+            "path": "tokens[1].value"
+          }
+        ]
+      }
+    },
+    {
+      "id": "category-mismatch",
+      "description": "an alias must point at a token of its own category",
+      "input": {
+        "schemaVersion": 1,
+        "tokenVersion": 1,
+        "tokens": [
+          {
+            "name": "a",
+            "category": "color",
+            "value": "var(--blx-b)"
+          },
+          {
+            "name": "b",
+            "category": "spacing",
+            "value": "1rem"
+          }
+        ]
+      },
+      "expect": {
+        "ok": false,
+        "issues": [
+          {
+            "code": "category-mismatch",
+            "path": "tokens[0].value"
+          },
+          {
+            "code": "invalid-resolved-value",
+            "path": "tokens[0].value"
+          }
+        ]
+      }
+    },
+    {
+      "id": "category-mismatch-spaces",
+      "description": "extra spaces do not hide an alias",
+      "input": {
+        "schemaVersion": 1,
+        "tokenVersion": 1,
+        "tokens": [
+          {
+            "name": "a",
+            "category": "color",
+            "value": "var( --blx-b )"
+          },
+          {
+            "name": "b",
+            "category": "spacing",
+            "value": "1rem"
+          }
+        ]
+      },
+      "expect": {
+        "ok": false,
+        "issues": [
+          {
+            "code": "category-mismatch",
+            "path": "tokens[0].value"
+          },
+          {
+            "code": "invalid-resolved-value",
+            "path": "tokens[0].value"
+          }
+        ]
+      }
+    },
+    {
+      "id": "category-mismatch-fallback",
+      "description": "a fallback does not hide an alias",
+      "input": {
+        "schemaVersion": 1,
+        "tokenVersion": 1,
+        "tokens": [
+          {
+            "name": "a",
+            "category": "color",
+            "value": "var(--blx-b, red)"
+          },
+          {
+            "name": "b",
+            "category": "spacing",
+            "value": "1rem"
+          }
+        ]
+      },
+      "expect": {
+        "ok": false,
+        "issues": [
+          {
+            "code": "category-mismatch",
+            "path": "tokens[0].value"
+          },
+          {
+            "code": "invalid-resolved-value",
+            "path": "tokens[0].value"
+          }
+        ]
+      }
+    },
+    {
+      "id": "resolved-invalid",
+      "description": "a value that is wrong once references are substituted",
+      "input": {
+        "schemaVersion": 1,
+        "tokenVersion": 1,
+        "tokens": [
+          {
+            "name": "space",
+            "category": "spacing",
+            "value": "1rem"
+          },
+          {
+            "name": "a",
+            "category": "color",
+            "value": "rgb(var(--blx-space) 0 0)"
+          }
+        ]
+      },
+      "expect": {
+        "ok": false,
+        "issues": [
+          {
+            "code": "invalid-resolved-value",
+            "path": "tokens[1].value"
+          }
+        ]
+      }
+    },
+    {
+      "id": "resolved-invalid-dark",
+      "description": "only the dark value is wrong once references are substituted",
+      "input": {
+        "schemaVersion": 1,
+        "tokenVersion": 1,
+        "tokens": [
+          {
+            "name": "space",
+            "category": "spacing",
+            "value": "1rem"
+          },
+          {
+            "name": "ok",
+            "category": "color",
+            "value": "red",
+            "dark": "rgb(var(--blx-space) 0 0)"
+          }
+        ]
+      },
+      "expect": {
+        "ok": false,
+        "issues": [
+          {
+            "code": "invalid-resolved-value",
+            "path": "tokens[1].dark"
+          }
+        ]
+      }
+    },
+    {
+      "id": "depth-16",
+      "description": "a chain of 16 tokens resolves",
+      "input": {
+        "schemaVersion": 1,
+        "tokenVersion": 1,
+        "tokens": [
+          {
+            "name": "n0",
+            "category": "color",
+            "value": "var(--blx-n1)"
+          },
+          {
+            "name": "n1",
+            "category": "color",
+            "value": "var(--blx-n2)"
+          },
+          {
+            "name": "n2",
+            "category": "color",
+            "value": "var(--blx-n3)"
+          },
+          {
+            "name": "n3",
+            "category": "color",
+            "value": "var(--blx-n4)"
+          },
+          {
+            "name": "n4",
+            "category": "color",
+            "value": "var(--blx-n5)"
+          },
+          {
+            "name": "n5",
+            "category": "color",
+            "value": "var(--blx-n6)"
+          },
+          {
+            "name": "n6",
+            "category": "color",
+            "value": "var(--blx-n7)"
+          },
+          {
+            "name": "n7",
+            "category": "color",
+            "value": "var(--blx-n8)"
+          },
+          {
+            "name": "n8",
+            "category": "color",
+            "value": "var(--blx-n9)"
+          },
+          {
+            "name": "n9",
+            "category": "color",
+            "value": "var(--blx-n10)"
+          },
+          {
+            "name": "n10",
+            "category": "color",
+            "value": "var(--blx-n11)"
+          },
+          {
+            "name": "n11",
+            "category": "color",
+            "value": "var(--blx-n12)"
+          },
+          {
+            "name": "n12",
+            "category": "color",
+            "value": "var(--blx-n13)"
+          },
+          {
+            "name": "n13",
+            "category": "color",
+            "value": "var(--blx-n14)"
+          },
+          {
+            "name": "n14",
+            "category": "color",
+            "value": "var(--blx-n15)"
+          },
+          {
+            "name": "n15",
+            "category": "color",
+            "value": "red"
+          }
+        ]
+      },
+      "expect": {
+        "ok": true,
+        "light": {
+          "n0": "red",
+          "n1": "red",
+          "n2": "red",
+          "n3": "red",
+          "n4": "red",
+          "n5": "red",
+          "n6": "red",
+          "n7": "red",
+          "n8": "red",
+          "n9": "red",
+          "n10": "red",
+          "n11": "red",
+          "n12": "red",
+          "n13": "red",
+          "n14": "red",
+          "n15": "red"
+        },
+        "dark": {
+          "n0": "red",
+          "n1": "red",
+          "n2": "red",
+          "n3": "red",
+          "n4": "red",
+          "n5": "red",
+          "n6": "red",
+          "n7": "red",
+          "n8": "red",
+          "n9": "red",
+          "n10": "red",
+          "n11": "red",
+          "n12": "red",
+          "n13": "red",
+          "n14": "red",
+          "n15": "red"
+        },
+        "compile": [
+          {
+            "name": "--blx-n0",
+            "value": "var(--blx-n1)"
+          },
+          {
+            "name": "--blx-n1",
+            "value": "var(--blx-n2)"
+          },
+          {
+            "name": "--blx-n2",
+            "value": "var(--blx-n3)"
+          },
+          {
+            "name": "--blx-n3",
+            "value": "var(--blx-n4)"
+          },
+          {
+            "name": "--blx-n4",
+            "value": "var(--blx-n5)"
+          },
+          {
+            "name": "--blx-n5",
+            "value": "var(--blx-n6)"
+          },
+          {
+            "name": "--blx-n6",
+            "value": "var(--blx-n7)"
+          },
+          {
+            "name": "--blx-n7",
+            "value": "var(--blx-n8)"
+          },
+          {
+            "name": "--blx-n8",
+            "value": "var(--blx-n9)"
+          },
+          {
+            "name": "--blx-n9",
+            "value": "var(--blx-n10)"
+          },
+          {
+            "name": "--blx-n10",
+            "value": "var(--blx-n11)"
+          },
+          {
+            "name": "--blx-n11",
+            "value": "var(--blx-n12)"
+          },
+          {
+            "name": "--blx-n12",
+            "value": "var(--blx-n13)"
+          },
+          {
+            "name": "--blx-n13",
+            "value": "var(--blx-n14)"
+          },
+          {
+            "name": "--blx-n14",
+            "value": "var(--blx-n15)"
+          },
+          {
+            "name": "--blx-n15",
+            "value": "red"
+          }
+        ]
+      }
+    },
+    {
+      "id": "depth-17",
+      "description": "a chain of 17 tokens fails at its first token",
+      "input": {
+        "schemaVersion": 1,
+        "tokenVersion": 1,
+        "tokens": [
+          {
+            "name": "n0",
+            "category": "color",
+            "value": "var(--blx-n1)"
+          },
+          {
+            "name": "n1",
+            "category": "color",
+            "value": "var(--blx-n2)"
+          },
+          {
+            "name": "n2",
+            "category": "color",
+            "value": "var(--blx-n3)"
+          },
+          {
+            "name": "n3",
+            "category": "color",
+            "value": "var(--blx-n4)"
+          },
+          {
+            "name": "n4",
+            "category": "color",
+            "value": "var(--blx-n5)"
+          },
+          {
+            "name": "n5",
+            "category": "color",
+            "value": "var(--blx-n6)"
+          },
+          {
+            "name": "n6",
+            "category": "color",
+            "value": "var(--blx-n7)"
+          },
+          {
+            "name": "n7",
+            "category": "color",
+            "value": "var(--blx-n8)"
+          },
+          {
+            "name": "n8",
+            "category": "color",
+            "value": "var(--blx-n9)"
+          },
+          {
+            "name": "n9",
+            "category": "color",
+            "value": "var(--blx-n10)"
+          },
+          {
+            "name": "n10",
+            "category": "color",
+            "value": "var(--blx-n11)"
+          },
+          {
+            "name": "n11",
+            "category": "color",
+            "value": "var(--blx-n12)"
+          },
+          {
+            "name": "n12",
+            "category": "color",
+            "value": "var(--blx-n13)"
+          },
+          {
+            "name": "n13",
+            "category": "color",
+            "value": "var(--blx-n14)"
+          },
+          {
+            "name": "n14",
+            "category": "color",
+            "value": "var(--blx-n15)"
+          },
+          {
+            "name": "n15",
+            "category": "color",
+            "value": "var(--blx-n16)"
+          },
+          {
+            "name": "n16",
+            "category": "color",
+            "value": "red"
+          }
+        ]
+      },
+      "expect": {
+        "ok": false,
+        "issues": [
+          {
+            "code": "reference-too-deep",
+            "path": "tokens[0].value"
+          }
+        ]
+      }
+    },
+    {
+      "id": "bad-name",
+      "description": "names are lower-case words",
+      "input": {
+        "schemaVersion": 1,
+        "tokenVersion": 1,
+        "tokens": [
+          {
+            "name": "Color",
+            "category": "color",
+            "value": "red"
+          }
+        ]
+      },
+      "expect": {
+        "ok": false,
+        "issues": [
+          {
+            "code": "schema",
+            "path": "$.tokens.0.name"
+          }
+        ]
+      }
+    },
+    {
+      "id": "bad-version",
+      "description": "only schema version 1 exists",
+      "input": {
+        "schemaVersion": 2,
+        "tokenVersion": 1,
+        "tokens": []
+      },
+      "expect": {
+        "ok": false,
+        "issues": [
+          {
+            "code": "schema",
+            "path": "$.schemaVersion"
+          }
+        ]
+      }
+    },
+    {
+      "id": "bad-token-version",
+      "description": "tokenVersion is a non-negative integer",
+      "input": {
+        "schemaVersion": 1,
+        "tokenVersion": -1,
+        "tokens": []
+      },
+      "expect": {
+        "ok": false,
+        "issues": [
+          {
+            "code": "schema",
+            "path": "$.tokenVersion"
+          }
+        ]
+      }
+    },
+    {
+      "id": "reserved-key",
+      "description": "reserved keys are refused anywhere",
+      "input": {
+        "schemaVersion": 1,
+        "tokenVersion": 0,
+        "tokens": [],
+        "__proto__": {
+          "x": 1
+        }
+      },
+      "expect": {
+        "ok": false,
+        "issues": [
+          {
+            "code": "reserved-key",
+            "path": "$.__proto__"
+          }
+        ]
+      }
+    },
+    {
+      "id": "unknown-field-kept",
+      "description": "unknown fields are accepted and ignored",
+      "input": {
+        "schemaVersion": 1,
+        "tokenVersion": 1,
+        "tokens": [
+          {
+            "name": "a",
+            "category": "color",
+            "value": "red"
+          }
+        ],
+        "future": {
+          "x": 1
+        }
+      },
+      "expect": {
+        "ok": true,
+        "light": {
+          "a": "red"
+        },
+        "dark": {
+          "a": "red"
+        },
+        "compile": [
+          {
+            "name": "--blx-a",
+            "value": "red"
+          }
+        ]
+      }
+    }
+  ]
+}
