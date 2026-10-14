@@ -93,3 +93,13 @@ The locale is the site locale (`get_locale()`); if the pointer has no published 
 **Cache.** The rendered `{html, css}` pair is stored as a transient (so a persistent object cache is used automatically) under a key made of every input: post, selected locale, published layout and content snapshot numbers, a site-wide **epoch**, the CSS compiler version, the plugin version and the active theme with its version (`Frontend\RenderCacheKey`). A new publication changes the snapshot numbers, so the old entry is simply never read again. Changes that affect every page start a new epoch (`Frontend\Invalidation`: a random value in the autoloaded option `blixis_builder_epoch`): saving or deleting the design system or global classes, switching the theme, and updating or deleting an attachment. Entries expire after a day, so abandoned keys do not accumulate.
 
 Verified on real WordPress by the smoke test: normal content without a pointer, no draft leak, snapshot output and CSS, a new revision visible without flushing, epoch change on design system save, and fallback after a snapshot is removed.
+
+## Media and image accessibility (BWB-045)
+
+Images come only from the WordPress media library, by attachment ID (THREAT-MODEL T11). `Media\MediaPolicy` and `WordPressMediaResolver` accept an attachment only when it is a real `attachment` post with a raster MIME type (JPEG, PNG, GIF, WebP, AVIF). SVG is refused because it can carry scripts, and the builder never fetches a remote image. Anything else renders the inert `data-blx-missing-media` placeholder.
+
+**Responsive images.** The resolver takes `srcset` and `sizes` from WordPress (`wp_get_attachment_image_srcset`, `wp_get_attachment_image_sizes`). `MediaPolicy` rebuilds `srcset` from validated candidates (safe URL, one `Nw` descriptor, at most 16) and accepts `sizes` only as a bounded media-condition string; `sizes` is printed only together with a valid `srcset`. Width and height always come from the attachment so the layout does not shift.
+
+**Alt text.** The alt property is translatable (FR-056). Order: the translated or default-locale alt, then the library's alt text. An image marked decorative gets `alt=""` and `role="presentation"`. Any other image without alt text still gets `alt=""` and the hook `data-blx-alt-missing`, which the editor uses to ask for text (ACCESSIBILITY-BASELINE rule 9).
+
+**Picker support.** `GET /blixis/v1/media/{id}` (users who can edit posts; 401 anonymous, 403 otherwise) returns `{ id, url, width, height, alt, srcset, sizes }` for a chosen attachment, `private, no-store`. Missing, non-image and SVG attachments are the same 404. The picker UI is the WordPress media modal inside the editor (BWB-054).

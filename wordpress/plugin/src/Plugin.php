@@ -12,6 +12,7 @@ namespace Blixis\Builder;
 use Blixis\Builder\Frontend\Frontend;
 use Blixis\Builder\Storage\MetaRegistration;
 use Blixis\Builder\Rest\DocumentController;
+use Blixis\Builder\Rest\MediaController;
 
 \defined( 'ABSPATH' ) || exit;
 
@@ -25,6 +26,7 @@ final class Plugin {
 		\add_action( 'init', [ self::class, 'load_text_domain' ] );
 		MetaRegistration::hooks();
 		\add_action( 'rest_api_init', [ DocumentController::class, 'register' ] );
+		\add_action( 'rest_api_init', [ MediaController::class, 'register' ] );
 		Frontend::hooks();
 	}
 
