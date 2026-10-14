@@ -15,7 +15,9 @@
 	<arg name="parallel" value="8"/>
 	<arg value="ps"/>
 
-	<!-- ADR 0001: PHP 8.2 floor, WordPress 7.0 floor. -->
+	<!-- ADR 0001: PHP 8.2 floor, WordPress 7.0 floor. PHPCompatibility 9.x only knows PHP features up to 8.0, so it
+	     catches removed/deprecated APIs and old syntax; features newer than 8.2 are caught by PHPStan (phpVersion 80200)
+	     and by CI running PHP 8.2. -->
 	<config name="testVersion" value="8.2-"/>
 	<config name="minimum_wp_version" value="7.0"/>
 	<rule ref="PHPCompatibilityWP"/>
@@ -24,12 +26,13 @@
 	<rule ref="WordPress-Docs"/>
 
 	<!-- PSR-4 autoloading (docs/engineering/CODE-STANDARDS.md) replaces the class-*.php file naming convention. -->
-	<rule ref="WordPress.Files.FileName">
-		<properties>
-			<property name="strict_class_file_names" value="false"/>
-		</properties>
-		<exclude name="WordPress.Files.FileName.NotHyphenatedLowercase"/>
-		<exclude name="WordPress.Files.FileName.InvalidClassFileName"/>
+	<rule ref="WordPress.Files.FileName.NotHyphenatedLowercase">
+		<exclude-pattern>*/src/*</exclude-pattern>
+		<exclude-pattern>*/tests/*</exclude-pattern>
+	</rule>
+	<rule ref="WordPress.Files.FileName.InvalidClassFileName">
+		<exclude-pattern>*/src/*</exclude-pattern>
+		<exclude-pattern>*/tests/*</exclude-pattern>
 	</rule>
 
 	<!-- Collision-safe global names (ADR 0009: namespaces `Blixis\...`, handles `blixis-*`). -->
@@ -47,6 +50,7 @@
 		<exclude-pattern>*/tests/*</exclude-pattern>
 	</rule>
 
+	<!-- Text domains are checked against the global list; per-package domain checks are added with each package (BWB-039 onward). -->
 	<rule ref="WordPress.WP.I18n">
 		<properties>
 			<property name="text_domain" type="array">

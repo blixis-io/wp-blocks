@@ -11,6 +11,7 @@
 	beStrictAboutOutputDuringTests="true"
 	beStrictAboutTestsThatDoNotTestAnything="true">
 	<testsuites>
+		<!-- WordPress integration tests need the WordPress test bootstrap and a database: defined with BWB-012/BWB-018. -->
 		<!-- Add each package's tests/ directory here when it gets PHP code (wordpress/plugin/tests, ...). -->
 		<testsuite name="tooling">
 			<directory>tooling/php/tests</directory>

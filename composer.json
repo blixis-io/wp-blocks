@@ -38,13 +38,15 @@
       "@lint",
       "@stan",
       "@test"
-    ]
+    ],
+    "audit": "composer audit"
   },
   "scripts-descriptions": {
     "lint": "Check PHP code style (WordPress standards, PHP 8.2+ compatibility)",
     "lint:fix": "Fix auto-fixable PHP code style issues",
     "stan": "Run PHPStan static analysis",
     "test": "Run PHPUnit",
-    "check": "Run all PHP checks"
+    "check": "Run all PHP checks",
+    "audit": "Check dependencies for known security advisories"
   }
 }
