@@ -43,6 +43,7 @@ Further scripts (lint, typecheck, build, e2e) arrive with BWB-013 to BWB-018.
 | `docs/architecture/BREAKPOINTS-AND-STATES.md`       | Breakpoints, states, precedence and inheritance, reference resolver and inspector API (BWB-025)                    |
 | `docs/architecture/DESIGN-TOKENS.md`                | Design token schema, references, resolver and validation (BWB-026)                                                 |
 | `docs/architecture/TRANSLATIONS.md`                 | Translation entries, `set-translation`, registry rules and stable property ids (BWB-104)                           |
+| `docs/architecture/THEME.md`                        | The Blixis theme: files, compatibility declaration, development and tests (BWB-029)                                |
 | `docs/architecture/VERSIONING-AND-COMPATIBILITY.md` | Version inventory, compatible vs breaking changes, change checklist, extension API and element SDK rules (BWB-028) |
 | `docs/architecture/SCHEMAS-AND-APIS.md`             | Initial document contracts, endpoints, migrations and plugin extension API                                         |
 | `docs/architecture/WORDPRESS.md`                    | Theme activation, font library, persistence, access and portability                                                |

@@ -5,6 +5,7 @@
 //   BLX_WP_PORT                                host port on 127.0.0.1 (default 8888)
 //   BLX_EXPECT_WP, BLX_EXPECT_PHP              smoke test expectations (version prefixes)
 import { spawnSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -16,8 +17,12 @@ const base = `http://127.0.0.1:${port}`;
 const PROJECT = 'blixis-wp-blocks';
 const env = { ...process.env };
 delete env.COMPOSE_PROJECT_NAME;
+// compose.packages.yml mounts the packages that contain PHP code (theme, plugin, ...) into wp-content.
+const files = ['compose.yml', 'compose.packages.yml']
+  .filter((name) => existsSync(join(root, 'docker', name)))
+  .flatMap((name) => ['-f', join(root, 'docker', name)]);
 const compose = (args, opts = {}) =>
-  spawnSync('docker', ['compose', '-p', PROJECT, '-f', join(root, 'docker', 'compose.yml'), ...args], {
+  spawnSync('docker', ['compose', '-p', PROJECT, ...files, ...args], {
     cwd: root,
     stdio: 'inherit',
     env,
@@ -66,6 +71,9 @@ async function install() {
   }
   must(wp('language', 'core', 'install', 'nl_NL'), 'install nl_NL language pack');
   must(wp('eval-file', '/fixtures/seed.php'), 'seed fixtures');
+  // Packages that are mounted into wp-content are activated here; the theme defines what the public pages look like.
+  if (wp('theme', 'is-installed', 'blixis').status === 0)
+    must(wp('theme', 'activate', 'blixis'), 'activate the Blixis theme');
   console.log(`\nWordPress is ready at ${base} (admin / password; development only, bound to localhost).`);
 }
 
@@ -114,6 +122,40 @@ async function smoke() {
   check(expectPhp !== undefined, 'a PHP version expectation is set (BLX_EXPECT_PHP) when using non-default images');
   if (expectWp) check(wpVersion.startsWith(expectWp), `WordPress version starts with ${expectWp}`);
   if (expectPhp) check(phpVersion.startsWith(expectPhp), `PHP version starts with ${expectPhp}`);
+
+  // The Blixis theme (BWB-029): active, rendering through its templates, and declaring compatibility.
+  const wpOut = (...args) => out(['run', '--rm', '-T', 'cli', 'wp', ...args]);
+  check(
+    wpOut('theme', 'list', '--status=active', '--field=name').split('\n').includes('blixis'),
+    'the Blixis theme is active',
+  );
+  check(wpOut('eval', 'echo \\Blixis\\Theme\\Compat::active();') === '1', 'the theme declares Blixis-Compat 1');
+  check(
+    home.text.includes('class="skip-link') && home.text.includes('<main id="content"'),
+    'the front page has a skip link and a main landmark',
+  );
+  check(
+    /<html [^>]*lang="[a-z]{2}/.test(home.text) && home.text.includes('name="viewport"'),
+    'the front page declares language and viewport',
+  );
+  check(about.text.includes('entry-title'), 'a page renders through the theme page template');
+  check(
+    missing.text.includes('Page not found') && missing.text.includes('class="skip-link'),
+    'the 404 page is rendered by the theme',
+  );
+  // WP_DEBUG_LOG writes PHP warnings, notices and deprecations to wp-content/debug.log; none may point into the theme.
+  const themeErrors = out([
+    'exec',
+    '-T',
+    'wordpress',
+    'sh',
+    '-c',
+    "cat /var/www/html/wp-content/debug.log 2>/dev/null | grep -c '/themes/blixis/' || true",
+  ]);
+  check(
+    themeErrors === '0',
+    'the theme logged no PHP warnings, notices or deprecations while the smoke pages rendered',
+  );
 
   const langs = out([
     'run',

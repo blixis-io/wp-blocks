@@ -40,3 +40,5 @@ CI runs the smoke test on both the floor and the latest combination (`.github/wo
 
 ## Fixtures
 `tooling/wp-env/fixtures/seed.php` is run with `wp eval-file`. Keep it deterministic and idempotent; locale- and mode-specific fixtures for the translation and appearance features are added by BWB-018 and the P2 issues.
+
+**Package mounts.** `docker/compose.packages.yml` (merged automatically by `wp-env.mjs` when it exists) mounts packages that contain PHP into `wp-content` read-only, for the web and the CLI container. Today that is the theme, which `pnpm wp:start` activates (`docs/architecture/THEME.md`). `WP_DEBUG_LOG` is on so the smoke test can fail on warnings, notices and deprecations that point into a package; PHP notices from WordPress itself in `wp-content/debug.log` are not treated as failures.
