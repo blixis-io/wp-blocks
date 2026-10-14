@@ -31,11 +31,13 @@ type ElementNode = {
 
 ## Proposed REST API (`blixis/v1`)
 
+This table remains a superseded sketch. The implemented BWB-041 layout and locale-content routes, including headers and error codes, are specified in [Document REST API](WORDPRESS.md#document-rest-api).
+
 | Method/path | Purpose | Access |
 |---|---|---|
 | `GET /status` | compatible theme, feature flags, editor config | `edit_posts` equivalent, nonce |
-| `GET /documents/{postId}` | current document + ETag/revision | `edit_post(postId)` |
-| `PUT /documents/{postId}` | validated transactional save with optimistic revision check | `edit_post(postId)` + nonce |
+| `GET, PUT /documents/{post_id}/layout` | **Implemented BWB-041** working layout stream; [contract](WORDPRESS.md#document-rest-api) | `edit_post(post_id)`; cookie nonce on PUT |
+| `GET, PUT /documents/{post_id}/content/{locale}` | **Implemented BWB-041** locale stream; [contract](WORDPRESS.md#document-rest-api) | `edit_post(post_id)`; cookie nonce on PUT |
 | `POST /documents/{postId}/preview` | sanitized preview markup and CSS | `edit_post(postId)` + nonce |
 | `GET /design-system` | effective tokens, fonts and presets | authorized editors |
 | `PUT /design-system` | persist global design tokens | `edit_theme_options` |

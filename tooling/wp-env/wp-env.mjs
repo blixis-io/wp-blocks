@@ -289,6 +289,204 @@ async function smoke() {
       };
       const adminCookie = await loginAs('admin');
       const editorCookie = await loginAs('editor_ed');
+
+      // Document REST API (BWB-041): authentication, nonce, role matrix, ETag and conflicts on real WordPress.
+      {
+        const restPost = command(
+          'post',
+          'create',
+          '--post_type=page',
+          '--post_status=draft',
+          '--post_title=REST smoke',
+          '--porcelain',
+        );
+        const nonceOf = async (cookie) =>
+          (
+            await (await http(`${base}/wp-admin/admin-ajax.php?action=rest-nonce`, { headers: { cookie } })).text()
+          ).trim();
+        const adminNonce = await nonceOf(adminCookie);
+        const editorNonce = await nonceOf(editorCookie);
+        const authorCookie = await loginAs('author_ann');
+        const authorNonce = await nonceOf(authorCookie);
+        const subscriberCookie = await loginAs('subscriber_sub');
+        const subscriberNonce = await nonceOf(subscriberCookie);
+        const wrap = async (response) => ({
+          status: response.status,
+          headers: response.headers,
+          text: await response.text(),
+        });
+        const api = async (
+          path,
+          { cookie, nonce, method = 'GET', ifMatch, body, contentType = 'application/json' } = {},
+        ) =>
+          wrap(
+            await http(`${base}/?rest_route=/blixis/v1/documents/${path}`, {
+              method,
+              headers: {
+                ...(cookie ? { cookie } : {}),
+                ...(nonce ? { 'x-wp-nonce': nonce } : {}),
+                ...(ifMatch === undefined ? {} : { 'if-match': ifMatch }),
+                ...(body === undefined ? {} : { 'content-type': contentType }),
+              },
+              body,
+            }),
+          );
+        const json = async (response) => {
+          try {
+            return JSON.parse(response.text);
+          } catch {
+            return {};
+          }
+        };
+        const doc = (note) => JSON.stringify({ schemaVersion: 1, layoutRevision: 1, note });
+        const layout = `${restPost}/layout`;
+        const anonymous = await api(layout);
+        check(
+          anonymous.status === 401 && (await json(anonymous)).code === 'blixis_unauthenticated',
+          'an anonymous document read is 401',
+        );
+        const empty = await api(layout, { cookie: adminCookie, nonce: adminNonce });
+        check(
+          empty.status === 200 && (await json(empty)).revision === 0 && empty.headers.get('etag') === '"0"',
+          'an empty stream reads as revision 0 with ETag "0"',
+        );
+        check((empty.headers.get('cache-control') ?? '').includes('no-store'), 'document responses are not cacheable');
+        const noMatch = await api(layout, { cookie: adminCookie, nonce: adminNonce, method: 'PUT', body: doc('a') });
+        check(noMatch.status === 428, 'a write without If-Match is 428');
+        const badMatch = await api(layout, {
+          cookie: adminCookie,
+          nonce: adminNonce,
+          method: 'PUT',
+          ifMatch: 'abc',
+          body: doc('a'),
+        });
+        check(badMatch.status === 400, 'a malformed If-Match is 400');
+        const noNonce = await api(layout, { cookie: adminCookie, method: 'PUT', ifMatch: '"0"', body: doc('a') });
+        check(noNonce.status === 401, `a cookie write without a nonce is 401 and writes nothing (${noNonce.status})`);
+        const badNonce = await api(layout, {
+          cookie: adminCookie,
+          nonce: 'deadbeef00',
+          method: 'PUT',
+          ifMatch: '"0"',
+          body: doc('a'),
+        });
+        check(
+          badNonce.status === 403 && (await json(badNonce)).code === 'rest_cookie_invalid_nonce',
+          'a write with a bad nonce is 403 rest_cookie_invalid_nonce',
+        );
+        const written = await api(layout, {
+          cookie: adminCookie,
+          nonce: adminNonce,
+          method: 'PUT',
+          ifMatch: '"0"',
+          body: doc('a'),
+        });
+        check(
+          written.status === 200 && (await json(written)).revision === 1 && written.headers.get('etag') === '"1"',
+          'a write with the current revision succeeds and returns ETag "1"',
+        );
+        const stale = await api(layout, {
+          cookie: adminCookie,
+          nonce: adminNonce,
+          method: 'PUT',
+          ifMatch: '"0"',
+          body: doc('b'),
+        });
+        const staleBody = await json(stale);
+        check(
+          stale.status === 409 &&
+            staleBody.code === 'blixis_conflict' &&
+            staleBody.data?.currentRevision === 1 &&
+            staleBody.data?.expectedRevision === 0,
+          'a stale write is 409 with both revisions',
+        );
+        const read = await json(await api(layout, { cookie: adminCookie, nonce: adminNonce }));
+        check(read.revision === 1 && read.document?.note === 'a', 'the document reads back what was written');
+        const invalid = await api(layout, {
+          cookie: adminCookie,
+          nonce: adminNonce,
+          method: 'PUT',
+          ifMatch: '"1"',
+          body: '{"nope":true}',
+        });
+        check(
+          invalid.status === 422 && (await json(invalid)).code === 'blixis_invalid_document',
+          'an invalid envelope is 422',
+        );
+        const notJson = await api(layout, {
+          cookie: adminCookie,
+          nonce: adminNonce,
+          method: 'PUT',
+          ifMatch: '"1"',
+          body: 'x',
+          contentType: 'text/plain',
+        });
+        check([415, 422, 400].includes(notJson.status), `a non-JSON body is rejected (${notJson.status})`);
+        const big = await api(layout, {
+          cookie: adminCookie,
+          nonce: adminNonce,
+          method: 'PUT',
+          ifMatch: '"1"',
+          body: JSON.stringify({ schemaVersion: 1, layoutRevision: 1, pad: 'a'.repeat(2200000) }),
+        });
+        check(big.status === 413, 'a body over 2 MB is 413');
+        const content = `${restPost}/content/nl_NL`;
+        const nlWrite = await api(content, {
+          cookie: adminCookie,
+          nonce: adminNonce,
+          method: 'PUT',
+          ifMatch: '"0"',
+          body: JSON.stringify({ schemaVersion: 1, contentRevision: 1 }),
+        });
+        check(nlWrite.status === 200, 'a locale content stream is written independently of the layout');
+        check(
+          (await json(await api(layout, { cookie: adminCookie, nonce: adminNonce }))).revision === 1,
+          'writing a locale stream does not change the layout revision',
+        );
+        const badLocale = await api(`${restPost}/content/NL`, { cookie: adminCookie, nonce: adminNonce });
+        check(
+          badLocale.status === 400 && (await json(badLocale)).data?.details?.locale?.code === 'blixis_invalid_locale',
+          'an invalid locale is 400',
+        );
+        const pointer = await api(`${restPost}/published`, {
+          cookie: adminCookie,
+          nonce: adminNonce,
+          method: 'PUT',
+          ifMatch: '"0"',
+          body: '{}',
+        });
+        check(pointer.status === 404, 'the publication pointer has no document route');
+        const editorWrite = await api(layout, {
+          cookie: editorCookie,
+          nonce: editorNonce,
+          method: 'PUT',
+          ifMatch: '"1"',
+          body: doc('editor'),
+        });
+        check(editorWrite.status === 200, 'an editor may write another user page');
+        const authorRead = await api(layout, { cookie: authorCookie, nonce: authorNonce });
+        const subscriberRead = await api(layout, { cookie: subscriberCookie, nonce: subscriberNonce });
+        const missingRead = await api('99999999/layout', { cookie: adminCookie, nonce: adminNonce });
+        const forbidden = [authorRead, subscriberRead, missingRead];
+        check(
+          forbidden.every((r) => r.status === 403),
+          'an author of another page, a subscriber and a missing post are all 403',
+        );
+        const codes = await Promise.all(forbidden.map(async (r) => (await json(r)).code));
+        check(
+          codes.every((c) => c === 'blixis_forbidden'),
+          'the 403 responses are identical (no post existence probing)',
+        );
+        const authorWrite = await api(layout, {
+          cookie: authorCookie,
+          nonce: authorNonce,
+          method: 'PUT',
+          ifMatch: '"2"',
+          body: doc('author'),
+        });
+        check(authorWrite.status === 403, 'an author cannot write another user page');
+        command('post', 'delete', restPost, '--force');
+      }
       const adminThemes = await http(`${base}/wp-admin/themes.php`, {
         headers: { cookie: adminCookie },
       });
