@@ -343,8 +343,85 @@ async function smoke() {
                 check(response.status === 302, 'preview advances to Apply');
               }
             }
-            command('user', 'meta', 'delete', 'admin', 'blixis_setup_draft');
+            // BWB-035: applying persists the design system, completes setup and prints the saved tokens.
+            html = await stepPage(6);
+            response = await submit(6, html, {}, 'apply');
+            check(
+              response.status === 302 && response.headers.get('location')?.includes('applied=1'),
+              'apply saves the design system',
+            );
+            const saved = JSON.parse(command('option', 'get', 'blixis_design_system', '--format=json'));
+            check(
+              saved.tokenVersion === 1 && saved.preset === 'ocean',
+              'the saved design system is version 1 of the ocean preset',
+            );
+            check(
+              JSON.parse(command('option', 'get', 'blixis_setup', '--format=json')).status === 'completed',
+              'setup is completed only after the design system was saved',
+            );
+            check(
+              command(
+                'eval',
+                "echo array_key_exists('blixis_design_system', wp_load_alloptions()) ? 'autoload' : 'no';",
+              ) === 'autoload',
+              'the design system is autoloaded (every page needs it)',
+            );
+            check(
+              (await get('/')).text.includes('--blx-color-bg:#f8fbff'),
+              'the front page prints the saved tokens after the bundled ones',
+            );
+            check(
+              command(
+                'eval',
+                "echo get_user_meta( get_user_by( 'login', 'admin' )->ID, 'blixis_setup_draft', true ) === '' ? 'cleared' : 'kept';",
+              ) === 'cleared',
+              'applying clears the draft',
+            );
+            // A second save moves the version forward, keeps the first in the history and can be rolled back.
+            command('eval-file', '/fixtures/blixis-second-save.php');
+            const second = JSON.parse(command('option', 'get', 'blixis_design_system', '--format=json'));
+            check(second.tokenVersion === 2, 'a second save raises the token version');
+            const setupHtml = await (
+              await http(`${base}/wp-admin/themes.php?page=blixis-setup`, { headers: { cookie: adminCookie } })
+            ).text();
+            const rollbackNonce = setupHtml.match(/name="blixis_setup_nonce_rollback" value="([a-z0-9]+)"/)?.[1];
+            check(Boolean(rollbackNonce), 'the restore form has a nonce');
+            const editorRollback = await http(`${base}/wp-admin/admin-post.php`, {
+              method: 'POST',
+              redirect: 'manual',
+              headers: { cookie: editorCookie, 'content-type': 'application/x-www-form-urlencoded' },
+              body: new URLSearchParams({
+                action: 'blixis_setup_rollback',
+                blixis_setup_nonce_rollback: rollbackNonce ?? '',
+              }),
+            });
+            check(editorRollback.status === 403, 'an editor cannot restore the design system');
+            const rolledBack = await http(`${base}/wp-admin/admin-post.php`, {
+              method: 'POST',
+              redirect: 'manual',
+              headers: { cookie: adminCookie, 'content-type': 'application/x-www-form-urlencoded' },
+              body: new URLSearchParams({
+                action: 'blixis_setup_rollback',
+                blixis_setup_nonce_rollback: rollbackNonce ?? '',
+              }),
+            });
+            check(rolledBack.status === 302, 'restore redirects after an authorized POST');
+            const restored = JSON.parse(command('option', 'get', 'blixis_design_system', '--format=json'));
+            check(
+              restored.tokenVersion === 3 && restored.tokens['color-bg'].value === '#f8fbff',
+              'restore brings back the first design system under a new, higher version',
+            );
+            command('option', 'delete', 'blixis_design_system');
+            command('option', 'delete', 'blixis_design_system_history');
             command('user', 'meta', 'delete', 'admin', 'blixis_setup_ui');
+            // Back to a started, unfinished setup so the checks that follow see the state they expect.
+            command(
+              'option',
+              'update',
+              'blixis_setup',
+              '{"version":1,"status":"in_progress","updated_at":"2026-10-14T10:00:00+00:00"}',
+              '--format=json',
+            );
           }
         }
       }

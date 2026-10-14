@@ -76,6 +76,14 @@ final class Setup {
 		foreach ( self::styles( get_stylesheet_uri(), get_template_directory_uri(), $version ) as $handle => $style ) {
 			wp_enqueue_style( $handle, $style['url'], $style['dependencies'], $style['version'] );
 		}
+		// The saved design system overrides the bundled defaults: same layer, printed after the static file.
+		$saved = DesignSystemStore::current();
+		if ( null !== $saved ) {
+			$css = DesignSystemStore::css( $saved['tokens'] );
+			if ( '' !== $css ) {
+				wp_add_inline_style( 'blixis-tokens', $css );
+			}
+		}
 	}
 
 	/**

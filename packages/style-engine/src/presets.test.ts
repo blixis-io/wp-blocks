@@ -32,3 +32,22 @@ test('all four named seeds have valid, accessible token sets in both modes', () 
     }
   }
 });
+
+test('the default token set (the custom start) is accessible in both modes and complete', () => {
+  const input: unknown = JSON.parse(
+    readFileSync(
+      fileURLToPath(new URL('../../../wordpress/theme/design/default-tokens.json', import.meta.url)),
+      'utf8',
+    ),
+  );
+  const set = input as { tokens: unknown[] };
+  const preset = PresetSchema.parse({
+    schemaVersion: 1,
+    id: CUSTOM_PRESET_ID,
+    label: 'Custom',
+    description: 'The default token set',
+    tokens: set.tokens,
+  });
+  expect(checkPresetAccessibility(preset)).toEqual([]);
+  expect(preset.tokens).toHaveLength(26);
+});
