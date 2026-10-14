@@ -67,6 +67,15 @@ interface Database {
 	public function snapshot_keys( int $post_id ): array;
 
 	/**
+	 * Keys of the revision-ring history rows of one working stream.
+	 *
+	 * @param int    $post_id Value.
+	 * @param string $stream_key Layout or content stream key.
+	 * @return list<string> History keys.
+	 */
+	public function revision_keys( int $post_id, string $stream_key ): array;
+
+	/**
 	 * Delete only the identified snapshot row if its key is still unreferenced.
 	 *
 	 * @param int    $post_id Value.

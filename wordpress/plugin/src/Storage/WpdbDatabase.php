@@ -159,6 +159,27 @@ final class WpdbDatabase implements Database {
 	}
 
 	/**
+	 * Keys of the history rows of one working stream.
+	 *
+	 * @param int    $post_id Post ID.
+	 * @param string $stream_key Stream key.
+	 * @return list<string>
+	 * @throws \RuntimeException When the query fails.
+	 */
+	public function revision_keys( int $post_id, string $stream_key ): array {
+		$prefix = MetaKeys::rev_prefix( $stream_key );
+		$sql    = $this->wpdb->prepare( 'SELECT meta_key FROM %i WHERE post_id = %d AND meta_key LIKE %s', $this->wpdb->postmeta, $post_id, $this->wpdb->esc_like( $prefix ) . '%' );
+		if ( ! \is_string( $sql ) ) {
+			throw new \RuntimeException( 'Unable to prepare builder meta query.' );
+		}
+		$keys = $this->wpdb->get_col( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Prepared immediately above.
+		if ( ! \is_array( $keys ) ) {
+			throw new \RuntimeException( 'Unable to list builder revisions.' );
+		}
+		return \array_values( \array_filter( $keys, static fn ( mixed $key ): bool => \is_string( $key ) && MetaKeys::is_revision( $key ) && 0 === \strpos( $key, $prefix ) ) );
+	}
+
+	/**
 	 * Implement the storage contract.
 	 *
 	 * @param int    $post_id Value.
