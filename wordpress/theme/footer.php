@@ -7,7 +7,7 @@
 
 ?>
 </main>
-<footer class="site-footer">
+<footer class="site-footer mx-auto max-w-6xl px-4 py-4">
 	<p>
 		<?php
 		printf(

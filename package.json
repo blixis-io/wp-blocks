@@ -33,8 +33,8 @@
     "wp:cli": "node tooling/wp-env/wp-env.mjs cli",
     "wp:logs": "node tooling/wp-env/wp-env.mjs logs",
     "wp:smoke": "node tooling/wp-env/wp-env.mjs smoke",
-    "build": "node tooling/build/package.mjs --allow-missing --verify-reproducible",
-    "build:packages": "node tooling/build/package.mjs",
+    "build": "pnpm --filter @blixis/wp-theme run build:css && node tooling/build/package.mjs --allow-missing --verify-reproducible",
+    "build:packages": "pnpm --filter @blixis/wp-theme run build:css && node tooling/build/package.mjs",
     "test:unit": "pnpm -r --if-present run test"
   },
   "devDependencies": {

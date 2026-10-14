@@ -16,7 +16,7 @@
 <body <?php body_class(); ?>>
 <?php wp_body_open(); ?>
 <a class="skip-link screen-reader-text" href="#content"><?php esc_html_e( 'Skip to content', 'blixis' ); ?></a>
-<header class="site-header">
+<header class="site-header mx-auto max-w-6xl px-4 py-4">
 	<p class="site-title"><a href="<?php echo esc_url( home_url( '/' ) ); ?>" rel="home"><?php echo esc_html( get_bloginfo( 'name' ) ); ?></a></p>
 	<?php if ( has_nav_menu( 'primary' ) ) : ?>
 		<nav class="site-navigation" aria-label="<?php esc_attr_e( 'Primary menu', 'blixis' ); ?>">
@@ -31,4 +31,4 @@
 		</nav>
 	<?php endif; ?>
 </header>
-<main id="content" class="site-main" tabindex="-1">
+<main id="content" class="site-main mx-auto max-w-6xl px-4 py-4" tabindex="-1">

@@ -1,0 +1,5 @@
+Implemented [BWB-030](https://github.com/blixis-io/wp-blocks/issues/30) on `feat/30-tailwind-theme-build`. The theme now has exact-version Tailwind v4 build dependencies, a static stylesheet generated from explicitly listed PHP templates, versioned WordPress enqueues, and a package rule requiring `theme.css` in the zip. I updated the templates, tests, and [theme documentation](docs/architecture/THEME.md). Both new packages report MIT licences.
+
+**Verified:** 23 targeted Node tests and 128 PHPUnit tests pass; PHP lint, PHPStan in debug mode, and boundary checks pass. Direct packaging includes `theme.css`, excludes its source, and produces byte-identical archives.
+
+**Still unverified:** `pnpm run check`, `pnpm build`, and the licence inventory cannot complete because pnpm cannot fetch missing packages in this environment. `composer run check` reaches PHPStan, whose normal mode cannot open a local worker socket; its debug mode passes. No commit or push was made.
