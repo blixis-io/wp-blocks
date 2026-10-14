@@ -39,6 +39,12 @@ Strings are accepted only in `font-family` and in `--blx-*` custom properties (d
 
 A hand-written linear scanner (`src/tokenize.ts`), not regular expressions on the value, produces a small tree (identifiers, numbers, dimensions, percentages, hashes, functions, commas, slashes, operators). The grammar (`src/grammar.ts`) validates functions first, then the property's grammar. It uses no Node APIs, so it runs in the editor and in Node. The PHP twin (BWB-027) reads `manifest/css-properties.json` for the allow-lists, but the manifest is data only: the tokenizer, canonical serialization, function argument policies, `var()` stand-ins and grammar algorithms are normative in `src/*.ts` and are pinned by the corpus, which the twin must pass byte for byte (including the error codes and the canonical value). The corpus grows with every divergence found.
 
+## PHP twin
+
+`wordpress/plugin/src/Css/` contains the pure PHP `Tokenizer`, `Grammar`, `Properties`, `CssLimits`, and `DeclarationValidator`. `DeclarationValidator::sanitize()` returns canonical declarations in byte-sorted name order and issues for dropped entries. The PHP compiler must emit only this result. `Properties` reads the committed `wordpress/plugin/data/css-properties.json` copy; `tooling/build/sync-plugin-manifest.mjs` refreshes or checks it against the generated TypeScript manifest. The manifest generator exports easing functions and keywords as well as property grammars and the other allow-lists used by PHP.
+
+`wordpress/plugin/tests/CssDeclarationValidatorTest.php` runs every case in the shared declaration corpus and checks canonical output, error codes, idempotence, forbidden bytes, bounds, sanitization, and seeded fuzz. The corpus has no TypeScript/PHP differences. PHP rejects non-ASCII and invalid UTF-8 bytes during the scanner's first pass, before parsing them, matching the TypeScript printable-ASCII gate for string inputs. PHP accepts `string|int`; integers outside JavaScript's safe-integer range become an empty value, matching TypeScript's numeric guard.
+
 ## Tests
 
 - `corpus/declarations.json`: about 100 valid declarations with their canonical form and about 120 invalid ones with the expected code, covering CSS injection, escapes, Unicode look-alikes, URL functions, `var()` abuse, units, nesting and range errors. It is shared with the PHP twin.

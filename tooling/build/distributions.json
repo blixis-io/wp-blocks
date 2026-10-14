@@ -26,7 +26,7 @@
       "kind": "plugin",
       "source": "wordpress/plugin",
       "main": "blixis-builder.php",
-      "required": ["blixis-builder.php", "data/core-elements.json"],
+      "required": ["blixis-builder.php", "data/core-elements.json", "data/css-properties.json"],
       "tier": "free",
       "identity": "Plugin Name"
     },
