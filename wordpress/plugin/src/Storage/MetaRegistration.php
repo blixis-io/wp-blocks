@@ -46,7 +46,7 @@ final class MetaRegistration {
 	 *
 	 * @return list<string> Allowed post types.
 	 */
-	private static function post_types(): array {
+	public static function post_types(): array {
 		$candidates = \apply_filters( 'blixis_builder_post_types', [ 'post', 'page' ] );
 		if ( ! \is_array( $candidates ) ) {
 			return [];

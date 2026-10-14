@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Blixis\Builder;
 
 use Blixis\Builder\Storage\MetaRegistration;
+use Blixis\Builder\Rest\DocumentController;
 
 \defined( 'ABSPATH' ) || exit;
 
@@ -22,6 +23,7 @@ final class Plugin {
 	public static function register(): void {
 		\add_action( 'init', [ self::class, 'load_text_domain' ] );
 		MetaRegistration::hooks();
+		\add_action( 'rest_api_init', [ DocumentController::class, 'register' ] );
 	}
 
 	/** Load translations after WordPress has initialized. */
