@@ -9,7 +9,7 @@ declare(strict_types=1);
 
 namespace Blixis\Theme;
 
-defined( 'ABSPATH' ) || exit;
+\defined( 'ABSPATH' ) || exit;
 
 /**
  * Registers the theme's WordPress hooks.
