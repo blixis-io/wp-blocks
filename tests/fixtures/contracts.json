@@ -54,7 +54,7 @@
       "php": {
         "level": "shape",
         "runner": "tooling/php/tests/ContractsTest.php",
-        "issue": "BWB-044",
+        "issue": "BWB-048",
         "covers": ["test_token_corpus_matches_the_json_schema"]
       }
     },
@@ -83,11 +83,16 @@
     {
       "id": "style-resolution",
       "description": "ADR 0005 precedence cases (owner example, classes, states, tokens, invalid combinations, auto mode).",
-      "paths": ["tests/fixtures/style-resolution/cases.json"],
-      "ts": ["packages/style-engine/src/resolve.test.ts", "packages/style-engine/src/compile.test.ts"],
+      "paths": ["tests/fixtures/style-resolution/cases.json", "tests/fixtures/compile-corpus"],
+      "ts": [
+        "packages/style-engine/src/resolve.test.ts",
+        "packages/style-engine/src/compile.test.ts",
+        "tests/fixtures/src/compile-corpus.test.ts"
+      ],
       "php": {
-        "level": "pending",
-        "issue": "BWB-044"
+        "level": "full",
+        "runner": "wordpress/plugin/tests/CssCompilerTest.php",
+        "covers": ["test_style_resolution_corpus"]
       }
     },
     {
@@ -96,8 +101,9 @@
       "paths": ["tests/fixtures/compile"],
       "ts": ["tests/fixtures/src/compile.contract.test.ts", "tests/fixtures/src/style-matrix.test.ts"],
       "php": {
-        "level": "pending",
-        "issue": "BWB-044"
+        "level": "full",
+        "runner": "wordpress/plugin/tests/CssCompilerTest.php",
+        "covers": ["test_compile_goldens"]
       }
     },
     {

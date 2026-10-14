@@ -77,3 +77,5 @@ The CSS declaration corpus and CSS properties manifest are `full` PHP suites. `C
 `pnpm test:unit` (Vitest, includes the Prettier-stability and PHP parity tests), `composer test` (PHPUnit), and `pnpm check` run everything locally; CI runs the same.
 
 **PHP render corpus** (`tests/fixtures/render/*.fixture.json`): each file has `{ id, description, registry: "core", locale, mode, document, expectedHtml }`. Expected HTML is hand-derived and compared byte for byte by `RegistryRenderTest::test_render_corpus`. This corpus is PHP-only because there is no TypeScript HTML renderer; the contract registry marks it `phpOnly` with an empty `ts` runner list.
+
+**Compile corpus.** `tests/fixtures/compile-corpus` holds one stylesheet and its input for each case of `style-resolution/cases.json`, generated from the TypeScript compiler (`pnpm --filter @blixis/wp-fixtures generate:compile-corpus`). TypeScript fails when the files drift; PHP must produce the same bytes (BWB-044).
