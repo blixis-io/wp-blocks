@@ -18,17 +18,15 @@
 <a class="skip-link screen-reader-text" href="#content"><?php esc_html_e( 'Skip to content', 'blixis' ); ?></a>
 <header class="site-header site-shell">
 	<p class="site-title"><a href="<?php echo esc_url( home_url( '/' ) ); ?>" rel="home"><?php echo esc_html( get_bloginfo( 'name' ) ); ?></a></p>
-	<?php if ( has_nav_menu( 'primary' ) ) : ?>
-		<nav class="site-navigation" aria-label="<?php esc_attr_e( 'Primary menu', 'blixis' ); ?>">
-			<?php
-			wp_nav_menu(
-				array(
-					'theme_location' => 'primary',
-					'container'      => '',
-				)
-			);
-			?>
-		</nav>
-	<?php endif; ?>
+	<nav class="site-navigation" aria-label="<?php esc_attr_e( 'Primary menu', 'blixis' ); ?>">
+		<?php
+		wp_nav_menu(
+			array(
+				'theme_location' => 'primary',
+				'container'      => '',
+			)
+		);
+		?>
+	</nav>
 </header>
 <main id="content" class="site-main site-shell" tabindex="-1">

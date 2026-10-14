@@ -39,7 +39,7 @@ foreach ( $blixis_users as $blixis_login => $blixis_role ) {
 $blixis_pages = array(
 	'home'    => array(
 		'title'   => 'Blixis Home',
-		'content' => '<h1>Blixis fixture home</h1><p>Deterministic content for tests.</p>',
+		'content' => '<h2>Blixis fixture home</h2><p>Deterministic content for tests.</p>',
 	),
 	'about'   => array(
 		'title'   => 'About fixture',
@@ -48,6 +48,10 @@ $blixis_pages = array(
 	'contact' => array(
 		'title'   => 'Contact fixture',
 		'content' => '<h2>Contact</h2><p>Third sample page.</p>',
+	),
+	'blog' => array(
+		'title'   => 'Blog',
+		'content' => '',
 	),
 );
 $blixis_ids   = array();
@@ -73,6 +77,32 @@ foreach ( $blixis_pages as $blixis_slug => $blixis_page ) {
 
 update_option( 'show_on_front', 'page' );
 update_option( 'page_on_front', $blixis_ids['home'] );
+update_option( 'page_for_posts', $blixis_ids['blog'] );
+$blixis_category = get_category_by_slug( 'blixis-news' );
+if ( ! $blixis_category ) {
+	$blixis_category = wp_insert_term( 'Blixis news', 'category', array( 'slug' => 'blixis-news' ) );
+}
+if ( is_wp_error( $blixis_category ) ) {
+	WP_CLI::error( 'Could not create sample category: ' . $blixis_category->get_error_message() );
+}
+$blixis_category_id = is_array( $blixis_category ) ? $blixis_category['term_id'] : $blixis_category->term_id;
+$blixis_post = get_page_by_path( 'blixis-sample-post', OBJECT, 'post' );
+$blixis_post_args = array(
+	'post_type'     => 'post',
+	'post_name'     => 'blixis-sample-post',
+	'post_title'    => 'Blixis sample post',
+	'post_content'  => '<h2>Sample details</h2><p>Blixis fixture post body.</p>',
+	'post_status'   => 'publish',
+	'post_author'   => 1,
+	'post_category' => array( $blixis_category_id ),
+);
+if ( $blixis_post ) {
+	$blixis_post_args['ID'] = $blixis_post->ID;
+}
+$blixis_post_id = wp_insert_post( $blixis_post_args, true );
+if ( is_wp_error( $blixis_post_id ) ) {
+	WP_CLI::error( 'Could not create sample post: ' . $blixis_post_id->get_error_message() );
+}
 update_option( 'blogname', 'Blixis Dev' );
 update_option( 'timezone_string', 'UTC' );
 update_option( 'permalink_structure', '/%postname%/' );
