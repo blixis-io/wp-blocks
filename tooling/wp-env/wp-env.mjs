@@ -484,6 +484,10 @@ async function smoke() {
               'the saved design system is version 1 of the ocean preset',
             );
             check(
+              saved.tokens['color-bg'].value === '#f8fbff' && saved.tokens['color-bg'].dark === '#0b1726',
+              'apply persists both the light and the dark value of each color token',
+            );
+            check(
               JSON.parse(command('option', 'get', 'blixis_setup', '--format=json')).status === 'completed',
               'setup is completed only after the design system was saved',
             );
@@ -611,6 +615,10 @@ async function smoke() {
             check(
               restored.tokenVersion === 3 && restored.tokens['color-bg'].value === '#f8fbff',
               'restore brings back the first design system under a new, higher version',
+            );
+            check(
+              restored.tokens['color-bg'].dark === '#0b1726',
+              'restore brings back the dark values together with the light values',
             );
             command('post', 'delete', fontPost.trim(), '--force');
             command('option', 'delete', 'blixis_design_system');
