@@ -2,6 +2,7 @@ import { DOCUMENT_LIMITS } from '../schema/limits.ts';
 import type { BuilderDocument, ElementNode } from '../schema/document.ts';
 import type { DocumentIssue } from './issues.ts';
 
+const MAX_COLLECTED = 50;
 const REAL_TIMESTAMP = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})Z$/;
 
 function isRealTimestamp(text: string): boolean {
@@ -15,7 +16,9 @@ function isRealTimestamp(text: string): boolean {
     number,
     number,
   ];
-  const date = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
+  const date = new Date(0);
+  date.setUTCFullYear(year, month - 1, day); // Date.UTC would map years 0-99 to 1900-1999
+  date.setUTCHours(hour, minute, second, 0);
   return (
     date.getUTCFullYear() === year &&
     date.getUTCMonth() === month - 1 &&
@@ -39,7 +42,7 @@ export function checkSemantics(doc: BuilderDocument): SemanticResult {
   const errors: DocumentIssue[] = [];
   const warnings: DocumentIssue[] = [];
   const add = (list: DocumentIssue[], code: DocumentIssue['code'], path: string, message: string): void => {
-    list.push({ code, path, message });
+    if (list.length < MAX_COLLECTED) list.push({ code, path, message }); // never accumulate beyond what is reported
   };
 
   // --- element tree: unique ids, depth, node count, duplicate style rules ---

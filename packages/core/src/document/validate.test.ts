@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import {
   DOCUMENT_LIMITS,
   ISSUE_CODES,
+  MAX_JSON_VALUES,
   canonicalJson,
   migrateDocument,
   serializeDocument,
@@ -430,7 +431,10 @@ describe('migrations', () => {
   const v2: Migration = {
     from: 1,
     to: 2,
-    migrate: (d) => ({ ...d, schemaVersion: 2, renamed: d['old'], old: undefined }),
+    migrate: (d) => {
+      const { old, ...rest } = d;
+      return { ...rest, schemaVersion: 2, renamed: old };
+    },
   };
   const v3: Migration = { from: 2, to: 3, migrate: (d) => ({ ...d, schemaVersion: 3, extra: 'added' }) };
 
@@ -522,5 +526,210 @@ describe('serializeDocument', () => {
     });
     const result = validateDocument(JSON.stringify(input));
     expect(result.ok && serializeDocument(result.document)).toBe(canonicalJson(input));
+  });
+});
+
+describe('hostile parsed input (time-of-check / time-of-use, exotic objects, size)', () => {
+  const value = (text: string): unknown => JSON.parse(text) as unknown;
+
+  it('reads a getter at most once and never lets it show different values to different gates', () => {
+    let reads = 0;
+    const doc = make(() => undefined);
+    // First read is benign, any later read would smuggle a reserved key and a non-NFC string.
+    Object.defineProperty(doc, 'x-sneaky', {
+      enumerable: true,
+      get: () => {
+        reads += 1;
+        return reads === 1 ? { safe: 1 } : value('{"__proto__":1,"t":"e\u0301"}');
+      },
+    });
+    const result = validateDocument(doc);
+    expect(codes(result)).toEqual(['invalid-value']); // accessors are refused outright
+    expect(reads).toBe(0);
+  });
+
+  it('rejects accessor properties in arrays too, without invoking them', () => {
+    const arr: unknown[] = [1];
+    let called = false;
+    Object.defineProperty(arr, 0, {
+      enumerable: true,
+      get: () => {
+        called = true;
+        return 1;
+      },
+    });
+    expect(
+      codes(
+        validateDocument(
+          make((d) => {
+            d['locales'] = arr;
+          }),
+        ),
+      ),
+    ).toEqual(['invalid-value']);
+    expect(called).toBe(false);
+  });
+
+  it('turns throwing getters, throwing Proxies and exotic values into issues instead of exceptions', () => {
+    const throwing = {
+      get a(): never {
+        throw new Error('boom');
+      },
+    };
+    const proxy = new Proxy(
+      {},
+      {
+        ownKeys: () => {
+          throw new Error('trap');
+        },
+      },
+    );
+    const inputs: unknown[] = [
+      throwing,
+      proxy,
+      () => 1,
+      Symbol('s'),
+      10n,
+      undefined,
+      new Map(),
+      new Date(0),
+      Object.create({ inherited: 1 }),
+      new (class Foo {
+        a = 1;
+      })(),
+      Object.assign(new Array<number>(3), { 0: 1, 2: 3 }),
+      Object.assign([1], { extra: 2 }),
+      { [Symbol('k')]: 1 },
+      Number.NaN,
+      Infinity,
+      -0.5,
+      2 ** 60,
+    ];
+    for (const input of inputs) {
+      let result: ReturnType<typeof validateDocument> | undefined;
+      expect(() => {
+        result = validateDocument(input);
+      }).not.toThrow();
+      expect(result?.ok, String(input)).toBe(false);
+    }
+    expect(() => migrateDocument(throwing, 1, [])).not.toThrow();
+    expect(migrateDocument(throwing, 1, [])).toMatchObject({ ok: false });
+  });
+
+  it("does not mutate or retain the caller's object", () => {
+    const input = make(() => undefined);
+    const before = JSON.stringify(input);
+    const result = validateDocument(input);
+    expect(JSON.stringify(input)).toBe(before);
+    if (result.ok) {
+      expect(result.document).not.toBe(input);
+      (result.document as Record<string, unknown>)['layoutRevision'] = 99;
+      expect(input['layoutRevision']).toBe(1);
+    }
+  });
+
+  it('applies the size limit to parsed objects by estimating their serialised size', () => {
+    const big = make((d) => {
+      first(d)['props'] = { a: 'x'.repeat(1_100_000), b: 'y'.repeat(1_100_000) };
+    });
+    expect(codes(validateDocument(big))).toEqual(['too-large']);
+    const wideKeys = make((d) => {
+      first(d)['props'] = Object.fromEntries(
+        Array.from({ length: 120_000 }, (_, i) => [`k${String(i)}`, 'x'.repeat(12)]),
+      );
+    });
+    expect(codes(validateDocument(wideKeys))).toEqual(['too-large']);
+  });
+
+  it('rejects documents with too many values with its own code', () => {
+    const many = make((d) => {
+      first(d)['props'] = { list: new Array<number>(MAX_JSON_VALUES + 1).fill(1) };
+    });
+    expect(codes(validateDocument(many))).toEqual(['too-many-values']);
+  });
+
+  it('reports at most 50 semantic errors and stops collecting there', () => {
+    const root = Array.from({ length: 400 }, () => ({ id: 'el-dup', type: 'blixis/text', props: {}, children: [] }));
+    const result = validateDocument(
+      make((d) => {
+        d['root'] = root;
+        d['translations'] = { en_US: {} };
+      }),
+    );
+    expect(result.ok).toBe(false);
+    expect(!result.ok && result.errors.length).toBe(50);
+  });
+
+  it.each(['0050-06-15T12:00:00Z', '0000-01-01T00:00:00Z', '9999-12-31T23:59:59Z'])(
+    'accepts the real timestamp %s',
+    (updatedAt) => {
+      expect(
+        validateDocument(
+          make((d) => {
+            d['metadata'] = { updatedAt, editorVersion: '1' };
+          }),
+        ).ok,
+      ).toBe(true);
+    },
+  );
+});
+
+describe('migration safety', () => {
+  const step = (f: (d: Doc) => unknown): Migration => ({ from: 1, to: 2, migrate: f as Migration['migrate'] });
+  const run = (f: (d: Doc) => unknown) => migrateDocument({ schemaVersion: 1, a: 1 }, 2, [step(f)]);
+
+  it('rejects two steps for the same version', () => {
+    const ok = (d: Doc): Doc => ({ ...d, schemaVersion: 2 });
+    expect(migrateDocument({ schemaVersion: 1 }, 2, [step(ok), step(ok)])).toMatchObject({
+      ok: false,
+      issue: { code: 'migration-failed' },
+    });
+  });
+
+  it.each([
+    ['a reserved key', () => JSON.parse('{"schemaVersion":2,"__proto__":{"x":1}}') as unknown],
+    ['a non-NFC string', (d: Doc) => ({ ...d, schemaVersion: 2, text: 'e\u0301' })],
+    ['a decimal number', (d: Doc) => ({ ...d, schemaVersion: 2, ratio: 0.5 })],
+    ['undefined values', (d: Doc) => ({ ...d, schemaVersion: 2, gone: undefined })],
+    ['a class instance', (d: Doc) => ({ ...d, schemaVersion: 2, when: new Date(0) })],
+    [
+      'a getter',
+      (d: Doc) => Object.defineProperty({ ...d, schemaVersion: 2 }, 'g', { enumerable: true, get: () => 1 }),
+    ],
+    [
+      'excessive nesting',
+      (d: Doc) => {
+        let v: unknown = [];
+        for (let i = 0; i < 300; i += 1) v = [v];
+        return { ...d, schemaVersion: 2, deep: v };
+      },
+    ],
+    ['a huge string', (d: Doc) => ({ ...d, schemaVersion: 2, big: 'x'.repeat(DOCUMENT_LIMITS.maxBytes + 1) })],
+    ['a non-object result', () => 'not a document'],
+  ])('rejects unsafe migration output: %s', (_name, f) => {
+    expect(run(f)).toMatchObject({
+      ok: false,
+      issue: { code: expect.stringMatching(/migration-failed|schema/) as string },
+    });
+  });
+
+  it('a real-looking migration keeps every field it does not rename (no data loss)', () => {
+    const rename: Migration = {
+      from: 1,
+      to: 2,
+      migrate: (d) => {
+        const { oldName, ...rest } = d;
+        return { ...rest, schemaVersion: 2, newName: oldName };
+      },
+    };
+    const input = { schemaVersion: 1, oldName: 'x', untouched: { deep: [1, { z: null }] }, 'x-future': true };
+    const result = migrateDocument(input, 2, [rename]);
+    expect(result.ok && result.document).toEqual({
+      schemaVersion: 2,
+      newName: 'x',
+      untouched: { deep: [1, { z: null }] },
+      'x-future': true,
+    });
+    expect(input).toEqual({ schemaVersion: 1, oldName: 'x', untouched: { deep: [1, { z: null }] }, 'x-future': true });
   });
 });

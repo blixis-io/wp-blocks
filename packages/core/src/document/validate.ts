@@ -1,18 +1,17 @@
-import { assertJsonValue, canonicalJson } from '../json/canonical.ts';
+import { canonicalJson } from '../json/canonical.ts';
 import { assertStrictJson } from '../json/strict.ts';
 import { utf8Length } from '../json/utf8.ts';
 import { BuilderDocumentSchema, CURRENT_SCHEMA_VERSION, type BuilderDocument } from '../schema/document.ts';
 import { DOCUMENT_LIMITS } from '../schema/limits.ts';
-import { findReservedKeys } from '../schema/parse.ts';
 import type { DocumentIssue } from './issues.ts';
-import { migrateDocument, type Migration } from './migrate.ts';
+import { admitValue } from './gates.ts';
+import { migrateAdmitted, type Migration } from './migrate.ts';
 import { checkSemantics } from './semantic.ts';
 
 /** Append-only migrations to the current schema version. Empty while version 1 is the only version. */
 export const MIGRATIONS: readonly Migration[] = [];
 
 const MAX_REPORTED_ISSUES = 50;
-const MAX_JSON_VALUES = 500_000;
 
 export interface ValidateOptions {
   /** Override the migration chain (tests). Defaults to `MIGRATIONS`. */
@@ -35,23 +34,6 @@ const fail = (code: DocumentIssue['code'], path: string, message: string): Valid
   errors: [{ code, path, message }],
 });
 
-/** Iterative depth/size guard for already-parsed values (also stops cycles): recursion is never used on untrusted input. */
-function measureJsonShape(value: unknown): 'ok' | 'too-deep' | 'too-many-values' {
-  const stack: [unknown, number][] = [[value, 1]];
-  let seen = 0;
-  while (stack.length > 0) {
-    const item = stack.pop();
-    if (item === undefined) break;
-    const [current, depth] = item;
-    seen += 1;
-    if (seen > MAX_JSON_VALUES) return 'too-many-values';
-    if (current === null || typeof current !== 'object') continue;
-    if (depth > DOCUMENT_LIMITS.maxJsonDepth) return 'too-deep';
-    for (const child of Object.values(current)) stack.push([child, depth + 1]);
-  }
-  return 'ok';
-}
-
 function pathOf(segments: readonly PropertyKey[]): string {
   return segments.reduce<string>(
     (acc, s) => (typeof s === 'number' ? `${acc}[${String(s)}]` : `${acc}.${String(s)}`),
@@ -62,10 +44,11 @@ function pathOf(segments: readonly PropertyKey[]): string {
 /**
  * The only supported way to accept a document (docs/architecture/DOCUMENT-SCHEMA.md). Pass the stored/received *text*
  * whenever possible: that is the only way to enforce the byte limit before decoding and to reject JSON that decoding would
- * normalise (`1.0`, `-0`, duplicate keys). For already-parsed objects the caller must have enforced the byte limit.
+ * normalise (`1.0`, `-0`, duplicate keys). Already-parsed objects are accepted too: they are snapshotted once and bounded by the same limits (size is estimated from their contents).
  *
- * Order: byte limit -> strict JSON -> depth -> value rules (safe integers, NFC) -> reserved keys -> schema version and
- * migration -> shape -> semantic checks. Newer schema versions fail without being touched.
+ * Order: byte limit -> strict JSON -> inert snapshot (depth, value count, size estimate, no accessors or exotic objects) ->
+ * value rules (safe integers, NFC) -> reserved keys -> schema version and migration (output re-checked) -> shape -> semantic
+ * checks. Parsed objects are copied once and bounded by the same size limit as text; they are never read again.
  */
 export function validateDocument(input: unknown, options: ValidateOptions = {}): ValidationResult {
   let value: unknown = input;
@@ -82,33 +65,11 @@ export function validateDocument(input: unknown, options: ValidateOptions = {}):
     value = JSON.parse(input);
   }
 
-  const shape = measureJsonShape(value);
-  if (shape !== 'ok')
-    return fail(
-      'too-deep',
-      '$',
-      shape === 'too-deep' ? `nesting deeper than ${String(DOCUMENT_LIMITS.maxJsonDepth)} levels` : 'too many values',
-    );
+  // One inert snapshot of the input; every later gate and the returned document come from it, never from `input` again.
+  const admitted = admitValue(value);
+  if (!admitted.ok) return { ok: false, errors: admitted.issues };
 
-  try {
-    assertJsonValue(value);
-  } catch (error) {
-    return fail('invalid-value', '$', error instanceof Error ? error.message : 'invalid value');
-  }
-
-  const reserved = findReservedKeys(value);
-  if (reserved.length > 0) {
-    return {
-      ok: false,
-      errors: reserved.slice(0, MAX_REPORTED_ISSUES).map((path) => ({
-        code: 'reserved-key',
-        path,
-        message: 'reserved key (__proto__, constructor, prototype) is not allowed',
-      })),
-    };
-  }
-
-  const migration = migrateDocument(value, CURRENT_SCHEMA_VERSION, options.migrations ?? MIGRATIONS);
+  const migration = migrateAdmitted(admitted.value, CURRENT_SCHEMA_VERSION, options.migrations ?? MIGRATIONS);
   if (!migration.ok) return { ok: false, errors: [migration.issue] };
 
   const parsed = BuilderDocumentSchema.safeParse(migration.document);

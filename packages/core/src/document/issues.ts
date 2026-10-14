@@ -3,6 +3,7 @@ export const ISSUE_CODES = [
   'too-large',
   'invalid-json',
   'too-deep',
+  'too-many-values',
   'invalid-value',
   'reserved-key',
   'unsupported-schema-version',

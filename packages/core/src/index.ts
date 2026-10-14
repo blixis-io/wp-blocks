@@ -32,6 +32,7 @@ export {
   type Json,
 } from './schema/primitives.ts';
 export { ISSUE_CODES, type DocumentIssue, type IssueCode } from './document/issues.ts';
+export { admitValue, snapshotInput, MAX_JSON_VALUES } from './document/gates.ts';
 export { migrateDocument, type Migration, type MigrationResult } from './document/migrate.ts';
 export {
   MIGRATIONS,
