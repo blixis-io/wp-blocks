@@ -23,6 +23,16 @@ The BWB-032 Ocean, Forest, Sunset and Minimal preset files live in `design/prese
 
 A theme is Blixis-compatible when its `style.css` header, or its parent's, contains `Blixis-Compat: <integer>` (ADR 0002). `Blixis\Theme\Compat::from_value()` defines the accepted value: a positive integer in plain digits, 1 to 9999, no sign, no leading zero, no spaces inside; anything else counts as "not declared". `Compat::declared($directory)` reads a theme directory with `get_file_data()` and `Compat::active()` answers for the active theme, falling back to the parent for a child theme without its own header. This theme declares 1 (`Compat::CURRENT`). The plugin's `ThemeCompat` service (BWB-047) implements the same parsing rule and uses the integer to decide whether editing is allowed.
 
+## Child themes and switching
+
+The parent theme loads its PHP hooks for an active child. A child without its own `Blixis-Compat` header inherits the parent's version 1 declaration. A child with an invalid declaration, such as `Blixis-Compat: x`, is incompatible even when its parent declares version 1. The local fixtures in `tooling/wp-env/fixtures/themes/` exercise both cases and a standalone incompatible theme.
+
+An active child uses the inherited PHP page and header templates and may override the footer template. Styles load in this order: parent baseline `style.css`, parent `tokens.css`, parent `theme.css`, child `style.css`, so the child can override parent rules. Generated asset URLs point into the parent theme directory. The saved design-system CSS still prints after `tokens.css`, and an administrator can open Appearance → Blixis setup. The smoke test checks those behaviors on the rendered front page.
+
+Switching through the invalid child and an unrelated theme, then back to Blixis, preserves the raw `blixis_setup`, `blixis_design_system`, and `blixis_design_system_history` options and the administrator's setup UI/draft user meta. `after_switch_theme` attempts to create `blixis_setup` only when absent, so reactivation does not replace an existing value. The Blixis theme's classes and setup admin hooks are not loaded while the unrelated theme is active; this theme therefore does not offer its setup page or notice there. Plugin editor gating and public fallback on an incompatible theme belong to BWB-047 (ADR 0002, `TESTING.md` scenario 5).
+
+These checks use one site in the local Docker stack. On multisite, options are scoped to the current site and setup UI data remains per user; network-wide switching has not been exercised by this smoke test.
+
 ## Setup entry point
 
 `after_switch_theme` adds the per-site `blixis_setup` option only if absent; it is never replaced on reactivation, including when its data is invalid or from a newer schema. The option has autoload disabled and stores `{version: 1, status: 'not_started'|'in_progress'|'completed'|'dismissed', updated_at: UTC RFC3339 string, preset?: lowercase slug}`. `SetupState::normalize()` validates reads without WordPress calls; invalid data disables entry actions safely. BWB-034 owns wizard completion and preset application.

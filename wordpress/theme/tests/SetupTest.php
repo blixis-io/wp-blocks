@@ -68,14 +68,19 @@ final class SetupTest extends TestCase {
 	 */
 	public function test_compiled_theme_style_is_enqueued(): void {
 		$styles = Setup::styles( 'https://example.test/child/style.css', 'https://example.test/blixis', '0.1.0' );
-		$this->assertSame( array( 'blixis-style', 'blixis-tokens', 'blixis-theme' ), array_keys( $styles ) );
+		$this->assertSame( array( 'blixis-parent-style', 'blixis-tokens', 'blixis-theme', 'blixis-style' ), array_keys( $styles ) );
+		$this->assertSame( 'https://example.test/blixis/style.css', $styles['blixis-parent-style']['url'] );
+		$this->assertSame( array( 'blixis-theme' ), $styles['blixis-style']['dependencies'] );
 		$this->assertSame( 'https://example.test/blixis/assets/css/tokens.css', $styles['blixis-tokens']['url'] );
-		$this->assertSame( array( 'blixis-style' ), $styles['blixis-tokens']['dependencies'] );
+		$this->assertSame( array( 'blixis-parent-style' ), $styles['blixis-tokens']['dependencies'] );
 		$this->assertSame( '0.1.0', $styles['blixis-tokens']['version'] );
 		$this->assertSame( 'https://example.test/blixis/assets/css/theme.css', $styles['blixis-theme']['url'] );
 		$this->assertSame( array( 'blixis-tokens' ), $styles['blixis-theme']['dependencies'] );
 		$this->assertSame( '0.1.0', $styles['blixis-theme']['version'] );
 		$this->assertFileExists( dirname( __DIR__ ) . '/assets/css/tokens.css' );
 		$this->assertFileExists( dirname( __DIR__ ) . '/assets/css/theme.css' );
+		$parent_styles = Setup::styles( 'https://example.test/blixis/style.css', 'https://example.test/blixis', '0.1.0' );
+		$this->assertSame( array( 'blixis-style', 'blixis-tokens', 'blixis-theme' ), array_keys( $parent_styles ) );
+		$this->assertSame( array(), $parent_styles['blixis-style']['dependencies'] );
 	}
 }
