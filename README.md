@@ -5,10 +5,10 @@ Status: planning blueprint · 2026-10-13
 
 ## Start here
 
-1. Read [Agent Bootstrap](agent/START-HERE.md) and give it to your AI coding agent **inside the repository**.
-2. The first execution phase is **planning-only**: inventory the repo, reconcile this blueprint, create labels, milestones, GitHub Project, and **all** GitHub Issues from `roadmap/issues.csv`, connect them, and stop before implementing application code.
+1. Read [Agent Bootstrap](docs/agent/START-HERE.md) and give it to your AI coding agent **inside the repository**.
+2. The first execution phase is **planning-only**: inventory the repo, reconcile this blueprint, create labels, milestones, GitHub Project, and **all** GitHub Issues from `docs/roadmap/issues.csv`, connect them, and stop before implementing application code.
 3. Review the resulting Project backlog; then explicitly authorize implementation.
-4. Follow [PRD](product/PRD.md), [Architecture](architecture/SYSTEM.md), and the engineering standards.
+4. Follow [PRD](docs/product/PRD.md), [Architecture](docs/architecture/SYSTEM.md), and the engineering standards.
 
 ## Development setup
 
@@ -27,30 +27,30 @@ Further scripts (lint, typecheck, build, e2e) arrive with BWB-013 to BWB-018.
 
 | File | Purpose |
 |---|---|
-| `product/PRD.md` | Scope, audience, personas, capabilities, non-goals, release criteria |
-| `product/UX-JOURNEYS.md` | Draft user journeys and prototype acceptance (BWB-009) |
-| `product/FEATURE-MATRIX.md` | Free / Plus / Pro packaging and entitlement rules |
-| `architecture/SYSTEM.md` | Modules, rendering, CSS strategy, editor, theme contracts |
-| `architecture/SCHEMAS-AND-APIS.md` | Initial document contracts, endpoints, migrations and plugin extension API |
-| `architecture/WORDPRESS.md` | Theme activation, font library, persistence, access and portability |
-| `engineering/TESTING.md` | Test layers, coverage, CI gates, E2E matrix |
-| `engineering/GITFLOW.md` | GitHub Flow, Conventional Commits, PR policy, no AI attribution |
-| `engineering/CODE-STANDARDS.md` | TypeScript, React, PHP, REST and architectural conventions |
-| `engineering/STYLEGUIDES.md` | UI, token, accessibility, visual-editor UX, CSS conventions |
-| `engineering/THREAT-MODEL.md` | Assets, roles, trust boundaries, STRIDE threats and required controls (BWB-010) |
-| `engineering/ACCESSIBILITY-BASELINE.md` | WCAG 2.2 AA requirements, verification and performance rules (BWB-010) |
-| `architecture/adrs/` | Architecture decision records |
+| `docs/product/PRD.md` | Scope, audience, personas, capabilities, non-goals, release criteria |
+| `docs/product/UX-JOURNEYS.md` | Draft user journeys and prototype acceptance (BWB-009) |
+| `docs/product/FEATURE-MATRIX.md` | Free / Plus / Pro packaging and entitlement rules |
+| `docs/architecture/SYSTEM.md` | Modules, rendering, CSS strategy, editor, theme contracts |
+| `docs/architecture/SCHEMAS-AND-APIS.md` | Initial document contracts, endpoints, migrations and plugin extension API |
+| `docs/architecture/WORDPRESS.md` | Theme activation, font library, persistence, access and portability |
+| `docs/engineering/TESTING.md` | Test layers, coverage, CI gates, E2E matrix |
+| `docs/engineering/GITFLOW.md` | GitHub Flow, Conventional Commits, PR policy, no AI attribution |
+| `docs/engineering/CODE-STANDARDS.md` | TypeScript, React, PHP, REST and architectural conventions |
+| `docs/engineering/STYLEGUIDES.md` | UI, token, accessibility, visual-editor UX, CSS conventions |
+| `docs/engineering/THREAT-MODEL.md` | Assets, roles, trust boundaries, STRIDE threats and required controls (BWB-010) |
+| `docs/engineering/ACCESSIBILITY-BASELINE.md` | WCAG 2.2 AA requirements, verification and performance rules (BWB-010) |
+| `docs/architecture/adrs/` | Architecture decision records |
 | `tests/fixtures/style-resolution/` | Reference fixtures and verifier for ADR 0005 |
-| `engineering/SECURITY.md` | Threat model, supply chain, sandboxing, licensing |
-| `engineering/CI-CD.md` | GitHub Actions, builds, release and versioning |
-| `roadmap/ROADMAP.md` | Phases, gates, dependencies, deliverables |
-| `roadmap/issues.csv` | **Canonical issue inventory** for provisioning GitHub |
-| `roadmap/ISSUE-CONVENTIONS.md` | Labels, issue descriptions, priorities, statuses |
-| `github/PROJECT-SETUP.md` | GitHub CLI and Projects provisioning runbook |
-| `agent/START-HERE.md` | **Copy/paste agent prompt** with mandatory plan-first execution |
-| `agent/AGENT-RULES.md` | Rules for future implementation sessions |
-| `docs-plan/ASTRO-STARLIGHT.md` | End-state Astro docs, API reference, tutorials, samples, Playwright |
-| `docs-plan/INFORMATION-ARCHITECTURE.md` | Docs navigation and publishing gates |
+| `docs/engineering/SECURITY.md` | Threat model, supply chain, sandboxing, licensing |
+| `docs/engineering/CI-CD.md` | GitHub Actions, builds, release and versioning |
+| `docs/roadmap/ROADMAP.md` | Phases, gates, dependencies, deliverables |
+| `docs/roadmap/issues.csv` | **Canonical issue inventory** for provisioning GitHub |
+| `docs/roadmap/ISSUE-CONVENTIONS.md` | Labels, issue descriptions, priorities, statuses |
+| `docs/github/PROJECT-SETUP.md` | GitHub CLI and Projects provisioning runbook |
+| `docs/agent/START-HERE.md` | **Copy/paste agent prompt** with mandatory plan-first execution |
+| `docs/agent/AGENT-RULES.md` | Rules for future implementation sessions |
+| `docs/public-docs-plan/ASTRO-STARLIGHT.md` | End-state Astro docs, API reference, tutorials, samples, Playwright |
+| `docs/public-docs-plan/INFORMATION-ARCHITECTURE.md` | Docs navigation and publishing gates |
 
 ## Architectural decisions requiring explicit review
 
@@ -77,4 +77,4 @@ The plans and estimates are proposed engineering targets, not commitments or com
 
 ## October 2026 addendum
 
-Read `product/PRD-ADDENDUM-MULTILINGUAL-THEMES.md` for content translation and independent website light/dark mode requirements. The new `roadmap/issues-addendum.csv` adds 24 tasks to the existing 100, for **124 total**. Use `agent/CODEX-CLAUDE-PROMPTBOOK.md` for Codex/Claude Code prompts. Entry-point policies are linked from `AGENTS.md` and `CLAUDE.md`.
+Read `docs/product/PRD-ADDENDUM-MULTILINGUAL-THEMES.md` for content translation and independent website light/dark mode requirements. The new `docs/roadmap/issues-addendum.csv` adds 24 tasks to the existing 100, for **124 total**. Use `docs/agent/CODEX-CLAUDE-PROMPTBOOK.md` for Codex/Claude Code prompts. Entry-point policies are linked from `AGENTS.md` and `CLAUDE.md`.
