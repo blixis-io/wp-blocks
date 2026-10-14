@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace Blixis\Builder;
 
+use Blixis\Builder\Storage\MetaRegistration;
+
 \defined( 'ABSPATH' ) || exit;
 
 /**
@@ -19,6 +21,7 @@ final class Plugin {
 	/** Register hooks for a supported runtime. */
 	public static function register(): void {
 		\add_action( 'init', [ self::class, 'load_text_domain' ] );
+		MetaRegistration::hooks();
 	}
 
 	/** Load translations after WordPress has initialized. */
