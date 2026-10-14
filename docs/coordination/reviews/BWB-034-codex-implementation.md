@@ -1,0 +1,5 @@
+Implemented BWB-034 on `feat/34-setup-wizard` without committing or pushing.
+
+The server-rendered wizard now covers preset selection, color and layout controls, a light/dark preview, and per-user draft storage. It rejects invalid tokens and low-contrast colors. Apply validates the draft and calls the explicit [DesignSystemStore stub](wordpress/theme/src/DesignSystemStore.php); it explains that publishing awaits BWB-035. The design JSON now ships in the theme zip, and [THEME.md](docs/architecture/THEME.md) documents the flow.
+
+**Verification:** PHP unit tests, targeted TypeScript tests, PHPCS, PHPStan in debug mode, packaging tests, and `pnpm build` passed. `pnpm exec prettier --write .` ran. The full `pnpm run check` remains blocked by a missing pnpm package index and sandbox restrictions on PHPStan subprocess sockets; `composer run check` hits the same socket restriction. `pnpm wp:smoke` could not connect to the local WordPress port (`EPERM`), so the new browser smoke path remains unverified.

@@ -86,6 +86,16 @@ final class SetupStateTest extends TestCase {
 		$this->assertNull( SetupState::transition( array_merge( $initial, array( 'status' => 'dismissed' ) ), 'start', self::NOW ) );
 	}
 
+	/** Wizard navigation is bounded and has no Apply transition yet. */
+	public function test_wizard_step_transitions(): void {
+		$this->assertSame( 2, SetupState::next_step( 1, 'next' ) );
+		$this->assertSame( 5, SetupState::next_step( 6, 'back' ) );
+		$this->assertNull( SetupState::next_step( 1, 'back' ) );
+		$this->assertNull( SetupState::next_step( 6, 'next' ) );
+		$this->assertNull( SetupState::next_step( 3, 'apply' ) );
+		$this->assertNull( SetupState::next_step( 7, 'next' ) );
+	}
+
 	/**
 	 * Resume position accepts only a single valid step and cannot influence site status.
 	 */

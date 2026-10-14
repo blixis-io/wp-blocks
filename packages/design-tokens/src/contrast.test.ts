@@ -72,3 +72,13 @@ describe('WCAG sRGB contrast', () => {
     ).toBe(false);
   });
 });
+
+import contrastFixture from '../../../tests/fixtures/contrast-ratios.json' with { type: 'json' };
+
+describe('PHP contrast parity fixture', () => {
+  it('matches independently recorded ratios', () => {
+    for (const entry of contrastFixture.cases) {
+      expect(contrastRatio(entry.foreground, entry.background)).toBeCloseTo(Number(entry.ratio), 10);
+    }
+  });
+});

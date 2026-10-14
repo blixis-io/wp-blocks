@@ -6,7 +6,18 @@
       "kind": "theme",
       "source": "wordpress/theme",
       "main": "style.css",
-      "required": ["style.css", "index.php", "theme.json", "assets/css/tokens.css", "assets/css/theme.css"],
+      "required": [
+        "style.css",
+        "index.php",
+        "theme.json",
+        "assets/css/tokens.css",
+        "assets/css/theme.css",
+        "design/default-tokens.json",
+        "design/presets/ocean.json",
+        "design/presets/forest.json",
+        "design/presets/sunset.json",
+        "design/presets/minimal.json"
+      ],
       "tier": "free",
       "identity": "Theme Name"
     },
@@ -61,7 +72,6 @@
     "theme.src.css",
     "build-css.mjs",
     "build-tokens.mjs",
-    "default-tokens.json",
     "*.log",
     "*.test.*",
     "*.md.bak"
