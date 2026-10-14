@@ -30,7 +30,8 @@ def sh(args, inp=None, retries=1):
         r = subprocess.run(args, capture_output=True, text=True, input=inp)
         if r.returncode == 0:
             return r.stdout
-        time.sleep(2 * (t + 1))
+        if t + 1 < retries:
+            time.sleep(min(60, 5 * (t + 1) ** 2))  # back off; GitHub rate limits clear within minutes
     raise RuntimeError(f"{' '.join(args[:5])}: {r.stderr.strip()[:300]}")
 
 
@@ -126,7 +127,7 @@ def sync_issues(cat):
             e = ex[i["id"]][0]
             if (e["body"] or "").strip() != nb.strip() or e["title"] != t:
                 u += 1
-                if APPLY: sh(["gh", "issue", "edit", str(e["number"]), "--repo", REPO, "--title", t, "--body-file", "-"], inp=nb)
+                if APPLY: sh(["gh", "issue", "edit", str(e["number"]), "--repo", REPO, "--title", t, "--body-file", "-"], inp=nb, retries=6)
             else:
                 r += 1
             have = {l["name"] for l in e["labels"]}
@@ -167,6 +168,11 @@ def sync_project(cat, mp):
     target = lambda ph: {"P8": "Plus", "P9": "Pro", "P10": "Docs 1.0"}.get(ph, "Free 1.0")
     for i in cat:
         m = mp[i["id"]]
+        cur = items.get(m["number"])
+        want = {"phase": i["phase"], "priority": i["priority"], "area": AREA_LABEL[i["area"]], "target": target(i["phase"])}
+        if i["size"]: want["size"] = i["size"]
+        if cur and all(cur.get(k) == v for k, v in want.items()):
+            continue  # already correct: no API calls (never touches Status of existing items)
         node = m.get("nodeId") or gh(["api", f"repos/{REPO}/issues/{m['number']}"])["node_id"]
         q = 'mutation{a:addProjectV2ItemById(input:{projectId:"%s",contentId:"%s"}){item{id}}}' % (pid, node)
         item = gh(["api", "graphql", "-f", f"query={q}"], retries=6)["data"]["a"]["item"]["id"]

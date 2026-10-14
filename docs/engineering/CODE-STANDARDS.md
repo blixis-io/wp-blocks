@@ -50,3 +50,16 @@
 ## Definition of Done (code)
 
 Feature is implemented behind relevant gate, has unit/integration tests, accessibility checked, documented where user-visible, passes CI, respects WP licensing/security rules, has no unreviewed breaking behavior and closes a traceable issue.
+
+## Tooling and checks (BWB-013)
+
+| Concern | Tool | Config |
+|---|---|---|
+| TypeScript strictness | TypeScript 6.0 (`typescript-eslint` does not yet support 7.x) | `tsconfig.base.json`: `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noImplicitOverride`, `noUnusedLocals/Parameters`, `noPropertyAccessFromIndexSignature`, `verbatimModuleSyntax`. Packages extend it and add a `typecheck` script. |
+| Lint | ESLint 9 (flat config; `eslint-plugin-jsx-a11y` does not support 10 yet) with `typescript-eslint` strict + stylistic type-checked rules; React hooks and jsx-a11y rules only in packages allowed to use React (ADR 0010) | `eslint.config.mjs` |
+| Formatting | Prettier (code and config files; docs and CSV are not auto-formatted) | `.prettierrc.json`, `.prettierignore`, `.editorconfig` |
+| Commits | commitlint: Conventional Commits types from GITFLOW, kebab-case scopes, header <= 100 chars, **and a rule rejecting AI-agent attribution** (generated-by lines, AI co-author trailers) | `commitlint.config.mjs`, local `commit-msg` hook in `.husky/` |
+
+Commands (root): `pnpm lint`, `pnpm format:check` / `pnpm format`, `pnpm typecheck` (runs each package's `typecheck` script), `pnpm commitlint` (commits since `origin/main`), and `pnpm check` for everything that does not need WordPress. `pnpm test:tooling` proves the tools enforce what they claim (rejects implicit `any`, unchecked index access, `any`, `@ts-ignore`, bad commit headers and AI attribution).
+
+Dependencies are recorded with exact versions (`savePrefix: ""`), install scripts are blocked unless listed in `onlyBuiltDependencies` (currently empty), and versions younger than one day are not installed (`minimumReleaseAge`). Peer-dependency conflicts are resolved by choosing compatible versions, not by overrides.
