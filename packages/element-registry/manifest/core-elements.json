@@ -1,0 +1,202 @@
+{
+  "apiVersion": 1,
+  "elements": [
+    {
+      "allowedChildren": [],
+      "allowedParents": [
+        "blixis/section",
+        "blixis/container"
+      ],
+      "category": "interactive",
+      "props": {
+        "href": {
+          "classification": "locale-specific",
+          "default": "#",
+          "kind": "url",
+          "label": "Link"
+        },
+        "label": {
+          "classification": "translatable",
+          "default": "Button",
+          "kind": "string",
+          "label": "Label",
+          "maxLength": 100
+        },
+        "newTab": {
+          "classification": "invariant",
+          "default": false,
+          "kind": "boolean",
+          "label": "Open in a new tab"
+        },
+        "variant": {
+          "classification": "invariant",
+          "default": "solid",
+          "kind": "enum",
+          "label": "Style",
+          "values": [
+            "solid",
+            "outline",
+            "link"
+          ]
+        }
+      },
+      "requiresApi": 1,
+      "tier": "free",
+      "title": "Button",
+      "type": "blixis/button",
+      "version": 1
+    },
+    {
+      "allowedChildren": [
+        "@layout",
+        "@content",
+        "@media",
+        "@interactive"
+      ],
+      "allowedParents": [
+        "blixis/section",
+        "blixis/container"
+      ],
+      "category": "layout",
+      "props": {
+        "maxWidth": {
+          "classification": "invariant",
+          "default": "default",
+          "kind": "enum",
+          "label": "Maximum width",
+          "values": [
+            "narrow",
+            "default",
+            "wide",
+            "full"
+          ]
+        }
+      },
+      "requiresApi": 1,
+      "tier": "free",
+      "title": "Container",
+      "type": "blixis/container",
+      "version": 1
+    },
+    {
+      "allowedChildren": [],
+      "allowedParents": [
+        "blixis/section",
+        "blixis/container"
+      ],
+      "category": "content",
+      "props": {
+        "level": {
+          "classification": "invariant",
+          "default": 2,
+          "kind": "integer",
+          "label": "Level",
+          "max": 6,
+          "min": 1,
+          "required": true
+        },
+        "text": {
+          "classification": "translatable",
+          "default": "Heading",
+          "kind": "string",
+          "label": "Text",
+          "maxLength": 500
+        }
+      },
+      "requiresApi": 1,
+      "tier": "free",
+      "title": "Heading",
+      "type": "blixis/heading",
+      "version": 1
+    },
+    {
+      "allowedChildren": [],
+      "allowedParents": [
+        "blixis/section",
+        "blixis/container"
+      ],
+      "category": "media",
+      "props": {
+        "alt": {
+          "classification": "translatable",
+          "default": "",
+          "kind": "string",
+          "label": "Alternative text",
+          "maxLength": 500
+        },
+        "attachmentId": {
+          "classification": "invariant",
+          "kind": "media",
+          "label": "Image"
+        },
+        "decorative": {
+          "classification": "invariant",
+          "default": false,
+          "kind": "boolean",
+          "label": "Decorative image"
+        }
+      },
+      "requiresApi": 1,
+      "tier": "free",
+      "title": "Image",
+      "type": "blixis/image",
+      "version": 1
+    },
+    {
+      "allowedChildren": [
+        "@layout",
+        "@content",
+        "@media",
+        "@interactive"
+      ],
+      "allowedParents": [
+        "#root"
+      ],
+      "category": "layout",
+      "props": {
+        "tag": {
+          "classification": "invariant",
+          "default": "section",
+          "kind": "enum",
+          "label": "HTML element",
+          "values": [
+            "section",
+            "header",
+            "footer",
+            "main",
+            "aside",
+            "nav",
+            "article"
+          ]
+        }
+      },
+      "requiresApi": 1,
+      "tier": "free",
+      "title": "Section",
+      "type": "blixis/section",
+      "version": 1
+    },
+    {
+      "allowedChildren": [],
+      "allowedParents": [
+        "blixis/section",
+        "blixis/container"
+      ],
+      "category": "content",
+      "props": {
+        "text": {
+          "classification": "translatable",
+          "default": "Write something",
+          "kind": "string",
+          "label": "Text",
+          "maxLength": 5000
+        }
+      },
+      "requiresApi": 1,
+      "tier": "free",
+      "title": "Text",
+      "type": "blixis/text",
+      "version": 1
+    }
+  ]
+}
