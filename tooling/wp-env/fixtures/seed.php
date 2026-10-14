@@ -6,6 +6,12 @@
  * @package Blixis\Tooling
  */
 
+// Refuse to run anywhere but the disposable development stack: this script resets passwords, overwrites pages
+// and changes site options. docker/compose.yml defines both guards.
+if ( ! defined( 'BLIXIS_DEV_FIXTURES' ) || true !== BLIXIS_DEV_FIXTURES || 'local' !== wp_get_environment_type() ) {
+	WP_CLI::error( 'Refusing to seed: BLIXIS_DEV_FIXTURES is not defined or this is not a local environment.' );
+}
+
 // Users for permission tests (administrator, editor, author, contributor, subscriber). Dev-only credentials.
 $blixis_users = array(
 	'editor_ed'       => 'editor',
@@ -21,11 +27,11 @@ foreach ( $blixis_users as $blixis_login => $blixis_role ) {
 		'user_pass'  => 'password',
 		'role'       => $blixis_role,
 	);
-	if ( $blixis_existing ) {
-		$blixis_args['ID'] = $blixis_existing->ID;
-		wp_update_user( $blixis_args );
-	} else {
-		wp_insert_user( $blixis_args );
+	$blixis_result   = $blixis_existing
+		? wp_update_user( array_merge( $blixis_args, array( 'ID' => $blixis_existing->ID ) ) )
+		: wp_insert_user( $blixis_args );
+	if ( is_wp_error( $blixis_result ) ) {
+		WP_CLI::error( 'Could not create or update user ' . $blixis_login . ': ' . $blixis_result->get_error_message() );
 	}
 }
 
@@ -44,7 +50,7 @@ $blixis_pages = array(
 		'content' => '<h2>Contact</h2><p>Third sample page.</p>',
 	),
 );
-$blixis_ids = array();
+$blixis_ids   = array();
 foreach ( $blixis_pages as $blixis_slug => $blixis_page ) {
 	$blixis_found = get_page_by_path( $blixis_slug, OBJECT, 'page' );
 	$blixis_post  = array(
@@ -58,7 +64,11 @@ foreach ( $blixis_pages as $blixis_slug => $blixis_page ) {
 	if ( $blixis_found ) {
 		$blixis_post['ID'] = $blixis_found->ID;
 	}
-	$blixis_ids[ $blixis_slug ] = wp_insert_post( $blixis_post );
+	$blixis_id = wp_insert_post( $blixis_post, true );
+	if ( is_wp_error( $blixis_id ) ) {
+		WP_CLI::error( 'Could not create or update page ' . $blixis_slug . ': ' . $blixis_id->get_error_message() );
+	}
+	$blixis_ids[ $blixis_slug ] = $blixis_id;
 }
 
 update_option( 'show_on_front', 'page' );
@@ -69,4 +79,4 @@ update_option( 'permalink_structure', '/%postname%/' );
 update_option( 'blog_public', '0' );
 flush_rewrite_rules( true );
 
-echo 'seeded: ' . count( $blixis_ids ) . " pages, " . count( $blixis_users ) . " users\n"; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+echo 'seeded: ' . count( $blixis_ids ) . ' pages, ' . count( $blixis_users ) . " users\n"; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped

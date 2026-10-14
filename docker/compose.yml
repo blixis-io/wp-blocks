@@ -4,6 +4,22 @@
 # A distinctive project name: plain "blixis" collides with other Blixis stacks on developer machines.
 name: blixis-wp-blocks
 
+# Shared by the web and CLI containers: wp-config.php evaluates WORDPRESS_CONFIG_EXTRA at runtime, so WP-CLI
+# must receive the same value (otherwise the guards below would be undefined in WP-CLI).
+x-wordpress-env: &wordpress-env
+  WORDPRESS_DB_HOST: db
+  WORDPRESS_DB_NAME: wordpress
+  WORDPRESS_DB_USER: wordpress
+  WORDPRESS_DB_PASSWORD: wordpress-dev-only
+  WORDPRESS_DEBUG: '1'
+  WORDPRESS_CONFIG_EXTRA: |
+    define( 'WP_ENVIRONMENT_TYPE', 'local' );
+    define( 'BLIXIS_DEV_FIXTURES', true );
+    define( 'DISALLOW_FILE_EDIT', true );
+    define( 'WP_DEBUG_DISPLAY', false );
+    define( 'WP_DEBUG_LOG', false );
+    define( 'AUTOMATIC_UPDATER_DISABLED', true );
+
 services:
   db:
     image: ${BLX_DB_IMAGE:-mariadb:11.4@sha256:1292844148b311e4ed4300022a996d39083f415a963e970cf47cad1b3b18e3a6}
@@ -29,18 +45,7 @@ services:
     ports:
       # Bound to the loopback interface only.
       - '127.0.0.1:${BLX_WP_PORT:-8888}:80'
-    environment:
-      WORDPRESS_DB_HOST: db
-      WORDPRESS_DB_NAME: wordpress
-      WORDPRESS_DB_USER: wordpress
-      WORDPRESS_DB_PASSWORD: wordpress-dev-only
-      WORDPRESS_DEBUG: '1'
-      WORDPRESS_CONFIG_EXTRA: |
-        define( 'WP_ENVIRONMENT_TYPE', 'local' );
-        define( 'DISALLOW_FILE_EDIT', true );
-        define( 'WP_DEBUG_DISPLAY', false );
-        define( 'WP_DEBUG_LOG', true );
-        define( 'AUTOMATIC_UPDATER_DISABLED', true );
+    environment: *wordpress-env
     volumes:
       - wp-data:/var/www/html
     # Package mounts (wordpress/theme, wordpress/plugin, ...) are added through docker/compose.packages.yml
@@ -53,10 +58,7 @@ services:
     depends_on:
       - wordpress
     environment:
-      WORDPRESS_DB_HOST: db
-      WORDPRESS_DB_NAME: wordpress
-      WORDPRESS_DB_USER: wordpress
-      WORDPRESS_DB_PASSWORD: wordpress-dev-only
+      <<: *wordpress-env
       HOME: /tmp
     volumes:
       - wp-data:/var/www/html

@@ -11,10 +11,16 @@ import { fileURLToPath } from 'node:url';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const port = process.env.BLX_WP_PORT ?? '8888';
 const base = `http://127.0.0.1:${port}`;
+// The project name is passed explicitly and COMPOSE_PROJECT_NAME is ignored, so destructive commands such as
+// `reset` can only ever touch this project's containers and volumes.
+const PROJECT = 'blixis-wp-blocks';
+const env = { ...process.env };
+delete env.COMPOSE_PROJECT_NAME;
 const compose = (args, opts = {}) =>
-  spawnSync('docker', ['compose', '-f', join(root, 'docker', 'compose.yml'), ...args], {
+  spawnSync('docker', ['compose', '-p', PROJECT, '-f', join(root, 'docker', 'compose.yml'), ...args], {
     cwd: root,
     stdio: 'inherit',
+    env,
     ...opts,
   });
 const capture = (args) => compose(args, { stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf8' });
@@ -30,8 +36,8 @@ async function waitForHttp(url, seconds = 120) {
   const end = Date.now() + seconds * 1000;
   while (Date.now() < end) {
     try {
-      const r = await fetch(url, { redirect: 'manual' });
-      if (r.status < 500) return;
+      const r = await fetch(url, { redirect: 'manual', signal: AbortSignal.timeout(5000) });
+      if (r.status >= 200 && r.status < 400) return; // WordPress answers (200, or a redirect to the installer)
     } catch {
       /* not up yet */
     }
@@ -41,7 +47,7 @@ async function waitForHttp(url, seconds = 120) {
 }
 
 async function install() {
-  await waitForHttp(base);
+  await waitForHttp(`${base}/wp-login.php`);
   const installed = wp('core', 'is-installed');
   if (installed.status !== 0) {
     must(
@@ -70,7 +76,7 @@ async function smoke() {
     if (!ok) failures.push(message);
   };
   const get = async (path) => {
-    const r = await fetch(base + path, { redirect: 'follow' });
+    const r = await fetch(base + path, { redirect: 'follow', signal: AbortSignal.timeout(15000) });
     return { status: r.status, text: await r.text() };
   };
 
@@ -89,20 +95,27 @@ async function smoke() {
   const missing = await get('/definitely-not-a-page/');
   check(missing.status === 404, 'unknown URL returns 404');
 
-  const version = capture(['run', '--rm', '-T', 'cli', 'wp', 'core', 'version']);
-  const wpVersion = String(version.stdout ?? '').trim();
-  const php = capture(['exec', '-T', 'wordpress', 'php', '-r', 'echo PHP_VERSION;']);
-  const phpVersion = String(php.stdout ?? '').trim();
-  console.log(`versions: WordPress ${wpVersion}, PHP ${phpVersion}`);
-  if (process.env.BLX_EXPECT_WP)
+  const out = (args) => {
+    const r = capture(args);
     check(
-      wpVersion.startsWith(process.env.BLX_EXPECT_WP),
-      `WordPress version starts with ${process.env.BLX_EXPECT_WP}`,
+      r.status === 0,
+      `command succeeded: ${args.slice(args.indexOf('wp') >= 0 ? args.indexOf('wp') : 0).join(' ')}`,
     );
-  if (process.env.BLX_EXPECT_PHP)
-    check(phpVersion.startsWith(process.env.BLX_EXPECT_PHP), `PHP version starts with ${process.env.BLX_EXPECT_PHP}`);
+    return String(r.stdout ?? '').trim();
+  };
+  const wpVersion = out(['run', '--rm', '-T', 'cli', 'wp', 'core', 'version']);
+  const phpVersion = out(['exec', '-T', 'wordpress', 'php', '-r', 'echo PHP_VERSION;']);
+  console.log(`versions: WordPress ${wpVersion}, PHP ${phpVersion}`);
+  // With the default pinned images the expected versions are the ADR 0001 floor; overrides must say what they expect.
+  const defaults = process.env.BLX_WP_IMAGE === undefined;
+  const expectWp = process.env.BLX_EXPECT_WP ?? (defaults ? '7.0' : undefined);
+  const expectPhp = process.env.BLX_EXPECT_PHP ?? (defaults ? '8.2' : undefined);
+  check(expectWp !== undefined, 'a WordPress version expectation is set (BLX_EXPECT_WP) when using non-default images');
+  check(expectPhp !== undefined, 'a PHP version expectation is set (BLX_EXPECT_PHP) when using non-default images');
+  if (expectWp) check(wpVersion.startsWith(expectWp), `WordPress version starts with ${expectWp}`);
+  if (expectPhp) check(phpVersion.startsWith(expectPhp), `PHP version starts with ${expectPhp}`);
 
-  const langs = capture([
+  const langs = out([
     'run',
     '--rm',
     '-T',
@@ -113,11 +126,11 @@ async function smoke() {
     'list',
     '--status=installed',
     '--field=language',
-  ]);
-  check(String(langs.stdout ?? '').includes('nl_NL'), 'Dutch (nl_NL) language pack is installed');
-  const users = capture(['run', '--rm', '-T', 'cli', 'wp', 'user', 'list', '--field=user_login']);
+  ]).split('\n');
+  check(langs.includes('nl_NL'), 'Dutch (nl_NL) language pack is installed');
+  const users = out(['run', '--rm', '-T', 'cli', 'wp', 'user', 'list', '--field=user_login']).split('\n');
   for (const u of ['admin', 'editor_ed', 'author_ann', 'contributor_con', 'subscriber_sub'])
-    check(String(users.stdout ?? '').includes(u), `fixture user ${u} exists`);
+    check(users.includes(u), `fixture user ${u} exists`);
 
   if (failures.length) {
     console.error(`\n${failures.length} smoke check(s) failed`);
