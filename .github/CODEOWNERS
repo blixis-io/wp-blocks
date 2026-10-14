@@ -1,0 +1,20 @@
+# Code owners are requested automatically on pull requests. Enforcement (required code-owner review)
+# starts when branch protection or rulesets become available (BWB-125).
+# Later rules override earlier ones. Replace the user with team handles when the organisation has teams.
+
+*                                   @EmVeeNL
+
+# Security-sensitive areas: REST, rendering, CSS, CI, supply chain
+/.github/                           @EmVeeNL
+/docs/engineering/SECURITY.md       @EmVeeNL
+/docs/engineering/THREAT-MODEL.md   @EmVeeNL
+/tooling/check-licenses.mjs         @EmVeeNL
+/tooling/licenses.json              @EmVeeNL
+/composer.json                      @EmVeeNL
+/composer.lock                      @EmVeeNL
+/pnpm-lock.yaml                     @EmVeeNL
+
+# Architecture decisions and product scope
+/docs/architecture/                 @EmVeeNL
+/docs/product/                      @EmVeeNL
+/docs/roadmap/                      @EmVeeNL
