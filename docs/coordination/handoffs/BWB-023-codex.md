@@ -1,0 +1,14 @@
+# Handoff: independent review of BWB-023 (CSS declaration validation)
+
+READ-ONLY, offline. Branch `feat/23-css-declaration-validation`. Read: `docs/architecture/CSS-VALIDATION.md`, `packages/style-engine/src/*.ts` (tokenize, grammar, properties, validate, document) and tests, `packages/style-engine/corpus/declarations.json`, ADR 0005 section 4, `docs/engineering/THREAT-MODEL.md` (T5, T18), `packages/core/src/schema/style.ts`.
+
+Questions:
+1. Injection: find any value that validates (or sanitizes) and can still break out of a declaration or a `<style>` element, load a resource, or reach another property: escapes, comments, Unicode (normalization, look-alikes, bidi), `url`-like functions (`image-set`, `src`, `cross-fade`, `-webkit-` forms), `var()` fallbacks, custom property values, `calc()` parsing quirks (`-` as ident vs operator, `+` signs, `e` notation), hex colours, numbers with many digits, `</style>` or `<!--` sequences, trailing backslash, NUL, lone surrogates (JS strings are UTF-16: is the 0x20-0x7e filter enough?).
+2. The `var()` shortcut: a value containing `var()` skips the property grammar. Is that safe given `--blx-*` values are validated where declared? Can it be used to build `url(` from pieces, or to make a declaration invalid in a way that breaks neighbouring rules after compilation? Should the grammar be stricter?
+3. Tokenizer correctness: sign handling (`+`, `-`), `-` followed by digits vs idents (`--blx`, `-apple-system`), `.5`, `5.`, dimension vs ident (`1e3`, `1px2`), percent, `tidy` whitespace rules (around `*`, `/`, `,`), depth and component limits (off-by-one), time complexity (any quadratic path? `hasVar`, `checkList` repeated per kind, nested math re-validation), recursion depth.
+4. Grammar: which accepted values are invalid CSS in practice (acceptable but list the notable ones) and which valid, common values are wrongly rejected (list the ones that would hurt a site builder). Check `flex`, `grid-column`, `box-shadow`, `font-family`, `border`, `aspect-ratio`, `transition-*`, `text-decoration-line`, `background-position` (1-4 values), math inside kinds with `neg`/non-negative constraints.
+5. Allow-list: any property that is dangerous for UI redress or exfiltration (`position: fixed` + `z-index`, `pointer-events`, `cursor`, `background-image` gradients only, `content` excluded) and any missing property that is essential for a visual builder.
+6. API: `sanitizeDeclarations` ordering and own `__proto__` key handling, numeric input (integers), name matching (case, whitespace), idempotence claim, error codes stable for the PHP twin; is the manifest sufficient for a PHP implementation to match the corpus byte for byte?
+7. Tests: what behaviour has no failing-case test; would the corpus fail if the `FORBIDDEN` set lost an entry, if `checkFunctions` were skipped, or if the `--` identifier check were removed?
+
+Output: Blocker/Major/Minor with file + fix wording; agreements; what you could not verify.
