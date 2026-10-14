@@ -17,8 +17,15 @@ class WP_REST_Request {
 	 *
 	 * @param string $method HTTP method.
 	 * @param int    $post_id Post ID.
+	 * @param string $body Request body.
+	 * @param string $content_type Content type.
 	 */
-	public function __construct( private string $method, private int $post_id ) {}
+	public function __construct( private string $method, private int $post_id, private string $body = '', private string $content_type = 'application/json' ) {}
+
+	/** Resolved REST route. */
+	public function get_route(): string {
+		return '/blixis/v1/documents/' . $this->post_id . '/preview';
+	}
 
 	/** Request method. */
 	public function get_method(): string {
@@ -40,12 +47,12 @@ class WP_REST_Request {
 	 * @param string $key Header name.
 	 */
 	public function get_header( string $key ): string {
-		return 'x-wp-nonce' === $key ? '' : 'application/json';
+		return 'content-type' === $key ? $this->content_type : '';
 	}
 
 	/** Raw request body. */
 	public function get_body(): string {
-		return '';
+		return $this->body;
 	}
 }
 // phpcs:enable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedClassFound

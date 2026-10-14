@@ -64,6 +64,7 @@ final class DocumentController {
 				]
 			);
 		}
+		PreviewController::register();
 	}
 
 	/**
