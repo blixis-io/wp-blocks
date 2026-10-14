@@ -5,6 +5,7 @@ import tseslint from 'typescript-eslint';
 import reactHooks from 'eslint-plugin-react-hooks';
 import jsxA11y from 'eslint-plugin-jsx-a11y';
 import prettier from 'eslint-config-prettier';
+import { builtinModules } from 'node:module';
 
 export default tseslint.config(
   { ignores: ['**/node_modules/**', '**/dist/**', '**/coverage/**', '**/vendor/**', 'docs/**', 'pnpm-lock.yaml'] },
@@ -72,6 +73,13 @@ export default tseslint.config(
       'no-restricted-imports': [
         'error',
         {
+          // Bare built-in names (`fs`, `path`, ...) are as forbidden as `node:*`.
+          paths: builtinModules
+            .filter((m) => !m.startsWith('_'))
+            .map((name) => ({
+              name,
+              message: 'packages/core source must not use Node APIs (it runs in the browser editor).',
+            })),
           patterns: [
             {
               group: ['node:*'],

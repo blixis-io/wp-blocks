@@ -26,20 +26,30 @@ Element: `id`, `type`, `props` (invariant values only), `children`, optional `cl
 - **Declaration name**: a CSS property (`^[a-z][a-z0-9-]{0,63}$`) or a `--blx-*` custom property.
 - **Values** follow the fixture rules (`docs/engineering/FIXTURES.md`): `null`, booleans, safe integers, strings, arrays, objects. **No decimal numbers**: store `1.5` as the string `"1.5"`, so TypeScript and PHP serialise identically.
 
+## Reserved keys
+
+`__proto__`, `constructor` and `prototype` are forbidden as object keys **anywhere** in a document, including unknown fields: they are prototype-pollution hazards in JavaScript, and some parsers silently drop an own `__proto__` key, which would break the lossless round trip. The JSON Schema enforces this through `propertyNames`/key patterns on every object it describes; in TypeScript use `safeParseDocument` (not `BuilderDocumentSchema.safeParse` directly), which rejects them up front with their paths. The PHP validator must do the same (BWB-027).
+
+## Limits are a required gate at every entry point
+
+Shape validation alone does not make input safe. `DOCUMENT_LIMITS` (exported by `@blixis/wp-core`): 2 MiB serialised size, 64 levels of JSON nesting, element tree depth 32, 5 000 elements, 64 declarations per style rule (the last is also in the JSON Schema as `maxProperties`). Every entry point (editor load, REST save and preview, the PHP renderer) MUST check the byte limit **before** decoding and the nesting/node limits before trusting the structure; `validateDocument` (BWB-020) applies all of them and is the only supported way to accept a document. Unknown fields are allowed but count toward the byte limit.
+
 ## What the schema does not check
 
 JSON Schema cannot express these; `validateDocument` (BWB-020) checks them and returns structured errors:
 
-- unique element ids across the whole tree, and legal parents/children per the element registry (BWB-021)
+- unique element ids across the whole tree, and legal parents/children per the element registry (BWB-021); `blixis/*` types belong to core, other namespaces to registered vendors; breakpoints and state names must be registered
 - tree depth (limit 32), total node count (5 000), serialised size (2 MB) and declarations per rule (64)
-- `defaultLocale` is in `locales`; every translation locale is in `locales`; every translated element id exists (otherwise `orphaned`)
+- `locales` has no duplicates and contains `defaultLocale`; the default locale has a translation stream; every translation locale is in `locales`; every translated element id exists (otherwise `orphaned`)
+- every `classRefs` and `classIds` entry refers to a known global class, and the two agree
+- `metadata.updatedAt` is a real calendar timestamp (the pattern accepts `2026-02-31T00:00:00Z`)
 - NFC-normalised, well-formed Unicode in strings and keys
 - duplicate style rules (same breakpoint/mode/state combination on one element)
 - the value allow-list for declarations (BWB-023) and registered property ids per element type
 
 ## Versioning rules
 
-- **Compatible (no version bump):** adding an optional field. Unknown fields on the document and on elements are allowed and must round-trip unchanged; consumers ignore what they do not know.
+- **Compatible (no version bump):** adding an optional field. Unknown fields on the document, elements, style rules, translation entries and metadata are allowed and must round-trip unchanged; consumers ignore what they do not know. (Reserved keys are never allowed.)
 - **Breaking (bump `schemaVersion`, add an append-only migration and golden fixtures):** removing or renaming a field, changing the meaning of a value, tightening a pattern or limit, or making an optional field required.
 - Loading a document with a newer `schemaVersion` than the running code understands fails safely without rewriting it (no silent loss, ADR 0003).
 - Migrations run only on load, are pure functions `vN -> vN+1`, and are covered by immutable fixtures for the last two versions (N-2).

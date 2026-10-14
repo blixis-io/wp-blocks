@@ -9,6 +9,8 @@ export {
   type ElementNode,
   type TranslationEntry,
 } from './schema/document.ts';
+export { safeParseDocument, findReservedKeys } from './schema/parse.ts';
+export { DOCUMENT_LIMITS } from './schema/limits.ts';
 export { StyleRuleSchema, DECLARATION_NAME_PATTERN, type StyleRule } from './schema/style.ts';
 export {
   BREAKPOINT_PATTERN,
@@ -22,6 +24,7 @@ export {
   LocaleIdSchema,
   ModeSchema,
   PROPERTY_ID_PATTERN,
+  RESERVED_KEYS,
   PropertyIdSchema,
   StateSchema,
   TIMESTAMP_PATTERN,

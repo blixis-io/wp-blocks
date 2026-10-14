@@ -4,6 +4,7 @@ import {
   IdSchema,
   JsonValueSchema,
   LocaleIdSchema,
+  NO_RESERVED_PROPERTY_NAMES,
   PropertyIdSchema,
   TimestampSchema,
   type Json,
@@ -29,7 +30,7 @@ export const TranslationEntrySchema = z
       .optional(),
     status: TranslationStatusSchema,
   })
-  .meta({ id: 'TranslationEntry' });
+  .meta({ id: 'TranslationEntry', ...NO_RESERVED_PROPERTY_NAMES });
 
 export interface ElementNode {
   id: string;
@@ -54,7 +55,7 @@ export const ElementNodeSchema: z.ZodType<ElementNode> = z.lazy(() =>
       style: z.array(StyleRuleSchema).max(256).optional(),
       children: z.array(ElementNodeSchema),
     })
-    .meta({ id: 'ElementNode' }),
+    .meta({ id: 'ElementNode', ...NO_RESERVED_PROPERTY_NAMES }),
 );
 
 export const DocumentMetadataSchema = z
@@ -62,28 +63,30 @@ export const DocumentMetadataSchema = z
     updatedAt: TimestampSchema,
     editorVersion: z.string().min(1).max(64),
   })
-  .meta({ id: 'DocumentMetadata' });
+  .meta({ id: 'DocumentMetadata', ...NO_RESERVED_PROPERTY_NAMES });
 
 /**
  * The working builder document (ADR 0003). Published snapshots reference this shape per stream (ADR 0004).
  * Unknown top-level and element fields are allowed and must round-trip unchanged.
  */
-export const BuilderDocumentSchema = z.looseObject({
-  schemaVersion: z.literal(CURRENT_SCHEMA_VERSION),
-  documentId: IdSchema,
-  /** Working layout revision; bumps on structure or style changes. */
-  layoutRevision: z.number().int().min(0),
-  defaultLocale: LocaleIdSchema,
-  locales: z.array(LocaleIdSchema).min(1).max(64),
-  /** Ordered top-level siblings; a virtual page root is added when rendering. */
-  root: z.array(ElementNodeSchema),
-  /** Site-wide class list version this layout was last synced with, and the class versions it references. */
-  classListVersion: z.number().int().min(0),
-  classRefs: z.record(IdSchema, z.number().int().min(0)),
-  /** locale -> element id -> entry. Includes the default locale (ADR 0003). */
-  translations: z.record(LocaleIdSchema, z.record(IdSchema, TranslationEntrySchema)),
-  metadata: DocumentMetadataSchema,
-});
+export const BuilderDocumentSchema = z
+  .looseObject({
+    schemaVersion: z.literal(CURRENT_SCHEMA_VERSION),
+    documentId: IdSchema,
+    /** Working layout revision; bumps on structure or style changes. */
+    layoutRevision: z.number().int().min(0),
+    defaultLocale: LocaleIdSchema,
+    locales: z.array(LocaleIdSchema).min(1).max(64),
+    /** Ordered top-level siblings; a virtual page root is added when rendering. */
+    root: z.array(ElementNodeSchema),
+    /** Site-wide class list version this layout was last synced with, and the class versions it references. */
+    classListVersion: z.number().int().min(0),
+    classRefs: z.record(IdSchema, z.number().int().min(0)),
+    /** locale -> element id -> entry. Includes the default locale (ADR 0003). */
+    translations: z.record(LocaleIdSchema, z.record(IdSchema, TranslationEntrySchema)),
+    metadata: DocumentMetadataSchema,
+  })
+  .meta({ ...NO_RESERVED_PROPERTY_NAMES });
 
 export type BuilderDocument = z.infer<typeof BuilderDocumentSchema>;
 export type TranslationEntry = z.infer<typeof TranslationEntrySchema>;
