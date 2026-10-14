@@ -246,6 +246,8 @@ async function smoke() {
       check(result.status === 0, `wp ${args.join(' ')} succeeds`);
       return String(result.stdout ?? '').trim();
     };
+    // The Builder must be active for the REST, storage and lifecycle checks (a fresh stack starts without it).
+    command('plugin', 'activate', 'blixis-builder');
     const inactive = command('theme', 'list', '--status=inactive', '--field=name').split('\n')[0];
     check(Boolean(inactive), 'an inactive theme is available for activation checks');
     if (inactive) {
