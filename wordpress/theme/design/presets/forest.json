@@ -1,0 +1,172 @@
+{
+  "schemaVersion": 1,
+  "id": "forest",
+  "label": "Forest",
+  "description": "Leaf greens and warm neutrals.",
+  "tokens": [
+    {
+      "name": "color-bg",
+      "category": "color",
+      "value": "#fafcf8",
+      "dark": "#101c15",
+      "label": "Background"
+    },
+    {
+      "name": "color-surface",
+      "category": "color",
+      "value": "#edf4e9",
+      "dark": "#1c3024",
+      "label": "Surface"
+    },
+    {
+      "name": "color-text",
+      "category": "color",
+      "value": "#172a1e",
+      "dark": "#e8f3e8",
+      "label": "Text"
+    },
+    {
+      "name": "color-muted",
+      "category": "color",
+      "value": "#465e4c",
+      "dark": "#bed3bf",
+      "label": "Muted text"
+    },
+    {
+      "name": "color-link",
+      "category": "color",
+      "value": "#166534",
+      "dark": "#86efac",
+      "label": "Link"
+    },
+    {
+      "name": "color-primary",
+      "category": "color",
+      "value": "#166534",
+      "dark": "#86efac",
+      "label": "Primary"
+    },
+    {
+      "name": "color-on-primary",
+      "category": "color",
+      "value": "#ffffff",
+      "dark": "#10371e",
+      "label": "On primary"
+    },
+    {
+      "name": "color-line",
+      "category": "color",
+      "value": "#68836d",
+      "dark": "#789d80",
+      "label": "Border"
+    },
+    {
+      "name": "font-body",
+      "category": "font-family",
+      "value": "system-ui, -apple-system, \"Segoe UI\", Roboto, sans-serif",
+      "label": "System sans"
+    },
+    {
+      "name": "font-heading",
+      "category": "font-family",
+      "value": "system-ui, -apple-system, \"Segoe UI\", Roboto, sans-serif",
+      "label": "System heading"
+    },
+    {
+      "name": "text-sm",
+      "category": "font-size",
+      "value": "0.875rem",
+      "label": "Small"
+    },
+    {
+      "name": "text-base",
+      "category": "font-size",
+      "value": "1rem",
+      "label": "Base"
+    },
+    {
+      "name": "text-lg",
+      "category": "font-size",
+      "value": "1.25rem",
+      "label": "Large"
+    },
+    {
+      "name": "text-xl",
+      "category": "font-size",
+      "value": "1.5rem",
+      "label": "Extra large"
+    },
+    {
+      "name": "text-2xl",
+      "category": "font-size",
+      "value": "2rem",
+      "label": "Display"
+    },
+    {
+      "name": "space-1",
+      "category": "spacing",
+      "value": "0.25rem",
+      "label": "1"
+    },
+    {
+      "name": "space-2",
+      "category": "spacing",
+      "value": "0.5rem",
+      "label": "2"
+    },
+    {
+      "name": "space-3",
+      "category": "spacing",
+      "value": "0.75rem",
+      "label": "3"
+    },
+    {
+      "name": "space-4",
+      "category": "spacing",
+      "value": "1rem",
+      "label": "4"
+    },
+    {
+      "name": "space-6",
+      "category": "spacing",
+      "value": "1.5rem",
+      "label": "6"
+    },
+    {
+      "name": "space-8",
+      "category": "spacing",
+      "value": "2rem",
+      "label": "8"
+    },
+    {
+      "name": "radius-sm",
+      "category": "radius",
+      "value": "0.25rem",
+      "label": "Small"
+    },
+    {
+      "name": "radius-md",
+      "category": "radius",
+      "value": "0.5rem",
+      "label": "Medium"
+    },
+    {
+      "name": "container-content",
+      "category": "container",
+      "value": "45rem",
+      "label": "Content"
+    },
+    {
+      "name": "container-wide",
+      "category": "container",
+      "value": "72rem",
+      "label": "Wide"
+    },
+    {
+      "name": "shadow-card",
+      "category": "shadow",
+      "value": "0 2px 8px rgb(0 0 0 / 0.12)",
+      "label": "Card"
+    }
+  ]
+}

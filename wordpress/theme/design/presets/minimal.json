@@ -1,0 +1,172 @@
+{
+  "schemaVersion": 1,
+  "id": "minimal",
+  "label": "Minimal",
+  "description": "High-contrast monochrome essentials.",
+  "tokens": [
+    {
+      "name": "color-bg",
+      "category": "color",
+      "value": "#ffffff",
+      "dark": "#111111",
+      "label": "Background"
+    },
+    {
+      "name": "color-surface",
+      "category": "color",
+      "value": "#f4f4f4",
+      "dark": "#202020",
+      "label": "Surface"
+    },
+    {
+      "name": "color-text",
+      "category": "color",
+      "value": "#171717",
+      "dark": "#f7f7f7",
+      "label": "Text"
+    },
+    {
+      "name": "color-muted",
+      "category": "color",
+      "value": "#525252",
+      "dark": "#cecece",
+      "label": "Muted text"
+    },
+    {
+      "name": "color-link",
+      "category": "color",
+      "value": "#303030",
+      "dark": "#ededed",
+      "label": "Link"
+    },
+    {
+      "name": "color-primary",
+      "category": "color",
+      "value": "#202020",
+      "dark": "#ededed",
+      "label": "Primary"
+    },
+    {
+      "name": "color-on-primary",
+      "category": "color",
+      "value": "#ffffff",
+      "dark": "#111111",
+      "label": "On primary"
+    },
+    {
+      "name": "color-line",
+      "category": "color",
+      "value": "#757575",
+      "dark": "#929292",
+      "label": "Border"
+    },
+    {
+      "name": "font-body",
+      "category": "font-family",
+      "value": "system-ui, -apple-system, \"Segoe UI\", Roboto, sans-serif",
+      "label": "System sans"
+    },
+    {
+      "name": "font-heading",
+      "category": "font-family",
+      "value": "system-ui, -apple-system, \"Segoe UI\", Roboto, sans-serif",
+      "label": "System heading"
+    },
+    {
+      "name": "text-sm",
+      "category": "font-size",
+      "value": "0.875rem",
+      "label": "Small"
+    },
+    {
+      "name": "text-base",
+      "category": "font-size",
+      "value": "1rem",
+      "label": "Base"
+    },
+    {
+      "name": "text-lg",
+      "category": "font-size",
+      "value": "1.25rem",
+      "label": "Large"
+    },
+    {
+      "name": "text-xl",
+      "category": "font-size",
+      "value": "1.5rem",
+      "label": "Extra large"
+    },
+    {
+      "name": "text-2xl",
+      "category": "font-size",
+      "value": "2rem",
+      "label": "Display"
+    },
+    {
+      "name": "space-1",
+      "category": "spacing",
+      "value": "0.25rem",
+      "label": "1"
+    },
+    {
+      "name": "space-2",
+      "category": "spacing",
+      "value": "0.5rem",
+      "label": "2"
+    },
+    {
+      "name": "space-3",
+      "category": "spacing",
+      "value": "0.75rem",
+      "label": "3"
+    },
+    {
+      "name": "space-4",
+      "category": "spacing",
+      "value": "1rem",
+      "label": "4"
+    },
+    {
+      "name": "space-6",
+      "category": "spacing",
+      "value": "1.5rem",
+      "label": "6"
+    },
+    {
+      "name": "space-8",
+      "category": "spacing",
+      "value": "2rem",
+      "label": "8"
+    },
+    {
+      "name": "radius-sm",
+      "category": "radius",
+      "value": "0.25rem",
+      "label": "Small"
+    },
+    {
+      "name": "radius-md",
+      "category": "radius",
+      "value": "0.5rem",
+      "label": "Medium"
+    },
+    {
+      "name": "container-content",
+      "category": "container",
+      "value": "45rem",
+      "label": "Content"
+    },
+    {
+      "name": "container-wide",
+      "category": "container",
+      "value": "72rem",
+      "label": "Wide"
+    },
+    {
+      "name": "shadow-card",
+      "category": "shadow",
+      "value": "0 2px 8px rgb(0 0 0 / 0.12)",
+      "label": "Card"
+    }
+  ]
+}

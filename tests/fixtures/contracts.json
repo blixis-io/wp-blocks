@@ -38,6 +38,16 @@
       }
     },
     {
+      "id": "preset-schema",
+      "description": "JSON Schema generated from the design preset Zod schema.",
+      "paths": ["packages/design-tokens/schema/preset.schema.json"],
+      "ts": ["packages/design-tokens/src/schema.test.ts"],
+      "php": {
+        "level": "pending",
+        "issue": "BWB-043"
+      }
+    },
+    {
       "id": "token-set-corpus",
       "description": "Design token sets with resolved light and dark values, compiler input and issue codes and paths (hand-derived).",
       "paths": ["packages/style-engine/corpus/token-sets.json"],

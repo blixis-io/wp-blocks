@@ -1,6 +1,7 @@
 # The Blixis theme (BWB-029)
 
-`wordpress/theme` is a classic (PHP template) theme, as decided in ADR 0002. It renders posts and pages with plain templates and leaves page design to the Builder plugin, which replaces `the_content()` output for pages built with it. The theme stores no documents. BWB-031 adds `theme.json` and CSS design variables. Later issues add presets (BWB-032), the setup wizard (BWB-033/034), design-system persistence (BWB-035), the Font Library (BWB-036), and the child-theme and accessibility audits (BWB-037/038).
+`wordpress/theme` is a classic (PHP template) theme, as decided in ADR 0002. It renders posts and pages with plain templates and leaves page design to the Builder plugin, which replaces `the_content()` output for pages built with it. The theme stores no documents. BWB-031 adds `theme.json` and CSS design variables; BWB-032 adds preset seed data. Later issues add the setup wizard (BWB-033/034), design-system persistence (BWB-035), the Font Library (BWB-036), and the child-theme and accessibility audits (BWB-037/038).
+The BWB-032 Ocean, Forest, Sunset and Minimal preset files live in `design/presets/`. They are validated light/dark token seeds; selecting one copies its tokens into the site's canonical setting. The `custom` choice starts from `design/default-tokens.json` without a preset file. New sites default to website appearance `auto`, independent of editor chrome and locale. Setup and persistence remain BWB-033 through BWB-035.
 
 ## Files
 

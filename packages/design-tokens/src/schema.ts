@@ -22,6 +22,8 @@ export const TOKEN_LIMITS = { maxTokens: 500, maxNameLength: 48, maxValueLength:
 export const TOKEN_NAME_PATTERN = '^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$';
 
 export const CURRENT_TOKEN_SCHEMA_VERSION = 1;
+export const CURRENT_PRESET_SCHEMA_VERSION = 1;
+export const CUSTOM_PRESET_ID = 'custom';
 
 /** Object keys that are prototype-pollution hazards; refused anywhere in a token set. */
 export const RESERVED_KEYS = ['__proto__', 'constructor', 'prototype'] as const;
@@ -53,8 +55,20 @@ export const TokenSetSchema = z
   })
   .meta({ id: 'TokenSet', propertyNames: { not: { enum: [...RESERVED_KEYS] } } });
 
+/** A named seed for a site's canonical token set. Custom starts from the default set and has no preset file. */
+export const PresetSchema = z
+  .looseObject({
+    schemaVersion: z.literal(CURRENT_PRESET_SCHEMA_VERSION),
+    id: z.string().min(1).max(TOKEN_LIMITS.maxNameLength).regex(new RegExp(TOKEN_NAME_PATTERN)),
+    label: z.string().min(1).max(TOKEN_LIMITS.maxLabelLength),
+    description: z.string().min(1).max(512),
+    tokens: z.array(TokenSchema).max(TOKEN_LIMITS.maxTokens),
+  })
+  .meta({ id: 'Preset', propertyNames: { not: { enum: [...RESERVED_KEYS] } } });
+
 export type Token = z.infer<typeof TokenSchema>;
 export type TokenSet = z.infer<typeof TokenSetSchema>;
+export type Preset = z.infer<typeof PresetSchema>;
 export type Mode = 'light' | 'dark';
 
 /** `--blx-<name>`: the custom property a token is emitted as. */
