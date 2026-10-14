@@ -89,6 +89,7 @@ final class DocumentController {
 			);
 		}
 		PreviewController::register();
+		PublicationController::register();
 	}
 
 	/**

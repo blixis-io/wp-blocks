@@ -47,12 +47,16 @@ final class PublishedReader {
 		if ( null === $pointer || ! \is_int( $pointer->{'publishedLayoutRevision'} ?? null ) || $pointer->{'publishedLayoutRevision'} < 1 ) {
 			return null;
 		}
+		$selected        = $this->select_locale( $pointer, $locale );
 		$layout_revision = $pointer->{'publishedLayoutRevision'};
-		$layout          = $this->envelope( $post_id, MetaKeys::snap_layout( $layout_revision ) );
+		// A locale renders against the layout it was published with (its pinned base layout), not necessarily the newest one.
+		if ( null !== $selected && \is_int( $selected[1]->{'baseLayout'} ?? null ) && $selected[1]->{'baseLayout'} > 0 ) {
+			$layout_revision = $selected[1]->{'baseLayout'};
+		}
+		$layout = $this->envelope( $post_id, MetaKeys::snap_layout( $layout_revision ) );
 		if ( null === $layout || ! PreviewDocument::accepts( $layout ) ) {
 			return null;
 		}
-		$selected = $this->select_locale( $pointer, $locale );
 		if ( null === $selected ) {
 			return new PublishedDocument( $layout, $locale, $layout_revision, 0 );
 		}

@@ -112,4 +112,17 @@ Every successful write of a working stream (layout or one locale's content) keep
 
 **Save recovery.** The editor keeps working data only in these streams (autosave never publishes, ADR 0004): after a crash or a lost connection the last saved revision is in the stream and earlier ones in the history. Conflict handling is the `If-Match`/409 contract of the document routes.
 
-Publishing and rollback of published snapshots are the next part of BWB-046.
+
+## Publishing and rollback (BWB-046)
+
+`Publication\Publisher` implements ADR 0004. **State:** `GET /documents/{id}/published` returns `{ pointerRevision, layout, locales }` where each stream is `unpublished`, `published` or `published-with-pending-changes` (the working revision differs from the one the published snapshot was made from). Reading needs edit rights.
+
+**Publish:** `POST /documents/{id}/publish` with `If-Match: "<pointer revision>"` and `{ layout?: bool, locale?: string, confirmImpact?: bool, excludeIncompatible?: bool }`. It needs the publish capability for the post (`publish_post`; an editor of a draft who cannot publish gets the uniform 403). Layout and locale content are published separately but move the single `_blixis_published` pointer in one compare-and-swap, after the immutable snapshots are written, so a failure leaves the live page unchanged. Autosaves and working writes never touch the pointer.
+
+- A locale is published against the layout live at that moment, never against unpublished layout edits; a locale cannot be published before a layout exists (409 `blixis_layout_not_published`).
+- Content entries must refer to elements that exist in that layout with the same recorded type and only to translatable or locale-specific properties; otherwise the publish is blocked (409 `blixis_publish_blocked`, `incompatible: [{ id, reason, locale }]`) unless `excludeIncompatible` drops those entries.
+- A layout publish checks every other published locale; locales it would break are listed (409 with `impacted: [{ locale, ids }]`) and, with `confirmImpact`, stay pinned to their previous layout (`baseLayout` in their pointer entry) while compatible locales move to the new layout. Public rendering of a locale uses its own `baseLayout`.
+
+**Rollback:** `POST /documents/{id}/rollback` with `{ locale, contentSnapshot }` or `{ layoutSnapshot }` republishes an old snapshot under a new number (history is append-only). A locale rollback restores the pair (base layout, content) exactly; a layout rollback follows the same impact rules as a layout publish. Unknown snapshots are 404 `blixis_snapshot_not_found`.
+
+Snapshots carry the working revision they came from (`sourceRevision`), the layout they were made for (`baseLayout`) and the element types their entries referred to (`elementTypes`). Pruning of unreferenced snapshots stays a separate, explicit step (`SnapshotStore::collect`).
