@@ -41,7 +41,7 @@ Origin outranks state and layer: an element's explicit rule is never overridden 
   - dark: `:where(html[data-theme="dark"]) .blx-a1`
   - light: `:where(html[data-theme="light"]) .blx-a1`
   - hover: `.blx-a1:where(:hover)`
-- **Appearance preference lives on `<html data-theme="light|dark|auto">`.** Absent or `auto` means follow the system. For `auto`, mode rules are also emitted inside media queries:
+- **Appearance preference lives on `<html data-theme="light|dark|auto">`.** Absent or `auto` means follow the system. **`auto` is the default for new sites** (owner decision 2026-10-14); presets therefore ship both token sets. For `auto`, mode rules are also emitted inside media queries:
   - dark: `@media (prefers-color-scheme: dark) { :where(html:not([data-theme="light"]):not([data-theme="dark"])) .blx-a1 { … } }`
   - light: `@media not all and (prefers-color-scheme: dark) { :where(html:not([data-theme="light"]):not([data-theme="dark"])) .blx-a1 { … } }`
   Correct first paint therefore needs no JavaScript; with no JS and no stored preference the system preference applies. An optional tiny inline initialiser sets `data-theme` from a stored visitor preference (BWB-113).

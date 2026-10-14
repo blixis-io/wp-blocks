@@ -1,6 +1,6 @@
 # Product UX Journeys and Prototype Acceptance (draft)
 
-Status: **Draft, awaiting owner approval** · Issue: #9 (BWB-009) · Sources: `PRD.md` §6, `PRD-ADDENDUM-MULTILINGUAL-THEMES.md` §4, ADR 0004–0006, `engineering/ACCESSIBILITY-BASELINE.md`.
+Status: **Draft, awaiting owner approval** (three open questions resolved 2026-10-14, see Decisions recorded) · Issue: #9 (BWB-009) · Sources: `PRD.md` §6, `PRD-ADDENDUM-MULTILINGUAL-THEMES.md` §4, ADR 0004–0006, `engineering/ACCESSIBILITY-BASELINE.md`.
 This document defines *behaviour and acceptance*, not visual design. Screens are described by purpose; a clickable prototype is a later deliverable (P5) and must satisfy the acceptance checks below.
 
 Personas: **Agency developer (D)**, **Designer/site creator (C)**, **Site owner (O)**, **Translator (T)** (uses Free manual translation).
@@ -18,7 +18,7 @@ Open the builder from a page → insert Section/Container/Heading/Text/Image/But
 
 ## J3. Translate content manually (T, C)
 Switch content language (e.g. EN→NL) → source text shown read-only beside the editable field → status chip (missing/draft/translated/reviewed/stale) → save → publish the locale.
-**Acceptance:** editing Dutch never changes English; editing English marks Dutch `stale` without overwriting; missing fields show the fallback with a visible warning; publishing Dutch does not publish pending English or pending layout changes (ADR 0004); if the Translator role is in Free 1.0 (open question 1), a translator-only capability cannot change layout or other locales; until decided, the test uses users who can edit the post.
+**Acceptance:** editing Dutch never changes English; editing English marks Dutch `stale` without overwriting; missing fields show the fallback with a visible warning; publishing Dutch does not publish pending English or pending layout changes (ADR 0004); a user holding only `blixis_translate_locale` for NL can edit NL content and cannot change layout, English content, design settings or publish layout.
 
 ## J4. Website light/dark styling (C)
 Choose website appearance (light/dark/auto) as default → edit global light/dark tokens → on an element toggle "editing: Light | Dark" → override a property in dark only (override indicator) → reset override → compare light and dark side by side.
@@ -39,7 +39,11 @@ Register a custom element with schema, defaults, controls and PHP renderer; vali
 ## Prototype acceptance (for BWB-049/050 onwards)
 A prototype is accepted when J1–J6 can be walked end-to-end on seeded fixtures with the listed acceptance checks passing, J2–J5 keyboard-only, and the accessibility baseline automated checks green in both website modes and two content locales (EN, NL) plus one RTL fixture.
 
-## Open questions for the owner
-1. Is a dedicated **Translator** role in Free 1.0, or is manual translation limited to users who can edit the post?
-2. Should the first release expose the single combined "Publish" shortcut (ADR 0004 §7) or the separate publish actions?
-3. Preferred default for new sites: website appearance `auto` or `light`?
+## Decisions recorded (2026-10-14)
+Owner delegated these to the orchestrator, except the appearance default, which the owner set.
+1. **Translator access:** Free 1.0 ships a locale-scoped capability (`blixis_translate_locale`, checked server-side per locale stream) but **no new WordPress role**. Editors and administrators have it by default; a site can grant it to any role with a standard role editor. A holder of only this capability can edit that locale's content streams and cannot change layout, other locales, publishing of layout, or design settings. Reason: the capability is what the security model needs (ADR 0004 streams are independent); a bespoke role adds UI and support surface without adding protection.
+2. **Publish UI:** the first release exposes both the separate actions (*Publish layout*, *Publish locale <X>*) and the combined shortcut *Publish layout + current locale* (ADR 0004 §7); the shortcut is the primary button and always shows what it will advance.
+3. **Default website appearance for new sites: `auto`** (follows the visitor's system preference; owner decision). Presets must therefore ship both light and dark token sets, and the wizard previews both.
+
+## Still open
+Approval of this document as a whole (J1–J7 and the prototype acceptance rule) by the owner.
