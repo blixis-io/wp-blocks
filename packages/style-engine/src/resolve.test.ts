@@ -60,6 +60,15 @@ describe('breakpoints', () => {
     expect(viewportBreakpoint(DEFAULT_BREAKPOINTS, 5000)).toBe('base');
   });
 
+  it('answers nothing for widths that are not viewports', () => {
+    for (const width of [Number.NaN, 0, -1, Number.POSITIVE_INFINITY]) {
+      expect(breakpointsMatching(DEFAULT_BREAKPOINTS, width)).toEqual([]);
+      expect(viewportBreakpoint(DEFAULT_BREAKPOINTS, width)).toBe('base');
+    }
+    expect(breakpointsMatching(DEFAULT_BREAKPOINTS, 640.5)).toEqual(['base', 'tablet']);
+    expect(breakpointsMatching(DEFAULT_BREAKPOINTS, 0.5)).toEqual(['base', 'tablet', 'mobile']);
+  });
+
   it('validates registries: base first, unique ids, strictly decreasing integer widths', () => {
     expect(validateBreakpoints(DEFAULT_BREAKPOINTS)).toBeNull();
     expect(validateBreakpoints([{ id: 'base', maxWidth: null }])).toBeNull();
@@ -203,6 +212,65 @@ describe('resolveProperty: behaviour', () => {
       const forward = resolveProperty(rules, 'width', ctx)?.value;
       expect(resolveProperty([...rules].reverse(), 'width', ctx)?.value).toBe(forward);
     }
+  });
+});
+
+describe('inspectProperty: more edit targets', () => {
+  const classes = [
+    { id: 'cls-001', rules: [{ mode: 'dark' as const, declarations: { color: 'navy', margin: '1px' } }] },
+  ];
+  const rules = rulesFor(
+    {
+      classIds: ['cls-001'],
+      style: [
+        { declarations: { color: 'black' } },
+        { state: 'hover', declarations: { color: 'red' } },
+        { mode: 'dark', breakpoint: 'mobile', declarations: { width: '5px' } },
+      ],
+    },
+    classes,
+  );
+
+  it('an exact state rule is overridden; the same target without that rule inherits', () => {
+    expect(inspectProperty(rules, 'color', { state: 'hover' })).toMatchObject({
+      overridden: true,
+      resolved: { value: 'red', source: { state: 'hover' } },
+    });
+    expect(inspectProperty(rules, 'color', { state: 'focus' })).toMatchObject({
+      overridden: false,
+      resolved: { value: 'black' },
+    });
+  });
+
+  it('a mode target with only a mode-independent element rule inherits it, but a class rule at the target wins and is not overridden', () => {
+    expect(inspectProperty(rules, 'color', { mode: 'dark' })).toMatchObject({
+      overridden: false,
+      resolved: { value: 'black' },
+    });
+    expect(inspectProperty(rules, 'margin', { mode: 'dark' })).toMatchObject({
+      overridden: false,
+      resolved: { value: '1px', source: { origin: 'class', classId: 'cls-001', mode: 'dark' } },
+    });
+  });
+
+  it('an exact element rule that does not set the property does not count as an override', () => {
+    expect(inspectProperty(rules, 'color', { mode: 'dark', breakpoint: 'mobile' })).toMatchObject({
+      overridden: false,
+      resolved: { value: 'black' },
+    });
+    expect(inspectProperty(rules, 'width', { mode: 'dark', breakpoint: 'mobile' })).toMatchObject({
+      overridden: true,
+      resolved: { value: '5px' },
+    });
+    expect(inspectProperty(rules, 'width', { breakpoint: 'mobile' })).toEqual({
+      resolved: undefined,
+      overridden: false,
+    });
+  });
+
+  it('never applies an explicit "base" breakpoint, like the compiler', () => {
+    const invalid: ResolveRule[] = [{ origin: 'element', breakpoint: 'base', declarations: { color: 'red' } }];
+    expect(resolveProperty(invalid, 'color', { breakpoint: 'base' })).toBeUndefined();
   });
 });
 

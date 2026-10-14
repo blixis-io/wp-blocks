@@ -74,6 +74,8 @@ function greater(a: readonly number[], b: readonly number[]): boolean {
 function matches(rule: ResolveRule, ctx: ResolveContext, rank: ReadonlyMap<string, number>): boolean {
   if (rule.mode !== undefined && rule.mode !== ctx.mode) return false;
   if (rule.breakpoint !== undefined) {
+    // `base` is written by leaving the breakpoint out; an explicit "base" is invalid and never applies (the compiler skips it too).
+    if (rule.breakpoint === 'base') return false;
     const own = rank.get(rule.breakpoint);
     const viewport = rank.get(ctx.breakpoint);
     if (own === undefined || viewport === undefined || own > viewport) return false;

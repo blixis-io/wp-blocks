@@ -34,9 +34,12 @@ export function validateBreakpoints(list: readonly BreakpointDef[]): string | nu
 
 /**
  * Breakpoints are nested `max-width` conditions: a viewport matches `base` and every breakpoint whose `maxWidth` is at least
- * its width, so the matches are a prefix of the (widest first) list and the last one is the narrowest. Requires a valid registry.
+ * its width, so the matches are a prefix of the (widest first) list and the last one is the narrowest. Requires a valid
+ * registry and a finite positive width (otherwise the result is empty; `viewportBreakpoint` then answers `base`).
  */
 export function breakpointsMatching(list: readonly BreakpointDef[], width: number): string[] {
+  // Not a viewport width (NaN, zero, negative, infinite): nothing matches rather than a plausible-looking answer.
+  if (!Number.isFinite(width) || width <= 0) return [];
   return list.filter((bp) => bp.maxWidth === null || width <= bp.maxWidth).map((bp) => bp.id);
 }
 

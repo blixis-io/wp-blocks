@@ -17,7 +17,7 @@ A style rule (`StyleRule`, docs/architecture/DOCUMENT-SCHEMA.md) has optional `b
 
 ## Breakpoints
 
-A breakpoint registry lists `base` first (no width) and then narrower breakpoints with strictly decreasing integer `max-width` values (`DEFAULT_BREAKPOINTS`: `tablet` 1024px, `mobile` 640px). The order is fixed; the widths are configurable. `validateBreakpoints` checks a registry, `breakpointsMatching(list, width)` returns the ids a viewport width matches and `viewportBreakpoint(list, width)` the narrowest one (what the editor's viewport switcher shows).
+A breakpoint registry lists `base` first (no width) and then narrower breakpoints with strictly decreasing integer `max-width` values (`DEFAULT_BREAKPOINTS`: `tablet` 1024px, `mobile` 640px). Within a registry the order is fixed (widest to narrowest, `base` first); the ids and widths are configurable. `validateBreakpoints` checks a registry, `breakpointsMatching(list, width)` returns the ids a viewport width matches and `viewportBreakpoint(list, width)` the narrowest one (what the editor's viewport switcher shows).
 
 Breakpoints are **nested**, not exclusive: a 400px viewport matches `base`, `tablet` and `mobile`. A rule for a breakpoint therefore applies at that width and below.
 
@@ -37,13 +37,13 @@ Source order never decides. So **dark beats mobile**, and a `dark + mobile` rule
 
 ## Inheritance (what the inspector shows)
 
-Rules are sparse: a rule sets only the properties it changes, and everything else comes from lower-precedence rules that match. In the inspector:
+Rules are sparse: a rule sets only the properties it changes, and every other property falls through to the next matching rule that sets it (the next key down in the precedence list above). In the inspector the usual sources are:
 
 - A narrower breakpoint inherits every property it does not set from the next wider matching rule, within the same mode layer.
 - A mode rule inherits from the mode-independent value; the mode-independent view (`mode` undefined) only ever sees rules without a mode.
 - A state rule inherits from the non-state value.
 
-`inspectProperty(rules, property, target)` answers for an edit target (`breakpoint`, `mode`, `state`, all optional): the value that applies there with its source, and `overridden`, which is true only when the element has its own rule exactly at that target. Otherwise the UI says "inherited from `<source>`" (a wider breakpoint, the mode-independent value, a class, another state). Resetting an override deletes the declaration (and the rule when it becomes empty), and the value falls back to the inherited one.
+`inspectProperty(rules, property, target)` answers for an edit target (`breakpoint`, `mode`, `state`, all optional): the value that applies there with its source, and `overridden`, which is true only when the element has its own rule exactly at that target. Otherwise the UI says "inherited from `<source>`" (a wider breakpoint, the mode-independent value, a class, another state). Resetting an override must delete that declaration from the rule (and the rule when it becomes empty), through the style commands of BWB-022; `inspectProperty` only reads. The value then falls back to the inherited one.
 
 ## States
 

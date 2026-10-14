@@ -7,7 +7,7 @@ import { at } from './at.ts';
 import { parse, resolve, resolveRoot, SELECTOR, type Context } from './cascade.test-helper.ts';
 import { COMPILER_VERSION, LAYER_ORDER, compile, type GlobalClass } from './compile.ts';
 import { sha256Hex, shortHash } from './hash.ts';
-import { resolveProperty, type ResolveRule, type State } from './resolve.ts';
+import { resolveProperty, rulesFor, type ResolveRule, type State } from './resolve.ts';
 
 const here = dirname(fileURLToPath(import.meta.url));
 
@@ -581,6 +581,17 @@ describe('compile: randomized equivalence with the resolution key', () => {
       }
     }
     expect(checked).toBe(6000);
+  });
+});
+
+describe('compile and resolver agree on an explicit "base" breakpoint', () => {
+  it('neither applies it', () => {
+    const d = doc([node('el-a')]);
+    (at(d.root, 0) as { style?: StyleRule[] }).style = [{ breakpoint: 'base', declarations: { color: 'red' } }];
+    const result = compile({ document: d });
+    expect(result.issues.map((i) => i.code)).toEqual(['unknown-breakpoint']);
+    expect(result.css).not.toContain('color:red');
+    expect(resolveProperty(rulesFor(at(d.root, 0), []), 'color', { breakpoint: 'base' })).toBeUndefined();
   });
 });
 
