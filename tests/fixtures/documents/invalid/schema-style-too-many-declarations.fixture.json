@@ -1,7 +1,8 @@
 {
   "description": "A rule holds at most 64 declarations.",
   "expected": {
-    "error": "schema"
+    "error": "schema",
+    "path": "$.root[0].style[0].declarations"
   },
   "fixtureVersion": 1,
   "id": "schema-style-too-many-declarations",

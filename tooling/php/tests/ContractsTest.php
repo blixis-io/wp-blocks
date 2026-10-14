@@ -106,6 +106,12 @@ final class ContractsTest extends TestCase {
 			$this->assertContains( $level, array( 'full', 'shape', 'pending' ), $suite->id );
 			if ( 'pending' !== $level ) {
 				$this->assertFileExists( self::root() . '/' . $suite->php->runner, $suite->id );
+				$this->assertNotEmpty( $suite->php->covers, $suite->id );
+				foreach ( $suite->php->covers as $method ) {
+					if ( 'tooling/php/tests/ContractsTest.php' === $suite->php->runner ) {
+						$this->assertTrue( method_exists( self::class, $method ), $suite->id . ': ' . $method );
+					}
+				}
 			}
 			if ( 'full' !== $level ) {
 				$this->assertMatchesRegularExpression( '/^BWB-\d{3}$/', $suite->php->issue, $suite->id );
@@ -119,12 +125,12 @@ final class ContractsTest extends TestCase {
 	/**
 	 * Validates a decoded value against a registered JSON Schema.
 	 *
-	 * @param mixed  $data     Decoded value (objects as stdClass).
-	 * @param string $schema   Repository-relative schema path.
+	 * @param mixed  $data      Decoded value (objects as stdClass).
+	 * @param string $schema    Repository-relative schema path.
 	 * @param string $schema_id The schema's $id.
-	 * @return bool
+	 * @return \Opis\JsonSchema\ValidationResult
 	 */
-	private static function conforms( mixed $data, string $schema, string $schema_id ): bool {
+	private static function validate( mixed $data, string $schema, string $schema_id ): \Opis\JsonSchema\ValidationResult {
 		static $validator  = null;
 		static $registered = array();
 		if ( null === $validator ) {
@@ -135,7 +141,79 @@ final class ContractsTest extends TestCase {
 			$resolver->registerRaw( (string) file_get_contents( self::root() . '/' . $schema ), $schema_id );
 			$registered[ $schema_id ] = true;
 		}
-		return $validator->validate( $data, $schema_id )->isValid();
+		return $validator->validate( $data, $schema_id );
+	}
+
+	/**
+	 * Whether a value conforms to a registered JSON Schema.
+	 *
+	 * @param mixed  $data      Decoded value.
+	 * @param string $schema    Repository-relative schema path.
+	 * @param string $schema_id The schema's $id.
+	 * @return bool
+	 */
+	private static function conforms( mixed $data, string $schema, string $schema_id ): bool {
+		return self::validate( $data, $schema, $schema_id )->isValid();
+	}
+
+	/**
+	 * Where the schema says the data is wrong: the JSON pointers of the innermost failures. A missing required property is
+	 * reported at the object by JSON Schema, so each missing name is added as a child pointer.
+	 *
+	 * @param \Opis\JsonSchema\Errors\ValidationError $error Error tree.
+	 * @return list<array{string, string}> Pairs of pointer and keyword.
+	 */
+	private static function failure_points( \Opis\JsonSchema\Errors\ValidationError $error ): array {
+		$subs = $error->subErrors();
+		if ( array() !== $subs ) {
+			$out = array();
+			foreach ( $subs as $sub ) {
+				$out = array_merge( $out, self::failure_points( $sub ) );
+			}
+			return $out;
+		}
+		$pointer = '/' . implode( '/', array_map( 'strval', $error->data()->fullPath() ) );
+		$pointer = rtrim( $pointer, '/' );
+		if ( 'required' === $error->keyword() ) {
+			$out = array();
+			foreach ( (array) ( $error->args()['missing'] ?? array() ) as $name ) {
+				$out[] = array( $pointer . '/' . $name, 'required' );
+			}
+			return $out;
+		}
+		return array( array( $pointer, $error->keyword() ) );
+	}
+
+	/**
+	 * Converts the TypeScript issue path (`$.root[0].style[0].mode`) to a JSON pointer (`/root/0/style/0/mode`).
+	 *
+	 * @param string $path Issue path.
+	 * @return string
+	 */
+	private static function pointer_of( string $path ): string {
+		$pointer = preg_replace( '/\[(\d+)\]/', '/$1', substr( $path, 1 ) ) ?? '';
+		return str_replace( '.', '/', $pointer );
+	}
+
+	/**
+	 * Whether the schema reports a failure at the expected place. Opis reports a rejected property name at the object that
+	 * holds it, so a direct child of a `pattern` failure also counts.
+	 *
+	 * @param \Opis\JsonSchema\ValidationResult $result   Validation result.
+	 * @param string                            $expected Expected pointer.
+	 * @return bool
+	 */
+	private static function fails_at( \Opis\JsonSchema\ValidationResult $result, string $expected ): bool {
+		$error = $result->error();
+		if ( null === $error ) {
+			return false;
+		}
+		foreach ( self::failure_points( $error ) as list( $pointer, $keyword ) ) {
+			if ( $pointer === $expected || ( 'pattern' === $keyword && dirname( $expected ) === $pointer ) ) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
@@ -152,19 +230,61 @@ final class ContractsTest extends TestCase {
 	}
 
 	/**
-	 * The JSON Schema accepts every document fixture except the ones that expect a schema error.
+	 * The JSON Schema accepts every document fixture except the ones that expect a schema error, and rejects those at the
+	 * stated place (so a fixture cannot fail for a second, unintended reason).
 	 *
 	 * @param string $file Fixture path.
 	 */
 	#[DataProvider( 'document_fixtures' )]
 	public function test_document_fixtures_match_the_json_schema( string $file ): void {
 		$fixture  = Fixtures::load( self::root() . '/' . $file );
-		$expected = is_object( $fixture->expected ) && isset( $fixture->expected->error ) ? $fixture->expected->error : null;
-		$this->assertSame(
-			'schema' !== $expected,
-			self::conforms( $fixture->input, 'packages/core/schema/document.schema.json', 'urn:blixis:wp-blocks:document:1' ),
-			$fixture->id
+		$outcome  = $fixture->expected;
+		$expected = $outcome instanceof stdClass ? ( $outcome->error ?? null ) : null;
+		$result   = self::validate( $fixture->input, 'packages/core/schema/document.schema.json', 'urn:blixis:wp-blocks:document:1' );
+		$this->assertSame( 'schema' !== $expected, $result->isValid(), $fixture->id );
+		if ( 'schema' === $expected && $outcome instanceof stdClass ) {
+			$this->assertTrue( self::fails_at( $result, self::pointer_of( (string) ( $outcome->path ?? '' ) ) ), $fixture->id );
+		}
+	}
+
+	/**
+	 * Probes of the JSON Schema features the generated schemas rely on.
+	 *
+	 * @return array<string, array{string, string, string}>
+	 */
+	public static function schema_probes(): array {
+		$doc = '{"schemaVersion":1,"documentId":"doc-001","layoutRevision":1,"defaultLocale":"en_US","locales":["en_US"],'
+			. '"root":[{"id":"el-001","type":"blixis/text","props":{},"children":[CHILD]}],"classListVersion":0,"classRefs":{},'
+			. '"translations":{"en_US":TRANSLATIONS},"metadata":{"updatedAt":"2026-01-01T00:00:00Z","editorVersion":"0.0.0"}}';
+		$ok  = '{"id":"el-002","type":"blixis/text","props":{},"children":[]}';
+		return array(
+			'a nested child is valid ($ref recursion)'   => array( str_replace( array( 'CHILD', 'TRANSLATIONS' ), array( $ok, '{}' ), $doc ), '', 'valid' ),
+			'a nested child is checked ($ref recursion)' => array( str_replace( array( 'CHILD', 'TRANSLATIONS' ), array( '{"id":"el-002","type":"text","props":{},"children":[]}', '{}' ), $doc ), '/root/0/children/0/type', 'pattern' ),
+			'a reserved key is refused (key pattern)'    => array( str_replace( array( 'CHILD', 'TRANSLATIONS', '"props":{}' ), array( '', '{}', '"props":{"constructor":1}' ), $doc ), '/root/0/props', 'pattern' ),
+			'a non-ASCII letter in an id is refused'     => array( str_replace( array( 'CHILD', 'TRANSLATIONS', 'el-001' ), array( '', '{}', "el-\u{e9}01" ), $doc ), '/root/0/id', 'pattern' ),
+			'an empty object is an object, not an array' => array( str_replace( array( 'CHILD', 'TRANSLATIONS' ), array( '', '[]' ), $doc ), '/translations/en_US', 'type' ),
+			'props must be an object, [] is refused'     => array( str_replace( array( 'CHILD', 'TRANSLATIONS', '"props":{}' ), array( '', '{}', '"props":[]' ), $doc ), '/root/0/props', 'type' ),
 		);
+	}
+
+	/**
+	 * Each probe is valid, or fails with the given keyword at the given pointer.
+	 *
+	 * @param string $json    Document JSON.
+	 * @param string $pointer Expected failure pointer ('' when valid).
+	 * @param string $keyword Expected keyword ('valid' when valid).
+	 */
+	#[DataProvider( 'schema_probes' )]
+	public function test_json_schema_features_behave_as_in_typescript( string $json, string $pointer, string $keyword ): void {
+		$result = self::validate( Fixtures::decode( $json ), 'packages/core/schema/document.schema.json', 'urn:blixis:wp-blocks:document:1' );
+		if ( 'valid' === $keyword ) {
+			$this->assertTrue( $result->isValid() );
+			return;
+		}
+		$this->assertFalse( $result->isValid() );
+		$error = $result->error();
+		$this->assertNotNull( $error );
+		$this->assertContains( array( $pointer, $keyword ), self::failure_points( $error ) );
 	}
 
 	/**

@@ -1,7 +1,8 @@
 {
   "description": "The id base is written by leaving the breakpoint out.",
   "expected": {
-    "error": "schema"
+    "error": "schema",
+    "path": "$.root[0].style[0].breakpoint"
   },
   "fixtureVersion": 1,
   "id": "schema-style-breakpoint-base",

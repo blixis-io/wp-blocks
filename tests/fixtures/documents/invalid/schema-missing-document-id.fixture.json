@@ -1,7 +1,8 @@
 {
   "description": "The required documentId is missing: rejected by the JSON Schema.",
   "expected": {
-    "error": "schema"
+    "error": "schema",
+    "path": "$.documentId"
   },
   "fixtureVersion": 1,
   "id": "schema-missing-document-id",

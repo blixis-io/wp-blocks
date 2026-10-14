@@ -1,7 +1,8 @@
 {
   "description": "Element types must be namespaced (vendor/name).",
   "expected": {
-    "error": "schema"
+    "error": "schema",
+    "path": "$.root[0].type"
   },
   "fixtureVersion": 1,
   "id": "schema-bad-element-type",

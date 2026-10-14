@@ -1,7 +1,8 @@
 {
   "description": "The layout revision is a non-negative integer.",
   "expected": {
-    "error": "schema"
+    "error": "schema",
+    "path": "$.layoutRevision"
   },
   "fixtureVersion": 1,
   "id": "schema-negative-layout-revision",

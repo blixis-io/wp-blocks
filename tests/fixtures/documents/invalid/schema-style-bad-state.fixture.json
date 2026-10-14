@@ -1,7 +1,8 @@
 {
   "description": "Only hover, focus, focus-visible and active are states.",
   "expected": {
-    "error": "schema"
+    "error": "schema",
+    "path": "$.root[0].style[0].state"
   },
   "fixtureVersion": 1,
   "id": "schema-style-bad-state",

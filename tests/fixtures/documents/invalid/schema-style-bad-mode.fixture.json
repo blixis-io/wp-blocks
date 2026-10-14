@@ -1,7 +1,8 @@
 {
   "description": "Only light and dark are modes.",
   "expected": {
-    "error": "schema"
+    "error": "schema",
+    "path": "$.root[0].style[0].mode"
   },
   "fixtureVersion": 1,
   "id": "schema-style-bad-mode",

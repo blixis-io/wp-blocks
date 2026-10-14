@@ -1,7 +1,8 @@
 {
   "description": "Ids are lower-case.",
   "expected": {
-    "error": "schema"
+    "error": "schema",
+    "path": "$.root[0].id"
   },
   "fixtureVersion": 1,
   "id": "schema-id-uppercase",

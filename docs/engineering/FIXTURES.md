@@ -51,22 +51,24 @@ PHP requires `ext-intl` (NFC checks). The PHP helpers live under `tooling/php/sr
 
 | `php.level` | Meaning |
 |---|---|
-| `full` | PHPUnit executes the suite's expectations (`php.runner`). |
-| `shape` | PHP reads every file with its strict scanner and checks JSON Schema shape against the schemas generated from the TypeScript schemas (`php.runner`); the semantics arrive with `php.issue`. |
+| `full` | PHPUnit executes the suite's expectations. |
+| `shape` | PHP reads every file with its strict scanner and checks the suite's **instances** (document fixtures, token corpus cases) against the JSON Schemas generated from the TypeScript schemas; the schema files themselves are only strict-read. The semantics arrive with `php.issue`. |
 | `pending` | Nothing runs in PHP yet; `php.issue` is the roadmap issue that delivers it. |
+
+`full` and `shape` suites name their PHPUnit file (`php.runner`) and the test methods in it that check the suite (`php.covers`); both the TypeScript and the PHP contract tests verify that those methods exist, and a pending suite may not have a runner. The registry is tracking metadata: it cannot prove that a method really exercises a suite, so **the PR that delivers a pending suite's issue must change its level** (PR template checklist) and reviewers check that the named methods read the suite's files.
 
 Current suites: document fixtures and schema, design-token schema and corpus, the CSS declaration corpus and allow-list manifest, ADR 0005 resolution cases, the compile goldens and the element manifest. Rules enforced on both sides (`tests/fixtures/src/contracts.test.ts`, `tooling/php/tests/ContractsTest.php`):
 
-1. Every JSON data file under the scanned roots (`tests/fixtures`, `packages/*/corpus`, `manifest`, `schema`) belongs to a suite, so shared data cannot be forgotten.
-2. Every file passes the strict JSON rules above, and its canonical JSON is byte-identical in PHP and TypeScript.
+1. Every JSON file in a directory named `corpus`, `manifest`, `schema`, `fixtures`, `golden` or `contracts`, anywhere in the repository (not a fixed list of roots), belongs to a suite. Only exact configuration paths (`tests/fixtures/package.json`, `tsconfig.json`, the registry itself) and `tooling/fixtures/` (inputs of the tooling tests) are exempt.
+2. Every file passes the strict JSON rules above (also schemas and manifests: they use integers only for now; a future schema needing fractional literals such as `multipleOf: 0.1` needs a documented exception and a PHP scanner mode first), and its canonical JSON is byte-identical in PHP and TypeScript.
 3. A pending or shape-only suite names a real roadmap issue; runners and test files exist.
-4. Document fixtures and the token corpus agree between the TypeScript schemas and the generated JSON Schemas run by PHP: a fixture that expects `schema` (or, for tokens, `schema`, `reserved-key` or `unreadable`) is rejected, every other fixture is accepted.
+4. Document fixtures and the token corpus agree between the TypeScript schemas and the generated JSON Schema run by PHP: a fixture that expects `schema` (for tokens: `schema`, `reserved-key` or `unreadable`) is rejected, every other fixture is accepted. A document fixture that expects `schema` also states `expected.path`, the JSON path of the offending value, and both languages must fail at exactly that place (PHP maps JSON Schema's pointer: a missing required property is reported at the object and a rejected property name at its object, so those are matched on the child). Extra PHP probes cover `$ref` recursion, reserved keys, non-ASCII ids and `{}` versus `[]`.
 
-**Compile goldens** (`tests/fixtures/compile`): each fixture holds a document, global classes, tokens and optionally a breakpoint registry, and expects the render metadata (`classNames` per element, `issues` with code and path) plus a `*.golden.css` with the exact stylesheet. The TypeScript compiler is the reference; the PHP compiler (BWB-044) must produce the same bytes. Goldens change only deliberately (`UPDATE_GOLDEN=1`, reviewed like code); Prettier ignores them.
+**Compile goldens** (`tests/fixtures/compile`): each fixture holds a document, global classes, tokens and optionally a breakpoint registry, and expects the render metadata (`classNames` per element and `issues` with code and path) plus a `*.golden.css` with the exact stylesheet. The TypeScript compiler is the reference; the PHP compiler (BWB-044) must produce the same bytes. Goldens change only deliberately (`UPDATE_GOLDEN=1`, reviewed like code); Prettier ignores them. Because goldens come from the implementation they protect, they are not the only oracle: the class-name hashes in the expectations were computed with Python `hashlib`, issue paths follow the documented format (`$.root[i].style[j].declarations.<name>`, derived by hand from the fixture structure and the order of sorted property names), and `compile.contract.test.ts` contains hand-derived stylesheets (the owner example, class precedence and the light-mode media query) written from ADR 0005 with class names from Node's `crypto`. Real-browser computed styles are tracked in #147.
 
 **JSON Schema validator for PHP:** `opis/json-schema` 2.x, a pure-PHP validator that supports draft 2020-12 (the dialect Zod generates). It is a development dependency used by the contract tests only (Apache-2.0, recorded by the licence check) and is never shipped: the plugin's runtime validation is the hand-written PHP validator of BWB-043, which these fixtures exist to hold to the TypeScript behaviour.
 
-**Adding shared data:** put the file under one of the scanned roots, register it in `contracts.json` (the orphan check fails otherwise), add the TypeScript runner and, when the PHP side exists, change its level.
+**Adding shared data:** put the file in a data directory (names above), register it in `contracts.json` (the orphan check fails otherwise), add the TypeScript runner and, when the PHP side exists, change its level. `BLX_SKIP_PHP=1` skips the TypeScript-initiated PHP parity tests (canonical JSON); the PHPUnit contract tests are run by `composer test`.
 
 ## Checks
 

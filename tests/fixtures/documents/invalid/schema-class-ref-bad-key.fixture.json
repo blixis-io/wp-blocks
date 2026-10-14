@@ -1,7 +1,8 @@
 {
   "description": "classRefs keys are ids.",
   "expected": {
-    "error": "schema"
+    "error": "schema",
+    "path": "$.classRefs.Bad Key"
   },
   "fixtureVersion": 1,
   "id": "schema-class-ref-bad-key",

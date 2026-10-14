@@ -3,7 +3,34 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { canonicalJson } from './canonical.ts';
-import { REPO_ROOT, checkRegistry, jsonFilesUnder, loadRegistry } from './contracts.ts';
+import { REPO_ROOT, checkRegistry, findOrphans, jsonFilesUnder, loadRegistry, sharedDataFiles } from './contracts.ts';
+
+describe('orphan detection', () => {
+  it('finds shared data files in any data directory, whatever its depth, and ignores only exact configuration paths', () => {
+    const files = sharedDataFiles();
+    expect(files).toContain('tests/fixtures/compile/compile-tokens.fixture.json');
+    expect(files).toContain('packages/style-engine/corpus/token-sets.json');
+    expect(files).not.toContain('tooling/package.json');
+    const covered = new Set(files);
+    expect(findOrphans(files, covered)).toEqual([]);
+    expect(
+      findOrphans(
+        [
+          'packages/new-area/corpus/cases.json',
+          'apps/editor/fixtures/state.json',
+          'tests/fixtures/package.json',
+          'tests/fixtures/deep/package.json',
+          'tooling/fixtures/bad/x.json',
+        ],
+        new Set(),
+      ),
+    ).toEqual([
+      'packages/new-area/corpus/cases.json',
+      'apps/editor/fixtures/state.json',
+      'tests/fixtures/deep/package.json',
+    ]);
+  });
+});
 
 describe('contract registry (tests/fixtures/contracts.json)', () => {
   it('is consistent: files exist and are strict JSON, runners exist, PHP gaps point at roadmap issues, no orphan data files', () => {
@@ -39,6 +66,22 @@ describe('contract registry (tests/fixtures/contracts.json)', () => {
       'is not part of any contract suite',
     );
     expect(checkRegistry({ ...base, suites: [...base.suites, { ...first }] }).join('\n')).toContain('duplicate id');
+    expect(
+      broken({ php: { level: 'shape', runner: 'tooling/php/tests/ContractsTest.php', issue: 'BWB-043' } }).join('\n'),
+    ).toContain('php.covers must name');
+    expect(
+      broken({
+        php: {
+          level: 'shape',
+          runner: 'tooling/php/tests/ContractsTest.php',
+          issue: 'BWB-043',
+          covers: ['test_nothing'],
+        },
+      }).join('\n'),
+    ).toContain('has no test method test_nothing');
+    expect(
+      broken({ php: { level: 'pending', issue: 'BWB-043', runner: 'tooling/php/tests/ContractsTest.php' } }).join('\n'),
+    ).toContain('promote its level');
   });
 });
 

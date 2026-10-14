@@ -9,7 +9,8 @@
       "php": {
         "level": "shape",
         "runner": "tooling/php/tests/ContractsTest.php",
-        "issue": "BWB-043"
+        "issue": "BWB-043",
+        "covers": ["test_document_fixtures_match_the_json_schema"]
       }
     },
     {
@@ -20,7 +21,8 @@
       "php": {
         "level": "shape",
         "runner": "tooling/php/tests/ContractsTest.php",
-        "issue": "BWB-043"
+        "issue": "BWB-043",
+        "covers": ["test_json_schema_features_behave_as_in_typescript"]
       }
     },
     {
@@ -31,7 +33,8 @@
       "php": {
         "level": "shape",
         "runner": "tooling/php/tests/ContractsTest.php",
-        "issue": "BWB-043"
+        "issue": "BWB-043",
+        "covers": ["test_token_corpus_matches_the_json_schema"]
       }
     },
     {
@@ -42,7 +45,8 @@
       "php": {
         "level": "shape",
         "runner": "tooling/php/tests/ContractsTest.php",
-        "issue": "BWB-044"
+        "issue": "BWB-044",
+        "covers": ["test_token_corpus_matches_the_json_schema"]
       }
     },
     {
