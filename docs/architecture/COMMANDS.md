@@ -13,7 +13,7 @@ Implements the command model of [SYSTEM.md](SYSTEM.md) ("Editor") for BWB-022, i
 | `set-style-rule` `{id, selector, declarations \| null, index?}` | Adds, replaces (in place) or removes the rule for a breakpoint/mode/state combination. | Never creates two rules with one selector. `null` removes. |
 | `set-class-ids` `{id, classIds \| null}` | Sets or clears the element's global classes. | Only classes present in the document's `classRefs`. |
 | `set-translation` `{locale, elementId, set?, unset?, status?}` | Sets and removes translatable values of one element in one locale; creates the entry when absent. | `status` is `draft`, `translated` or `reviewed`; omitted, it becomes `translated` in the default locale and `draft` elsewhere (editing leaves review). Unknown entry fields and `sourceHash` are kept. See `TRANSLATIONS.md`. |
-| `restore-translation` | Internal: the inverse of `set-translation`. | Puts back the complete previous entry (or removes it). |
+| `restore-translation` | Internal: the inverse of `set-translation`. | Puts back the complete previous entry, or removes it (and the locale stream when the edit created it). With a registry hook the restored values that differ from the current ones are checked like `set-translation` values. |
 | `restore-style-rule` | Internal: the inverse of removing a rule. | Puts back the complete rule, unknown fields included, at its original position. |
 | `restore` | Internal: the inverse of `remove`. | Re-inserts the subtree and restores each translation entry's previous status. Checked against the current state: every status record must belong to the restored subtree and to an entry that is currently `orphaned`; anything else is a `stale-restore`. |
 

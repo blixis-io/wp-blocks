@@ -5,6 +5,7 @@ import { applyCommand, validateDocument, type BuilderDocument } from '@blixis/wp
 import { describe, expect, it } from 'vitest';
 import { checkAgainstRegistry } from './checks.ts';
 import { CORE_ELEMENTS, createCoreRegistry } from './core-elements.ts';
+import { comparePropertyIds, type PropertyIdLock } from './lock.ts';
 
 const registry = createCoreRegistry();
 const here = dirname(fileURLToPath(import.meta.url));
@@ -131,42 +132,35 @@ describe('set-translation with the registry as its hook', () => {
 });
 
 describe('stable property ids (locks/property-ids.json)', () => {
-  interface Lock {
-    lockVersion: 1;
-    elements: Record<string, Record<string, { classification: string; kind: string }>>;
-  }
-  const lock = JSON.parse(readFileSync(join(here, '..', 'locks', 'property-ids.json'), 'utf8')) as Lock;
+  const lock = JSON.parse(readFileSync(join(here, '..', 'locks', 'property-ids.json'), 'utf8')) as PropertyIdLock;
 
-  it('every released property id still exists with the same classification and kind', () => {
-    const missing: string[] = [];
-    for (const [type, props] of Object.entries(lock.elements)) {
-      const def = CORE_ELEMENTS.find((d) => d.type === type);
-      if (def === undefined) {
-        missing.push(`${type} (element removed)`);
-        continue;
-      }
-      for (const [id, expected] of Object.entries(props)) {
-        const prop = Object.hasOwn(def.props, id) ? def.props[id] : undefined;
-        if (prop?.classification !== expected.classification || prop.kind !== expected.kind)
-          missing.push(`${type}.${id}`);
-      }
-    }
+  it('every released property id still exists with the same classification and kind, and new ids are recorded', () => {
     expect(
-      missing,
-      'a released property id was removed or changed; add a new id instead (see VERSIONING-AND-COMPATIBILITY.md)',
+      comparePropertyIds(lock, CORE_ELEMENTS, { requireRecorded: true }),
+      'a released id was removed or changed (add a new id instead), or a new id must be appended to packages/element-registry/locks/property-ids.json',
     ).toEqual([]);
   });
 
-  it('every core property is recorded in the lock, so new ids are added deliberately', () => {
-    const unrecorded: string[] = [];
-    for (const def of CORE_ELEMENTS) {
-      for (const id of Object.keys(def.props)) {
-        if (lock.elements[def.type]?.[id] === undefined) unrecorded.push(`${def.type}.${id}`);
-      }
-    }
+  it('reports the problems it exists to catch', () => {
+    const text = { classification: 'translatable', kind: 'string' };
+    const level = { classification: 'invariant', kind: 'integer' };
+    const heading = { type: 'blixis/heading', props: { text, level } };
+    const others = CORE_ELEMENTS.filter((d) => d.type !== 'blixis/heading');
+    const problems = (definitions: Parameters<typeof comparePropertyIds>[1], requireRecorded = false): string =>
+      comparePropertyIds(lock, definitions, { requireRecorded }).join('\n');
+    expect(problems([...others, heading])).toBe('');
+    expect(problems([...others, { type: heading.type, props: { level } }])).toContain(
+      'blixis/heading.text: property removed',
+    );
+    expect(problems(others)).toContain('blixis/heading: element removed');
     expect(
-      unrecorded,
-      'add new property ids to packages/element-registry/locks/property-ids.json (append only)',
-    ).toEqual([]);
+      problems([...others, { type: heading.type, props: { level, text: { ...text, classification: 'invariant' } } }]),
+    ).toContain('changed from translatable string to invariant string');
+    expect(problems([...others, { type: heading.type, props: { level, text, extra: text } }], true)).toContain(
+      'blixis/heading.extra: not recorded in the lock',
+    );
+    expect(problems([...others, { type: heading.type, props: { level, text, extra: text } }])).not.toContain(
+      'not recorded',
+    );
   });
 });

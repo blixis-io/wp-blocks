@@ -55,7 +55,14 @@ export type Command =
       status?: 'draft' | 'translated' | 'reviewed';
     }
   /** Produced as the inverse of `set-translation`: puts back the complete previous entry (unknown fields included), or removes it. */
-  | { type: 'restore-translation'; locale: string; elementId: string; entry: TranslationEntry | null };
+  | {
+      type: 'restore-translation';
+      locale: string;
+      elementId: string;
+      entry: TranslationEntry | null;
+      /** With `entry: null`: also remove the locale's stream when it ends up empty (it did not exist before the edit). */
+      dropStream?: boolean;
+    };
 
 export const COMMAND_ERROR_CODES = [
   'element-not-found',

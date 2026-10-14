@@ -62,5 +62,6 @@ export const CommandSchema = z.discriminatedUnion('type', [
     locale: LocaleIdSchema,
     elementId: IdSchema,
     entry: TranslationEntrySchema.nullable(),
+    dropStream: z.boolean().optional(),
   }),
 ]);

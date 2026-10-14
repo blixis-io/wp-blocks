@@ -225,6 +225,105 @@ describe('set-translation', () => {
   });
 });
 
+describe('set-translation: no-ops, unset rules and the restore boundary', () => {
+  it('an edit that changes nothing keeps the entry as it is (reviewed stays reviewed)', () => {
+    const d = baseDoc();
+    for (const command of [
+      { type: 'set-translation', locale: 'nl_NL', elementId: 'el-a' },
+      { type: 'set-translation', locale: 'nl_NL', elementId: 'el-a', set: { text: 'Hallo' } },
+      { type: 'set-translation', locale: 'nl_NL', elementId: 'el-a', unset: ['alt'] },
+      { type: 'set-translation', locale: 'nl_NL', elementId: 'el-a', set: {}, unset: [] },
+    ]) {
+      const r = ok(d, command);
+      expect(r.document).toBe(d);
+    }
+    const created = ok(d, { type: 'set-translation', locale: 'nl_NL', elementId: 'el-c', set: {} });
+    expect(created.document).toBe(d);
+    const explicit = ok(d, { type: 'set-translation', locale: 'nl_NL', elementId: 'el-a', status: 'translated' });
+    expect(explicit.document.translations['nl_NL']?.['el-a']?.status).toBe('translated');
+    const createdExplicit = ok(d, { type: 'set-translation', locale: 'nl_NL', elementId: 'el-c', status: 'draft' });
+    expect(createdExplicit.document.translations['nl_NL']?.['el-c']).toEqual({ values: {}, status: 'draft' });
+  });
+
+  it('unset removes values that are there (even legacy ones) and, with a hook, refuses ids that could never be stored', () => {
+    const d = baseDoc();
+    const legacy: BuilderDocument = {
+      ...d,
+      translations: {
+        ...d.translations,
+        nl_NL: { 'el-a': { status: 'reviewed', values: { text: 'Hallo', level: 3 } } },
+      },
+    };
+    const repaired = ok(
+      legacy,
+      { type: 'set-translation', locale: 'nl_NL', elementId: 'el-a', unset: ['level'] },
+      hook,
+    );
+    expect(repaired.document.translations['nl_NL']?.['el-a']).toEqual({ values: { text: 'Hallo' }, status: 'draft' });
+    expect(code(d, { type: 'set-translation', locale: 'nl_NL', elementId: 'el-a', unset: ['level'] }, hook)).toBe(
+      'not-translatable',
+    );
+    expect(code(d, { type: 'set-translation', locale: 'nl_NL', elementId: 'el-a', unset: ['alt'] }, hook)).toBe('ok');
+  });
+
+  it('restore-translation cannot smuggle in what set-translation refuses', () => {
+    const d = baseDoc();
+    const entry = (values: Record<string, unknown>) => ({
+      type: 'restore-translation',
+      locale: 'nl_NL',
+      elementId: 'el-a',
+      entry: { status: 'draft', values },
+    });
+    expect(code(d, entry({ text: 'Hallo', level: 2 }), hook)).toBe('not-translatable');
+    expect(code(d, entry({ text: 'x'.repeat(30) }), hook)).toBe('invalid-translation');
+    expect(code(d, entry({ text: 'Hallo' }), hook)).toBe('ok');
+    // values identical to the current entry are not asked again, so undo still works after the rules became stricter
+    const strict: CommandContext = {
+      translationValue: () => ({ ok: false, code: 'not-translatable', message: 'nothing is translatable now' }),
+    };
+    expect(code(d, entry({ text: 'Hallo' }), strict)).toBe('ok');
+    expect(
+      code(d, {
+        type: 'restore-translation',
+        locale: 'nl_NL',
+        elementId: 'el-a',
+        entry: { status: 'orphaned', values: {} },
+      }),
+    ).toBe('invalid-argument');
+    expect(
+      code(d, {
+        type: 'restore-translation',
+        locale: 'nl_NL',
+        elementId: 'el-a',
+        entry: { status: 'draft', values: {} },
+        dropStream: true,
+      }),
+    ).toBe('invalid-argument');
+  });
+
+  it('undoing the first translation of a locale removes the stream it created', () => {
+    const d = baseDoc();
+    const withoutNl: BuilderDocument = { ...d, translations: { en_US: d.translations['en_US'] ?? {} } };
+    const edited = ok(withoutNl, {
+      type: 'set-translation',
+      locale: 'nl_NL',
+      elementId: 'el-b',
+      set: { text: 'Tekst' },
+    });
+    expect(Object.keys(edited.document.translations)).toEqual(['en_US', 'nl_NL']);
+    const undone = ok(edited.document, edited.inverse);
+    expect(undone.document).toEqual(withoutNl);
+    expect(Object.keys(undone.document.translations)).toEqual(['en_US']);
+    // a stream that already existed (even empty) is kept
+    const emptyNl: BuilderDocument = { ...d, translations: { ...withoutNl.translations, nl_NL: {} } };
+    const again = ok(
+      ok(emptyNl, { type: 'set-translation', locale: 'nl_NL', elementId: 'el-b', set: { text: 'Tekst' } }).document,
+      { type: 'restore-translation', locale: 'nl_NL', elementId: 'el-b', entry: null },
+    );
+    expect(again.document).toEqual(emptyNl);
+  });
+});
+
 describe('set-translation with history', () => {
   it('undo restores the exact previous entry (unknown fields, hash, status) and redo reapplies', () => {
     const start = baseDoc();
@@ -271,45 +370,67 @@ describe('set-translation with history', () => {
     });
   });
 
-  it('a seeded random mix of edits, removals and undo keeps the document valid and undo exact', () => {
+  it('a seeded random mix of edits, removals, hook failures, undo and redo keeps the document valid and both directions exact', () => {
     let seed = 99;
     const next = (): number => {
       seed = (seed * 1664525 + 1013904223) % 4294967296;
       return seed / 4294967296;
     };
     const pick = <T>(list: readonly T[]): T => list[Math.floor(next() * list.length)] as T;
-    let history = createHistory(baseDoc());
-    const snapshots: BuilderDocument[] = [history.document];
-    for (let n = 0; n < 300; n += 1) {
+    const start = ((): BuilderDocument => {
+      const d = baseDoc();
+      return { ...d, translations: { en_US: d.translations['en_US'] ?? {} } };
+    })();
+    // The default limit of 200 steps would drop the oldest entries, and this test undoes everything.
+    let history = createHistory(start, 10_000);
+    const states: BuilderDocument[] = [history.document];
+    let refused = 0;
+    for (let n = 0; n < 400; n += 1) {
       const roll = next();
       let result;
-      if (roll < 0.75) {
+      if (roll < 0.6) {
         const command: Command = {
           type: 'set-translation',
           locale: pick(['en_US', 'nl_NL']),
           elementId: pick(['el-a', 'el-b', 'el-c']),
           ...(next() < 0.7
-            ? { set: { [pick(['text', 'alt', 'toString'])]: pick(['a', 'b', 'c']) } }
-            : { unset: [pick(['text', 'alt'])] }),
+            ? { set: { [pick(['text', 'alt', 'level', 'toString'])]: pick(['a', 'b', 'x'.repeat(30)]) } }
+            : { unset: [pick(['text', 'alt', 'level'])] }),
           ...(next() < 0.3 ? { status: pick(['draft', 'translated', 'reviewed'] as const) } : {}),
         };
-        result = execute(history, command, {});
-      } else if (roll < 0.9) {
-        result = undo(history, {});
+        result = execute(history, command, hook);
+      } else if (roll < 0.7) {
+        result = execute(history, { type: 'remove', id: pick(['el-a', 'el-b', 'el-c']) }, hook);
+      } else if (roll < 0.85) {
+        result = undo(history, hook);
       } else {
-        result = redo(history, {});
+        result = redo(history, hook);
       }
-      if (!result.ok) continue;
+      if (!result.ok) {
+        refused += 1;
+        continue;
+      }
       history = result.history;
-      const valid = validateDocument(JSON.stringify(history.document));
-      expect(valid.ok, `step ${String(n)}`).toBe(true);
-      snapshots.push(history.document);
+      expect(validateDocument(JSON.stringify(history.document)).ok, `step ${String(n)}`).toBe(true);
+      states.push(history.document);
     }
+    expect(refused).toBeGreaterThan(20);
+    const final = history.document;
+    const trail: BuilderDocument[] = [final];
     while (history.past.length > 0) {
-      const r = undo(history, {});
+      const r = undo(history, hook);
       if (!r.ok) throw new Error(r.error.message);
       history = r.history;
+      trail.push(history.document);
     }
-    expect(history.document).toEqual(snapshots[0]);
+    expect(history.document).toEqual(start);
+    // Redo exactly as many steps as were undone: the run itself may have ended in the middle of the history.
+    for (let step = 1; step < trail.length; step += 1) {
+      const r = redo(history, hook);
+      if (!r.ok) throw new Error(r.error.message);
+      history = r.history;
+      expect(history.document, `redo ${String(step)}`).toEqual(trail[trail.length - 1 - step]);
+    }
+    expect(history.document).toEqual(final);
   });
 });
