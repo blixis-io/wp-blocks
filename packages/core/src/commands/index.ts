@@ -20,5 +20,6 @@ export {
   type CommandResult,
   type RuleSelector,
   type StatusRecord,
+  type TranslationCheck,
 } from './types.ts';
 export { findPath, measure, nodeAt, subtreeIds } from './tree.ts';

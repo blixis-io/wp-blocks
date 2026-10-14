@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ElementNodeSchema, TranslationStatusSchema } from '../schema/document.ts';
+import { ElementNodeSchema, TranslationEntrySchema, TranslationStatusSchema } from '../schema/document.ts';
 import {
   BreakpointIdSchema,
   IdSchema,
@@ -48,5 +48,20 @@ export const CommandSchema = z.discriminatedUnion('type', [
     statuses: z
       .array(z.strictObject({ locale: LocaleIdSchema, elementId: IdSchema, status: TranslationStatusSchema }))
       .max(10_000),
+  }),
+  z.strictObject({
+    type: z.literal('set-translation'),
+    locale: LocaleIdSchema,
+    elementId: IdSchema,
+    set: z.record(PropertyIdSchema, JsonValueSchema).optional(),
+    unset: z.array(PropertyIdSchema).max(256).optional(),
+    status: z.enum(['draft', 'translated', 'reviewed']).optional(),
+  }),
+  z.strictObject({
+    type: z.literal('restore-translation'),
+    locale: LocaleIdSchema,
+    elementId: IdSchema,
+    entry: TranslationEntrySchema.nullable(),
+    dropStream: z.boolean().optional(),
   }),
 ]);

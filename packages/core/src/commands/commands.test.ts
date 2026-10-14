@@ -517,6 +517,9 @@ describe('command error codes', () => {
       'disallowed-parent',
       'invalid-argument',
       'stale-restore',
+      'locale-not-found',
+      'not-translatable',
+      'invalid-translation',
     ]);
   });
 });

@@ -1,4 +1,5 @@
 import { admitValue } from '../document/gates.ts';
+import { canonicalJson } from '../json/canonical.ts';
 import { estimateJsonBytes } from '../json/estimate.ts';
 import type { BuilderDocument, ElementNode } from '../schema/document.ts';
 import { DOCUMENT_LIMITS } from '../schema/limits.ts';
@@ -406,6 +407,140 @@ function setClassIds(doc: BuilderDocument, command: Extract<Command, { type: 'se
   };
 }
 
+function entryAllowed(doc: BuilderDocument, locale: string, elementId: string): CommandError | null {
+  if (!doc.locales.includes(locale))
+    return { code: 'locale-not-found', message: `${locale} is not a locale of this document` };
+  const path = findPath(doc.root, elementId);
+  if (path === null) return { code: 'element-not-found', message: `no element with id ${elementId}` };
+  if (entryOf(doc, locale, elementId)?.status === 'orphaned')
+    return { code: 'invalid-argument', message: `the translation of ${elementId} in ${locale} is orphaned` };
+  return null;
+}
+
+function withEntry(
+  doc: BuilderDocument,
+  locale: string,
+  elementId: string,
+  entry: BuilderDocument['translations'][string][string] | null,
+  dropStream = false,
+): BuilderDocument {
+  const stream = own(doc.translations, locale) ? { ...doc.translations[locale] } : {};
+  if (entry === null) Reflect.deleteProperty(stream, elementId);
+  else Object.defineProperty(stream, elementId, { value: entry, enumerable: true, writable: true, configurable: true });
+  const translations = { ...doc.translations };
+  if (entry === null && dropStream && Object.keys(stream).length === 0) Reflect.deleteProperty(translations, locale);
+  else
+    Object.defineProperty(translations, locale, {
+      value: stream,
+      enumerable: true,
+      writable: true,
+      configurable: true,
+    });
+  return { ...doc, translations };
+}
+
+const sameValues = (a: Record<string, Json>, b: Record<string, Json>): boolean => canonicalJson(a) === canonicalJson(b);
+
+function setTranslation(
+  doc: BuilderDocument,
+  command: Extract<Command, { type: 'set-translation' }>,
+  ctx: CommandContext,
+): Outcome {
+  const problem = entryAllowed(doc, command.locale, command.elementId);
+  if (problem !== null) return { ok: false, error: problem };
+  const path = findPath(doc.root, command.elementId);
+  const node = path === null ? undefined : nodeAt(doc.root, path);
+  if (node === undefined) return fail('element-not-found', `no element with id ${command.elementId}`);
+  const set = command.set ?? {};
+  const unset = command.unset ?? [];
+  if (unset.some((k) => own(set, k)))
+    return fail('invalid-argument', 'a property cannot be set and unset in one command');
+  const existing = entryOf(doc, command.locale, command.elementId);
+  if (ctx.translationValue !== undefined) {
+    for (const key of Object.keys(set)) {
+      const checked = ctx.translationValue(node.type, key, set[key] as Json);
+      if (!checked.ok) return fail(checked.code, `${key}: ${checked.message}`);
+    }
+    // Removing a value that is there is always allowed (it repairs legacy data); an id that is not there must at least be a
+    // property that could hold a translation, so an editor bug does not pass silently.
+    for (const key of unset) {
+      if (existing !== undefined && own(existing.values, key)) continue;
+      const checked = ctx.translationValue(node.type, key, null);
+      if (!checked.ok && checked.code === 'not-translatable') return fail(checked.code, `${key}: ${checked.message}`);
+    }
+  }
+  const values: Record<string, Json> = { ...(existing?.values ?? {}) };
+  for (const key of unset) Reflect.deleteProperty(values, key);
+  for (const key of Object.keys(set)) {
+    Object.defineProperty(values, key, { value: set[key], enumerable: true, writable: true, configurable: true });
+  }
+  const previous = existing?.values ?? {};
+  const valuesChanged = !sameValues(values, previous);
+  // An edit that changes nothing keeps the entry as it is (a reviewed translation stays reviewed); only an explicit status
+  // changes the status without changing values.
+  if (!valuesChanged && command.status === undefined) {
+    return {
+      document: doc,
+      inverse: {
+        type: 'restore-translation',
+        locale: command.locale,
+        elementId: command.elementId,
+        entry: existing ?? null,
+      },
+    };
+  }
+  const status = command.status ?? (command.locale === doc.defaultLocale ? 'translated' : 'draft');
+  const entry = existing === undefined ? { values, status } : { ...existing, values, status };
+  return {
+    document: withEntry(doc, command.locale, command.elementId, entry),
+    inverse: {
+      type: 'restore-translation',
+      locale: command.locale,
+      elementId: command.elementId,
+      entry: existing ?? null,
+      ...(existing === undefined && !own(doc.translations, command.locale) ? { dropStream: true } : {}),
+    },
+  };
+}
+
+function restoreTranslation(
+  doc: BuilderDocument,
+  command: Extract<Command, { type: 'restore-translation' }>,
+  ctx: CommandContext,
+): Outcome {
+  const problem = entryAllowed(doc, command.locale, command.elementId);
+  if (problem !== null) return { ok: false, error: problem };
+  if (command.entry?.status === 'orphaned')
+    return fail('invalid-argument', 'an orphaned entry cannot be restored on a live element');
+  if (command.dropStream === true && command.entry !== null)
+    return fail('invalid-argument', 'dropStream only applies when the entry is removed');
+  const existing = entryOf(doc, command.locale, command.elementId);
+  if (command.entry !== null && ctx.translationValue !== undefined) {
+    // A restore must not smuggle in what `set-translation` would refuse: values that differ from the current entry are asked.
+    const node = nodeAt(doc.root, findPath(doc.root, command.elementId) ?? []);
+    for (const [key, value] of Object.entries(command.entry.values)) {
+      if (
+        existing !== undefined &&
+        own(existing.values, key) &&
+        canonicalJson(existing.values[key] ?? null) === canonicalJson(value)
+      )
+        continue;
+      const checked = ctx.translationValue(node?.type ?? '', key, value);
+      if (!checked.ok) return fail(checked.code, `${key}: ${checked.message}`);
+    }
+  }
+  return {
+    document: withEntry(doc, command.locale, command.elementId, command.entry, command.dropStream === true),
+    inverse: {
+      type: 'restore-translation',
+      locale: command.locale,
+      elementId: command.elementId,
+      entry: existing ?? null,
+      ...(existing === undefined && !own(doc.translations, command.locale) ? { dropStream: true } : {}),
+    },
+  };
+}
+
 /** Limits that must hold for the *result*, whatever the command did. */
 function checkResult(document: BuilderDocument): CommandError | null {
   const size = measure(document.root);
@@ -475,6 +610,12 @@ export function applyCommand(doc: BuilderDocument, input: unknown, ctx: CommandC
         break;
       case 'set-class-ids':
         outcome = setClassIds(doc, command);
+        break;
+      case 'set-translation':
+        outcome = setTranslation(doc, command, ctx);
+        break;
+      case 'restore-translation':
+        outcome = restoreTranslation(doc, command, ctx);
         break;
     }
     if (isError(outcome)) return outcome;

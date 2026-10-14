@@ -32,6 +32,7 @@ Registration never throws, even for hostile input (throwing getters, Proxies, re
 
 - `registry.canNest(parentType | null, childType)` is the `canNest` hook of the document commands (BWB-022). Unknown parents or children are refused, so the editor cannot build with types it does not know.
 - `registry.defaultsFor(type)` splits defaults into invariant `props` and translatable/locale-specific values; `createElement(type, id)` builds a new element with its invariant defaults. The editor writes the translatable defaults into the current locale's translation stream.
+- `registry.translationValue(type, property, value)` is the `translationValue` hook of `set-translation` (BWB-104) and the rule behind `checkAgainstRegistry` for stored translations; `registry.localizedProperties(type)` lists the translatable and locale-specific properties. See `TRANSLATIONS.md`.
 - `registry.validateProps(type, props)` explains problems with invariant props, including translatable values that were put in `props` by mistake.
 - `checkAgainstRegistry(document, registry)` checks a structurally valid document (`validateDocument`) against the registry: illegal nesting, unknown or misplaced properties, invalid values, and translation values for properties that are not translatable. **Unknown element types are only warnings**: the document is preserved unchanged and rendered with the safe fallback, so removing an add-on never destroys content (ADR 0003, ADR 0009).
 - `registry.manifest()` is a JSON-only description of all definitions. For the six core elements it is committed as `packages/element-registry/manifest/core-elements.json` (a test fails if it is stale; regenerate with `pnpm --filter @blixis/wp-element-registry manifest:generate`). The PHP side reads the manifest instead of duplicating definitions (renderers: BWB-043, REST `GET /elements`: BWB-041).
@@ -46,4 +47,4 @@ URL properties are validated by `isSafeUrl`: `http`, `https`, `mailto`, `tel` an
 
 ## Not here yet
 
-Rich text, per-element style schemas and editor controls (BWB-053/054), PHP renderers (BWB-043), the enforcement of the deprecation window (BWB-075), and translation commands (BWB-104).
+Rich text, per-element style schemas and editor controls (BWB-053/054), PHP renderers (BWB-043), the enforcement of the deprecation window (BWB-075), and stale detection (BWB-105).

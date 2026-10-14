@@ -1,5 +1,5 @@
 import type { BuilderDocument, ElementNode } from '@blixis/wp-core';
-import { describe, type ElementRegistry } from './registry.ts';
+import type { ElementRegistry } from './registry.ts';
 
 export type RegistryIssueCode =
   | 'unknown-element-type'
@@ -70,18 +70,15 @@ export function checkAgainstRegistry(doc: BuilderDocument, registry: ElementRegi
       const def = type === undefined ? undefined : registry.get(type);
       if (def === undefined) continue; // orphaned or unknown type: kept as is
       for (const [name, value] of Object.entries(entry.values)) {
-        const prop = Object.hasOwn(def.props, name) ? def.props[name] : undefined;
         const where = `$.translations.${locale}.${elementId}.values.${name}`;
-        if (prop === undefined || prop.classification === 'invariant') {
-          add(
-            'untranslatable-property',
-            'error',
-            where,
-            `${name} is not a translatable or locale-specific property of ${def.type}`,
-          );
-        } else {
-          for (const message of describe(name, prop, value)) add('invalid-translation-value', 'error', where, message);
-        }
+        const checked = registry.translationValue(def.type, name, value);
+        if (checked.ok) continue;
+        add(
+          checked.code === 'not-translatable' ? 'untranslatable-property' : 'invalid-translation-value',
+          'error',
+          where,
+          checked.message,
+        );
       }
     }
   }

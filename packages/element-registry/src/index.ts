@@ -21,4 +21,5 @@ export {
   type RegisterResult,
   type Source,
 } from './registry.ts';
+export { comparePropertyIds, type PropertyIdLock } from './lock.ts';
 export { isSafeUrl } from './url.ts';

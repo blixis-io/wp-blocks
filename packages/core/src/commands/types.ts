@@ -1,4 +1,4 @@
-import type { BuilderDocument, ElementNode } from '../schema/document.ts';
+import type { BuilderDocument, ElementNode, TranslationEntry } from '../schema/document.ts';
 import type { Json } from '../schema/primitives.ts';
 import type { StyleRule } from '../schema/style.ts';
 
@@ -41,7 +41,28 @@ export type Command =
   | { type: 'restore-style-rule'; id: string; index: number; rule: StyleRule }
   | { type: 'set-class-ids'; id: string; classIds: string[] | null }
   /** Produced as the inverse of `remove`: puts the subtree back and restores its translation statuses. */
-  | { type: 'restore'; parentId: string | null; index: number; element: ElementNode; statuses: StatusRecord[] };
+  | { type: 'restore'; parentId: string | null; index: number; element: ElementNode; statuses: StatusRecord[] }
+  /**
+   * Sets and removes translatable values of one element in one locale (ADR 0003). Creates the entry when it does not exist.
+   * `status` defaults to `translated` in the default locale and `draft` elsewhere: editing a value always leaves review.
+   */
+  | {
+      type: 'set-translation';
+      locale: string;
+      elementId: string;
+      set?: Record<string, Json>;
+      unset?: string[];
+      status?: 'draft' | 'translated' | 'reviewed';
+    }
+  /** Produced as the inverse of `set-translation`: puts back the complete previous entry (unknown fields included), or removes it. */
+  | {
+      type: 'restore-translation';
+      locale: string;
+      elementId: string;
+      entry: TranslationEntry | null;
+      /** With `entry: null`: also remove the locale's stream when it ends up empty (it did not exist before the edit). */
+      dropStream?: boolean;
+    };
 
 export const COMMAND_ERROR_CODES = [
   'element-not-found',
@@ -56,6 +77,9 @@ export const COMMAND_ERROR_CODES = [
   'disallowed-parent',
   'invalid-argument',
   'stale-restore',
+  'locale-not-found',
+  'not-translatable',
+  'invalid-translation',
 ] as const;
 export type CommandErrorCode = (typeof COMMAND_ERROR_CODES)[number];
 
@@ -68,6 +92,9 @@ export type CommandResult =
   /** `command` is the inert copy that was actually applied; store this, not the object the caller passed. */
   { ok: true; document: BuilderDocument; inverse: Command; command: Command } | { ok: false; error: CommandError };
 
+export type TranslationCheck =
+  { ok: true } | { ok: false; code: 'not-translatable' | 'invalid-translation'; message: string };
+
 /** Extra rules supplied by the element registry (BWB-021). Without a registry every nesting is allowed. */
 export interface CommandContext {
   /**
@@ -77,4 +104,10 @@ export interface CommandContext {
    * gone still be rearranged). Must be a pure predicate; if it throws, the command fails with `invalid-argument`.
    */
   canNest?: (parentType: string | null, childType: string, intent: 'create' | 'relocate') => boolean;
+  /**
+   * May `property` of an element of `type` hold `value` as a translation? `not-translatable` for an unknown type or property
+   * or one that is not classified translatable, `invalid-translation` for a value its definition refuses. Without the hook any
+   * property id is accepted. Must be pure; if it throws, the command fails with `invalid-argument`.
+   */
+  translationValue?: (type: string, property: string, value: Json) => TranslationCheck;
 }
