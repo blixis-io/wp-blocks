@@ -25,17 +25,19 @@ export function checkDocumentStyles(doc: BuilderDocument): StyleIssue[] {
     const item = stack.pop();
     if (item === undefined) break;
     const { node, path } = item;
-    (node.style ?? []).forEach((rule, index) => {
+    const rules = node.style ?? [];
+    for (let index = 0; index < rules.length && issues.length < MAX_ISSUES; index += 1) {
+      const rule = rules[index];
+      if (rule === undefined) continue;
       for (const issue of validateDeclarations(rule.declarations)) {
-        if (issues.length < MAX_ISSUES) {
-          issues.push({
-            code: issue.code,
-            path: `${path}.style[${String(index)}].declarations.${issue.name}`,
-            message: issue.message,
-          });
-        }
+        if (issues.length >= MAX_ISSUES) break;
+        issues.push({
+          code: issue.code,
+          path: `${path}.style[${String(index)}].declarations.${issue.name}`,
+          message: issue.message,
+        });
       }
-    });
+    }
     for (let i = node.children.length - 1; i >= 0; i -= 1) {
       const child = node.children[i];
       if (child !== undefined) stack.push({ node: child, path: `${path}.children[${String(i)}]` });

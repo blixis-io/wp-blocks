@@ -510,7 +510,8 @@
         "medium",
         "thick"
       ],
-      "k": "box"
+      "k": "box",
+      "pct": false
     },
     "bottom": {
       "extra": [
@@ -645,7 +646,8 @@
       "k": "font-weight"
     },
     "gap": {
-      "k": "box"
+      "k": "box",
+      "pct": true
     },
     "grid-auto-columns": {
       "k": "tracks"
@@ -779,7 +781,8 @@
         "auto"
       ],
       "k": "box",
-      "neg": true
+      "neg": true,
+      "pct": true
     },
     "margin-bottom": {
       "extra": [
@@ -916,7 +919,8 @@
       ]
     },
     "padding": {
-      "k": "box"
+      "k": "box",
+      "pct": true
     },
     "padding-bottom": {
       "k": "length",
@@ -981,6 +985,7 @@
       "k": "color"
     },
     "text-decoration-line": {
+      "exclusive": "none",
       "k": "keyword-list",
       "max": 3,
       "values": [
@@ -1052,7 +1057,8 @@
       "k": "position"
     },
     "transition-delay": {
-      "k": "times"
+      "k": "times",
+      "neg": true
     },
     "transition-duration": {
       "k": "times"
@@ -1068,21 +1074,26 @@
         "border-color",
         "opacity",
         "transform",
-        "box-shadow"
+        "box-shadow",
+        "width",
+        "height",
+        "margin",
+        "padding",
+        "top",
+        "right",
+        "bottom",
+        "left",
+        "gap",
+        "border-radius",
+        "font-size",
+        "letter-spacing",
+        "background-position",
+        "visibility"
       ]
     },
     "transition-timing-function": {
-      "k": "ident-list",
-      "max": 4,
-      "values": [
-        "ease",
-        "ease-in",
-        "ease-out",
-        "ease-in-out",
-        "linear",
-        "step-start",
-        "step-end"
-      ]
+      "k": "easing",
+      "max": 4
     },
     "vertical-align": {
       "extra": [

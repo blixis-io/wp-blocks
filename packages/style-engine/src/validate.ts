@@ -26,7 +26,7 @@ export function validateDeclaration(name: string, value: string | number): Decla
   if (text.trim() === '') return fail('empty-value', 'the value is empty');
   if (text.length > CSS_LIMITS.maxValueLength)
     return fail('value-too-long', `longer than ${String(CSS_LIMITS.maxValueLength)} characters`);
-  const parsed = parseValue(text);
+  const parsed = parseValue(text, { strings: name === 'font-family' });
   if (!parsed.ok) return fail(parsed.code, parsed.message);
   const functions = checkFunctions(parsed.components);
   if (functions !== null) return fail(functions.code, functions.message);

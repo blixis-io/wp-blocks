@@ -4,6 +4,8 @@ import {
   ANGLE_UNITS,
   COLOR_ARG_IDENTS,
   COLOR_FUNCTIONS,
+  EASING_FUNCTIONS,
+  EASING_KEYWORDS,
   GRADIENT_ARG_IDENTS,
   GRADIENT_FUNCTIONS,
   LENGTH_UNITS,
@@ -30,9 +32,18 @@ const COLOR_FN = set(COLOR_FUNCTIONS);
 const GRADIENT_FN = set(GRADIENT_FUNCTIONS);
 const TRACK_FN = set(TRACK_FUNCTIONS);
 const TRANSFORM_FN = set(TRANSFORM_FUNCTIONS);
+const EASING_FN = set(EASING_FUNCTIONS);
 const COLORS = set(NAMED_COLORS);
 const WIDE = set(WIDE_KEYWORDS);
-const ALL_FN = set(MATH_FUNCTIONS, COLOR_FUNCTIONS, GRADIENT_FUNCTIONS, TRACK_FUNCTIONS, TRANSFORM_FUNCTIONS, ['var']);
+const ALL_FN = set(
+  MATH_FUNCTIONS,
+  COLOR_FUNCTIONS,
+  GRADIENT_FUNCTIONS,
+  TRACK_FUNCTIONS,
+  TRANSFORM_FUNCTIONS,
+  EASING_FUNCTIONS,
+  ['var'],
+);
 const VAR_NAME = /^--blx-[a-z0-9-]{1,64}$/;
 
 const bad = (code: CssFailure['code'], message: string): CssFailure => ({ code, message });
@@ -94,11 +105,30 @@ const POLICY_TRANSFORM: Policy = {
   commas: true,
   slash: false,
 };
+const POLICY_EASING: Policy = {
+  idents: set(['jump-start', 'jump-end', 'jump-none', 'jump-both', 'start', 'end']),
+  units: set(),
+  fns: set(),
+  numbers: true,
+  percent: false,
+  hash: false,
+  colorNames: false,
+  commas: true,
+  slash: false,
+};
 /** Values of `--blx-*` custom properties and `var()` fallbacks: any plain token, no free functions. */
 const POLICY_CUSTOM: Policy = {
   idents: 'any',
   units: set(LENGTH_UNITS, ANGLE_UNITS, TIME_UNITS, ['fr']),
-  fns: set(MATH_FUNCTIONS, COLOR_FUNCTIONS, GRADIENT_FUNCTIONS, TRACK_FUNCTIONS, TRANSFORM_FUNCTIONS, ['var']),
+  fns: set(
+    MATH_FUNCTIONS,
+    COLOR_FUNCTIONS,
+    GRADIENT_FUNCTIONS,
+    TRACK_FUNCTIONS,
+    TRANSFORM_FUNCTIONS,
+    EASING_FUNCTIONS,
+    ['var'],
+  ),
   numbers: true,
   percent: true,
   hash: true,
@@ -121,9 +151,6 @@ const isLengthPct = (c: Component, neg: boolean): boolean =>
 const isColor = (c: Component): boolean =>
   (c.t === 'ident' && COLORS.has(c.v)) || c.t === 'hash' || (c.t === 'fn' && COLOR_FN.has(c.name));
 const isInt = (c: Component): boolean => c.t === 'number' && Number.isInteger(num(c));
-
-const hasVar = (list: readonly Component[]): boolean =>
-  list.some((c) => c.t === 'fn' && (c.name === 'var' || hasVar(c.children)));
 
 // ---- functions ------------------------------------------------------------------------------------------------------
 
@@ -204,6 +231,30 @@ function checkVar(fn: Fn): Failure {
   return checkList(rest.slice(1), POLICY_CUSTOM);
 }
 
+function checkEasingFn(fn: Fn): Failure {
+  const failure = checkList(fn.children, POLICY_EASING);
+  if (failure !== null) return failure;
+  const args = splitCommas(fn.children);
+  if (fn.name === 'cubic-bezier') {
+    const ok =
+      args.length === 4 &&
+      args.every(
+        (a, i) =>
+          a.length === 1 && at(a, 0).t === 'number' && (i % 2 === 1 || (num(at(a, 0)) >= 0 && num(at(a, 0)) <= 1)),
+      );
+    return ok ? null : bad('invalid-value', 'cubic-bezier() needs four numbers, the x values between 0 and 1');
+  }
+  const first = args[0];
+  const ok =
+    (args.length === 1 || args.length === 2) &&
+    first?.length === 1 &&
+    isInt(at(first, 0)) &&
+    num(at(first, 0)) >= 1 &&
+    num(at(first, 0)) <= 100 &&
+    (args.length === 1 || at(args, 1).length === 1);
+  return ok ? null : bad('invalid-value', 'steps() needs a count from 1 to 100 and an optional position');
+}
+
 function checkColorFn(fn: Fn): Failure {
   const failure = checkList(fn.children, POLICY_COLOR);
   if (failure !== null) return failure;
@@ -223,6 +274,7 @@ function checkFunction(fn: Fn, allowed: ReadonlySet<string>): Failure {
   if (GRADIENT_FN.has(fn.name)) return checkList(fn.children, POLICY_GRADIENT);
   if (TRACK_FN.has(fn.name)) return checkList(fn.children, POLICY_TRACKS);
   if (TRANSFORM_FN.has(fn.name)) return checkList(fn.children, POLICY_TRANSFORM);
+  if (EASING_FN.has(fn.name)) return checkEasingFn(fn);
   return bad('forbidden-function', `${fn.name}() is not allowed`);
 }
 
@@ -251,6 +303,8 @@ function checkList(list: readonly Component[], policy: Policy): Failure {
       case 'percent':
         if (!policy.percent) return bad('invalid-value', 'a percentage is not allowed here');
         break;
+      case 'string':
+        return bad('syntax', 'strings are not allowed here');
       case 'hash':
         if (!policy.hash) return bad('invalid-value', 'a colour is not allowed here');
         break;
@@ -310,8 +364,10 @@ function matchShadow(list: readonly Component[]): boolean {
       else if (isLength(c, true)) lengths.push(index);
       else inset += 99;
     });
+    const blur = lengths[2];
+    const blurOk = blur === undefined || isLength(at(item, blur), false);
     const contiguous = lengths.every((value, i) => i === 0 || value === at(lengths, i - 1) + 1);
-    return inset <= 1 && colors <= 1 && lengths.length >= 2 && lengths.length <= 4 && contiguous;
+    return blurOk && inset <= 1 && colors <= 1 && lengths.length >= 2 && lengths.length <= 4 && contiguous;
   });
 }
 
@@ -333,6 +389,8 @@ function matchBorder(list: readonly Component[]): boolean {
   return width <= 1 && style <= 1 && color <= 1;
 }
 
+const RESERVED_GRID = set(['span', 'auto', ...WIDE_KEYWORDS]);
+
 function matchGridLine(list: readonly Component[]): boolean {
   const segments: Component[][] = [[]];
   for (const c of terms(list)) {
@@ -343,7 +401,12 @@ function matchGridLine(list: readonly Component[]): boolean {
   return segments.every((seg) => {
     const [a, b] = seg;
     if (a === undefined || seg.length > 2) return false;
-    if (seg.length === 1) return isIdent(a, set(['auto'])) || (isInt(a) && num(a) !== 0 && Math.abs(num(a)) <= 1000);
+    if (seg.length === 1)
+      return (
+        (a.t === 'ident' && !RESERVED_GRID.has(a.v) && !a.v.startsWith('--')) ||
+        isIdent(a, set(['auto'])) ||
+        (isInt(a) && num(a) !== 0 && Math.abs(num(a)) <= 1000)
+      );
     return isIdent(a, set(['span'])) && b !== undefined && isInt(b) && num(b) >= 1 && num(b) <= 1000;
   });
 }
@@ -365,7 +428,7 @@ function matchFlex(list: readonly Component[]): boolean {
   return (
     items.length - i === 1 &&
     basis !== undefined &&
-    (isLengthPct(basis, false) || isIdent(basis, set(['auto', 'content'])))
+    (isLengthPct(basis, false) || isIdent(basis, set(['auto', 'content', 'min-content', 'max-content', 'fit-content'])))
   );
 }
 
@@ -373,7 +436,13 @@ function matchPosition(list: readonly Component[]): boolean {
   const items = terms(list);
   if (items.length < 1 || items.length > 4) return false;
   const words = set(['left', 'right', 'top', 'bottom', 'center']);
-  return items.every((c) => isIdent(c, words) || isLengthPct(c, true));
+  const count = (names: readonly string[]): number =>
+    items.filter((c) => c.t === 'ident' && names.includes(c.v)).length;
+  return (
+    items.every((c) => isIdent(c, words) || isLengthPct(c, true)) &&
+    count(['left', 'right']) <= 1 &&
+    count(['top', 'bottom']) <= 1
+  );
 }
 
 function matchKind(kind: Kind, list: readonly Component[]): boolean {
@@ -385,11 +454,11 @@ function matchKind(kind: Kind, list: readonly Component[]): boolean {
     case 'keyword-list': {
       const allowed = set(kind.values);
       const seen = new Set<string>();
-      return (
+      const valid =
         items.length >= 1 &&
         items.length <= kind.max &&
-        items.every((c) => c.t === 'ident' && allowed.has(c.v) && !seen.has(c.v) && Boolean(seen.add(c.v)))
-      );
+        items.every((c) => c.t === 'ident' && allowed.has(c.v) && !seen.has(c.v) && Boolean(seen.add(c.v)));
+      return valid && (kind.exclusive === undefined || items.length === 1 || !seen.has(kind.exclusive));
     }
     case 'ident-list': {
       const allowed = set(kind.values);
@@ -408,7 +477,11 @@ function matchKind(kind: Kind, list: readonly Component[]): boolean {
       return (
         items.length >= 1 &&
         items.length <= 4 &&
-        items.every((c) => isLengthPct(c, kind.neg === true) || isIdent(c, set(kind.extra ?? [])))
+        items.every(
+          (c) =>
+            (kind.pct === true ? isLengthPct(c, kind.neg === true) : isLength(c, kind.neg === true)) ||
+            isIdent(c, set(kind.extra ?? [])),
+        )
       );
     case 'color':
       return only !== undefined && isColor(only);
@@ -477,18 +550,34 @@ function matchKind(kind: Kind, list: readonly Component[]): boolean {
       return (
         (only !== undefined && isIdent(only, set(['auto']))) ||
         (items.length === 1 && positive(items[0])) ||
-        (items.length === 3 && positive(items[0]) && items[1]?.t === 'slash' && positive(items[2]))
+        (items.length === 3 && positive(items[0]) && items[1]?.t === 'slash' && positive(items[2])) ||
+        (items.length >= 2 && isIdent(at(items, 0), set(['auto'])) && matchKind(kind, items.slice(1)))
       );
     }
     case 'flex':
       return matchFlex(items);
     case 'grid-line':
       return matchGridLine(items);
+    case 'easing': {
+      const groups = splitCommas(items);
+      const keywords = set(EASING_KEYWORDS);
+      return (
+        groups.length <= kind.max &&
+        groups.every(
+          (g) =>
+            g.length === 1 &&
+            (isIdent(at(g, 0), keywords) || (at(g, 0).t === 'fn' && EASING_FN.has((at(g, 0) as Fn).name))),
+        )
+      );
+    }
     case 'times': {
       const groups = splitCommas(items);
       return (
         groups.length <= 4 &&
-        groups.every((g) => g.length === 1 && g[0]?.t === 'dimension' && TIME.has(g[0].unit) && num(g[0]) >= 0)
+        groups.every(
+          (g) =>
+            g.length === 1 && g[0]?.t === 'dimension' && TIME.has(g[0].unit) && (kind.neg === true || num(g[0]) >= 0),
+        )
       );
     }
   }
@@ -499,20 +588,50 @@ function matchFontFamily(items: readonly Component[]): boolean {
   if (families.length > 8) return false;
   return families.every(
     (family) =>
-      family.length >= 1 &&
-      family.length <= 4 &&
-      family.every(
-        (c, i) => (c.t === 'ident' && !WIDE.has(c.v) && !c.v.startsWith('--')) || (i > 0 && isInt(c) && num(c) >= 0),
-      ),
+      (family.length === 1 && at(family, 0).t === 'string') ||
+      (family.length >= 1 &&
+        family.length <= 4 &&
+        family.every((c) => c.t === 'ident' && !WIDE.has(c.v) && !c.v.startsWith('--'))),
   );
 }
 
-/** Does `list` (already function-checked) match the property's grammar? A lone CSS-wide keyword always does. */
+/** Stand-ins tried for a top-level `var()`: whatever the variable holds, the value must fit the grammar for one of them. */
+const VAR_STAND_INS: readonly Component[] = [
+  { t: 'dimension', v: '1', unit: 'px' },
+  { t: 'ident', v: 'red' },
+  { t: 'number', v: '1' },
+  { t: 'ident', v: 'solid' },
+  { t: 'percent', v: '50' },
+];
+
+/**
+ * Does `list` (already function-checked) match the property's grammar? A lone CSS-wide keyword or a lone `var()` always
+ * does. A `var()` that is one term of a longer value is replaced by each stand-in in turn (all combinations for up to four
+ * of them, one stand-in for all otherwise) and the value must fit the grammar for at least one: `border: 1px solid
+ * var(--blx-c)` passes, `color: var(--blx-c) garbage` does not. A `var()` inside another function is opaque here; the
+ * function's own argument rules already ran.
+ */
 export function matchesProperty(kind: Kind, list: readonly Component[]): boolean {
   const items = terms(list);
   const first = items[0];
-  if (items.length === 1 && first !== undefined && isIdent(first, WIDE)) return true;
-  // var() may expand to anything, but only to validated --blx-* values, so the property grammar cannot be applied to it.
-  if (hasVar(list)) return true;
-  return matchKind(kind, list);
+  if (
+    items.length === 1 &&
+    first !== undefined &&
+    (isIdent(first, WIDE) || (first.t === 'fn' && first.name === 'var'))
+  ) {
+    return true;
+  }
+  const slots = list.flatMap((c, index) => (c.t === 'fn' && c.name === 'var' ? [index] : []));
+  if (slots.length === 0) return matchKind(kind, list);
+  const attempt = (choice: readonly number[]): boolean => {
+    const copy = list.slice();
+    slots.forEach((slot, n) => {
+      copy[slot] = at(VAR_STAND_INS, choice[n] ?? 0);
+    });
+    return matchKind(kind, copy);
+  };
+  if (slots.length > 4) return VAR_STAND_INS.some((_c, n) => attempt(slots.map(() => n)));
+  const walk = (choice: number[]): boolean =>
+    choice.length === slots.length ? attempt(choice) : VAR_STAND_INS.some((_c, n) => walk([...choice, n]));
+  return walk([]);
 }

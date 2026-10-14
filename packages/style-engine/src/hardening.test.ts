@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { generate } from '../scripts/generate-manifest.ts';
 import { checkDocumentStyles } from './document.ts';
 import { PROPERTIES } from './properties.ts';
-import { parseValue } from './tokenize.ts';
+import { FORBIDDEN_CHARACTERS, parseValue } from './tokenize.ts';
 import { sanitizeDeclarations, validateDeclaration, validateDeclarations } from './validate.ts';
 
 /** Small seeded generator (mulberry32) so failures reproduce. */
@@ -65,6 +65,11 @@ const PIECES = [
   '!important',
   'expression(',
   'javascript',
+  '\ud800',
+  '\u00e9',
+  '"Open Sans"',
+  'cubic-bezier(',
+  'steps(',
   ':',
   'e3',
   '--blx-x',
@@ -138,6 +143,56 @@ describe('hardening', () => {
     const parsed = parseValue('RGB(0 0 0/ 50%)');
     expect(parsed.ok).toBe(true);
     expect(validateDeclaration('color', 'RGB(0 0 0/ 50%)')).toMatchObject({ ok: true, value: 'rgb(0 0 0 / 50%)' });
+  });
+});
+
+describe('character and limit boundaries', () => {
+  it.each(FORBIDDEN_CHARACTERS)('refuses %s in a value before any other rule applies', (c) => {
+    expect(validateDeclaration('color', `red${c}`)).toMatchObject({ ok: false, code: 'forbidden-character' });
+    expect(validateDeclaration('color', `${c}red`)).toMatchObject({ ok: false, code: 'forbidden-character' });
+    if (c !== '"')
+      expect(validateDeclaration('font-family', `serif${c}`)).toMatchObject({ ok: false, code: 'forbidden-character' });
+  });
+
+  it('refuses lone surrogates, non-ASCII and control characters', () => {
+    for (const bad of [
+      '\ud800',
+      '\udc00',
+      're\u00e9d',
+      '\u202ered',
+      'red\u0000',
+      'red\u007f',
+      'red\u0085',
+      'red\u2028',
+    ]) {
+      expect(validateDeclaration('color', bad)).toMatchObject({ ok: false, code: 'forbidden-character' });
+    }
+  });
+
+  it('counts digits exactly: ten are fine, eleven are not (with or without a fraction)', () => {
+    expect(validateDeclaration('width', '1234567890px').ok).toBe(true);
+    expect(validateDeclaration('width', '12345678901px').ok).toBe(false);
+    expect(validateDeclaration('width', '12345.67890px').ok).toBe(true);
+    expect(validateDeclaration('width', '12345.678901px').ok).toBe(false);
+  });
+
+  it('counts functions toward the component limit', () => {
+    expect(parseValue('a,'.repeat(130))).toMatchObject({ ok: false, code: 'too-complex' });
+    expect(parseValue('calc(1px) '.repeat(100))).toMatchObject({ ok: false, code: 'too-complex' });
+  });
+});
+
+describe('var() as one term of a longer value', () => {
+  it('has to fit the property grammar around it', () => {
+    expect(validateDeclaration('border', '1px solid var(--blx-c)').ok).toBe(true);
+    expect(validateDeclaration('padding', 'var(--blx-a) var(--blx-b) var(--blx-c) var(--blx-d)').ok).toBe(true);
+    expect(validateDeclaration('padding', 'var(--blx-a) var(--blx-b) var(--blx-c) var(--blx-d) var(--blx-e)').ok).toBe(
+      false,
+    );
+    expect(validateDeclaration('color', 'var(--blx-c) garbage').ok).toBe(false);
+    expect(validateDeclaration('display', 'var(--blx-d)').ok).toBe(true);
+    expect(validateDeclaration('display', 'var(--blx-d) flex').ok).toBe(false);
+    expect(validateDeclaration('width', 'var(--evil)')).toMatchObject({ ok: false, code: 'invalid-var' });
   });
 });
 

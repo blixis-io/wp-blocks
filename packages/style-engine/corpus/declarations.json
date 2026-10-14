@@ -131,11 +131,6 @@
       "normalized": "helvetica neue, arial, sans-serif"
     },
     {
-      "name": "font-family",
-      "value": "Source Sans 3, sans-serif",
-      "normalized": "source sans 3, sans-serif"
-    },
-    {
       "name": "background-image",
       "value": "linear-gradient(to right, #fff 0%, rgb(0 0 0 / 10%) 100%)",
       "normalized": "linear-gradient(to right, #fff 0%, rgb(0 0 0 / 10%) 100%)"
@@ -499,6 +494,86 @@
       "name": "box-sizing",
       "value": "border-box",
       "normalized": "border-box"
+    },
+    {
+      "name": "font-family",
+      "value": "\"Source Sans 3\", sans-serif",
+      "normalized": "\"Source Sans 3\", sans-serif"
+    },
+    {
+      "name": "font-family",
+      "value": "\"Open Sans\"",
+      "normalized": "\"Open Sans\""
+    },
+    {
+      "name": "grid-column",
+      "value": "hero",
+      "normalized": "hero"
+    },
+    {
+      "name": "grid-column",
+      "value": "hero / span 2",
+      "normalized": "hero / span 2"
+    },
+    {
+      "name": "flex",
+      "value": "1 1 min-content",
+      "normalized": "1 1 min-content"
+    },
+    {
+      "name": "aspect-ratio",
+      "value": "auto 16/9",
+      "normalized": "auto 16 / 9"
+    },
+    {
+      "name": "transition-property",
+      "value": "width, height",
+      "normalized": "width, height"
+    },
+    {
+      "name": "transition-timing-function",
+      "value": "cubic-bezier(0.4, 0, 0.2, 1)",
+      "normalized": "cubic-bezier(0.4, 0, 0.2, 1)"
+    },
+    {
+      "name": "transition-timing-function",
+      "value": "steps(4, jump-end), ease",
+      "normalized": "steps(4, jump-end), ease"
+    },
+    {
+      "name": "transition-delay",
+      "value": "-100ms",
+      "normalized": "-100ms"
+    },
+    {
+      "name": "border",
+      "value": "1px solid var(--blx-c)",
+      "normalized": "1px solid var(--blx-c)"
+    },
+    {
+      "name": "padding",
+      "value": "var(--blx-a) var(--blx-b)",
+      "normalized": "var(--blx-a) var(--blx-b)"
+    },
+    {
+      "name": "box-shadow",
+      "value": "0 1px 2px var(--blx-s)",
+      "normalized": "0 1px 2px var(--blx-s)"
+    },
+    {
+      "name": "font-family",
+      "value": "var(--blx-font), serif",
+      "normalized": "var(--blx-font), serif"
+    },
+    {
+      "name": "text-decoration-line",
+      "value": "none",
+      "normalized": "none"
+    },
+    {
+      "name": "font-family",
+      "value": "\"Arial\"",
+      "normalized": "\"Arial\""
     }
   ],
   "invalid": [
@@ -670,11 +745,6 @@
     {
       "name": "color",
       "value": "red !important",
-      "code": "forbidden-character"
-    },
-    {
-      "name": "font-family",
-      "value": "\"Arial\"",
       "code": "forbidden-character"
     },
     {
@@ -935,7 +1005,7 @@
     {
       "name": "width",
       "value": "calc(1px+2px)",
-      "code": "invalid-value"
+      "code": "syntax"
     },
     {
       "name": "width",
@@ -1068,11 +1138,6 @@
       "code": "invalid-value"
     },
     {
-      "name": "transition-property",
-      "value": "width",
-      "code": "invalid-value"
-    },
-    {
       "name": "transition-duration",
       "value": "-1s",
       "code": "invalid-value"
@@ -1116,6 +1181,131 @@
       "name": "font-family",
       "value": "---blx-x",
       "code": "invalid-value"
+    },
+    {
+      "name": "font-family",
+      "value": "Source Sans 3, sans-serif",
+      "code": "invalid-value"
+    },
+    {
+      "name": "color",
+      "value": "var(--blx-x) garbage",
+      "code": "invalid-value"
+    },
+    {
+      "name": "color",
+      "value": "var(--blx-a) red",
+      "code": "invalid-value"
+    },
+    {
+      "name": "color",
+      "value": "var(--blx-x) / 1px",
+      "code": "invalid-value"
+    },
+    {
+      "name": "border-width",
+      "value": "10%",
+      "code": "invalid-value"
+    },
+    {
+      "name": "box-shadow",
+      "value": "0 0 -2px red",
+      "code": "invalid-value"
+    },
+    {
+      "name": "background-position",
+      "value": "left left",
+      "code": "invalid-value"
+    },
+    {
+      "name": "background-position",
+      "value": "top bottom",
+      "code": "invalid-value"
+    },
+    {
+      "name": "text-decoration-line",
+      "value": "none underline",
+      "code": "invalid-value"
+    },
+    {
+      "name": "width",
+      "value": "12345678901px",
+      "code": "syntax"
+    },
+    {
+      "name": "font-family",
+      "value": "\"a;b\"",
+      "code": "forbidden-character"
+    },
+    {
+      "name": "font-family",
+      "value": "\"a\" b",
+      "code": "invalid-value"
+    },
+    {
+      "name": "font-family",
+      "value": "\"a\\\\b\"",
+      "code": "forbidden-character"
+    },
+    {
+      "name": "font-family",
+      "value": "\"\"",
+      "code": "syntax"
+    },
+    {
+      "name": "font-family",
+      "value": "\"unterminated",
+      "code": "syntax"
+    },
+    {
+      "name": "width",
+      "value": "\"10px\"",
+      "code": "forbidden-character"
+    },
+    {
+      "name": "transition-timing-function",
+      "value": "cubic-bezier(2, 0, 0, 1)",
+      "code": "invalid-value"
+    },
+    {
+      "name": "transition-timing-function",
+      "value": "steps(0)",
+      "code": "invalid-value"
+    },
+    {
+      "name": "transition-timing-function",
+      "value": "cubic-bezier(0, 0, 1)",
+      "code": "invalid-value"
+    },
+    {
+      "name": "transition-delay",
+      "value": "-1px",
+      "code": "invalid-value"
+    },
+    {
+      "name": "grid-column",
+      "value": "span",
+      "code": "invalid-value"
+    },
+    {
+      "name": "grid-column",
+      "value": "inherit-ish span 2",
+      "code": "invalid-value"
+    },
+    {
+      "name": "border-left",
+      "value": "none+0",
+      "code": "syntax"
+    },
+    {
+      "name": "grid-row",
+      "value": "--",
+      "code": "invalid-value"
+    },
+    {
+      "name": "width",
+      "value": "calc(1px)calc(2px)",
+      "code": "syntax"
     }
   ]
 }

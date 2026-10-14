@@ -8,6 +8,7 @@ export type Component =
   | { t: 'dimension'; v: string; unit: string }
   | { t: 'percent'; v: string }
   | { t: 'hash'; v: string }
+  | { t: 'string'; v: string }
   | { t: 'fn'; name: string; children: Component[] }
   | { t: 'comma' }
   | { t: 'slash' }
@@ -17,7 +18,7 @@ export type Component =
 export type ParseResult = { ok: true; components: Component[] } | ({ ok: false } & CssFailure);
 
 /** Characters that never appear in an allowed value: escapes, statement/block/at-rule syntax, strings, comments' `*` is handled separately. */
-const FORBIDDEN = new Set([
+export const FORBIDDEN_CHARACTERS = [
   '\\',
   ';',
   '{',
@@ -40,7 +41,8 @@ const FORBIDDEN = new Set([
   '?',
   '=',
   '_',
-]);
+];
+const FORBIDDEN = new Set(FORBIDDEN_CHARACTERS);
 
 const isDigit = (c: string): boolean => c >= '0' && c <= '9' && c.length === 1;
 const isAlpha = (c: string): boolean => c.length === 1 && ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'));
@@ -94,7 +96,8 @@ interface Frame {
  * backtracking): printable ASCII only, no escapes, comments, strings, `;`, braces or at-rules, bounded length, components
  * and nesting. Identifiers, units and function names are lower-cased. It does not decide what is allowed; the grammar does.
  */
-export function parseValue(value: string): ParseResult {
+export function parseValue(value: string, options: { strings?: boolean } = {}): ParseResult {
+  const strings = options.strings === true;
   if (value.length > CSS_LIMITS.maxValueLength)
     return fail('value-too-long', `longer than ${String(CSS_LIMITS.maxValueLength)} characters`);
   for (let i = 0; i < value.length; i += 1) {
@@ -105,7 +108,8 @@ export function parseValue(value: string): ParseResult {
         'forbidden-character',
         'only printable ASCII is allowed (no control, newline or non-ASCII characters)',
       );
-    if (FORBIDDEN.has(c)) return fail('forbidden-character', `the character "${c}" is not allowed in a value`);
+    if (FORBIDDEN.has(c) && !(strings && c === '"'))
+      return fail('forbidden-character', `the character "${c}" is not allowed in a value`);
   }
   if (value.includes('/*') || value.includes('*/')) return fail('forbidden-character', 'comments are not allowed');
 
@@ -113,7 +117,11 @@ export function parseValue(value: string): ParseResult {
   let count = 0;
   let i = 0;
   const top = (): Frame => at(stack, stack.length - 1);
+  const VALUE = new Set(['ident', 'number', 'dimension', 'percent', 'hash', 'string', 'fn']);
+  // Two value tokens with nothing between them (`none+0`, `)calc(`) would serialize into different tokens: refuse them.
+  const adjacent = (c: Component): boolean => VALUE.has(c.t) && VALUE.has(top().children.at(-1)?.t ?? '');
   const push = (c: Component): ParseResult | null => {
+    if (adjacent(c)) return fail('syntax', 'values must be separated by whitespace or an operator');
     count += 1;
     if (count > CSS_LIMITS.maxComponents)
       return fail('too-complex', `more than ${String(CSS_LIMITS.maxComponents)} components`);
@@ -131,13 +139,16 @@ export function parseValue(value: string): ParseResult {
     } else if (c === '(') {
       if (stack.length > CSS_LIMITS.maxDepth)
         return fail('too-complex', `nesting deeper than ${String(CSS_LIMITS.maxDepth)} levels`);
+      count += 1;
       stack.push({ name: '', children: [] });
       i += 1;
     } else if (c === ')') {
       if (stack.length === 1) return fail('syntax', 'unbalanced ")"');
       const frame = at(stack, stack.length - 1);
       stack.pop();
-      top().children.push({ t: 'fn', name: frame.name, children: tidy(frame.children) });
+      const closed: Component = { t: 'fn', name: frame.name, children: tidy(frame.children) };
+      if (adjacent(closed)) return fail('syntax', 'values must be separated by whitespace or an operator');
+      top().children.push(closed);
       i += 1;
     } else if (c === ',') {
       error = push({ t: 'comma' });
@@ -148,6 +159,13 @@ export function parseValue(value: string): ParseResult {
     } else if (c === '*') {
       error = push({ t: 'op', v: '*' });
       i += 1;
+    } else if (c === '"') {
+      // Only where the caller opted in (font family names): a short, plain name; no escapes can occur, `\` is forbidden above.
+      const end = value.indexOf('"', i + 1);
+      const text = end < 0 ? '' : value.slice(i + 1, end);
+      if (!/^[A-Za-z0-9][A-Za-z0-9 -]{0,62}$/.test(text)) return fail('syntax', 'invalid quoted name');
+      error = push({ t: 'string', v: text });
+      i = end + 1;
     } else if (c === '#') {
       let j = i + 1;
       while (isHex(value[j] ?? '')) j += 1;
@@ -169,7 +187,7 @@ export function parseValue(value: string): ParseResult {
         if (!isDigit(value[j] ?? '')) return fail('syntax', 'invalid number');
         while (isDigit(value[j] ?? '')) j += 1;
       }
-      if (j - startDigits > CSS_LIMITS.maxDigits + 1)
+      if (j - startDigits - (value.slice(startDigits, j).includes('.') ? 1 : 0) > CSS_LIMITS.maxDigits)
         return fail('syntax', `numbers may have at most ${String(CSS_LIMITS.maxDigits)} digits`);
       const text = normalizeNumber(value.slice(i, j));
       if (value[j] === '%') {
@@ -192,6 +210,7 @@ export function parseValue(value: string): ParseResult {
       if (value[j] === '(') {
         if (stack.length > CSS_LIMITS.maxDepth)
           return fail('too-complex', `nesting deeper than ${String(CSS_LIMITS.maxDepth)} levels`);
+        count += 1;
         stack.push({ name, children: [] });
         j += 1;
       } else {
@@ -227,6 +246,9 @@ export function serialize(list: readonly Component[]): string {
         break;
       case 'hash':
         out += `#${c.v}`;
+        break;
+      case 'string':
+        out += `"${c.v}"`;
         break;
       case 'fn':
         out += `${c.name}(${serialize(c.children)})`;

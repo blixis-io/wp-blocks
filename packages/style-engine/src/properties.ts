@@ -5,9 +5,9 @@
  */
 export type Kind =
   | { k: 'keywords'; values: string[] }
-  | { k: 'keyword-list'; values: string[]; max: number }
+  | { k: 'keyword-list'; values: string[]; max: number; exclusive?: string }
   | { k: 'length'; neg?: boolean; pct?: boolean; extra?: string[] }
-  | { k: 'box'; neg?: boolean; extra?: string[] }
+  | { k: 'box'; neg?: boolean; pct?: boolean; extra?: string[] }
   | { k: 'color' }
   | { k: 'color-list'; max: number }
   | { k: 'number'; min: number; max: number; pct?: boolean }
@@ -26,7 +26,8 @@ export type Kind =
   | { k: 'aspect-ratio' }
   | { k: 'flex' }
   | { k: 'grid-line' }
-  | { k: 'times' }
+  | { k: 'times'; neg?: boolean }
+  | { k: 'easing'; max: number }
   | { k: 'ident-list'; values: string[]; max: number };
 
 /** Keywords every property accepts as its only value. */
@@ -62,6 +63,16 @@ export const GRADIENT_FUNCTIONS = [
   'repeating-conic-gradient',
 ] as const;
 export const TRACK_FUNCTIONS = ['repeat', 'minmax', 'fit-content'] as const;
+export const EASING_FUNCTIONS = ['cubic-bezier', 'steps'] as const;
+export const EASING_KEYWORDS = [
+  'ease',
+  'ease-in',
+  'ease-out',
+  'ease-in-out',
+  'linear',
+  'step-start',
+  'step-end',
+] as const;
 export const TRANSFORM_FUNCTIONS = [
   'translate',
   'translatex',
@@ -164,11 +175,11 @@ const entries: [string, Kind][] = [
   ['max-width', size(['none', 'min-content', 'max-content', 'fit-content'])],
   ['max-height', size(['none', 'min-content', 'max-content', 'fit-content'])],
   // Spacing
-  ['margin', { k: 'box', neg: true, extra: ['auto'] }],
+  ['margin', { k: 'box', neg: true, pct: true, extra: ['auto'] }],
   ...SIDES.map((s): [string, Kind] => [`margin-${s}`, { k: 'length', neg: true, pct: true, extra: ['auto'] }]),
-  ['padding', { k: 'box' }],
+  ['padding', { k: 'box', pct: true }],
   ...SIDES.map((s): [string, Kind] => [`padding-${s}`, { k: 'length', pct: true }]),
-  ['gap', { k: 'box' }],
+  ['gap', { k: 'box', pct: true }],
   ['row-gap', { k: 'length', pct: true, extra: ['normal'] }],
   ['column-gap', { k: 'length', pct: true, extra: ['normal'] }],
   // Flexbox and grid
@@ -221,7 +232,10 @@ const entries: [string, Kind][] = [
   ['word-spacing', { k: 'length', neg: true, extra: ['normal'] }],
   ['text-align', kw('left', 'right', 'center', 'justify', 'start', 'end')],
   ['text-transform', kw('none', 'uppercase', 'lowercase', 'capitalize')],
-  ['text-decoration-line', { k: 'keyword-list', values: ['none', 'underline', 'overline', 'line-through'], max: 3 }],
+  [
+    'text-decoration-line',
+    { k: 'keyword-list', values: ['none', 'underline', 'overline', 'line-through'], max: 3, exclusive: 'none' },
+  ],
   ['text-decoration-style', kw('solid', 'double', 'dotted', 'dashed', 'wavy')],
   ['text-decoration-color', { k: 'color' }],
   ['text-decoration-thickness', { k: 'length', pct: true, extra: ['auto', 'from-font'] }],
@@ -269,7 +283,7 @@ const entries: [string, Kind][] = [
   // Border
   ['border', { k: 'border' }],
   ...SIDES.map((s): [string, Kind] => [`border-${s}`, { k: 'border' }]),
-  ['border-width', { k: 'box', extra: ['thin', 'medium', 'thick'] }],
+  ['border-width', { k: 'box', pct: false, extra: ['thin', 'medium', 'thick'] }],
   ['border-style', { k: 'keyword-list', values: BORDER_STYLES, max: 4 }],
   ['border-color', { k: 'color-list', max: 4 }],
   ...SIDES.flatMap((s): [string, Kind][] => [
@@ -285,20 +299,36 @@ const entries: [string, Kind][] = [
   ['transform', { k: 'transform' }],
   ['transform-origin', { k: 'position' }],
   ['transition-duration', { k: 'times' }],
-  ['transition-delay', { k: 'times' }],
-  [
-    'transition-timing-function',
-    {
-      k: 'ident-list',
-      values: ['ease', 'ease-in', 'ease-out', 'ease-in-out', 'linear', 'step-start', 'step-end'],
-      max: 4,
-    },
-  ],
+  ['transition-delay', { k: 'times', neg: true }],
+  ['transition-timing-function', { k: 'easing', max: 4 }],
   [
     'transition-property',
     {
       k: 'ident-list',
-      values: ['all', 'none', 'color', 'background-color', 'border-color', 'opacity', 'transform', 'box-shadow'],
+      values: [
+        'all',
+        'none',
+        'color',
+        'background-color',
+        'border-color',
+        'opacity',
+        'transform',
+        'box-shadow',
+        'width',
+        'height',
+        'margin',
+        'padding',
+        'top',
+        'right',
+        'bottom',
+        'left',
+        'gap',
+        'border-radius',
+        'font-size',
+        'letter-spacing',
+        'background-position',
+        'visibility',
+      ],
       max: 6,
     },
   ],
