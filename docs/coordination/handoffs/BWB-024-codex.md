@@ -1,0 +1,14 @@
+# Handoff: independent review of BWB-024 (scoped deterministic CSS compiler)
+
+READ-ONLY, offline. Branch `feat/24-css-compiler`. Read: `docs/architecture/CSS-COMPILER.md`, `docs/architecture/adrs/0005-style-resolution-and-css-output.md` (sections 1-3 and Test strategy), `packages/style-engine/src/compile.ts`, `hash.ts`, `compile.test.ts`, `cascade.test-helper.ts`, `tests/fixtures/style-resolution/cases.json` and `verify.py`, `docs/architecture/CSS-VALIDATION.md`.
+
+Questions:
+1. Does the emitted CSS implement ADR 0005? Check the layer list and index arithmetic (`layerIndex`), nesting of `@media` inside the auto-mode media query (especially `not all and (prefers-color-scheme:dark)`), the auto and explicit scopes (`:where(html:not([data-theme="light"]):not([data-theme="dark"]))`), state suffixes, and whether rules in the same layer with different breakpoints and class orders always end up in the right order after block merging and sorting (merging identical blocks across class orders, breakpoint rank vs class order, mode rules emitted twice).
+2. Can deduplication or sorting change cascade results? Look for a case where two blocks that conflict end up in an order different from the ADR key, or where merging selectors changes behaviour. Is the total order really independent of document order?
+3. Class name derivation: sha256 of `documentId:elementId` (12 hex) and of the class id: collisions, ambiguity of the separator, the global-class name being shared across documents, PHP parity of `hash('sha256')`. Is `sha256Hex` correct for all lengths (padding at 55/56/63/64 bytes, large inputs)? Only 3 vectors are tested.
+4. Security: anything user-controlled reaching a selector, layer name, media query or comment; declarations only via sanitize; token names/values; can `</style>` or `-->` appear in the output; breakpoint ids/widths; huge inputs (time, memory) in `compile`.
+5. Fixtures and tests: the cascade evaluator in the tests is my own; what could be wrong with it so that wrong CSS passes? Is anything in the fixtures skipped (token origin)? Are the random equivalence test and the presence matrix sufficient? Which mutations of `compile.ts` would still pass?
+6. Declaration ordering (shorthand before longhand by hyphen count): counter-examples (`border-width` vs `border-top`, `gap` vs `row-gap`, `overflow` / `overflow-x`, `flex` / `flex-basis`, `grid-column`, `border-radius` vs corners, `text-decoration-*`)? Is it a hazard that the same declaration set from different sources merges into one block?
+7. API: issues and paths, `classNames` semantic (element's own class only when it has rules), unused classes dropped, `usable` skipping duplicates, handling of `classIds` duplicates on one element, tokens. Anything the PHP twin (BWB-027) cannot reproduce byte for byte from this description?
+
+Output: Blocker/Major/Minor with file + fix wording; agreements; what you could not verify.

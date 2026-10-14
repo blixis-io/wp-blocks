@@ -1,0 +1,23 @@
+## Findings
+
+**Blocker:** None confirmed for schema-valid inputs.
+
+**Major — Global class hash collisions are silent.** [compile.ts](packages/style-engine/src/compile.ts:235) checks collisions between element class names, but not between distinct global class IDs. Two IDs with the same 12-hex digest receive the same selector; a rule from either class can then style elements carrying the other. Detect collisions across global IDs and report or reject them before emission. Add a forced-collision test covering two classes used on different elements.
+
+**Major — The conformance tests cannot establish browser cascade parity.** [cascade.test-helper.ts](packages/style-engine/src/cascade.test-helper.ts:37) recognizes the compiler’s syntax but simulates matching and winner selection; it does not parse CSS as a browser, expand shorthands, resolve inheritance, or compute `var()` on an element. [compile.test.ts](packages/style-engine/src/compile.test.ts:424) also skips the fixture containing token origin. Add browser computed-style cases for the owner example, tokens used through `var()`, conflicting classes, both auto preferences, nested mode and breakpoint media queries, and shorthand overlap. Keep the evaluator as a fast ordering check.
+
+**Major — Input work is unbounded at the compiler boundary.** [compile.ts](packages/style-engine/src/compile.ts:235) validates every supplied class, including unused ones, and [compile.ts](packages/style-engine/src/compile.ts:331) processes every token. The document has upstream limits, but these two arrays have no compiler limit or stated validated-input precondition. Bound them at the entry point, or enforce and document a validated registry contract before calling `compile`.
+
+**Minor — Declaration order does not consistently put narrower border settings last.** [compile.ts](packages/style-engine/src/compile.ts:112) uses hyphen count and alphabetical order. Thus `border-top` comes *before* `border-width`, so the latter replaces its top width; `border-color` comes *before* `border-top`, so the latter replaces its top color. The listed `gap`/`row-gap`, `overflow`/`overflow-x`, `flex`/`flex-basis`, `grid-column`/its longhands, `border-radius`/corner properties, and `text-decoration`/its longhands have the expected broad-before-narrow order. Define an explicit overlap order for border properties, or reject ambiguous overlapping declarations in one rule. The current behavior is deterministic and is partly disclosed in [CSS-COMPILER.md](docs/architecture/CSS-COMPILER.md:35).
+
+**Minor — API recovery and error contract need tightening.** [compile.ts](packages/style-engine/src/compile.ts:201) reserves a rule’s identity before sanitization, so an entirely invalid first rule causes a valid duplicate to be skipped. Repeated `classIds` are silently collapsed in `classNames`, although commands reject them. The documented “nothing throws” contract also depends on valid ASCII IDs: [hash.ts](packages/style-engine/src/hash.ts:19) throws for non-ASCII input. State the required validation precondition or return issues for malformed input, and test these cases.
+
+## Agreements with ADR 0005
+
+The 42 declared layers and `layerIndex` arithmetic match origin → state → kind. Sorting uses breakpoint rank before global class order. Grouping retains layer, breakpoint, class order, mode and declarations, so merging identical blocks does not change the winner for valid, collision-free IDs. The explicit and auto scopes are mutually exclusive; mode plus breakpoint output nests `max-width` inside the auto media query. State suffixes are inside `:where()`. No user-controlled rule value reaches a selector, layer name, media query or comment through the default hash path; declarations and tokens pass validation, and breakpoint widths are bounded.
+
+SHA-256 matched Node crypto at lengths 55, 56, 63, 64 and other boundaries through 100,000 bytes. The colon separator is unambiguous under the ID schema, which excludes colons. A global class name being shared across documents follows its class-ID-only derivation; PHP `hash('sha256', $ascii)` should match the TypeScript digest for those IDs. The 48-bit truncation still requires the collision handling above.
+
+## Verification limits
+
+`verify.py` passed: 13 cases, 192 matrix contexts and 3,000 random sets. I did not run a browser computed-style test, a PHP twin, or the Vitest suite; no files were changed. The random and presence tests exercise mainly `color` and cannot catch the border ordering issue or token inheritance. A mutation changing the relative order of `border-top` and `border-width`, for example, would pass the present conformance checks.

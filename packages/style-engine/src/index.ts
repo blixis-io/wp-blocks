@@ -9,3 +9,19 @@ export {
   type DeclarationIssue,
   type DeclarationResult,
 } from './validate.ts';
+export {
+  COMPILER_VERSION,
+  COMPILE_LIMITS,
+  DEFAULT_BREAKPOINTS,
+  LAYER_ORDER,
+  compile,
+  type BreakpointDef,
+  type CompileInput,
+  type CompileIssue,
+  type CompileIssueCode,
+  type CompileOptions,
+  type CompileResult,
+  type GlobalClass,
+  type TokenValue,
+} from './compile.ts';
+export { sha256Hex, shortHash } from './hash.ts';
