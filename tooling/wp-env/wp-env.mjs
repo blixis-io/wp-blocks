@@ -84,6 +84,17 @@ async function install() {
   console.log(`\nWordPress is ready at ${base} (admin / password; development only, bound to localhost).`);
 }
 
+// Apache may close an idle keep-alive connection that undici is about to reuse ("other side closed"); one retry on a fresh
+// connection is the standard remedy and never repeats a request that reached the server (the failure happens before it).
+async function http(url, options) {
+  try {
+    return await fetch(url, options);
+  } catch (error) {
+    if (!(error instanceof TypeError)) throw error;
+    return await fetch(url, options);
+  }
+}
+
 async function smoke() {
   const failures = [];
   const check = (ok, message) => {
@@ -159,6 +170,126 @@ async function smoke() {
     missing.text.includes('Page not found') && missing.text.includes('class="skip-link'),
     'the 404 page is rendered by the theme',
   );
+
+  if (hasPackages) {
+    const wpCmd = (...args) => capture(['run', '--rm', '-T', 'cli', 'wp', ...args]);
+    const command = (...args) => {
+      const result = wpCmd(...args);
+      check(result.status === 0, `wp ${args.join(' ')} succeeds`);
+      return String(result.stdout ?? '').trim();
+    };
+    const inactive = command('theme', 'list', '--status=inactive', '--field=name').split('\n')[0];
+    check(Boolean(inactive), 'an inactive theme is available for activation checks');
+    if (inactive) {
+      const previous = wpCmd('option', 'get', 'blixis_setup', '--format=json');
+      command('theme', 'activate', inactive);
+      wpCmd('option', 'delete', 'blixis_setup');
+      command('theme', 'activate', 'blixis');
+      const initial = command('option', 'get', 'blixis_setup', '--format=json');
+      try {
+        const state = JSON.parse(initial);
+        check(state.version === 1 && state.status === 'not_started', 'first activation creates setup status');
+        check(
+          command('eval', "echo wp_load_alloptions()['blixis_setup'] ?? 'not-autoloaded';") === 'not-autoloaded',
+          'setup option is not autoloaded',
+        );
+      } catch {
+        check(false, 'first activation creates valid JSON setup status');
+      }
+
+      const loginAs = async (name) => {
+        const loginPage = await http(`${base}/wp-login.php`, { redirect: 'manual' });
+        let cookies = loginPage.headers.getSetCookie().map((value) => value.split(';')[0]);
+        const response = await http(`${base}/wp-login.php`, {
+          method: 'POST',
+          redirect: 'manual',
+          headers: {
+            'content-type': 'application/x-www-form-urlencoded',
+            cookie: cookies.join('; '),
+          },
+          body: new URLSearchParams({
+            log: name,
+            pwd: 'password',
+            'wp-submit': 'Log In',
+            redirect_to: `${base}/wp-admin/themes.php`,
+            testcookie: '1',
+          }),
+        });
+        cookies = [...cookies, ...response.headers.getSetCookie().map((value) => value.split(';')[0])];
+        check(response.status === 302, `${name} login redirects`);
+        return cookies.join('; ');
+      };
+      const adminCookie = await loginAs('admin');
+      const editorCookie = await loginAs('editor_ed');
+      const adminThemes = await http(`${base}/wp-admin/themes.php`, {
+        headers: { cookie: adminCookie },
+      });
+      const editorThemes = await http(`${base}/wp-admin/themes.php`, {
+        headers: { cookie: editorCookie },
+      });
+      const adminHtml = await adminThemes.text();
+      check(adminHtml.includes('Set up the Blixis theme when you are ready.'), 'admin sees the setup notice');
+      check(
+        !(await editorThemes.text()).includes('Set up the Blixis theme when you are ready.'),
+        'editor does not see the setup notice',
+      );
+      check(
+        command('eval', "echo user_can(get_user_by('login', 'editor_ed'), 'edit_theme_options') ? 'yes' : 'no';") ===
+          'no',
+        'editor lacks edit_theme_options',
+      );
+      for (const [name, cookie] of [
+        ['admin', adminCookie],
+        ['editor_ed', editorCookie],
+      ]) {
+        const response = await http(`${base}/wp-admin/admin-post.php`, {
+          method: 'POST',
+          redirect: 'manual',
+          headers: { cookie, 'content-type': 'application/x-www-form-urlencoded' },
+          body: 'action=blixis_setup_dismiss',
+        });
+        check(response.status === 403, `${name} cannot dismiss without a nonce`);
+        const getResponse = await http(`${base}/wp-admin/admin-post.php?action=blixis_setup_start`, {
+          redirect: 'manual',
+          headers: { cookie },
+        });
+        check(getResponse.status === 403, `${name} cannot start via GET`);
+      }
+      const afterDenied = JSON.parse(command('option', 'get', 'blixis_setup', '--format=json'));
+      check(afterDenied.status === 'not_started', 'rejected requests preserve setup status');
+      for (const action of ['start', 'dismiss']) {
+        const nonce = adminHtml.match(new RegExp(`name="blixis_setup_nonce_${action}" value="([a-z0-9]+)"`))?.[1];
+        check(Boolean(nonce), `${action} form has a nonce`);
+        if (nonce) {
+          const response = await http(`${base}/wp-admin/admin-post.php`, {
+            method: 'POST',
+            redirect: 'manual',
+            headers: { cookie: adminCookie, 'content-type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ action: `blixis_setup_${action}`, [`blixis_setup_nonce_${action}`]: nonce }),
+          });
+          check(response.status === 302, `${action} redirects after an authorized POST`);
+          const state = JSON.parse(command('option', 'get', 'blixis_setup', '--format=json'));
+          check(state.status === (action === 'start' ? 'in_progress' : 'dismissed'), `${action} updates site status`);
+        }
+      }
+      command(
+        'option',
+        'update',
+        'blixis_setup',
+        '{"version":1,"status":"completed","updated_at":"2026-10-14T10:00:00+00:00"}',
+        '--format=json',
+      );
+      command('theme', 'activate', inactive);
+      command('theme', 'activate', 'blixis');
+      const reactivated = JSON.parse(command('option', 'get', 'blixis_setup', '--format=json'));
+      check(reactivated.status === 'completed', 'reactivation preserves completed setup');
+      if (previous.status === 0) {
+        command('option', 'update', 'blixis_setup', String(previous.stdout).trim(), '--format=json');
+      } else {
+        command('option', 'delete', 'blixis_setup');
+      }
+    }
+  }
   // WP_DEBUG_LOG writes PHP warnings, notices and deprecations to wp-content/debug.log. Only what this run appended counts
   // (the log may hold older entries), and nothing in it may point into the theme.
   const themeErrors = out([

@@ -1,0 +1,5 @@
+Implemented the **BWB-033 setup entry point** on `feat/33-theme-setup-entry`. [SetupState.php](wordpress/theme/src/SetupState.php) keeps the site-wide versioned status separate from each user’s resume step, validates stored data, and initializes the option only when absent. [SetupAdmin.php](wordpress/theme/src/SetupAdmin.php) adds the Appearance submenu, placeholder page, and dismissible notice with capability and nonce checks. I also added [unit tests](wordpress/theme/tests/SetupStateTest.php), extended the [WordPress smoke checks](tooling/wp-env/wp-env.mjs), and documented the schema and security model in [THEME.md](docs/architecture/THEME.md).
+
+**Verification:** Prettier, PHPCS, PHPUnit (140 tests), PHPStan in single-process debug mode, and `pnpm build` passed. The standard `composer run check` and `pnpm run check` cannot pass in this sandbox because their PHPStan runs are denied permission to open a local TCP listener. `pnpm wp:start` was denied access to the Docker socket, so the WordPress smoke checks still need to run in an environment with Docker access.
+
+No commit or push was made.
