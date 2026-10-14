@@ -21,6 +21,28 @@ require_once \dirname( __DIR__ ) . '/src/TokenDraft.php';
 
 /** Pure parsing and validation. */
 final class FontLibraryTest extends TestCase {
+	/** The shape WordPress stores (slug in post_name, stack in content, faces as child posts) is understood. */
+	public function test_wordpress_post_shape(): void {
+		$json = FontLibrary::from_post_data(
+			'montserrat',
+			'Montserrat',
+			'{"fontFamily":"Montserrat, sans-serif","preview":"https://s.w.org/x.svg"}',
+			array(
+				'{"src":"https://example.test/a.woff2","fontWeight":"400","fontStyle":"normal","fontFamily":"Montserrat"}',
+				'{"fontWeight":"700","fontStyle":"italic","fontFamily":"Montserrat"}',
+				'not json',
+			)
+		);
+		$this->assertNotNull( $json );
+		$family = FontLibrary::parse_family( (string) $json );
+		$this->assertNotNull( $family );
+		$this->assertSame( 'montserrat', $family['slug'] );
+		$this->assertSame( 'Montserrat', $family['css_family'] );
+		$this->assertCount( 2, $family['faces'] );
+		$this->assertNull( FontLibrary::from_post_data( 'x', 'X', 'not json', array() ) );
+		$this->assertSame( 'Open Sans', FontLibrary::parse_family( (string) FontLibrary::from_post_data( 'open-sans', 'Open Sans', '{"fontFamily":"\'Open Sans\', sans-serif"}', array() ) )['css_family'] ?? null );
+	}
+
 	/** A real family and variable range produce one safe stack. */
 	public function test_parse_and_stack(): void {
 		$family = FontLibrary::parse_family( '{"slug":"inter","name":"Inter","fontFamily":"Inter","fontFace":[{"fontWeight":"100 900","fontStyle":"normal"},{"fontWeight":"700","fontStyle":"italic"}]}' );

@@ -112,6 +112,45 @@ final class FontLibrary {
 	}
 
 	/**
+	 * Convert WordPress Font Library post data into the JSON accepted by parse_family().
+	 *
+	 * WordPress keeps the slug in post_name, the display name in post_title, a CSS stack such as
+	 * `Montserrat, sans-serif` in the family content and each face in its own child post.
+	 *
+	 * @param string        $slug          Family post_name.
+	 * @param string        $title         Family post_title.
+	 * @param string        $content       Family post_content (JSON).
+	 * @param array<string> $face_contents Face post_content values (JSON).
+	 * @return string|null JSON for parse_family(), or null for unusable data.
+	 */
+	public static function from_post_data( string $slug, string $title, string $content, array $face_contents ): ?string {
+		$family = \json_decode( $content, true );
+		if ( ! \is_array( $family ) || ! \is_string( $family['fontFamily'] ?? null ) ) {
+			return null;
+		}
+		$first = \trim( \explode( ',', $family['fontFamily'] )[0], " \t\n\r\0\x0B\"'" );
+		$faces = array();
+		foreach ( $face_contents as $face_json ) {
+			$face = \is_string( $face_json ) ? \json_decode( $face_json, true ) : null;
+			if ( \is_array( $face ) ) {
+				$faces[] = array(
+					'fontWeight' => $face['fontWeight'] ?? '400',
+					'fontStyle'  => $face['fontStyle'] ?? 'normal',
+				);
+			}
+		}
+		$encoded = \json_encode( // phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- Pure helper used without WordPress.
+			array(
+				'slug'       => $slug,
+				'name'       => $title,
+				'fontFamily' => $first,
+				'fontFace'   => $faces,
+			)
+		);
+		return false === $encoded ? null : $encoded;
+	}
+
+	/**
 	 * Return published Library families, cached for this request.
 	 *
 	 * @return list<array{slug: string, name: string, css_family: string, faces: list<array{weight: string, style: string}>}>
@@ -132,10 +171,6 @@ final class FontLibrary {
 		);
 		$json  = array();
 		foreach ( $posts as $post ) {
-			$family = \json_decode( $post->post_content, true );
-			if ( ! \is_array( $family ) ) {
-				continue;
-			}
 			$faces = get_posts(
 				array(
 					'post_type'   => 'wp_font_face',
@@ -144,18 +179,9 @@ final class FontLibrary {
 					'numberposts' => 100,
 				)
 			);
-			if ( $faces ) {
-				$family['fontFace'] = array();
-				foreach ( $faces as $face ) {
-					$decoded = \json_decode( $face->post_content, true );
-					if ( \is_array( $decoded ) ) {
-						$family['fontFace'][] = $decoded;
-					}
-				}
-			}
-			$json_entry = wp_json_encode( $family );
-			if ( \is_string( $json_entry ) ) {
-				$json[] = $json_entry;
+			$entry = self::from_post_data( $post->post_name, $post->post_title, $post->post_content, \array_map( static fn( $face ) => $face->post_content, $faces ) );
+			if ( null !== $entry ) {
+				$json[] = $entry;
 			}
 		}
 		$families = self::parse_families( $json );

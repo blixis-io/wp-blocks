@@ -400,7 +400,18 @@ async function smoke() {
               '--post_type=wp_font_family',
               '--post_status=publish',
               '--post_title=Smoke Inter',
-              '--post_content={"slug":"smoke-inter","name":"Smoke Inter","fontFamily":"Smoke Inter","fontFace":[{"fontWeight":"400","fontStyle":"normal"}]}',
+              '--post_name=smoke-inter',
+              '--post_content={"fontFamily":"Smoke Inter, sans-serif"}',
+              '--porcelain',
+            );
+            // WordPress stores each face as a child post (the shape the Font Library screen writes).
+            command(
+              'post',
+              'create',
+              '--post_type=wp_font_face',
+              '--post_status=publish',
+              `--post_parent=${fontPost.trim()}`,
+              '--post_content={"fontFamily":"Smoke Inter","fontWeight":"400","fontStyle":"normal","src":"https://example.test/smoke-inter.woff2"}',
               '--porcelain',
             );
             html = await stepPage(3);
