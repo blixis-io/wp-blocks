@@ -20,14 +20,17 @@ export type HistoryResult = { ok: true; history: History } | { ok: false; error:
 export const DEFAULT_HISTORY_LIMIT = 200;
 
 export function createHistory(document: BuilderDocument, limit: number = DEFAULT_HISTORY_LIMIT): History {
+  if (!Number.isInteger(limit) || limit < 1)
+    throw new RangeError(`history limit must be a positive integer (got ${String(limit)})`);
   return { document, past: [], future: [], limit };
 }
 
 /** Runs a new command. Success clears the redo stack; failure returns the error and leaves the history untouched. */
-export function execute(history: History, command: Command, ctx: CommandContext = {}): HistoryResult {
+export function execute(history: History, command: unknown, ctx: CommandContext = {}): HistoryResult {
   const result = applyCommand(history.document, command, ctx);
   if (!result.ok) return result;
-  const past = [...history.past, { command, inverse: result.inverse }];
+  // Store the inert snapshot that was applied, never the caller's (mutable) object.
+  const past = [...history.past, { command: result.command, inverse: result.inverse }];
   return {
     ok: true,
     history: {
@@ -70,7 +73,7 @@ export function redo(history: History, ctx: CommandContext = {}): HistoryResult 
     history: {
       ...history,
       document: result.document,
-      past: [...history.past, { command: entry.command, inverse: result.inverse }],
+      past: [...history.past, { command: result.command, inverse: result.inverse }],
       future: history.future.slice(0, -1),
     },
   };

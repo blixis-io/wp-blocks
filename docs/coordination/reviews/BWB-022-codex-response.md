@@ -1,0 +1,25 @@
+## Findings
+
+**Blocker — Commands can return documents that `validateDocument` rejects.** [apply.ts](packages/core/src/commands/apply.ts:121) checks an inserted subtree’s IDs, placement, depth and node count, but not its schema, style rule count, class references, reserved keys or document size. `update-props` checks JSON value shape but does not enforce the document’s reserved-key, nesting or byte limits; `set-style-rule` can append a 257th rule. Fix: validate every affected payload and the resulting document against the applicable limits before returning success, with regression tests for each boundary. This contradicts the guarantee in [COMMANDS.md](docs/architecture/COMMANDS.md:33).
+
+**Major — A valid property name can make undo fail.** [apply.ts](packages/core/src/commands/apply.ts:225) uses `key in node.props`. `toString` is a permitted property ID, but `toString in {}` is true through the prototype. Setting it records an inherited function as the previous value; applying the inverse then fails JSON validation. The set/unset conflict check at line 216 has the same inherited-key problem. Fix: use own-property checks throughout and test `toString` and similar permitted names.
+
+**Major — Removing a style rule loses data on undo.** [apply.ts](packages/core/src/commands/apply.ts:261) records only selector, declarations and index. The style schema permits unknown fields, so a removed rule with a future field is recreated without it. Fix: retain the complete removed rule in the inverse or provide a restore-rule command; test an unknown field’s round trip.
+
+**Major — Mutable aliases can change documents and history after execution.** [apply.ts](packages/core/src/commands/apply.ts:144) inserts the caller’s `element` object directly; `update-props` also retains nested values. [history.ts](packages/core/src/commands/history.ts:30) stores the original command by reference. Mutating a command after `execute` can change the recorded redo or a returned document without another command. Fix: take bounded inert snapshots of command payloads at the boundary and store those snapshots in history.
+
+**Major — Exported `restore` accepts stale or unrelated status records.** [apply.ts](packages/core/src/commands/apply.ts:103) silently skips missing records and writes any supplied status to any matching translation entry. A stale restore can overwrite a newer status, leave restored IDs orphaned, or set an active status for an ID still absent from the tree. Fix: restrict status records to restored subtree IDs, validate statuses and expected current state, and reject stale restores. Test direct `restore` calls as well as history undo.
+
+**Minor — History limits and failed undo need explicit handling.** [history.ts](packages/core/src/commands/history.ts:22) accepts `NaN`, fractions and negative limits; `NaN` defeats trimming. Undo can return an error if its context changes or its mutable entry has changed; it correctly leaves the history untouched, but that behavior has no test. Fix: validate a nonnegative integer limit and test failed undo and subsequent redo behavior.
+
+**Minor — Error and performance contracts need tighter evidence.** [apply.ts](packages/core/src/commands/apply.ts:119) does not contain exceptions from malformed runtime commands or a throwing `canNest` hook within its result type. Valid paths found from a valid document do not appear to reach `withChildren`’s path exception. `update-props` and style edits traverse the tree to find an ID; insert and move also measure trees. Typing’s likely hot path is the former, with an O(5,000-node) lookup per edit. Fix: define the runtime input and hook contract, return structured errors for admitted failures, and benchmark representative 5,000-node inspector edits before optimizing.
+
+## Agreements and test gaps
+
+Remove marks existing subtree translations across locales without dropping values; its inverse restores the statuses it changed, including when some locales have no entry. Move uses the destination index after removal, recalculates the destination path, rejects cycles and has the correct inverse index. The depth comparison allows exactly 32 levels, and the node comparison allows exactly 5,000 nodes. Class IDs are copied and checked against `classRefs`; style replacement stays in place and `emptyAs` preserves absent versus empty style lists.
+
+The seeded test exercises ordinary successful commands and round trips, but its generator creates shallow subtrees with no translations or unknown fields. It does not generate `restore` directly, boundary-sized documents, stale history, hostile payloads, or assertions that each command type succeeds per seed. A broken orphan-marking path might be caught when removal happens, but coverage of that event is not asserted. Add targeted failing-case tests for the findings above; keep the random test as a supplement.
+
+## Verification limits
+
+This was a read-only source review. I did not run Vitest or benchmark editor interactions, so the performance concern is unmeasured. The working tree was clean on `feat/22-commands-undo-redo`; no files were changed.

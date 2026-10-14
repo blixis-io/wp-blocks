@@ -1,4 +1,5 @@
 export { applyCommand } from './apply.ts';
+export { CommandSchema } from './schema.ts';
 export {
   DEFAULT_HISTORY_LIMIT,
   canRedo,

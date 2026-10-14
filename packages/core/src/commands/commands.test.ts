@@ -5,6 +5,7 @@ import {
   applyCommand,
   canRedo,
   canUndo,
+  measure,
   createHistory,
   execute,
   redo,
@@ -155,9 +156,7 @@ describe('insert / restore', () => {
     expect(errorOf(doc, { type: 'insert', parentId: 'nope', index: 0, element: el('el-x') })).toBe('parent-not-found');
     expect(errorOf(doc, { type: 'insert', parentId: null, index: 4, element: el('el-x') })).toBe('index-out-of-range');
     expect(errorOf(doc, { type: 'insert', parentId: null, index: -1, element: el('el-x') })).toBe('index-out-of-range');
-    expect(errorOf(doc, { type: 'insert', parentId: null, index: 0.5, element: el('el-x') })).toBe(
-      'index-out-of-range',
-    );
+    expect(errorOf(doc, { type: 'insert', parentId: null, index: 0.5, element: el('el-x') })).toBe('invalid-argument');
     expect(errorOf(doc, { type: 'insert', parentId: null, index: 0, element: el('el-b') })).toBe('duplicate-id');
     expect(
       errorOf(doc, { type: 'insert', parentId: null, index: 0, element: el('el-x', 'blixis/box', [el('el-x')]) }),
@@ -514,8 +513,10 @@ describe('command error codes', () => {
       'cycle',
       'depth-exceeded',
       'node-limit-exceeded',
+      'document-too-large',
       'disallowed-parent',
       'invalid-argument',
+      'stale-restore',
     ]);
   });
 });
@@ -531,6 +532,11 @@ function rng(seed: number): () => number {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
+
+const coverage = new Map<string, number>();
+const seen = (kind: string): void => {
+  coverage.set(kind, (coverage.get(kind) ?? 0) + 1);
+};
 
 describe('random command sequences keep every invariant', () => {
   const allIds = (nodes: readonly ElementNode[]): string[] => nodes.flatMap((n) => [n.id, ...allIds(n.children)]);
@@ -553,7 +559,19 @@ describe('random command sequences keep every invariant', () => {
       let command: Command;
       if (roll < 0.25) {
         counter += 1;
-        const kids = random() < 0.3 ? [el(`el-k${String(seed)}-${String(counter)}x`, pick(types))] : [];
+        const tag = `el-k${String(seed)}-${String(counter)}`;
+        const kids =
+          random() < 0.4
+            ? [
+                el(
+                  `${tag}x`,
+                  'blixis/box',
+                  random() < 0.5
+                    ? [el(`${tag}y`, pick(types), random() < 0.5 ? [el(`${tag}z`, 'blixis/box')] : [])]
+                    : [],
+                ),
+              ]
+            : [];
         command = {
           type: 'insert',
           parentId: parent(),
@@ -589,6 +607,15 @@ describe('random command sequences keep every invariant', () => {
       }
       if (result.history.document === before) expect(result.history.past.at(-1)?.command.type).toBe('set-style-rule'); // the only possible no-op
       valid(result.history.document); // unique ids, depth, orphan rules, class refs ... all still hold
+      seen(`command:${command.type}`);
+      seen(`inverse:${result.history.past[result.history.past.length - 1]?.inverse.type ?? 'none'}`);
+      if (
+        Object.values(result.history.document.translations).some((stream) =>
+          Object.values(stream).some((e) => e.status === 'orphaned'),
+        )
+      )
+        seen('state:orphaned-entries');
+      if (measure(result.history.document.root).depth >= 3) seen('state:deep-tree');
       const entry = result.history.past[result.history.past.length - 1];
       if (entry === undefined) throw new Error('missing history entry');
       expect(must(result.history.document, entry.inverse).document).toEqual(before); // exact inverse
@@ -611,5 +638,367 @@ describe('random command sequences keep every invariant', () => {
       h = r.history;
       expect(h.document, `redo to state ${String(i)}`).toEqual(snapshots[i]);
     }
+  });
+});
+
+describe('limits and payload checks (a command can never produce a document validateDocument rejects)', () => {
+  const insertEl = (element: unknown): unknown => ({ type: 'insert', parentId: null, index: 0, element });
+  const parseJson = (text: string): unknown => JSON.parse(text) as unknown;
+
+  it('validates the inserted subtree against the element schema, class references and value rules', () => {
+    const doc = baseDoc();
+    const rules = Array.from({ length: 257 }, (_, i) => ({ breakpoint: `bp${String(i)}`, declarations: {} }));
+    expect(errorOf(doc, insertEl({ ...el('el-x'), style: rules }) as Command)).toBe('invalid-argument');
+    expect(errorOf(doc, insertEl({ ...el('el-x'), classIds: ['cls-999'] }) as Command)).toBe('invalid-argument');
+    expect(errorOf(doc, insertEl({ ...el('el-x'), props: { ratio: 0.5 } }) as Command)).toBe('invalid-argument');
+    expect(errorOf(doc, insertEl({ ...el('el-x'), type: 'nope' }) as Command)).toBe('invalid-argument');
+    expect(
+      errorOf(
+        doc,
+        insertEl(
+          parseJson('{"id":"el-x","type":"blixis/box","props":{"opts":{"__proto__":1}},"children":[]}'),
+        ) as Command,
+      ),
+    ).toBe('invalid-argument');
+    expect(
+      errorOf(
+        doc,
+        insertEl(parseJson('{"id":"el-x","type":"blixis/box","props":{},"children":[],"constructor":1}')) as Command,
+      ),
+    ).toBe('invalid-argument');
+    expect(errorOf(doc, insertEl({ ...el('el-x'), classIds: ['cls-001'] }) as Command)).toBe('ok');
+  });
+
+  it('refuses a result larger than the document byte limit, even when each command alone is small enough', () => {
+    const big = (id: string): ElementNode => ({
+      id,
+      type: 'blixis/text',
+      props: { text: 'x'.repeat(1_200_000) },
+      children: [],
+    });
+    const first = must(baseDoc(), { type: 'insert', parentId: null, index: 0, element: big('el-big-1') });
+    expect(errorOf(first.document, { type: 'insert', parentId: null, index: 0, element: big('el-big-2') })).toBe(
+      'document-too-large',
+    );
+    expect(
+      errorOf(baseDoc(), {
+        type: 'insert',
+        parentId: null,
+        index: 0,
+        element: { ...big('el-huge'), props: { text: 'x'.repeat(2_200_000) } },
+      }),
+    ).toBe('invalid-argument');
+    expect(errorOf(first.document, { type: 'update-props', id: 'el-b', set: { text: 'y'.repeat(1_200_000) } })).toBe(
+      'document-too-large',
+    );
+  });
+
+  it('applies the same value rules to update-props payloads', () => {
+    const doc = baseDoc();
+    let deep: unknown = 1;
+    for (let i = 0; i < 200; i += 1) deep = [deep];
+    expect(errorOf(doc, { type: 'update-props', id: 'el-a', set: { x: deep } } as Command)).toBe('invalid-argument');
+    expect(errorOf(doc, parseJson('{"type":"update-props","id":"el-a","set":{"x":{"__proto__":1}}}') as Command)).toBe(
+      'invalid-argument',
+    );
+    expect(
+      errorOf(doc, parseJson('{"type":"update-props","id":"el-a","set":{"x":{"constructor":1}}}') as Command),
+    ).toBe('invalid-argument');
+  });
+
+  it('allows at most 256 style rules per element', () => {
+    let doc = baseDoc();
+    for (let i = 0; i < 256; i += 1)
+      doc = must(doc, {
+        type: 'set-style-rule',
+        id: 'el-b',
+        selector: { breakpoint: `bp${String(i)}` },
+        declarations: { color: 'red' },
+      }).document;
+    expect(
+      errorOf(doc, {
+        type: 'set-style-rule',
+        id: 'el-b',
+        selector: { breakpoint: 'one-more' },
+        declarations: { color: 'red' },
+      }),
+    ).toBe('invalid-argument');
+    expect(
+      errorOf(doc, {
+        type: 'set-style-rule',
+        id: 'el-b',
+        selector: { breakpoint: 'bp5' },
+        declarations: { color: 'blue' },
+      }),
+    ).toBe('ok'); // replacing is fine
+    valid(doc);
+  });
+
+  it('property ids that exist on every object prototype (toString, valueOf, hasOwnProperty) work, and undo works', () => {
+    const doc = baseDoc();
+    for (const key of ['toString', 'valueOf', 'hasOwnProperty', 'isPrototypeOf']) {
+      const set = must(doc, { type: 'update-props', id: 'el-b', set: { [key]: 'mine' } });
+      expect(set.document.root[1]?.props).toEqual({ [key]: 'mine' });
+      expect(must(set.document, set.inverse).document).toEqual(doc);
+      const replaced = must(set.document, { type: 'update-props', id: 'el-b', set: { [key]: 'again' } });
+      expect(must(replaced.document, replaced.inverse).document).toEqual(set.document);
+      expect(must(set.document, { type: 'update-props', id: 'el-b', unset: [key] }).document).toEqual(doc);
+      expect(must(doc, { type: 'update-props', id: 'el-b', unset: [key] }).document).toEqual(doc); // absent: harmless
+      expect(errorOf(doc, { type: 'update-props', id: 'el-b', set: { [key]: 1 }, unset: [key] })).toBe(
+        'invalid-argument',
+      );
+    }
+  });
+});
+
+describe('unknown fields survive removal and undo', () => {
+  it('a removed style rule comes back with every field, at its position', () => {
+    const base = baseDoc();
+    const rule = { mode: 'dark', declarations: { color: 'white' }, future: { keep: [1, 2] } };
+    const withRule: BuilderDocument = {
+      ...base,
+      root: base.root.map((n) =>
+        n.id === 'el-b' ? { ...n, style: [{ declarations: { color: 'black' } }, rule as never] } : n,
+      ),
+    };
+    const removed = must(withRule, {
+      type: 'set-style-rule',
+      id: 'el-b',
+      selector: { mode: 'dark' },
+      declarations: null,
+    });
+    expect(removed.inverse.type).toBe('restore-style-rule');
+    expect(must(removed.document, removed.inverse).document).toEqual(withRule);
+    expect(
+      must(withRule, {
+        type: 'set-style-rule',
+        id: 'el-b',
+        selector: { mode: 'dark' },
+        declarations: { color: 'silver' },
+      }).document.root[1]?.style?.[1],
+    ).toEqual({ ...rule, declarations: { color: 'silver' } });
+    valid(withRule);
+  });
+
+  it('restore-style-rule refuses duplicates and bad positions', () => {
+    const doc = baseDoc();
+    const added = must(doc, {
+      type: 'set-style-rule',
+      id: 'el-b',
+      selector: {},
+      declarations: { color: 'red' },
+    }).document;
+    expect(
+      errorOf(added, { type: 'restore-style-rule', id: 'el-b', index: 0, rule: { declarations: { color: 'x' } } }),
+    ).toBe('invalid-argument');
+    expect(
+      errorOf(doc, { type: 'restore-style-rule', id: 'el-b', index: 3, rule: { mode: 'dark', declarations: {} } }),
+    ).toBe('index-out-of-range');
+  });
+});
+
+describe("commands are copied: later mutation of the caller's objects changes nothing", () => {
+  it('mutating an inserted element after execute does not alter the document, the history or redo', () => {
+    const element: ElementNode = { id: 'el-mut', type: 'blixis/box', props: { x: 1 }, children: [] };
+    const h0 = createHistory(baseDoc());
+    const r = execute(h0, { type: 'insert', parentId: null, index: 0, element });
+    if (!r.ok) throw new Error(r.error.message);
+    const expected = structuredClone(r.history.document);
+    element.props['x'] = 99;
+    element.children.push(el('el-sneaky'));
+    element.id = 'el-renamed';
+    expect(r.history.document).toEqual(expected);
+    const u = undo(r.history);
+    const again = u.ok ? redo(u.history) : u;
+    expect(again.ok && again.history.document).toEqual(expected);
+  });
+
+  it('mutating a set value or a command after execute does not alter the result either', () => {
+    const value = { list: [1, 2] };
+    const command = { type: 'update-props' as const, id: 'el-b', set: { v: value } };
+    const r = execute(createHistory(baseDoc()), command);
+    if (!r.ok) throw new Error(r.error.message);
+    const expected = structuredClone(r.history.document);
+    value.list.push(3);
+    command.set.v = { list: [] };
+    expect(r.history.document).toEqual(expected);
+    const u = undo(r.history);
+    const again = u.ok ? redo(u.history) : u;
+    expect(again.ok && again.history.document).toEqual(expected);
+  });
+});
+
+describe('direct restore is checked against the current state', () => {
+  const removed = (): { doc: BuilderDocument; restore: Extract<Command, { type: 'restore' }> } => {
+    const r = must(baseDoc(), { type: 'remove', id: 'el-a' });
+    if (r.inverse.type !== 'restore') throw new Error('expected a restore');
+    return { doc: r.document, restore: r.inverse };
+  };
+
+  it('accepts the exact inverse of remove', () => {
+    const { doc, restore } = removed();
+    expect(must(doc, restore).document).toEqual(baseDoc());
+  });
+
+  it('rejects status records for ids outside the subtree, for entries that are not orphaned, duplicates and the orphaned status', () => {
+    const { doc, restore } = removed();
+    const withStatuses = (statuses: Extract<Command, { type: 'restore' }>['statuses']): Command => ({
+      ...restore,
+      statuses,
+    });
+    expect(errorOf(doc, withStatuses([{ locale: 'en_US', elementId: 'el-b', status: 'translated' }]))).toBe(
+      'stale-restore',
+    );
+    expect(
+      errorOf(
+        doc,
+        withStatuses([
+          { locale: 'en_US', elementId: 'el-a1', status: 'translated' },
+          { locale: 'en_US', elementId: 'el-a1', status: 'draft' },
+        ]),
+      ),
+    ).toBe('invalid-argument');
+    expect(errorOf(doc, withStatuses([{ locale: 'en_US', elementId: 'el-a1', status: 'orphaned' }]))).toBe(
+      'invalid-argument',
+    );
+    expect(errorOf(doc, withStatuses([{ locale: 'fr_FR', elementId: 'el-a1', status: 'draft' }]))).toBe(
+      'stale-restore',
+    );
+    // an entry that was meanwhile edited back to a live status is not restorable
+    const edited: BuilderDocument = {
+      ...doc,
+      translations: {
+        ...doc.translations,
+        en_US: { ...doc.translations['en_US'], 'el-a1': { status: 'draft', values: {} } },
+      },
+    };
+    expect(errorOf(edited, restore)).toBe('stale-restore');
+    expect(errorOf(doc, withStatuses([{ locale: 'en_US', elementId: 'el-a1', status: 'nonsense' }]))).toBe(
+      'invalid-argument',
+    );
+  });
+
+  it('replaying a restore twice fails the second time', () => {
+    const { doc, restore } = removed();
+    const once = must(doc, restore).document;
+    expect(errorOf(once, restore)).toBe('duplicate-id');
+  });
+});
+
+describe('runtime robustness: nothing throws, nothing changes', () => {
+  const doc = baseDoc();
+  it.each([
+    ['null', null],
+    ['a string', 'insert'],
+    ['an unknown type', { type: 'explode', id: 'el-a' }],
+    ['a missing id', { type: 'remove' }],
+    ['an extra field', { type: 'remove', id: 'el-a', force: true }],
+    ['a wrong id type', { type: 'remove', id: 42 }],
+    ['an array', []],
+    ['a getter', Object.defineProperty({ type: 'remove' }, 'id', { enumerable: true, get: () => 'el-a' })],
+    [
+      'a throwing getter',
+      Object.defineProperty({ type: 'remove' }, 'id', {
+        enumerable: true,
+        get: () => {
+          throw new Error('boom');
+        },
+      }),
+    ],
+    [
+      'a Proxy that throws',
+      new Proxy(
+        {},
+        {
+          ownKeys: () => {
+            throw new Error('trap');
+          },
+        },
+      ),
+    ],
+    [
+      'a class instance',
+      new (class Remove {
+        type = 'remove';
+        id = 'el-a';
+      })(),
+    ],
+  ])('rejects %s', (_name, input) => {
+    let result: ReturnType<typeof applyCommand> | undefined;
+    expect(() => {
+      result = applyCommand(doc, input);
+    }).not.toThrow();
+    expect(result?.ok).toBe(false);
+    if (result?.ok === false) expect(COMMAND_ERROR_CODES).toContain(result.error.code);
+  });
+
+  it('turns a throwing canNest hook into a failed command', () => {
+    const ctx: CommandContext = {
+      canNest: () => {
+        throw new Error('registry offline');
+      },
+    };
+    expect(errorOf(doc, { type: 'insert', parentId: null, index: 0, element: el('el-x') }, ctx)).toBe(
+      'invalid-argument',
+    );
+  });
+});
+
+describe('history robustness', () => {
+  it.each([[0], [-1], [1.5], [Number.NaN], [Infinity]])('rejects the limit %s', (limit) => {
+    expect(() => createHistory(baseDoc(), limit)).toThrow(RangeError);
+  });
+
+  it('a failed undo returns the error and leaves the history untouched; the same undo works once the cause is gone', () => {
+    const base = createHistory(baseDoc());
+    const removed = execute(base, { type: 'remove', id: 'el-c' });
+    if (!removed.ok) throw new Error('remove failed');
+    const blocked = undo(removed.history, { canNest: () => false });
+    expect(blocked.ok).toBe(false);
+    expect(!blocked.ok && blocked.error.code).toBe('disallowed-parent');
+    expect(removed.history.past).toHaveLength(1);
+    const fine = undo(removed.history);
+    expect(fine.ok && fine.history.document).toEqual(baseDoc());
+  });
+});
+
+describe('performance smoke (5 000 elements)', () => {
+  it('100 property edits on a maximum-size document take well under the budget', () => {
+    const root = Array.from({ length: DOCUMENT_LIMITS.maxNodes }, (_, i) =>
+      el(`el-p${String(i).padStart(5, '0')}`, 'blixis/text'),
+    );
+    const big: BuilderDocument = { ...baseDoc(), root, translations: { en_US: {}, nl_NL: {} } };
+    let doc = big;
+    const started = performance.now();
+    for (let i = 0; i < 100; i += 1)
+      doc = must(doc, {
+        type: 'update-props',
+        id: `el-p${String(4_900 + (i % 99)).padStart(5, '0')}`,
+        set: { n: i },
+      }).document;
+    const perCommand = (performance.now() - started) / 100;
+    // Generous bound so slow CI machines do not flake; the real figure is printed for the record in the PR.
+    expect(perCommand).toBeLessThan(40);
+  });
+});
+
+describe('the random sequences cover what they claim to', () => {
+  it('every command type, both kinds of restore, orphaned entries and deep trees were exercised', () => {
+    for (const kind of ['insert', 'remove', 'move', 'update-props', 'set-style-rule', 'set-class-ids']) {
+      expect(coverage.get(`command:${kind}`) ?? 0, `command:${kind}`).toBeGreaterThan(0);
+    }
+    for (const kind of [
+      'remove',
+      'restore',
+      'restore-style-rule',
+      'move',
+      'update-props',
+      'set-style-rule',
+      'set-class-ids',
+    ]) {
+      expect(coverage.get(`inverse:${kind}`) ?? 0, `inverse:${kind}`).toBeGreaterThan(0);
+    }
+    expect(coverage.get('state:orphaned-entries') ?? 0).toBeGreaterThan(0);
+    expect(coverage.get('state:deep-tree') ?? 0).toBeGreaterThan(0);
   });
 });

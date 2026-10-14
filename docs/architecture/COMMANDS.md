@@ -12,13 +12,20 @@ Implements the command model of [SYSTEM.md](SYSTEM.md) ("Editor") for BWB-022, i
 | `update-props` `{id, set?, unset?}` | Sets and removes invariant properties. | A key cannot be in both. Values follow the document value rules. |
 | `set-style-rule` `{id, selector, declarations \| null, index?}` | Adds, replaces (in place) or removes the rule for a breakpoint/mode/state combination. | Never creates two rules with one selector. `null` removes. |
 | `set-class-ids` `{id, classIds \| null}` | Sets or clears the element's global classes. | Only classes present in the document's `classRefs`. |
-| `restore` | Internal: the inverse of `remove`. | Re-inserts the subtree and restores each translation entry's previous status. |
+| `restore-style-rule` | Internal: the inverse of removing a rule. | Puts back the complete rule, unknown fields included, at its original position. |
+| `restore` | Internal: the inverse of `remove`. | Re-inserts the subtree and restores each translation entry's previous status. Checked against the current state: every status record must belong to the restored subtree and to an entry that is currently `orphaned`; anything else is a `stale-restore`. |
 
-`applyCommand(doc, command, ctx)` returns `{ ok: true, document, inverse }` or `{ ok: false, error: { code, message } }`. It is pure: the input is never modified, untouched subtrees are shared between the old and new document, and a failing command changes nothing.
+`applyCommand(doc, command, ctx)` returns `{ ok: true, document, inverse, command }` or `{ ok: false, error: { code, message } }`. It is pure: the input is never modified, untouched subtrees are shared between the old and new document, and a failing command changes nothing.
+
+**Trust boundary.** A command is untrusted input (REST, macros, tests): it is copied once into an inert snapshot (no accessors, Proxies, class instances, reserved keys, decimals, non-NFC text), validated against `CommandSchema` (strict: unknown fields are errors; the same id, element and rule schemas as documents), and only then applied. The returned `command` is that snapshot; `History` stores it, so mutating the object you passed afterwards changes neither the document nor undo/redo. Nothing is thrown: a malformed command, a hostile object or a throwing `canNest` hook become `invalid-argument`.
+
+**Result limits.** Whatever a command does, the result must stay within the document limits (tree depth 32, 5 000 elements, 2 MiB estimated size, at most 256 style rules and 64 class ids per element); otherwise the command fails and nothing changes. Together with the checks above this makes the guarantee below hold: a command never produces a document that `validateDocument` rejects.
+
+Property ids such as `toString`, `valueOf` and `hasOwnProperty` are valid and exist on every object's prototype, so all lookups use own-property checks.
 
 ## Errors
 
-`element-not-found`, `parent-not-found`, `duplicate-id`, `id-has-orphaned-translations` (a new element may not reuse the id of a removed element that still has orphaned translations; undo is the way back), `index-out-of-range`, `cycle` (moving an element into itself or its descendants), `depth-exceeded` (32), `node-limit-exceeded` (5 000), `disallowed-parent`, `invalid-argument`. Codes are stable.
+`element-not-found`, `parent-not-found`, `duplicate-id`, `id-has-orphaned-translations` (a new element may not reuse the id of a removed element that still has orphaned translations; undo is the way back), `index-out-of-range`, `cycle` (moving an element into itself or its descendants), `depth-exceeded` (32), `node-limit-exceeded` (5 000), `document-too-large` (2 MiB), `disallowed-parent`, `invalid-argument` (malformed command or payload), `stale-restore`. Codes are stable.
 
 ## Registry hook
 
@@ -33,6 +40,14 @@ Implements the command model of [SYSTEM.md](SYSTEM.md) ("Editor") for BWB-022, i
 - After every successful command the document still passes `validateDocument` (unique ids, depth and node limits, orphan rules, class references).
 - `inverse(apply(c))` restores the previous document exactly, including absent versus empty `style` lists (`emptyAs`), translation statuses and rule positions.
 - Seeded random command sequences (valid and invalid mixed) satisfy both properties at every step, and undoing everything and redoing everything reproduces every intermediate document.
+
+## History details
+
+`createHistory` rejects a limit that is not a positive integer (`RangeError`). Undo can fail (for example if the registry hook changed since); the history is then returned untouched and the same undo succeeds once the cause is gone.
+
+## Performance
+
+Every command walks the tree to find its target and re-measures the result (depth, count, estimated bytes). Measured on a 5 000-element document with about 60 bytes of text per element: 1.5 to 1.8 ms per `update-props` or `move` (Node 24, Apple silicon); a full `validateDocument` of the same document takes about 45 ms, so it belongs on load and save, not on every keystroke. The test suite asserts a generous 40 ms ceiling per edit. If profiling in the real editor shows a hot path, an id -> path index can be cached per document object; nothing needs that yet.
 
 ## Not here yet
 
