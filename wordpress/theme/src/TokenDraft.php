@@ -73,9 +73,10 @@ final class TokenDraft {
 	 *
 	 * @param mixed                $input Submitted map.
 	 * @param array<string, mixed> $seed  Bundled reference map.
+	 * @param array<string>        $extra_fonts Server-derived installed font stacks.
 	 * @return array<string, string> Field ID => error message.
 	 */
-	public static function validate( mixed $input, array $seed ): array {
+	public static function validate( mixed $input, array $seed, array $extra_fonts = array() ): array {
 		if ( ! \is_array( $input ) || \count( $input ) !== \count( $seed ) || \array_diff( \array_keys( $input ), \array_keys( $seed ) ) || \array_diff( \array_keys( $seed ), \array_keys( $input ) ) ) {
 			return array( 'tokens' => 'Token names do not match the bundled design.' );
 		}
@@ -101,7 +102,7 @@ final class TokenDraft {
 					if ( 1 !== \preg_match( '/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/D', $value ) ) {
 						$errors[ $field ] = 'Enter a hex color such as #123 or #112233.';
 					}
-				} elseif ( ! \in_array( $value, self::options( $name, $reference['value'] ), true ) ) {
+				} elseif ( ! \in_array( $value, self::options( $name, $reference['value'], $extra_fonts ), true ) ) {
 					$errors[ $field ] = 'Choose an allowed value.';
 				}
 			}
@@ -112,13 +113,14 @@ final class TokenDraft {
 	/**
 	 * Allowed controlled values for a non-color token.
 	 *
-	 * @param string $name Token name.
-	 * @param string $bundled_value Bundled value.
+	 * @param string        $name Token name.
+	 * @param string        $bundled_value Bundled value.
+	 * @param array<string> $extra_fonts Server-derived installed font stacks.
 	 * @return list<string>
 	 */
-	public static function options( string $name, string $bundled_value ): array {
+	public static function options( string $name, string $bundled_value, array $extra_fonts = array() ): array {
 		if ( str_starts_with( $name, 'font-' ) ) {
-			return array( $bundled_value, 'Georgia, "Times New Roman", serif', 'ui-monospace, SFMono-Regular, monospace' );
+			return \array_values( \array_unique( \array_merge( array( $bundled_value, 'Georgia, "Times New Roman", serif', 'ui-monospace, SFMono-Regular, monospace' ), $extra_fonts ) ) );
 		}
 		if ( 'text-base' === $name ) {
 			return array( '0.875rem', '1rem', '1.125rem', '1.25rem' );

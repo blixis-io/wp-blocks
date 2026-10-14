@@ -176,14 +176,22 @@ else :
 						printf( '<input id="%s" type="text" name="tokens[%s][%s]" value="%s" maxlength="7" pattern="#[0-9a-fA-F]{3}|#[0-9a-fA-F]{6}" required>', esc_attr( $id ), esc_attr( $name ), esc_attr( $mode ), esc_attr( $entry[ $mode ] ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped substitutions.
 					} else {
 						printf( '<select id="%s" name="tokens[%s][%s]">', esc_attr( $id ), esc_attr( $name ), esc_attr( $mode ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped substitutions.
-						foreach ( TokenDraft::options( $name, $entry['value'] ) as $option ) {
-							printf( '<option value="%s" %s>%s</option>', esc_attr( $option ), selected( $entry[ $mode ], $option, false ), esc_html( $option ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped substitutions.
+						if ( str_starts_with( $name, 'font-' ) ) {
+							$seed = self::preset_tokens( $preset );
+							self::font_options( $name, $entry[ $mode ], $seed[ $name ]['value'] ?? $entry['value'] );
+						} else {
+							foreach ( TokenDraft::options( $name, $entry['value'] ) as $option ) {
+								printf( '<option value="%s" %s>%s</option>', esc_attr( $option ), selected( $entry[ $mode ], $option, false ), esc_html( $option ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped substitutions.
+							}
 						}
 						echo '</select>';
 					}
 				}
 			}
 			echo '</fieldset>';
+			if ( 3 === $step && array() === FontLibrary::installed() ) {
+				printf( '<p class="notice notice-info">%s <a href="%s">%s</a></p>', esc_html__( 'No Font Library families are installed.', 'blixis' ), esc_url( admin_url( 'font-library.php' ) ), esc_html__( 'Open Appearance > Fonts', 'blixis' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped substitutions.
+			}
 		} elseif ( 5 === $step ) {
 			echo '<p>' . esc_html__( 'Website appearance in both modes. Editor appearance and language are separate.', 'blixis' ) . '</p><div class="blixis-preview">';
 			foreach ( array(
@@ -201,6 +209,35 @@ else :
 			}
 			echo '</div>';
 		}
+	}
+
+	/**
+	 * Render installed and system font choices with their available variants.
+	 *
+	 * @param string $name Token name.
+	 * @param string $selected_value Current selection.
+	 * @param string $bundled_value Preset default.
+	 */
+	private static function font_options( string $name, string $selected_value, string $bundled_value ): void {
+		$families = FontLibrary::installed();
+		if ( $families ) {
+			echo '<optgroup label="' . esc_attr__( 'Installed fonts', 'blixis' ) . '">';
+			foreach ( $families as $family ) {
+				$stack = FontLibrary::css_stack( $family['css_family'], 'sans-serif' );
+				if ( null === $stack ) {
+					continue;
+				}
+				$variants = \array_map( static fn ( array $face ): string => $face['weight'] . ' ' . $face['style'], $family['faces'] );
+				$label    = $family['name'] . ( $variants ? ' (' . \implode( ', ', $variants ) . ')' : '' );
+				printf( '<option value="%s" %s>%s</option>', esc_attr( $stack ), selected( $selected_value, $stack, false ), esc_html( $label ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped substitutions.
+			}
+			echo '</optgroup>';
+		}
+		echo '<optgroup label="' . esc_attr__( 'System fonts', 'blixis' ) . '">';
+		foreach ( TokenDraft::options( $name, $bundled_value ) as $option ) {
+			printf( '<option value="%s" %s>%s</option>', esc_attr( $option ), selected( $selected_value, $option, false ), esc_html( $option ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped substitutions.
+		}
+		echo '</optgroup>';
 	}
 
 	/** Start or resume setup. */
@@ -322,7 +359,7 @@ else :
 				$tokens[ $name ] = $entry;
 			}
 			$seed   = self::preset_tokens( $draft['preset'] );
-			$errors = null === $seed ? array( 'tokens' => 'Unavailable' ) : TokenDraft::validate( $tokens, $seed );
+			$errors = null === $seed ? array( 'tokens' => 'Unavailable' ) : TokenDraft::validate( $tokens, $seed, FontLibrary::allowed_stacks() );
 			if ( $errors ) {
 				update_user_meta( $user_id, 'blixis_setup_errors', $errors );
 				self::redirect_step( $step, \count( TokenDraft::contrast_errors( $tokens ) ) ? 'contrast' : 'invalid' );
@@ -331,7 +368,7 @@ else :
 		}
 		if ( 6 === $step ) {
 			$seed = self::preset_tokens( $draft['preset'] );
-			if ( null === $seed || TokenDraft::validate( $draft['tokens'], $seed ) ) {
+			if ( null === $seed || TokenDraft::validate( $draft['tokens'], $seed, FontLibrary::allowed_stacks() ) ) {
 				self::redirect_step( 6, 'invalid' );
 			}
 			$result = DesignSystemStore::apply( $draft['tokens'], $draft['preset'] );
@@ -395,7 +432,7 @@ else :
 			return null;
 		}
 		$seed = self::preset_tokens( $data['preset'] );
-		if ( null === $seed || TokenDraft::validate( $data['tokens'], $seed ) ) {
+		if ( null === $seed || TokenDraft::validate( $data['tokens'], $seed, FontLibrary::allowed_stacks() ) ) {
 			return null;
 		}
 		return array(

@@ -1,0 +1,5 @@
+Implemented BWB-036 on `feat/36-font-library` without committing or pushing.
+
+The wizard now offers installed Font Library families and their available weights and styles alongside system stacks. [FontLibrary.php](wordpress/theme/src/FontLibrary.php) validates and caps family data; submitted stacks are checked against server-derived choices on draft save, reload, and apply. The wizard adds no `@font-face` output. Core registers `wp_print_font_faces` on `wp_head`; WordPress 7.0 provides [Appearance → Fonts for classic themes](https://make.wordpress.org/test/2026/02/20/help-test-wordpress-7-0/). Tests, smoke steps, and the [Fonts documentation](docs/architecture/THEME.md) were updated.
+
+**Verification:** `pnpm exec prettier --write .`, `pnpm build`, PHPCS, PHPUnit (155 tests), PHPStan in single-process debug mode, and `git diff --check` passed. `composer run check` was blocked when PHPStan tried to open a local TCP listener. `pnpm run check` had four failures tied to the sandbox’s license-inventory and PHPStan subprocess restrictions. Docker socket access was denied, so the WordPress smoke test remains unrun. The tree has no stray `.pnpm-store` file.
