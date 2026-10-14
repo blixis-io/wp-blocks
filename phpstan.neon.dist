@@ -1,0 +1,17 @@
+# Static analysis for all Blixis PHP (BWB-014). WordPress stubs and rules come from szepeviktor/phpstan-wordpress,
+# registered automatically by phpstan/extension-installer. Fixtures are not listed on purpose.
+parameters:
+    level: 8
+    phpVersion: 80200
+    paths:
+        - tooling/php/tests
+        - wordpress
+    excludePaths:
+        analyse:
+            - */vendor/*
+            - */node_modules/*
+            - */dist/*
+    treatPhpDocTypesAsCertain: false
+    reportUnmatchedIgnoredErrors: true
+    checkMissingCallableSignature: true
+    checkTooWideReturnTypesInProtectedAndPublicMethods: true

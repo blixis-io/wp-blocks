@@ -67,3 +67,17 @@ Dependencies are recorded with exact versions (`savePrefix: ""`), install script
 **Adding a TypeScript package.** A workspace package that contains `.ts`/`.tsx` sources must have a `tsconfig.json` extending `tsconfig.base.json` (set `lib`/`types` explicitly; shared PHP-mirrored code must not rely on DOM types) and a `typecheck` script; `pnpm check:boundaries` fails otherwise, so the root `pnpm typecheck` can never pass vacuously. The package's tsconfig must include every source file, or type-aware linting reports "not found by the project service". Source-level imports are restricted by ESLint to match ADR 0010 (no React, Zustand, dnd-kit or Tailwind in framework-free packages, the theme and the add-ons; GSAP nowhere).
 
 **Commit attribution rule.** The commitlint rule is line-based: it rejects AI co-author trailers (by name or by vendor email domain), `Assisted-by:` / `Generated-by:` trailers, "generated with/by ..." lines naming an assistant, bare assistant signatures and the robot emoji, and allows human co-authors and bot trailers such as Dependabot. A name list cannot recognise every assistant, so reviewers still check the policy by hand.
+
+## PHP tooling (BWB-014)
+
+| Concern | Tool | Config |
+|---|---|---|
+| Code style | PHP_CodeSniffer with `WordPress-Extra` and `WordPress-Docs` (WPCS 3), plus `PHPCompatibilityWP` for PHP 8.2+ and WordPress 7.0+ (ADR 0001); global prefixes `blixis`/`Blixis`; text domains `blixis`, `blixis-builder`, `blixis-plus`, `blixis-pro`; PSR-4 file names allowed | `phpcs.xml.dist` |
+| Static analysis | PHPStan 2 at level 8 with `szepeviktor/phpstan-wordpress` (WordPress stubs and rules) | `phpstan.neon.dist` |
+| Tests | PHPUnit 11 (strict: warnings, risky tests, deprecations and unexpected output fail) with Yoast PHPUnit Polyfills for the WordPress test suite | `phpunit.xml.dist`; suites are listed per package as PHP code arrives |
+
+Composer resolves dependencies as if running on PHP 8.2.30 (`config.platform.php`), so the committed `composer.lock` installs on the floor version; CI also runs newer PHP (ADR 0001). Commands: `composer lint`, `composer lint:fix`, `composer stan`, `composer test`, `composer check`; the root `pnpm lint:php`, `pnpm stan`, `pnpm test:php` and `pnpm check:php` wrap them. `pnpm check` stays JavaScript-only so contributors without PHP can run it.
+
+When a package gets PHP code: put it under `wordpress/<package>/src` (PSR-4, namespace `Blixis\...`), tests under `wordpress/<package>/tests`, and add that tests directory to `phpunit.xml.dist`. `phpcs.xml.dist` and `phpstan.neon.dist` already cover everything under `wordpress/`. `tooling/php.test.mjs` proves the tools reject deliberately bad fixtures (`tooling/php/fixtures/bad`, never scanned by default): style, documentation, unescaped output, missing nonce, interpolated SQL, unregistered text domain, a return type error and a PHP 8.3-only function. These tests fail (not skip) when `composer install` has not been run; set `BLX_SKIP_PHP=1` to skip them deliberately.
+
+**Known limits.** PHPCompatibility 9.x only knows PHP features up to 8.0, so the PHP 8.2 floor is enforced by PHPStan (`phpVersion: 80200`) and by running CI on PHP 8.2 (ADR 0001), not by PHPCompatibility alone. The text-domain check is global until each package has PHP code (then add per-package domains). `composer audit` (`composer run audit`) belongs in the CI dependency scan (BWB-015).

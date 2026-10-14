@@ -1,0 +1,52 @@
+{
+  "name": "blixis/wp-blocks-dev",
+  "description": "Development tooling for the Blixis WP Blocks monorepo (PHP linting, static analysis and tests). Not a distributable package.",
+  "type": "project",
+  "license": "GPL-2.0-or-later",
+  "require": {
+    "php": ">=8.2"
+  },
+  "config": {
+    "sort-packages": true,
+    "optimize-autoloader": true,
+    "platform": {
+      "php": "8.2.30"
+    },
+    "allow-plugins": {
+      "dealerdirect/phpcodesniffer-composer-installer": true,
+      "phpstan/extension-installer": true
+    }
+  },
+  "minimum-stability": "stable",
+  "prefer-stable": true,
+  "require-dev": {
+    "dealerdirect/phpcodesniffer-composer-installer": "^1.2",
+    "phpcompatibility/phpcompatibility-wp": "^2.1",
+    "phpstan/extension-installer": "^1.4",
+    "phpstan/phpstan": "^2.3",
+    "phpunit/phpunit": "^11.5",
+    "szepeviktor/phpstan-wordpress": "^2.0",
+    "wp-coding-standards/wpcs": "^3.4",
+    "yoast/phpunit-polyfills": "^4.0"
+  },
+  "scripts": {
+    "lint": "phpcs",
+    "lint:fix": "phpcbf",
+    "stan": "phpstan analyse --no-progress",
+    "test": "phpunit",
+    "check": [
+      "@lint",
+      "@stan",
+      "@test"
+    ],
+    "audit": "composer audit"
+  },
+  "scripts-descriptions": {
+    "lint": "Check PHP code style (WordPress standards, PHP 8.2+ compatibility)",
+    "lint:fix": "Fix auto-fixable PHP code style issues",
+    "stan": "Run PHPStan static analysis",
+    "test": "Run PHPUnit",
+    "check": "Run all PHP checks",
+    "audit": "Check dependencies for known security advisories"
+  }
+}

@@ -18,6 +18,8 @@ Requires Node 24 (`.nvmrc`) and pnpm (version pinned in `package.json`; `corepac
 pnpm install --frozen-lockfile   # or: pnpm setup
 pnpm check:boundaries            # workspace dependency rules (ADR 0010)
 pnpm test:tooling                # tests for the repository tooling (20 tests)
+composer install                 # PHP tooling (PHP 8.2+ and Composer)
+pnpm check:php                   # PHPCS, PHPStan, PHPUnit
 python3 -I tests/fixtures/style-resolution/verify.py   # style-resolution reference fixtures (ADR 0005)
 ```
 
