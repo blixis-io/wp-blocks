@@ -635,6 +635,66 @@ async function smoke() {
         );
         const afterPointer = await preview(restPost, { cookie: adminCookie, nonce: adminNonce, body: '{}' });
         check(afterPointer.status === 200, 'a pointer to a missing snapshot does not affect the editor preview');
+        // Frontend (BWB-044): only the published snapshots render, drafts never leak, caches follow the revisions.
+        const pageId = command(
+          'post',
+          'create',
+          '--post_type=page',
+          '--post_status=publish',
+          '--post_title=Front smoke',
+          '--post_content=PLAIN CONTENT',
+          '--porcelain',
+        );
+        const front = async () => (await get(`/?page_id=${pageId}`)).text;
+        const frontStep = (step) => command('eval-file', '/fixtures/frontend-smoke.php', pageId, step);
+        frontStep('working');
+        let html = await front();
+        check(
+          html.includes('PLAIN CONTENT') && !html.includes('data-blx-document'),
+          'a page without a publication pointer shows its normal content',
+        );
+        check(!html.includes('DRAFT-SECRET'), 'working (draft) streams never reach visitors');
+        check(frontStep('publish1') === 'published', 'the first publication is written');
+        html = await front();
+        check(
+          html.includes('data-blx-document') && html.includes('data-blx-id="el-001"') && html.includes('Published one'),
+          'a published page renders its snapshot',
+        );
+        check(
+          !html.includes('PLAIN CONTENT') && !html.includes('DRAFT-SECRET'),
+          'the published output replaces the post content and ignores drafts',
+        );
+        check(
+          /<style[^>]*id=['"]blixis-builder-frontend-inline-css['"][^>]*>[^<]*\/\*blx-css:1\*\/[^<]*color:red/.test(
+            html,
+          ),
+          'compiled CSS is printed once as an inline style',
+        );
+        check(
+          command('option', 'list', '--transients', '--search=_transient_blx_*', '--field=option_name').length > 0,
+          'the rendered page is cached',
+        );
+        const epochBefore = command('eval', "echo get_option( 'blixis_builder_epoch', '' );");
+        check(frontStep('publish2') === 'published', 'a second publication advances the pointer');
+        html = await front();
+        check(
+          html.includes('Published two') && !html.includes('Published one') && html.includes('color:blue'),
+          'a new revision shows new content and CSS without any manual cache flush',
+        );
+        command('eval', "update_option( 'blixis_design_system', array( 'tokenVersion' => 99 ), true );");
+        const epochAfter = command('eval', "echo get_option( 'blixis_builder_epoch', '' );");
+        check(
+          epochBefore !== '' && epochAfter !== '' && epochAfter !== epochBefore,
+          'changing the design system starts a new cache epoch',
+        );
+        command('option', 'delete', 'blixis_design_system');
+        check(frontStep('break') === 'broken', 'the published layout snapshot can be removed for the failure case');
+        html = await front();
+        check(
+          html.includes('PLAIN CONTENT') && !html.includes('data-blx-document'),
+          'a broken publication falls back to the normal post content',
+        );
+        command('post', 'delete', pageId, '--force');
         command('post', 'delete', restPost, '--force');
       }
       const adminThemes = await http(`${base}/wp-admin/themes.php`, {
