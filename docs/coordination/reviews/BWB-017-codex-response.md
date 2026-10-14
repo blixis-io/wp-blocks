@@ -1,0 +1,23 @@
+## Review findings
+
+**Blocker — premium artifact exposure when Plus/Pro are scaffolded.** The [build job](.github/workflows/ci.yml:139) runs on public fork pull requests and uploads every ZIP from `dist/`. [ADR 0009](docs/architecture/adrs/0009-distribution-and-package-boundaries.md:58) says Plus/Pro sources must not be published from those builds. **Fix:** limit public PR packaging and artifact upload to Free distributions; build paid packages only in the protected release path. This is conditional today: none of the four distributions is scaffolded in the inspected tree.
+
+**Major — the shipped-file policy permits sensitive files.** [distributions.json](tooling/build/distributions.json:33) uses an exclusion list, so unlisted files are shipped. Its forbidden patterns miss `.npmrc`, `auth.json`, `*.pfx`, `credentials*`, `*.kdbx`, `.aws`, and `wp-config.php`; the in-memory pattern check confirmed each miss. **Fix:** use an explicit release-file allowlist where practical, and expand forbidden patterns with failing-case tests. In [collectFiles](tooling/build/package.mjs:32), forbidden is checked before exclude **for each visited entry**, but excluded directories are never traversed. A forbidden file inside `tests/` or `.git/` is therefore neither checked nor shipped; clarify the documented “build aborts” claim if that is intended.
+
+**Major — ZIP32 overflow can produce invalid archives.** [zip.mjs](tooling/build/zip.mjs:13) wraps 32-bit values with `>>> 0`, including sizes and central-directory offsets. Values at or above 4 GiB can silently become wrong; the entry count above 65,535 instead throws through `writeUInt16LE`. **Fix:** explicitly reject entries, offsets, central-directory sizes, and counts at ZIP32 limits, or implement ZIP64; add boundary tests.
+
+**Major — version and WordPress identity validation are incomplete.** [readVersion](tooling/build/package.mjs:23) accepts `1.2.3-foo..bar`, rejects valid SemVer build metadata, and accepts a `Version:` line without a `Theme Name:` or `Plugin Name:` header. The [package.json comparison](tooling/build/package.mjs:56) is skipped when that file is absent, contrary to [CI-CD.md](docs/engineering/CI-CD.md:29). **Fix:** validate complete SemVer and the appropriate WordPress header, and either require `package.json` or document that it is optional.
+
+**Major — packaging has no resource bounds.** [package.mjs](tooling/build/package.mjs:65) reads all included files into memory, and [zip.mjs](tooling/build/zip.mjs:37) retains compressed and output buffers. **Fix:** set per-file and total-size limits before reading; consider streaming if large packages are expected.
+
+**Minor — link checks have a race.** [collectFiles](tooling/build/package.mjs:36) uses `lstat`, then later reopens the path for reading. A concurrent replacement could change it to a symlink. **Fix:** for a threat model that includes concurrent workspace modification, open without following links and verify the opened file; otherwise document the trusted-build assumption.
+
+## Agreements and test gaps
+
+For ZIP32-sized inputs, the writer sets version needed 2.0, Unix “made by,” UTF-8 flags, fixed DOS date/time, Unix mode attributes, and matching local/central CRC and sizes. Empty files use stored method with zero CRC and size; central offsets are accumulated from actual local records. No explicit directory entries are emitted; that is generally valid ZIP structure, but I did not test a WordPress install. The “same bytes” claim is appropriately limited to the same Node/zlib build in [zip.mjs](tooling/build/zip.mjs:1).
+
+The [tests](tooling/build/package.test.mjs:141) would catch removal of the tested exclusions and basic missing/invalid `Version:` parsing. They would **not** catch most individual exclusion-pattern removals, missing WordPress identity headers, absent `package.json`, forbidden files beneath excluded directories, the listed secret-name misses, ZIP32 limits, or resource exhaustion. Add focused failing cases for those contracts.
+
+CI uses a SHA-pinned upload action and uploads only when a ZIP exists. With the current unscaffolded tree, `pnpm build` can succeed with zero archives; [the script](tooling/build/package.mjs:114) prints each skip and the [docs](docs/engineering/CI-CD.md:32) disclose this, though the aggregate `CI` job still treats `build: success` as sufficient.
+
+**Verification limits:** This was an offline, read-only review. I inspected the branch and ran only in-memory Node probes; I did not run tests that create files, test ZIP64-scale inputs, or install an archive in WordPress.
