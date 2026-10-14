@@ -1,0 +1,124 @@
+{
+  "$schema": "https://schemas.wp.org/wp/7.0/theme.json",
+  "version": 3,
+  "settings": {
+    "color": {
+      "palette": [
+        {
+          "slug": "color-bg",
+          "name": "Background",
+          "color": "var(--blx-color-bg)"
+        },
+        {
+          "slug": "color-surface",
+          "name": "Surface",
+          "color": "var(--blx-color-surface)"
+        },
+        {
+          "slug": "color-text",
+          "name": "Text",
+          "color": "var(--blx-color-text)"
+        },
+        {
+          "slug": "color-muted",
+          "name": "Muted text",
+          "color": "var(--blx-color-muted)"
+        },
+        {
+          "slug": "color-link",
+          "name": "Link",
+          "color": "var(--blx-color-link)"
+        },
+        {
+          "slug": "color-primary",
+          "name": "Primary",
+          "color": "var(--blx-color-primary)"
+        },
+        {
+          "slug": "color-line",
+          "name": "Border",
+          "color": "var(--blx-color-line)"
+        }
+      ]
+    },
+    "typography": {
+      "fontSizes": [
+        {
+          "slug": "text-sm",
+          "name": "Small",
+          "size": "var(--blx-text-sm)"
+        },
+        {
+          "slug": "text-base",
+          "name": "Base",
+          "size": "var(--blx-text-base)"
+        },
+        {
+          "slug": "text-lg",
+          "name": "Large",
+          "size": "var(--blx-text-lg)"
+        },
+        {
+          "slug": "text-xl",
+          "name": "Extra large",
+          "size": "var(--blx-text-xl)"
+        },
+        {
+          "slug": "text-2xl",
+          "name": "Display",
+          "size": "var(--blx-text-2xl)"
+        }
+      ],
+      "fontFamilies": [
+        {
+          "slug": "font-body",
+          "name": "System sans",
+          "fontFamily": "var(--blx-font-body)"
+        },
+        {
+          "slug": "font-heading",
+          "name": "System heading",
+          "fontFamily": "var(--blx-font-heading)"
+        }
+      ]
+    },
+    "spacing": {
+      "spacingSizes": [
+        {
+          "slug": "space-1",
+          "name": "1",
+          "size": "var(--blx-space-1)"
+        },
+        {
+          "slug": "space-2",
+          "name": "2",
+          "size": "var(--blx-space-2)"
+        },
+        {
+          "slug": "space-3",
+          "name": "3",
+          "size": "var(--blx-space-3)"
+        },
+        {
+          "slug": "space-4",
+          "name": "4",
+          "size": "var(--blx-space-4)"
+        },
+        {
+          "slug": "space-6",
+          "name": "6",
+          "size": "var(--blx-space-6)"
+        },
+        {
+          "slug": "space-8",
+          "name": "8",
+          "size": "var(--blx-space-8)"
+        }
+      ]
+    },
+    "layout": {
+      "contentSize": "var(--blx-container-content)",
+      "wideSize": "var(--blx-container-wide)"
+    }
+  }
+}

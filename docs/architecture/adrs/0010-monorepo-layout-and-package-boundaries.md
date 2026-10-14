@@ -22,7 +22,7 @@ style-engine      -> core, design-tokens
 canvas-bridge     -> core
 editor-ui         -> core, design-tokens, capabilities, element-registry
 apps/editor       -> all of the above
-wordpress/theme   -> design-tokens
+wordpress/theme   -> design-tokens, style-engine
 wordpress/plugin  -> editor, design-tokens      (packages the editor bundle for admin screens)
 extension-api     -> core, element-registry, capabilities   (public, versioned contract; types and registration API)
 wordpress/plus|pro-> extension-api ONLY
@@ -60,3 +60,4 @@ Remove the rules or replace the checker with a project-graph tool by superseding
 - 2026-10-14 orchestrator draft.
 - 2026-10-14 Codex review (`docs/coordination/reviews/BWB-011-codex-response.md`): Blocker (Plus/Pro depended on Builder internals) accepted — `extension-api` package and externalisation rule; Major (alias bypass, workspace discovery, root/lockfile not covered) accepted and implemented; Minor (test gaps, Node range) accepted. Codex could not run the fixture tests (read-only sandbox, EPERM on temp dirs); the orchestrator ran all 20 locally. Codex noted `canvas-bridge -> element-registry` and `style-engine -> capabilities` are not established needs; they are not added.
 - 2026-10-14 BWB-027 amendment: `tests/fixtures` may depend on `style-engine`, `design-tokens` and `element-registry` (besides `core`); the last two so the version inventory test can compare documented versions with the code (BWB-028). It is test support, not shipped code, and it hosts the cross-language contract suite that runs the golden compile fixtures through the libraries they describe (docs/engineering/FIXTURES.md). No production package depends on it.
+- 2026-10-14 BWB-031 amendment: `wordpress/theme` may depend on `style-engine` at build time to validate its default token set and compile token CSS through the same deterministic compiler as Builder. No editor code or style-engine runtime enters the theme distribution.

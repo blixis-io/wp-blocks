@@ -192,6 +192,9 @@ importers:
       '@blixis/wp-design-tokens':
         specifier: workspace:*
         version: link:../../packages/design-tokens
+      '@blixis/wp-style-engine':
+        specifier: workspace:*
+        version: link:../../packages/style-engine
     devDependencies:
       '@tailwindcss/node':
         specifier: 4.3.3

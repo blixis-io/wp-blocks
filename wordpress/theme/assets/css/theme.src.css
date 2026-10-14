@@ -1,5 +1,27 @@
-@import 'tailwindcss/theme.css' layer(theme);
-@import 'tailwindcss/utilities.css' layer(utilities) source(none);
+@import 'tailwindcss/theme.css' layer(blx.theme);
+@import 'tailwindcss/utilities.css' layer(blx.theme) source(none);
+
+@layer blx.theme {
+  .site-shell {
+    width: min(100%, var(--blx-container-wide));
+    margin-inline: auto;
+    padding: var(--blx-space-4);
+  }
+
+  .site-main {
+    max-width: var(--blx-container-content);
+  }
+
+  .site-header,
+  .site-footer {
+    border-color: var(--blx-color-line);
+  }
+
+  .site-title {
+    font-family: var(--blx-font-heading);
+    font-size: var(--blx-text-xl);
+  }
+}
 
 @source '../../404.php';
 @source '../../archive.php';

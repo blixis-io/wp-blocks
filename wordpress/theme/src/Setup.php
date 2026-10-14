@@ -62,7 +62,7 @@ final class Setup {
 	}
 
 	/**
-	 * Loads the theme header styles and compiled utilities, versioned by the theme version.
+	 * Loads the theme header, design tokens and compiled utilities, versioned by the theme version.
 	 *
 	 * @return void
 	 */
@@ -86,14 +86,19 @@ final class Setup {
 	 */
 	public static function styles( string $stylesheet_uri, string $template_uri, string $version ): array {
 		return array(
-			'blixis-style' => array(
+			'blixis-style'  => array(
 				'url'          => $stylesheet_uri,
 				'dependencies' => array(),
 				'version'      => $version,
 			),
-			'blixis-theme' => array(
-				'url'          => $template_uri . '/assets/css/theme.css',
+			'blixis-tokens' => array(
+				'url'          => $template_uri . '/assets/css/tokens.css',
 				'dependencies' => array( 'blixis-style' ),
+				'version'      => $version,
+			),
+			'blixis-theme'  => array(
+				'url'          => $template_uri . '/assets/css/theme.css',
+				'dependencies' => array( 'blixis-tokens' ),
 				'version'      => $version,
 			),
 		);
