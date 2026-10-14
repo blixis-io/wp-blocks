@@ -94,8 +94,13 @@ export function findOrphans(files: readonly string[], covered: ReadonlySet<strin
 }
 
 function roadmapIds(): Set<string> {
-  const csv = readFileSync(join(REPO_ROOT, 'docs', 'roadmap', 'issues.csv'), 'utf8');
-  return new Set([...csv.matchAll(/^(BWB-\d{3}),/gm)].flatMap((m) => (m[1] === undefined ? [] : [m[1]])));
+  // The main catalogue and the multilingual/theme-mode addendum together are the roadmap.
+  const ids = new Set<string>();
+  for (const file of ['issues.csv', 'issues-addendum.csv']) {
+    const csv = readFileSync(join(REPO_ROOT, 'docs', 'roadmap', file), 'utf8');
+    for (const m of csv.matchAll(/^(BWB-\d{3}),/gm)) if (m[1] !== undefined) ids.add(m[1]);
+  }
+  return ids;
 }
 
 /** Problems with the registry itself; empty means consistent. */

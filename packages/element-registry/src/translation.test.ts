@@ -131,6 +131,59 @@ describe('set-translation with the registry as its hook', () => {
   });
 });
 
+describe('stale detection with the registry as its hook', () => {
+  const build = (): BuilderDocument => {
+    const result = validateDocument({
+      schemaVersion: 1,
+      documentId: 'doc-001',
+      layoutRevision: 1,
+      defaultLocale: 'en_US',
+      locales: ['en_US', 'nl_NL'],
+      root: [{ id: 'el-b', type: 'blixis/button', props: {}, children: [] }],
+      classListVersion: 0,
+      classRefs: {},
+      translations: { en_US: { 'el-b': { status: 'translated', values: { label: 'Send', href: '/en/contact' } } } },
+      metadata: { updatedAt: '2026-01-01T00:00:00Z', editorVersion: '0.0.0' },
+    });
+    if (!result.ok) throw new Error(JSON.stringify(result.errors));
+    return result.document;
+  };
+  const ctx = { translationValue: registry.translationValue, sourceProperties: registry.sourceProperties };
+  const run = (document: BuilderDocument, locale: string, set: Record<string, unknown>) => {
+    const r = applyCommand(document, { type: 'set-translation', locale, elementId: 'el-b', set }, ctx);
+    if (!r.ok) throw new Error(`${r.error.code}: ${r.error.message}`);
+    return r.document;
+  };
+
+  it('only translatable properties are source text', () => {
+    expect(registry.sourceProperties('blixis/button')).toEqual(['label']);
+    expect(registry.sourceProperties('blixis/heading')).toEqual(['text']);
+    expect(registry.sourceProperties('blixis/section')).toEqual([]);
+    expect(registry.sourceProperties('acme/unknown')).toBeUndefined();
+  });
+
+  it('a changed button label makes the Dutch button stale, a changed link target does not', () => {
+    let doc = run(build(), 'nl_NL', { label: 'Versturen', href: '/nl/contact' });
+    expect(doc.translations['nl_NL']?.['el-b']?.status).toBe('draft');
+    doc = run(doc, 'nl_NL', { label: 'Versturen' });
+    doc = run(doc, 'en_US', { href: '/en/get-in-touch' });
+    expect(doc.translations['nl_NL']?.['el-b']?.status).toBe('draft');
+    const reviewed = applyCommand(
+      doc,
+      { type: 'set-translation', locale: 'nl_NL', elementId: 'el-b', status: 'reviewed' },
+      ctx,
+    );
+    if (!reviewed.ok) throw new Error('review failed');
+    doc = run(reviewed.document, 'en_US', { href: '/en/contact-us' });
+    expect(doc.translations['nl_NL']?.['el-b']?.status).toBe('reviewed');
+    doc = run(doc, 'en_US', { label: 'Submit' });
+    expect(doc.translations['nl_NL']?.['el-b']).toMatchObject({
+      status: 'stale',
+      values: { label: 'Versturen', href: '/nl/contact' },
+    });
+  });
+});
+
 describe('stable property ids (locks/property-ids.json)', () => {
   const lock = JSON.parse(readFileSync(join(here, '..', 'locks', 'property-ids.json'), 'utf8')) as PropertyIdLock;
 

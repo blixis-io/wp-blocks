@@ -9,8 +9,10 @@ import {
   PropertyIdSchema,
   StateSchema,
 } from '../schema/primitives.ts';
+import { DOCUMENT_LIMITS } from '../schema/limits.ts';
 import { StyleRuleSchema } from '../schema/style.ts';
 
+const statusRecord = z.strictObject({ locale: LocaleIdSchema, elementId: IdSchema, status: TranslationStatusSchema });
 const parentId = IdSchema.nullable();
 const index = z.number().int();
 const selector = z.strictObject({
@@ -63,5 +65,11 @@ export const CommandSchema = z.discriminatedUnion('type', [
     elementId: IdSchema,
     entry: TranslationEntrySchema.nullable(),
     dropStream: z.boolean().optional(),
+    statuses: z.array(statusRecord).max(1000).optional(),
+  }),
+  z.strictObject({ type: z.literal('mark-stale'), locale: LocaleIdSchema.optional() }),
+  z.strictObject({
+    type: z.literal('restore-statuses'),
+    statuses: z.array(statusRecord).max(DOCUMENT_LIMITS.maxNodes * 64),
   }),
 ]);

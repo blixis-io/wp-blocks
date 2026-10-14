@@ -1,0 +1,165 @@
+{
+  "cases": [
+    {
+      "id": "empty",
+      "description": "no values",
+      "values": {},
+      "expected": "44136fa355b3678a"
+    },
+    {
+      "id": "one-text",
+      "description": "one string",
+      "values": {
+        "text": "Hello"
+      },
+      "expected": "ef73ae6a8b47cd36"
+    },
+    {
+      "id": "order-irrelevant",
+      "description": "property order does not matter",
+      "values": {
+        "b": "2",
+        "a": "1"
+      },
+      "expected": "21f76dfbfe6dfe21"
+    },
+    {
+      "id": "subset",
+      "description": "only the listed properties count",
+      "values": {
+        "text": "Hello",
+        "href": "/en"
+      },
+      "expected": "ef73ae6a8b47cd36",
+      "propertyIds": ["text"]
+    },
+    {
+      "id": "subset-missing-id",
+      "description": "listed ids without a value are left out",
+      "values": {
+        "text": "Hello"
+      },
+      "expected": "ef73ae6a8b47cd36",
+      "propertyIds": ["text", "alt"]
+    },
+    {
+      "id": "subset-duplicate-id",
+      "description": "a repeated id counts once",
+      "values": {
+        "text": "Hello"
+      },
+      "expected": "ef73ae6a8b47cd36",
+      "propertyIds": ["text", "text"]
+    },
+    {
+      "id": "unicode",
+      "description": "non-ASCII text is hashed as UTF-8",
+      "values": {
+        "text": "Caf\u00e9 \u65e5\u672c\u8a9e \ud83d\ude00"
+      },
+      "expected": "8760e4f2d5e49ce8"
+    },
+    {
+      "id": "escapes",
+      "description": "quotes, backslashes and controls are escaped like canonical JSON",
+      "values": {
+        "text": "a\"b\\c\n\t\u0001"
+      },
+      "expected": "0ca7537e904db741"
+    },
+    {
+      "id": "slash",
+      "description": "slashes are not escaped",
+      "values": {
+        "text": "a/b"
+      },
+      "expected": "8fd7a6962cf21baf"
+    },
+    {
+      "id": "nested",
+      "description": "non-string JSON values",
+      "values": {
+        "n": 5,
+        "b": true,
+        "z": null,
+        "l": [
+          1,
+          "x",
+          {
+            "k": "v"
+          }
+        ],
+        "o": {
+          "b": 2,
+          "a": 1
+        }
+      },
+      "expected": "4eb5334d0bda7ca2"
+    },
+    {
+      "id": "only-links",
+      "description": "a source with no counted properties",
+      "values": {
+        "href": "/en"
+      },
+      "expected": "44136fa355b3678a",
+      "propertyIds": ["text"]
+    },
+    {
+      "id": "integer-like-keys",
+      "description": "keys are ordered by bytes, not numerically",
+      "values": {
+        "10": "a",
+        "2": "b",
+        "a": "c",
+        "B": "d"
+      },
+      "expected": "175e02b018350779"
+    },
+    {
+      "id": "unicode-keys",
+      "description": "keys with accents and astral characters are ordered by UTF-8 bytes",
+      "values": {
+        "z": "1",
+        "\u00e9": "2",
+        "\ud83d\ude00": "3",
+        "\uff5e": "4"
+      },
+      "expected": "b6cc7ad6890f5421"
+    },
+    {
+      "id": "line-separators",
+      "description": "U+2028, U+2029, DEL and U+0085 are written as they are",
+      "values": {
+        "text": "a\u2028b\u2029c\u007fd\u0085e"
+      },
+      "expected": "b8903477224b43df"
+    },
+    {
+      "id": "control-characters",
+      "description": "control characters use lower-case \\u escapes and the short forms",
+      "values": {
+        "text": "\u0000\b\t\n\f\r\u001f"
+      },
+      "expected": "b12d043a83e21178"
+    },
+    {
+      "id": "empty-containers",
+      "description": "empty arrays and objects keep their type",
+      "values": {
+        "a": [],
+        "o": {},
+        "n": null
+      },
+      "expected": "5d37bdb92992c244"
+    },
+    {
+      "id": "long-text",
+      "description": "a long value",
+      "values": {
+        "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. "
+      },
+      "expected": "9acdf8cf82f1c650"
+    }
+  ]
+}

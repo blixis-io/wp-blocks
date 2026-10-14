@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import {
   applyCommand,
@@ -12,6 +13,12 @@ import {
   type ElementNode,
   type TranslationCheck,
 } from '../index.ts';
+
+/** The expected source marker, computed independently of the implementation (flat string values only). */
+const H = (values: Record<string, string>): string => {
+  const sorted = Object.fromEntries(Object.entries(values).sort(([a], [b]) => (a < b ? -1 : 1)));
+  return createHash('sha256').update(JSON.stringify(sorted), 'utf8').digest('hex').slice(0, 16);
+};
 
 const el = (id: string, type: string, children: ElementNode[] = []): ElementNode => ({ id, type, props: {}, children });
 
@@ -64,7 +71,11 @@ const hook: CommandContext = {
 describe('set-translation', () => {
   it('creates an entry: draft in a translation locale, translated in the default locale', () => {
     const nl = ok(baseDoc(), { type: 'set-translation', locale: 'nl_NL', elementId: 'el-b', set: { text: 'Tekst' } });
-    expect(nl.document.translations['nl_NL']?.['el-b']).toEqual({ values: { text: 'Tekst' }, status: 'draft' });
+    expect(nl.document.translations['nl_NL']?.['el-b']).toEqual({
+      values: { text: 'Tekst' },
+      status: 'draft',
+      sourceHash: H({ text: 'Body' }),
+    });
     const en = ok(baseDoc(), { type: 'set-translation', locale: 'en_US', elementId: 'el-c', set: { alt: 'Logo' } });
     expect(en.document.translations['en_US']?.['el-c']).toEqual({ values: { alt: 'Logo' }, status: 'translated' });
   });
@@ -73,7 +84,7 @@ describe('set-translation', () => {
     const merged = ok(baseDoc(), { type: 'set-translation', locale: 'nl_NL', elementId: 'el-a', set: { alt: 'Een' } });
     expect(merged.document.translations['nl_NL']?.['el-a']).toEqual({
       values: { text: 'Hallo', alt: 'Een' },
-      sourceHash: 'abcdef12',
+      sourceHash: H({ text: 'Hello' }),
       status: 'draft',
     });
     const kept = ok(baseDoc(), { type: 'set-translation', locale: 'en_US', elementId: 'el-a', set: { text: 'Hi' } });
@@ -109,7 +120,7 @@ describe('set-translation', () => {
     });
     expect(statusOnly.document.translations['nl_NL']?.['el-a']).toEqual({
       values: { text: 'Hallo' },
-      sourceHash: 'abcdef12',
+      sourceHash: H({ text: 'Hello' }),
       status: 'translated',
     });
   });
@@ -259,46 +270,82 @@ describe('set-translation: no-ops, unset rules and the restore boundary', () => 
       { type: 'set-translation', locale: 'nl_NL', elementId: 'el-a', unset: ['level'] },
       hook,
     );
-    expect(repaired.document.translations['nl_NL']?.['el-a']).toEqual({ values: { text: 'Hallo' }, status: 'draft' });
+    expect(repaired.document.translations['nl_NL']?.['el-a']).toEqual({
+      values: { text: 'Hallo' },
+      status: 'draft',
+      sourceHash: H({ text: 'Hello' }),
+    });
     expect(code(d, { type: 'set-translation', locale: 'nl_NL', elementId: 'el-a', unset: ['level'] }, hook)).toBe(
       'not-translatable',
     );
     expect(code(d, { type: 'set-translation', locale: 'nl_NL', elementId: 'el-a', unset: ['alt'] }, hook)).toBe('ok');
   });
 
-  it('restore-translation cannot smuggle in what set-translation refuses', () => {
+  it('restore-translation is only accepted as an inverse that a result handed out, never from a deserialized command', () => {
     const d = baseDoc();
-    const entry = (values: Record<string, unknown>) => ({
+    const entry = {
       type: 'restore-translation',
       locale: 'nl_NL',
       elementId: 'el-a',
-      entry: { status: 'draft', values },
+      entry: { status: 'draft', values: { text: 'Hallo' } },
+    };
+    expect(code(d, entry)).toBe('invalid-argument');
+    expect(code(d, JSON.parse(JSON.stringify(entry)))).toBe('invalid-argument');
+    expect(code(d, { type: 'restore-statuses', statuses: [] })).toBe('invalid-argument');
+    const edited = ok(d, { type: 'set-translation', locale: 'nl_NL', elementId: 'el-a', set: { text: 'Nieuw' } });
+    // the real inverse works, a copy of it does not
+    expect(code(edited.document, edited.inverse)).toBe('ok');
+    expect(code(edited.document, JSON.parse(JSON.stringify(edited.inverse)))).toBe('invalid-argument');
+  });
+
+  it('even a trusted restore asks the registry about values that differ from the current entry, and refuses impossible requests', () => {
+    const d = baseDoc();
+    // a legacy value that today's rules refuse, written while no hook was supplied
+    const legacy = ok(d, { type: 'set-translation', locale: 'nl_NL', elementId: 'el-a', set: { level: 2 } });
+    const edited = ok(legacy.document, {
+      type: 'set-translation',
+      locale: 'nl_NL',
+      elementId: 'el-a',
+      unset: ['level'],
     });
-    expect(code(d, entry({ text: 'Hallo', level: 2 }), hook)).toBe('not-translatable');
-    expect(code(d, entry({ text: 'x'.repeat(30) }), hook)).toBe('invalid-translation');
-    expect(code(d, entry({ text: 'Hallo' }), hook)).toBe('ok');
-    // values identical to the current entry are not asked again, so undo still works after the rules became stricter
+    // undo would re-add `level`, which the registry refuses: the undo fails and nothing changes
+    expect(code(edited.document, edited.inverse, hook)).toBe('not-translatable');
+    expect(code(edited.document, edited.inverse)).toBe('ok');
+    // values identical to the current entry are not asked again, so undo keeps working after the rules became stricter
     const strict: CommandContext = {
       translationValue: () => ({ ok: false, code: 'not-translatable', message: 'nothing is translatable now' }),
     };
-    expect(code(d, entry({ text: 'Hallo' }), strict)).toBe('ok');
-    expect(
-      code(d, {
-        type: 'restore-translation',
-        locale: 'nl_NL',
-        elementId: 'el-a',
-        entry: { status: 'orphaned', values: {} },
-      }),
-    ).toBe('invalid-argument');
-    expect(
-      code(d, {
-        type: 'restore-translation',
-        locale: 'nl_NL',
-        elementId: 'el-a',
-        entry: { status: 'draft', values: {} },
-        dropStream: true,
-      }),
-    ).toBe('invalid-argument');
+    const same = ok(d, { type: 'set-translation', locale: 'nl_NL', elementId: 'el-a', status: 'translated' });
+    expect(code(same.document, same.inverse, strict)).toBe('ok');
+    // impossible requests, built by editing a trusted inverse in place
+    const bad = (patch: (c: Record<string, unknown>) => void): string => {
+      const fresh = ok(d, { type: 'set-translation', locale: 'nl_NL', elementId: 'el-a', set: { text: 'Nieuw' } });
+      patch(fresh.inverse);
+      return code(fresh.document, fresh.inverse);
+    };
+    expect(bad((c) => (c['entry'] = { status: 'orphaned', values: {} }))).toBe('invalid-argument');
+    expect(bad((c) => (c['dropStream'] = true))).toBe('invalid-argument');
+  });
+
+  it('never drops the default-locale stream', () => {
+    const d = baseDoc();
+    const only: BuilderDocument = {
+      ...d,
+      translations: { en_US: { 'el-b': d.translations['en_US']?.['el-b'] ?? { status: 'draft', values: {} } } },
+    };
+    const edited = ok(only, { type: 'set-translation', locale: 'en_US', elementId: 'el-b', set: { text: 'Other' } });
+    const inverse = edited.inverse as unknown as Record<string, unknown>;
+    inverse['entry'] = null;
+    inverse['dropStream'] = true;
+    expect(code(edited.document, edited.inverse)).toBe('invalid-argument');
+    // undoing the creation of the only default-locale entry keeps the (empty) stream
+    const created = ok(
+      { ...only, translations: { en_US: {} } },
+      { type: 'set-translation', locale: 'en_US', elementId: 'el-b', set: { text: 'First' } },
+    );
+    const undone = ok(created.document, created.inverse);
+    expect(Object.keys(undone.document.translations)).toEqual(['en_US']);
+    expect(validateDocument(JSON.stringify(undone.document)).ok).toBe(true);
   });
 
   it('undoing the first translation of a locale removes the stream it created', () => {
@@ -316,11 +363,8 @@ describe('set-translation: no-ops, unset rules and the restore boundary', () => 
     expect(Object.keys(undone.document.translations)).toEqual(['en_US']);
     // a stream that already existed (even empty) is kept
     const emptyNl: BuilderDocument = { ...d, translations: { ...withoutNl.translations, nl_NL: {} } };
-    const again = ok(
-      ok(emptyNl, { type: 'set-translation', locale: 'nl_NL', elementId: 'el-b', set: { text: 'Tekst' } }).document,
-      { type: 'restore-translation', locale: 'nl_NL', elementId: 'el-b', entry: null },
-    );
-    expect(again.document).toEqual(emptyNl);
+    const again = ok(emptyNl, { type: 'set-translation', locale: 'nl_NL', elementId: 'el-b', set: { text: 'Tekst' } });
+    expect(ok(again.document, again.inverse).document).toEqual(emptyNl);
   });
 });
 
@@ -365,7 +409,7 @@ describe('set-translation with history', () => {
     const restored = ok(removed.document, removed.inverse);
     expect(restored.document.translations['nl_NL']?.['el-a']).toEqual({
       values: { text: 'Nieuw' },
-      sourceHash: 'abcdef12',
+      sourceHash: H({ text: 'Hello' }),
       status: 'draft',
     });
   });

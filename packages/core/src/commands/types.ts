@@ -62,7 +62,18 @@ export type Command =
       entry: TranslationEntry | null;
       /** With `entry: null`: also remove the locale's stream when it ends up empty (it did not exist before the edit). */
       dropStream?: boolean;
-    };
+      /** Statuses of the same element's entries in other locales that the edit changed (marked stale); put back exactly. */
+      statuses?: StatusRecord[];
+    }
+  /**
+   * Marks translations whose source changed as `stale`, keeping their text: every draft, translated or reviewed entry in
+   * `locale` (default: all non-default locales) whose `sourceHash` is missing or differs from the digest of the current
+   * default-locale source. Idempotent. `set-translation` does this per element on its own; this command is for documents
+   * changed by other means (imports, migrations, bulk edits).
+   */
+  | { type: 'mark-stale'; locale?: string }
+  /** Produced as the inverse of `mark-stale`: puts the previous statuses back on entries that are currently stale. */
+  | { type: 'restore-statuses'; statuses: StatusRecord[] };
 
 export const COMMAND_ERROR_CODES = [
   'element-not-found',
@@ -110,4 +121,11 @@ export interface CommandContext {
    * property id is accepted. Must be pure; if it throws, the command fails with `invalid-argument`.
    */
   translationValue?: (type: string, property: string, value: Json) => TranslationCheck;
+  /**
+   * The ids of the properties of `type` that count as source text when deciding whether a translation is stale (the registry
+   * returns the translatable ones; locale-specific values such as links are meant to differ per language). Without the hook
+   * every default-locale value counts. `undefined` means the type is unknown (its add-on is gone): nothing is judged stale
+   * for it. Must be pure.
+   */
+  sourceProperties?: (type: string) => readonly string[] | undefined;
 }

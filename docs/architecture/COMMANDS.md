@@ -13,7 +13,9 @@ Implements the command model of [SYSTEM.md](SYSTEM.md) ("Editor") for BWB-022, i
 | `set-style-rule` `{id, selector, declarations \| null, index?}` | Adds, replaces (in place) or removes the rule for a breakpoint/mode/state combination. | Never creates two rules with one selector. `null` removes. |
 | `set-class-ids` `{id, classIds \| null}` | Sets or clears the element's global classes. | Only classes present in the document's `classRefs`. |
 | `set-translation` `{locale, elementId, set?, unset?, status?}` | Sets and removes translatable values of one element in one locale; creates the entry when absent. | `status` is `draft`, `translated` or `reviewed`; omitted, it becomes `translated` in the default locale and `draft` elsewhere (editing leaves review). Unknown entry fields and `sourceHash` are kept. See `TRANSLATIONS.md`. |
-| `restore-translation` | Internal: the inverse of `set-translation`. | Puts back the complete previous entry, or removes it (and the locale stream when the edit created it). With a registry hook the restored values that differ from the current ones are checked like `set-translation` values. |
+| `mark-stale` `{locale?}` | Flags draft, translated and reviewed translations whose source marker is missing or differs from the current default-locale source as `stale`, keeping their text. | See `TRANSLATIONS.md`. Idempotent. |
+| `restore-statuses` | Internal: the inverse of `mark-stale`. | Sets exact statuses on live entries. |
+| `restore-translation` | Internal: the inverse of `set-translation`. | Puts back the complete previous entry, or removes it (and the locale stream when the edit created it), and the statuses of other locales' entries that a source edit flagged. With a registry hook the restored values that differ from the current ones are checked like `set-translation` values. |
 | `restore-style-rule` | Internal: the inverse of removing a rule. | Puts back the complete rule, unknown fields included, at its original position. |
 | `restore` | Internal: the inverse of `remove`. | Re-inserts the subtree and restores each translation entry's previous status. Checked against the current state: every status record must belong to the restored subtree and to an entry that is currently `orphaned`; anything else is a `stale-restore`. |
 
@@ -25,6 +27,8 @@ Implements the command model of [SYSTEM.md](SYSTEM.md) ("Editor") for BWB-022, i
 
 Property ids such as `toString`, `valueOf` and `hasOwnProperty` are valid and exist on every object's prototype, so all lookups use own-property checks.
 
+**Internal commands.** `restore-translation` and `restore-statuses` are accepted only as the inverse object a previous result handed out (identity, which does not survive copying or serialization); anything else is `invalid-argument`. The older internal inverses (`restore`, `restore-style-rule`) validate their payload against the current state instead.
+
 ## Errors
 
 `element-not-found`, `parent-not-found`, `duplicate-id`, `id-has-orphaned-translations` (a new element may not reuse the id of a removed element that still has orphaned translations; undo is the way back), `index-out-of-range`, `cycle` (moving an element into itself or its descendants), `depth-exceeded` (32), `node-limit-exceeded` (5 000), `document-too-large` (2 MiB), `disallowed-parent`, `invalid-argument` (malformed command or payload), `stale-restore`, `locale-not-found` (the locale is not one of the document's `locales`), `not-translatable` (the registry says the property is not translatable or locale-specific, or the type is unknown) and `invalid-translation` (a value its definition refuses). Codes are stable.
@@ -32,6 +36,8 @@ Property ids such as `toString`, `valueOf` and `hasOwnProperty` are valid and ex
 ## Registry hook
 
 `ctx.canNest(parentType | null, childType, intent)` is the seam for the element registry (BWB-021). For `insert` (intent `create`) every nesting inside the new subtree is checked, so a disallowed parent anywhere in it rejects the command. For `move` and `restore` (intent `relocate`) only the subtree root's new nesting is checked: nestings already inside the subtree were valid before and are not re-judged, so a container holding an element of a removed add-on can still be rearranged. Without a hook everything is allowed.
+
+`ctx.sourceProperties(type)` returns the ids that count as source text for stale detection, or `undefined` for an unknown type (BWB-105; `registry.sourceProperties`).
 
 `ctx.translationValue(type, property, value)` is the registry seam for `set-translation` (BWB-104): it returns `{ ok: true }` or `{ ok: false, code: 'not-translatable' | 'invalid-translation', message }`. `registry.translationValue` is that hook. Without a hook any property id is accepted.
 
@@ -55,4 +61,4 @@ Every command walks the tree to find its target and re-measures the result (dept
 
 ## Not here yet
 
-Stale detection and source hashes (BWB-105), locale management (adding and removing locales), global class and token edits (site-level, not part of a page document), coalescing of rapid property edits into one undo step (editor concern, BWB-050), and the registry's per-type property schemas (BWB-021).
+Locale management (adding and removing locales), global class and token edits (site-level, not part of a page document), coalescing of rapid property edits into one undo step (editor concern, BWB-050), and the registry's per-type property schemas (BWB-021).
