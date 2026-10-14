@@ -1,0 +1,8 @@
+node_modules
+dist
+coverage
+vendor
+pnpm-lock.yaml
+docs
+*.csv
+tooling/fixtures/bad

@@ -23,6 +23,20 @@ export function resolveTarget(key, value) {
   return key;
 }
 
+/** True if the directory (excluding dependencies, build output and fixtures) contains .ts/.tsx source files. */
+export function hasTypeScriptSources(dir) {
+  if (!existsSync(dir)) return false;
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (entry.isDirectory()) {
+      if (['node_modules', 'dist', 'coverage', 'fixtures', 'vendor'].includes(entry.name)) continue;
+      if (hasTypeScriptSources(join(dir, entry.name))) return true;
+    } else if (/\.(ts|tsx)$/.test(entry.name) && !entry.name.endsWith('.d.ts')) {
+      return true;
+    }
+  }
+  return false;
+}
+
 /** Reads the `packages:` list from pnpm-workspace.yaml (the only shape we use). */
 export function readWorkspaceGlobs(root) {
   const file = join(root, 'pnpm-workspace.yaml');
@@ -30,7 +44,10 @@ export function readWorkspaceGlobs(root) {
   const globs = [];
   let inPackages = false;
   for (const line of readFileSync(file, 'utf8').split(/\r?\n/)) {
-    if (/^packages:\s*$/.test(line)) { inPackages = true; continue; }
+    if (/^packages:\s*$/.test(line)) {
+      inPackages = true;
+      continue;
+    }
     if (inPackages) {
       const m = line.match(/^\s+-\s+['"]?([^'"#\s]+)['"]?\s*(#.*)?$/);
       if (m) globs.push(m[1]);
@@ -45,9 +62,12 @@ function expand(root, glob) {
     const dir = glob.slice(0, -2);
     const abs = join(root, dir);
     if (!existsSync(abs)) return [];
-    return readdirSync(abs).filter((e) => statSync(join(abs, e)).isDirectory()).map((e) => `${dir}/${e}`);
+    return readdirSync(abs)
+      .filter((e) => statSync(join(abs, e)).isDirectory())
+      .map((e) => `${dir}/${e}`);
   }
-  if (glob.includes('*')) throw new Error(`unsupported workspace glob "${glob}" (only "dir/*" and plain paths are supported)`);
+  if (glob.includes('*'))
+    throw new Error(`unsupported workspace glob "${glob}" (only "dir/*" and plain paths are supported)`);
   return existsSync(join(root, glob)) ? [glob] : [];
 }
 
@@ -68,29 +88,47 @@ export function check(root, config) {
       const target = resolveTarget(dep, value);
       for (const name of new Set([dep, target])) {
         if (denied.has(name) || (w && w.forbidExternal.includes(name))) {
-          errors.push(`${label}: forbidden dependency "${name}"${name !== dep ? ` (via alias "${dep}": "${value}")` : ''}`);
+          errors.push(
+            `${label}: forbidden dependency "${name}"${name !== dep ? ` (via alias "${dep}": "${value}")` : ''}`,
+          );
         }
       }
       if (!w) continue;
       for (const name of new Set([dep, target])) {
         if (!name.startsWith(config.scope)) continue;
-        if (!byShort.has(name.slice(config.scope.length))) errors.push(`${label}: depends on unknown internal package ${name}`);
-        else if (!allowedNames.has(name)) errors.push(`${label}: may not depend on ${name} (allowed: ${[...allowedNames].join(', ') || 'none'})`);
+        if (!byShort.has(name.slice(config.scope.length)))
+          errors.push(`${label}: depends on unknown internal package ${name}`);
+        else if (!allowedNames.has(name))
+          errors.push(`${label}: may not depend on ${name} (allowed: ${[...allowedNames].join(', ') || 'none'})`);
       }
-      if (dep.startsWith(config.scope) && !String(value).startsWith('workspace:')) errors.push(`${label}: ${dep} must use the workspace: protocol`);
+      if (dep.startsWith(config.scope) && !String(value).startsWith('workspace:'))
+        errors.push(`${label}: ${dep} must use the workspace: protocol`);
     }
   };
 
   for (const [path, w] of Object.entries(config.workspaces)) {
     const file = join(root, path, 'package.json');
-    if (!existsSync(file)) { errors.push(`${path}: package.json missing`); continue; }
+    if (!existsSync(file)) {
+      errors.push(`${path}: package.json missing`);
+      continue;
+    }
     let pkg;
-    try { pkg = JSON.parse(readFileSync(file, 'utf8')); }
-    catch (e) { errors.push(`${path}: package.json is not valid JSON (${e.message})`); continue; }
+    try {
+      pkg = JSON.parse(readFileSync(file, 'utf8'));
+    } catch (e) {
+      errors.push(`${path}: package.json is not valid JSON (${e.message})`);
+      continue;
+    }
     if (pkg.name !== w.name) errors.push(`${path}: name is "${pkg.name}", expected "${w.name}"`);
     if (pkg.private !== true) errors.push(`${path}: must be "private": true (nothing is published to npm)`);
     const all = Object.assign({}, ...DEP_FIELDS.map((f) => pkg[f] ?? {}));
     checkDeps(path, all, w);
+    // A package with TypeScript sources must be type-checked by the root `pnpm typecheck` (BWB-013).
+    if (hasTypeScriptSources(join(root, path))) {
+      if (!pkg.scripts?.typecheck) errors.push(`${path}: contains TypeScript sources but no "typecheck" script`);
+      if (!existsSync(join(root, path, 'tsconfig.json')))
+        errors.push(`${path}: contains TypeScript sources but no tsconfig.json`);
+    }
   }
 
   // The root manifest is part of the global ban (ADR 0008).
@@ -99,15 +137,18 @@ export function check(root, config) {
     try {
       const rootPkg = JSON.parse(readFileSync(rootFile, 'utf8'));
       checkDeps('package.json (root)', Object.assign({}, ...DEP_FIELDS.map((f) => rootPkg[f] ?? {})), null);
-    } catch (e) { errors.push(`package.json (root): not valid JSON (${e.message})`); }
+    } catch (e) {
+      errors.push(`package.json (root): not valid JSON (${e.message})`);
+    }
   }
   // ...and so is every resolution in the lockfile, which also catches transitive dependencies.
   const lock = join(root, 'pnpm-lock.yaml');
   if (existsSync(lock)) {
     const text = readFileSync(lock, 'utf8');
     for (const name of denied) {
-      const esc = name.replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&');
-      if (new RegExp(`(^|[\\s'"/])${esc}(@|['":\\s])`, 'm').test(text)) errors.push(`pnpm-lock.yaml: resolves forbidden package "${name}"`);
+      const esc = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      if (new RegExp(`(^|[\\s'"/])${esc}(@|['":\\s])`, 'm').test(text))
+        errors.push(`pnpm-lock.yaml: resolves forbidden package "${name}"`);
     }
   }
 
@@ -119,14 +160,22 @@ export function check(root, config) {
     const discovered = new Set();
     for (const g of globs) {
       let dirs;
-      try { dirs = expand(root, g); } catch (e) { errors.push(e.message); continue; }
+      try {
+        dirs = expand(root, g);
+      } catch (e) {
+        errors.push(e.message);
+        continue;
+      }
       for (const d of dirs) {
         if (existsSync(join(root, d, 'package.json'))) discovered.add(d);
         else errors.push(`${d}: matched by pnpm-workspace.yaml but has no package.json`);
       }
     }
     for (const d of discovered) {
-      if (!config.workspaces[d]) errors.push(`${d}: workspace package is not declared in tooling/boundaries.json${reserved.has(d) ? ' (reserved path now in use: declare it)' : ''}`);
+      if (!config.workspaces[d])
+        errors.push(
+          `${d}: workspace package is not declared in tooling/boundaries.json${reserved.has(d) ? ' (reserved path now in use: declare it)' : ''}`,
+        );
     }
     for (const p of Object.keys(config.workspaces)) {
       if (!discovered.has(p)) errors.push(`${p}: declared in boundaries.json but not matched by pnpm-workspace.yaml`);
@@ -134,12 +183,17 @@ export function check(root, config) {
   }
 
   // Internal dependency graph must be acyclic and allow-lists must name real packages.
-  for (const [short, w] of byShort) for (const a of w.allow) if (!byShort.has(a)) errors.push(`${w.path}: boundaries.json allows unknown package "${a}"`);
+  for (const w of byShort.values())
+    for (const a of w.allow)
+      if (!byShort.has(a)) errors.push(`${w.path}: boundaries.json allows unknown package "${a}"`);
   const visiting = new Set();
   const done = new Set();
   const visit = (short, trail) => {
     if (done.has(short)) return;
-    if (visiting.has(short)) { errors.push(`dependency cycle: ${[...trail, short].join(' -> ')}`); return; }
+    if (visiting.has(short)) {
+      errors.push(`dependency cycle: ${[...trail, short].join(' -> ')}`);
+      return;
+    }
     visiting.add(short);
     for (const next of byShort.get(short).allow) if (byShort.has(next)) visit(next, [...trail, short]);
     visiting.delete(short);

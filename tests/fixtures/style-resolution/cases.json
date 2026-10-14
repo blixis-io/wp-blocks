@@ -82,9 +82,7 @@
         { "origin": "token", "mode": "dark", "breakpoint": "mobile", "value": "tokendarkmobile" },
         { "origin": "class", "classOrder": 1, "value": "classbase" }
       ],
-      "expect": [
-        { "mode": "dark", "viewport": "mobile", "value": "classbase" }
-      ]
+      "expect": [{ "mode": "dark", "viewport": "mobile", "value": "classbase" }]
     },
     {
       "id": "later-class-wins-by-global-order",
@@ -93,7 +91,7 @@
         { "origin": "class", "classOrder": 1, "value": "first" },
         { "origin": "class", "classOrder": 2, "value": "second" }
       ],
-      "expect": [ { "mode": "light", "viewport": "desktop", "value": "second" } ]
+      "expect": [{ "mode": "light", "viewport": "desktop", "value": "second" }]
     },
     {
       "id": "class-state-vs-later-class-base",
@@ -149,8 +147,8 @@
     {
       "id": "no-matching-rule",
       "description": "A property with no matching rule resolves to nothing (inherits from CSS).",
-      "rules": [ { "origin": "element", "mode": "dark", "value": "white" } ],
-      "expect": [ { "mode": "light", "viewport": "desktop", "value": null } ]
+      "rules": [{ "origin": "element", "mode": "dark", "value": "white" }],
+      "expect": [{ "mode": "light", "viewport": "desktop", "value": null }]
     },
     {
       "id": "light-mode-override",

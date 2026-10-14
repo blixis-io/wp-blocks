@@ -4,3 +4,10 @@ packages:
   - wordpress/*
   - tests/*
   - tooling
+
+# Supply-chain policy (ADR 0010). Dependency install scripts are blocked unless a package is listed here.
+onlyBuiltDependencies: []
+# Do not install versions published less than one day ago.
+minimumReleaseAge: 1440
+# Record exact versions when adding dependencies.
+savePrefix: ''
