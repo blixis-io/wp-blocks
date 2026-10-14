@@ -30,6 +30,10 @@ updates:
       prefix-development: 'build'
     labels: ['area:dx']
     open-pull-requests-limit: 5
+    ignore:
+      # @types/node must match the supported Node major (package.json engines, .nvmrc). Raise it together with those.
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
   - package-ecosystem: composer
     directory: /
     schedule:
