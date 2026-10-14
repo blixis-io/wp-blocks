@@ -102,7 +102,7 @@ async function smoke() {
     if (!ok) failures.push(message);
   };
   const get = async (path) => {
-    const r = await fetch(base + path, { redirect: 'follow', signal: AbortSignal.timeout(15000) });
+    const r = await http(base + path, { redirect: 'follow', signal: AbortSignal.timeout(15000) });
     return { status: r.status, text: await r.text() };
   };
 
