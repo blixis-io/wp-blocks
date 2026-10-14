@@ -4,12 +4,14 @@
 services:
   wordpress:
     volumes:
+      - ../wordpress/plugin:/var/www/html/wp-content/plugins/blixis-builder:ro
       - ../wordpress/theme:/var/www/html/wp-content/themes/blixis:ro
       - ../tooling/wp-env/fixtures/themes/blixis-child-fixture:/var/www/html/wp-content/themes/blixis-child-fixture:ro
       - ../tooling/wp-env/fixtures/themes/blixis-child-invalid-fixture:/var/www/html/wp-content/themes/blixis-child-invalid-fixture:ro
       - ../tooling/wp-env/fixtures/themes/blixis-other-fixture:/var/www/html/wp-content/themes/blixis-other-fixture:ro
   cli:
     volumes:
+      - ../wordpress/plugin:/var/www/html/wp-content/plugins/blixis-builder:ro
       - ../wordpress/theme:/var/www/html/wp-content/themes/blixis:ro
       - ../tooling/wp-env/fixtures/themes/blixis-child-fixture:/var/www/html/wp-content/themes/blixis-child-fixture:ro
       - ../tooling/wp-env/fixtures/themes/blixis-child-invalid-fixture:/var/www/html/wp-content/themes/blixis-child-invalid-fixture:ro
