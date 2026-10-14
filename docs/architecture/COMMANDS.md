@@ -29,7 +29,7 @@ Property ids such as `toString`, `valueOf` and `hasOwnProperty` are valid and ex
 
 ## Registry hook
 
-`ctx.canNest(parentType | null, childType)` is the seam for the element registry (BWB-021): every nesting inside an inserted or moved subtree is checked, so a disallowed parent anywhere in the subtree rejects the command. Without a hook everything is allowed.
+`ctx.canNest(parentType | null, childType, intent)` is the seam for the element registry (BWB-021). For `insert` (intent `create`) every nesting inside the new subtree is checked, so a disallowed parent anywhere in it rejects the command. For `move` and `restore` (intent `relocate`) only the subtree root's new nesting is checked: nestings already inside the subtree were valid before and are not re-judged, so a container holding an element of a removed add-on can still be rearranged. Without a hook everything is allowed.
 
 ## History
 

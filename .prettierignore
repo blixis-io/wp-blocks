@@ -7,3 +7,4 @@ docs
 *.csv
 tooling/fixtures/bad
 packages/core/schema
+packages/element-registry/manifest

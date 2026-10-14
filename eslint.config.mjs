@@ -67,8 +67,12 @@ export default tseslint.config(
   },
   {
     // The core package runs in the browser editor and is mirrored by PHP: no Node APIs in its source (tests and scripts may).
-    files: ['packages/core/src/**/*.{ts,js,mjs}'],
-    ignores: ['packages/core/src/**/*.test.{ts,js,mjs}'],
+    files: [
+      'packages/{core,element-registry,design-tokens,capabilities,style-engine,canvas-bridge,extension-api}/src/**/*.{ts,js,mjs}',
+    ],
+    ignores: [
+      'packages/{core,element-registry,design-tokens,capabilities,style-engine,canvas-bridge,extension-api}/src/**/*.test.{ts,js,mjs}',
+    ],
     rules: {
       'no-restricted-imports': [
         'error',
@@ -78,12 +82,12 @@ export default tseslint.config(
             .filter((m) => !m.startsWith('_'))
             .map((name) => ({
               name,
-              message: 'packages/core source must not use Node APIs (it runs in the browser editor).',
+              message: 'Framework-free package source must not use Node APIs (it runs in the browser editor).',
             })),
           patterns: [
             {
               group: ['node:*'],
-              message: 'packages/core source must not use Node APIs (it runs in the browser editor).',
+              message: 'Framework-free package source must not use Node APIs (it runs in the browser editor).',
             },
             {
               group: [

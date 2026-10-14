@@ -6,6 +6,17 @@
   "license": "GPL-2.0-or-later",
   "type": "module",
   "dependencies": {
-    "@blixis/wp-core": "workspace:*"
+    "@blixis/wp-core": "workspace:*",
+    "zod": "4.6.7"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./manifest/core-elements.json": "./manifest/core-elements.json"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "manifest:generate": "node scripts/generate-manifest.ts",
+    "manifest:check": "node scripts/generate-manifest.ts --check"
   }
 }

@@ -1,0 +1,139 @@
+import type { ElementDefinition } from './definition.ts';
+import { ElementRegistry } from './registry.ts';
+
+const everything = ['@layout', '@content', '@media', '@interactive'];
+const inContainers = ['blixis/section', 'blixis/container'];
+
+/**
+ * The six elements of the Free builder (PRD section 6.2). These are definitions only: editors (BWB-054) and the PHP
+ * renderers (BWB-043) are built against them. Text properties are translatable, links are locale-specific, everything that
+ * is structure or presentation is invariant (FR-051).
+ */
+export const CORE_ELEMENTS: readonly ElementDefinition[] = [
+  {
+    type: 'blixis/section',
+    version: 1,
+    title: 'Section',
+    category: 'layout',
+    tier: 'free',
+    requiresApi: 1,
+    props: {
+      tag: {
+        kind: 'enum',
+        classification: 'invariant',
+        label: 'HTML element',
+        values: ['section', 'header', 'footer', 'main', 'aside', 'nav', 'article'],
+        default: 'section',
+      },
+    },
+    allowedParents: ['#root'],
+    allowedChildren: everything,
+  },
+  {
+    type: 'blixis/container',
+    version: 1,
+    title: 'Container',
+    category: 'layout',
+    tier: 'free',
+    requiresApi: 1,
+    props: {
+      maxWidth: {
+        kind: 'enum',
+        classification: 'invariant',
+        label: 'Maximum width',
+        values: ['narrow', 'default', 'wide', 'full'],
+        default: 'default',
+      },
+    },
+    allowedParents: inContainers,
+    allowedChildren: everything,
+  },
+  {
+    type: 'blixis/heading',
+    version: 1,
+    title: 'Heading',
+    category: 'content',
+    tier: 'free',
+    requiresApi: 1,
+    props: {
+      level: {
+        kind: 'integer',
+        classification: 'invariant',
+        label: 'Level',
+        min: 1,
+        max: 6,
+        default: 2,
+        required: true,
+      },
+      text: { kind: 'string', classification: 'translatable', label: 'Text', maxLength: 500, default: 'Heading' },
+    },
+    allowedParents: inContainers,
+    allowedChildren: [],
+  },
+  {
+    type: 'blixis/text',
+    version: 1,
+    title: 'Text',
+    category: 'content',
+    tier: 'free',
+    requiresApi: 1,
+    props: {
+      text: {
+        kind: 'string',
+        classification: 'translatable',
+        label: 'Text',
+        maxLength: 5000,
+        default: 'Write something',
+      },
+    },
+    allowedParents: inContainers,
+    allowedChildren: [],
+  },
+  {
+    type: 'blixis/image',
+    version: 1,
+    title: 'Image',
+    category: 'media',
+    tier: 'free',
+    requiresApi: 1,
+    props: {
+      attachmentId: { kind: 'media', classification: 'invariant', label: 'Image' },
+      alt: { kind: 'string', classification: 'translatable', label: 'Alternative text', maxLength: 500, default: '' },
+      decorative: { kind: 'boolean', classification: 'invariant', label: 'Decorative image', default: false },
+    },
+    allowedParents: inContainers,
+    allowedChildren: [],
+  },
+  {
+    type: 'blixis/button',
+    version: 1,
+    title: 'Button',
+    category: 'interactive',
+    tier: 'free',
+    requiresApi: 1,
+    props: {
+      label: { kind: 'string', classification: 'translatable', label: 'Label', maxLength: 100, default: 'Button' },
+      href: { kind: 'url', classification: 'locale-specific', label: 'Link', default: '#' },
+      variant: {
+        kind: 'enum',
+        classification: 'invariant',
+        label: 'Style',
+        values: ['solid', 'outline', 'link'],
+        default: 'solid',
+      },
+      newTab: { kind: 'boolean', classification: 'invariant', label: 'Open in a new tab', default: false },
+    },
+    allowedParents: inContainers,
+    allowedChildren: [],
+  },
+];
+
+/** A registry holding the six core elements. Add-ons register their own on top of it. */
+export function createCoreRegistry(): ElementRegistry {
+  const registry = new ElementRegistry();
+  for (const def of CORE_ELEMENTS) {
+    const result = registry.register(def, 'core');
+    if (!result.ok) throw new Error(`core element ${def.type} is invalid: ${result.errors.join('; ')}`);
+  }
+  return registry;
+}
