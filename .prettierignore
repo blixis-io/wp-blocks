@@ -7,5 +7,6 @@ docs
 *.csv
 tooling/fixtures/bad
 packages/core/schema
+packages/design-tokens/schema
 packages/element-registry/manifest
 packages/style-engine/manifest

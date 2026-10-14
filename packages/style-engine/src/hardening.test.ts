@@ -92,8 +92,13 @@ describe('hardening', () => {
       const result = validateDeclaration(name, value);
       if (!result.ok) continue;
       accepted += 1;
+      // Quoted plain names are legitimate in font-family and in custom properties; they must hold nothing else.
+      const quotes = result.value.match(/"[A-Za-z0-9][A-Za-z0-9 -]{0,62}"/g) ?? [];
+      const unquoted = result.value.replace(/"[A-Za-z0-9][A-Za-z0-9 -]{0,62}"/g, 'q');
+      if (quotes.length > 0)
+        expect(name === 'font-family' || name.startsWith('--blx-'), `${name}: ${value}`).toBe(true);
       for (const pattern of DANGEROUS)
-        expect(pattern.test(result.value), `${name}: ${value} -> ${result.value}`).toBe(false);
+        expect(pattern.test(unquoted), `${name}: ${value} -> ${result.value}`).toBe(false);
       const again = validateDeclaration(name, result.value);
       expect(again, `${name}: ${value}`).toEqual({ ok: true, name, value: result.value });
     }

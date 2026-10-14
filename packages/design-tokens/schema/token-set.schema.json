@@ -1,0 +1,128 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$ref": "#/$defs/TokenSet",
+  "$defs": {
+    "TokenSet": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "$ref": "#/$defs/__schema0"
+        },
+        "tokenVersion": {
+          "$ref": "#/$defs/__schema1"
+        },
+        "tokens": {
+          "$ref": "#/$defs/__schema2"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "tokenVersion",
+        "tokens"
+      ],
+      "additionalProperties": {
+        "$ref": "#/$defs/__schema9"
+      },
+      "propertyNames": {
+        "not": {
+          "enum": [
+            "__proto__",
+            "constructor",
+            "prototype"
+          ]
+        }
+      }
+    },
+    "__schema0": {
+      "type": "number",
+      "const": 1
+    },
+    "__schema1": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "__schema2": {
+      "maxItems": 500,
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Token"
+      }
+    },
+    "Token": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/__schema3"
+        },
+        "category": {
+          "$ref": "#/$defs/__schema4"
+        },
+        "value": {
+          "$ref": "#/$defs/__schema5"
+        },
+        "dark": {
+          "$ref": "#/$defs/__schema6"
+        },
+        "label": {
+          "$ref": "#/$defs/__schema7"
+        }
+      },
+      "required": [
+        "name",
+        "category",
+        "value"
+      ],
+      "additionalProperties": {
+        "$ref": "#/$defs/__schema8"
+      },
+      "propertyNames": {
+        "not": {
+          "enum": [
+            "__proto__",
+            "constructor",
+            "prototype"
+          ]
+        }
+      }
+    },
+    "__schema3": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 48,
+      "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+    },
+    "__schema4": {
+      "type": "string",
+      "enum": [
+        "color",
+        "font-family",
+        "font-size",
+        "spacing",
+        "radius",
+        "container",
+        "shadow"
+      ]
+    },
+    "__schema5": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512
+    },
+    "__schema6": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512
+    },
+    "__schema7": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80
+    },
+    "__schema8": {},
+    "__schema9": {}
+  },
+  "$id": "urn:blixis:wp-blocks:token-set:1",
+  "title": "Blixis design token set",
+  "description": "Generated from packages/design-tokens/src/schema.ts (do not edit). Shape only: value grammars, unique names and references are checked by validateTokenSet in @blixis/wp-style-engine."
+}

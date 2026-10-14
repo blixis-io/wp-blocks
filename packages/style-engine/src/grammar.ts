@@ -59,6 +59,8 @@ interface Policy {
   colorNames: boolean;
   commas: boolean;
   slash: boolean;
+  /** Quoted plain names (font families); the tokenizer only produces them where the caller allowed strings. */
+  strings: boolean;
 }
 
 const POLICY_COLOR: Policy = {
@@ -71,6 +73,7 @@ const POLICY_COLOR: Policy = {
   colorNames: true,
   commas: true,
   slash: true,
+  strings: false,
 };
 const POLICY_GRADIENT: Policy = {
   idents: set(GRADIENT_ARG_IDENTS, NAMED_COLORS),
@@ -82,6 +85,7 @@ const POLICY_GRADIENT: Policy = {
   colorNames: true,
   commas: true,
   slash: true,
+  strings: false,
 };
 const POLICY_TRACKS: Policy = {
   idents: set(TRACK_ARG_IDENTS),
@@ -93,6 +97,7 @@ const POLICY_TRACKS: Policy = {
   colorNames: false,
   commas: true,
   slash: false,
+  strings: false,
 };
 const POLICY_TRANSFORM: Policy = {
   idents: set(),
@@ -104,6 +109,7 @@ const POLICY_TRANSFORM: Policy = {
   colorNames: false,
   commas: true,
   slash: false,
+  strings: false,
 };
 const POLICY_EASING: Policy = {
   idents: set(['jump-start', 'jump-end', 'jump-none', 'jump-both', 'start', 'end']),
@@ -115,6 +121,7 @@ const POLICY_EASING: Policy = {
   colorNames: false,
   commas: true,
   slash: false,
+  strings: false,
 };
 /** Values of `--blx-*` custom properties and `var()` fallbacks: any plain token, no free functions. */
 const POLICY_CUSTOM: Policy = {
@@ -135,6 +142,7 @@ const POLICY_CUSTOM: Policy = {
   colorNames: true,
   commas: true,
   slash: true,
+  strings: true,
 };
 
 // ---- numbers --------------------------------------------------------------------------------------------------------
@@ -304,7 +312,8 @@ function checkList(list: readonly Component[], policy: Policy): Failure {
         if (!policy.percent) return bad('invalid-value', 'a percentage is not allowed here');
         break;
       case 'string':
-        return bad('syntax', 'strings are not allowed here');
+        if (!policy.strings) return bad('syntax', 'strings are not allowed here');
+        break;
       case 'hash':
         if (!policy.hash) return bad('invalid-value', 'a colour is not allowed here');
         break;
