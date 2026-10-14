@@ -262,3 +262,27 @@ test('reports a missing manifest, invalid JSON and a missing workspace file', ()
   rmSync(join(root, 'pnpm-workspace.yaml'));
   assert.ok(has(check(root, realConfig), 'pnpm-workspace.yaml missing'));
 });
+
+test('a package with TypeScript sources needs a typecheck script and tsconfig.json', () => {
+  const root = fixture(realConfig);
+  mkdirSync(join(root, 'packages', 'core', 'src'), { recursive: true });
+  writeFileSync(join(root, 'packages', 'core', 'src', 'index.ts'), 'export const x = 1;\n');
+  const errors = check(root, realConfig);
+  assert.ok(has(errors, 'packages/core', 'no "typecheck" script'), errors.join('\n'));
+  assert.ok(has(errors, 'packages/core', 'no tsconfig.json'), errors.join('\n'));
+  writeFileSync(join(root, 'packages', 'core', 'tsconfig.json'), '{}');
+  writeFileSync(
+    join(root, 'packages', 'core', 'package.json'),
+    JSON.stringify({ name: '@blixis/wp-core', private: true, scripts: { typecheck: 'tsc -p .' } }),
+  );
+  assert.deepEqual(check(root, realConfig), []);
+});
+
+test('fixtures, declaration files and node_modules do not count as TypeScript sources', () => {
+  const root = fixture(realConfig);
+  for (const d of ['fixtures', 'node_modules/x']) mkdirSync(join(root, 'tooling', d), { recursive: true });
+  writeFileSync(join(root, 'tooling', 'fixtures', 'a.ts'), 'export {};\n');
+  writeFileSync(join(root, 'tooling', 'node_modules', 'x', 'b.ts'), 'export {};\n');
+  writeFileSync(join(root, 'tooling', 'types.d.ts'), 'export {};\n');
+  assert.deepEqual(check(root, realConfig), []);
+});

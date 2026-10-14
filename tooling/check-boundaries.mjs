@@ -23,6 +23,20 @@ export function resolveTarget(key, value) {
   return key;
 }
 
+/** True if the directory (excluding dependencies, build output and fixtures) contains .ts/.tsx source files. */
+export function hasTypeScriptSources(dir) {
+  if (!existsSync(dir)) return false;
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (entry.isDirectory()) {
+      if (['node_modules', 'dist', 'coverage', 'fixtures', 'vendor'].includes(entry.name)) continue;
+      if (hasTypeScriptSources(join(dir, entry.name))) return true;
+    } else if (/\.(ts|tsx)$/.test(entry.name) && !entry.name.endsWith('.d.ts')) {
+      return true;
+    }
+  }
+  return false;
+}
+
 /** Reads the `packages:` list from pnpm-workspace.yaml (the only shape we use). */
 export function readWorkspaceGlobs(root) {
   const file = join(root, 'pnpm-workspace.yaml');
@@ -109,6 +123,12 @@ export function check(root, config) {
     if (pkg.private !== true) errors.push(`${path}: must be "private": true (nothing is published to npm)`);
     const all = Object.assign({}, ...DEP_FIELDS.map((f) => pkg[f] ?? {}));
     checkDeps(path, all, w);
+    // A package with TypeScript sources must be type-checked by the root `pnpm typecheck` (BWB-013).
+    if (hasTypeScriptSources(join(root, path))) {
+      if (!pkg.scripts?.typecheck) errors.push(`${path}: contains TypeScript sources but no "typecheck" script`);
+      if (!existsSync(join(root, path, 'tsconfig.json')))
+        errors.push(`${path}: contains TypeScript sources but no tsconfig.json`);
+    }
   }
 
   // The root manifest is part of the global ban (ADR 0008).

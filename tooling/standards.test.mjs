@@ -4,12 +4,17 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { findAttribution } from '../commitlint.config.mjs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const run = (args, input) => spawnSync('pnpm', ['exec', ...args], { cwd: root, encoding: 'utf8', input });
+const eslintStdin = (filename, code) => {
+  const out = run(['eslint', '--format', 'json', '--stdin', '--stdin-filename', filename], code);
+  return JSON.parse(out.stdout || '[]').flatMap((f) => f.messages.map((m) => m.ruleId));
+};
 const tmp = mkdtempSync(join(tmpdir(), 'blx-standards-'));
 test.after(() => rmSync(tmp, { recursive: true, force: true }));
 
@@ -93,4 +98,74 @@ test('commitlint allows human co-authors and ordinary words', () => {
     'feat: add reviewer notes\n\nCo-authored-by: Jane Doe <jane@example.com>\n\nGenerated fixtures are deterministic.',
   );
   assert.equal(r.status, 0, r.stdout);
+});
+
+test('attribution rule: line-based edge cases', () => {
+  const flagged = [
+    'Assisted-by: Claude:claude-opus',
+    'Generated-by: some tool',
+    'Co-authored-by:\nClaude <noreply@anthropic.com>',
+    'Co-authored-by: Helper <noreply@openai.com>',
+    'Co-Authored-By: GPT-5 <x@example.com>',
+    '— Claude',
+    'Generated with Claude Code',
+    'created using ChatGPT',
+    'done 🤖',
+  ];
+  for (const m of flagged) assert.notEqual(findAttribution(`feat: x\n\n${m}`), null, m);
+  const allowed = [
+    'Co-authored-by: Jane Doe <jane@ai.org>',
+    'Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>',
+    'Generated fixtures are deterministic.',
+    'Signed-off-by: Jane Doe <jane@example.com>',
+    'Refs #12',
+  ];
+  for (const m of allowed) assert.equal(findAttribution(`feat: x\n\n${m}`), null, m);
+});
+
+test('attribution rule: pathological input stays fast (no quadratic backtracking)', () => {
+  const start = Date.now();
+  findAttribution('Generated with '.repeat(25000));
+  findAttribution(('x'.repeat(1000) + '\n').repeat(300));
+  assert.ok(Date.now() - start < 1000, `took ${Date.now() - start}ms`);
+});
+
+test('the commit-msg hook runs commitlint and blocks a bad message', () => {
+  const file = join(tmp, 'msg.txt');
+  writeFileSync(file, 'not conventional');
+  const bad = spawnSync('sh', [join(root, '.husky/commit-msg'), file], { cwd: root, encoding: 'utf8' });
+  assert.notEqual(bad.status, 0);
+  writeFileSync(file, 'chore: valid message');
+  const good = spawnSync('sh', [join(root, '.husky/commit-msg'), file], { cwd: root, encoding: 'utf8' });
+  assert.equal(good.status, 0, good.stdout + good.stderr);
+});
+
+test('ESLint blocks React, dnd-kit and GSAP imports in framework-free packages', () => {
+  for (const mod of ['react', 'react-dom/client', 'zustand', '@dnd-kit/core', 'tailwindcss', 'gsap']) {
+    const rules = eslintStdin('packages/core/src/example.mjs', `import x from '${mod}';\nexport default x;\n`);
+    assert.ok(rules.includes('no-restricted-imports'), `${mod}: ${rules.join()}`);
+  }
+  for (const pkg of ['wordpress/theme/src/a.mjs', 'wordpress/plus/src/a.mjs']) {
+    assert.ok(eslintStdin(pkg, "import x from 'react';\nexport default x;\n").includes('no-restricted-imports'), pkg);
+  }
+});
+
+test('ESLint allows React in editor-ui and blocks GSAP everywhere', () => {
+  assert.ok(
+    !eslintStdin('packages/editor-ui/src/a.mjs', "import x from 'react';\nexport default x;\n").includes(
+      'no-restricted-imports',
+    ),
+  );
+  assert.ok(
+    eslintStdin('apps/editor/src/a.mjs', "import x from 'gsap';\nexport default x;\n").includes(
+      'no-restricted-imports',
+    ),
+  );
+});
+
+test('Prettier flags badly formatted code', () => {
+  const file = join(tmp, 'ugly.mjs');
+  writeFileSync(file, 'export const a  =   {b:1,\n c:2}\n');
+  const r = run(['prettier', '--config', join(root, '.prettierrc.json'), '--check', file]);
+  assert.notEqual(r.status, 0);
 });

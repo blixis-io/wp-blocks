@@ -33,6 +33,51 @@ export default tseslint.config(
     },
   },
   {
+    // Source-level boundary rule (ADR 0010): packages shared with PHP or the theme build, and the add-ons, must not
+    // import React, Zustand, dnd-kit or Tailwind; nothing may import GSAP (ADR 0008).
+    files: [
+      'packages/{core,design-tokens,capabilities,element-registry,style-engine,canvas-bridge,extension-api}/**/*.{js,mjs,cjs,ts,tsx}',
+      'wordpress/{theme,plus,pro}/**/*.{js,mjs,cjs,ts,tsx}',
+    ],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                'react',
+                'react/*',
+                'react-dom',
+                'react-dom/*',
+                'zustand',
+                'zustand/*',
+                '@dnd-kit/*',
+                'tailwindcss',
+                'tailwindcss/*',
+              ],
+              message: 'This package must stay framework-free (ADR 0010).',
+            },
+            { group: ['gsap', 'gsap/*', '@gsap/*'], message: 'GSAP is not approved (ADR 0008).' },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['**/*.{js,mjs,cjs,ts,tsx}'],
+    ignores: [
+      'packages/{core,design-tokens,capabilities,element-registry,style-engine,canvas-bridge,extension-api}/**',
+      'wordpress/{theme,plus,pro}/**',
+    ],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        { patterns: [{ group: ['gsap', 'gsap/*', '@gsap/*'], message: 'GSAP is not approved (ADR 0008).' }] },
+      ],
+    },
+  },
+  {
     // React rules apply only where React is allowed (ADR 0010): editor-ui, apps/editor, wordpress/plugin.
     files: ['packages/editor-ui/**/*.{ts,tsx}', 'apps/editor/**/*.{ts,tsx}', 'wordpress/plugin/**/*.{ts,tsx}'],
     plugins: { 'react-hooks': reactHooks, 'jsx-a11y': jsxA11y },
