@@ -22,6 +22,16 @@ Release: human approval → verify changelog/versions, migration and license com
 
 Do not deploy Plus/Pro source or credentials from public fork PR builds. Use environment protections and least-privilege tokens. Initial project provisioning requires separate permissions from regular CI.
 
+## Packaging (BWB-017)
+
+`pnpm build` (CI) and `pnpm build:packages` (strict: fails if a distribution is not scaffolded yet) run `tooling/build/package.mjs`. For each distribution in `tooling/build/distributions.json` (theme `blixis`, plugins `blixis-builder`, `blixis-plus`, `blixis-pro`; ADR 0009) it writes `dist/<slug>-<version>.zip`, a manifest (every file with size, SHA-256 and mode) and `SHA256SUMS`.
+
+- The version comes from the `Version:` header of the main file and must equal the workspace `package.json` version.
+- Archives have one top-level folder `<slug>/`, entries sorted by path, fixed DOS timestamps (1980-01-01), normalised permissions (0644/0755), UTF-8 names and no extra fields. The same input gives the same bytes with the same Node/zlib build; because zlib output can differ between builds, releases are verified by the per-file SHA-256 manifest, not only by archive bytes.
+- Never shipped: dependency folders, tests, fixtures, source maps, build and tool configuration (`package.json`, `composer.json`, lock files, PHPCS/PHPStan/PHPUnit config). The build aborts on secret-like files (`.env*`, keys, certificates, SQL dumps), symbolic links and unsupported file types.
+- Until the theme and plugin exist (P3/P4) the real distributions are skipped and reported as such; the behaviour is covered by tests on generated fixture packages (determinism, ordering, exclusions, forbidden files, version checks).
+- Deferred: the editor bundle build and source availability for compiled assets (WordPress.org guideline; with BWB-049 and BWB-074).
+
 ## Implemented pipeline (BWB-015)
 
 Workflow: `.github/workflows/ci.yml`, run on every pull request and on pushes to `main`.
@@ -31,9 +41,10 @@ Workflow: `.github/workflows/ci.yml`, run on every pull request and on pushes to
 | Commit and PR title policy (PRs only) | commitlint on every commit in the PR and on the PR title (squash merges use the title as the commit subject): Conventional Commits and the no-AI-attribution rule |
 | JavaScript | `pnpm check`: format, lint, typecheck, workspace boundaries, tooling tests; style-resolution fixtures (ADR 0005) |
 | PHP 8.2 / 8.3 / 8.5 | `composer validate --strict` and `composer run check` (PHPCS, PHPStan, PHPUnit) on the floor, the WordPress-recommended and the latest PHP (ADR 0001) |
+| Build and package | `pnpm build`: packages every scaffolded distribution (`tooling/build/distributions.json`) twice and fails if the archives differ; unscaffolded ones are reported as skipped; archives are uploaded as an artifact |
 | WordPress 7.0 / PHP 8.2 and 7.1 / PHP 8.5 | Starts the Compose environment (`docs/engineering/LOCAL-DEVELOPMENT.md`), seeds fixtures and runs `pnpm wp:smoke`; images pinned by digest |
 | Security | `pnpm audit` (high+), `composer audit`, licence policy (`tooling/check-licenses.mjs`, ADR 0008), GSAP/boundary check, gitleaks secret scan (pinned release, checksum-verified) |
-| CI | Aggregate status: `javascript`, `php`, `wordpress` and `security` must succeed (a skipped or cancelled job fails it); the commit policy must succeed on pull requests and be skipped otherwise; this is the single check to require when branch protection becomes available (BWB-125) |
+| CI | Aggregate status: `javascript`, `php`, `build`, `wordpress` and `security` must succeed (a skipped or cancelled job fails it); the commit policy must succeed on pull requests and be skipped otherwise; this is the single check to require when branch protection becomes available (BWB-125) |
 
 Hardening: top-level `permissions: contents: read`, no secrets, `pull_request` (never `pull_request_target`), `persist-credentials: false`, every third-party action pinned to a full commit SHA (the repository also enforces SHA pinning), PR text passed through environment variables, concurrency cancellation for PR runs. Repository Actions settings: default workflow token is read-only and Actions cannot approve pull requests. Dependabot (`.github/dependabot.yml`) proposes weekly, cooldown-delayed updates for actions, npm and Composer.
 
@@ -41,4 +52,4 @@ Licence policy details: SPDX expressions are parsed with grouping and AND/OR pre
 
 Deferred ADR 0008 gates (tracked in BWB-074, distribution and compliance): inventory of bundled assets (fonts, icons, images), a recorded-decisions file (`LICENSES.md`) and NOTICE generation. A direct push to `main` is not blocked by the commit-policy job (it runs on pull requests); that stays procedural until BWB-125.
 
-Not yet in the pipeline, on purpose: build and packaging (BWB-017), PHPUnit integration tests inside WordPress (BWB-018, BWB-039), end-to-end and accessibility suites (BWB-058, BWB-066), nightly jobs. Each of those issues adds its job to this workflow rather than a parallel one. Until branch protection exists the rule is procedural: no merge while the CI check is red (`GITFLOW.md`).
+Not yet in the pipeline, on purpose: building the editor bundle (Vite, with the editor in P5), PHPUnit integration tests inside WordPress (BWB-018, BWB-039), end-to-end and accessibility suites (BWB-058, BWB-066), nightly jobs. Each of those issues adds its job to this workflow rather than a parallel one. Until branch protection exists the rule is procedural: no merge while the CI check is red (`GITFLOW.md`).

@@ -32,7 +32,9 @@
     "wp:seed": "node tooling/wp-env/wp-env.mjs install",
     "wp:cli": "node tooling/wp-env/wp-env.mjs cli",
     "wp:logs": "node tooling/wp-env/wp-env.mjs logs",
-    "wp:smoke": "node tooling/wp-env/wp-env.mjs smoke"
+    "wp:smoke": "node tooling/wp-env/wp-env.mjs smoke",
+    "build": "node tooling/build/package.mjs --allow-missing --verify-reproducible",
+    "build:packages": "node tooling/build/package.mjs"
   },
   "devDependencies": {
     "@commitlint/cli": "21.2.3",

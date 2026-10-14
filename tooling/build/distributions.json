@@ -1,0 +1,58 @@
+{
+  "$comment": "Distributable packages (ADR 0009). Each is built from a workspace directory into <slug>-<version>.zip with a manifest and checksums. 'main' is the file whose header carries the version.",
+  "distributions": [
+    {
+      "slug": "blixis",
+      "kind": "theme",
+      "source": "wordpress/theme",
+      "main": "style.css",
+      "required": ["style.css", "index.php"]
+    },
+    {
+      "slug": "blixis-builder",
+      "kind": "plugin",
+      "source": "wordpress/plugin",
+      "main": "blixis-builder.php",
+      "required": ["blixis-builder.php"]
+    },
+    {
+      "slug": "blixis-plus",
+      "kind": "plugin",
+      "source": "wordpress/plus",
+      "main": "blixis-plus.php",
+      "required": ["blixis-plus.php"]
+    },
+    {
+      "slug": "blixis-pro",
+      "kind": "plugin",
+      "source": "wordpress/pro",
+      "main": "blixis-pro.php",
+      "required": ["blixis-pro.php"]
+    }
+  ],
+  "exclude": [
+    "node_modules",
+    ".git",
+    ".github",
+    ".DS_Store",
+    "tests",
+    "test",
+    "fixtures",
+    "coverage",
+    "dist",
+    "package.json",
+    "pnpm-lock.yaml",
+    "tsconfig.json",
+    "tsconfig.*.json",
+    "composer.json",
+    "composer.lock",
+    "phpcs.xml*",
+    "phpstan.neon*",
+    "phpunit.xml*",
+    "*.map",
+    "*.log",
+    "*.test.*",
+    "*.md.bak"
+  ],
+  "forbidden": [".env", ".env.*", "*.pem", "*.key", "*.p12", "id_rsa", "id_ed25519", "*.sqlite", "*.sql"]
+}
