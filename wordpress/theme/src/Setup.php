@@ -95,15 +95,19 @@ final class Setup {
 	 * @return array<string, array{url: string, dependencies: list<string>, version: string}> Styles by handle.
 	 */
 	public static function styles( string $stylesheet_uri, string $template_uri, string $version ): array {
-		return array(
-			'blixis-style'  => array(
-				'url'          => $stylesheet_uri,
+		$parent_style = $template_uri . '/style.css';
+		$is_child     = $stylesheet_uri !== $parent_style;
+		$styles       = array(
+			$is_child ? 'blixis-parent-style' : 'blixis-style' => array(
+				'url'          => $parent_style,
 				'dependencies' => array(),
 				'version'      => $version,
 			),
+		);
+		$styles      += array(
 			'blixis-tokens' => array(
 				'url'          => $template_uri . '/assets/css/tokens.css',
-				'dependencies' => array( 'blixis-style' ),
+				'dependencies' => array( $is_child ? 'blixis-parent-style' : 'blixis-style' ),
 				'version'      => $version,
 			),
 			'blixis-theme'  => array(
@@ -112,5 +116,13 @@ final class Setup {
 				'version'      => $version,
 			),
 		);
+		if ( $is_child ) {
+			$styles['blixis-style'] = array(
+				'url'          => $stylesheet_uri,
+				'dependencies' => array( 'blixis-theme' ),
+				'version'      => $version,
+			);
+		}
+		return $styles;
 	}
 }

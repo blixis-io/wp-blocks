@@ -421,6 +421,79 @@ async function smoke() {
             command('eval-file', '/fixtures/blixis-second-save.php');
             const second = JSON.parse(command('option', 'get', 'blixis_design_system', '--format=json'));
             check(second.tokenVersion === 2, 'a second save raises the token version');
+            // BWB-037: compare the raw persisted values across child and incompatible theme switches.
+            const snapshot = () =>
+              command(
+                'eval',
+                "echo wp_json_encode( array( 'setup' => get_option( 'blixis_setup' ), 'design' => get_option( 'blixis_design_system' ), 'history' => get_option( 'blixis_design_system_history' ), 'ui' => get_user_meta( get_user_by( 'login', 'admin' )->ID, 'blixis_setup_ui', true ), 'draft' => get_user_meta( get_user_by( 'login', 'admin' )->ID, 'blixis_setup_draft', true ) ) );",
+              );
+            const beforeSwitch = snapshot();
+            try {
+              command('theme', 'activate', 'blixis-child-fixture');
+              check(
+                command('eval', 'echo \\Blixis\\Theme\\Compat::active();') === '1',
+                'child inherits Blixis-Compat 1',
+              );
+              const childHome = await get('/');
+              check(
+                childHome.status === 200 &&
+                  childHome.text.includes('class="skip-link') &&
+                  childHome.text.includes('<main id="content"') &&
+                  childHome.text.includes('Blixis child fixture footer'),
+                'child renders inherited chrome and its footer override',
+              );
+              for (const asset of ['tokens.css', 'theme.css']) {
+                check(
+                  childHome.text.includes(`${base}/wp-content/themes/blixis/assets/css/${asset}`) &&
+                    !childHome.text.includes(`/wp-content/themes/blixis-child-fixture/assets/css/${asset}`),
+                  `child loads ${asset} from the parent URL`,
+                );
+              }
+              check(
+                childHome.text.includes(`${base}/wp-content/themes/blixis/style.css`) &&
+                  childHome.text.includes(`${base}/wp-content/themes/blixis-child-fixture/style.css`),
+                'child loads both the parent baseline and its own stylesheet',
+              );
+              const stylesInOrder = [
+                '/wp-content/themes/blixis/style.css',
+                '/wp-content/themes/blixis/assets/css/tokens.css',
+                '/wp-content/themes/blixis/assets/css/theme.css',
+                '/wp-content/themes/blixis-child-fixture/style.css',
+              ].map((url) => childHome.text.indexOf(url));
+              check(
+                stylesInOrder.every(
+                  (position, index) => position >= 0 && (index === 0 || position > stylesInOrder[index - 1]),
+                ),
+                'parent styles load before the child override',
+              );
+              check(
+                childHome.text.includes('--blx-color-bg:#ffffff'),
+                'child prints the saved design system inline CSS',
+              );
+              const childSetup = await http(`${base}/wp-admin/themes.php?page=blixis-setup`, {
+                headers: { cookie: adminCookie },
+              });
+              check(
+                childSetup.status === 200 && (await childSetup.text()).includes('Blixis setup'),
+                'admin can reach setup while the child is active',
+              );
+              command('theme', 'activate', 'blixis-child-invalid-fixture');
+              check(
+                command('eval', 'echo is_null( \\Blixis\\Theme\\Compat::active() ) ? "null" : "declared";') === 'null',
+                'invalid child header does not inherit compatibility',
+              );
+              command('theme', 'activate', 'blixis-other-fixture');
+              check(
+                command('eval', 'echo class_exists( "\\Blixis\\Theme\\Compat" ) ? "loaded" : "absent";') === 'absent',
+                'Blixis theme classes are absent on the standalone theme',
+              );
+            } finally {
+              command('theme', 'activate', 'blixis');
+            }
+            check(
+              snapshot() === beforeSwitch,
+              'theme switches and after_switch_theme preserve setup, design, history and user meta',
+            );
             const setupHtml = await (
               await http(`${base}/wp-admin/themes.php?page=blixis-setup`, { headers: { cookie: adminCookie } })
             ).text();

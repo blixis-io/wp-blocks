@@ -112,5 +112,14 @@ test(
       services.wordpress.volumes.some((v) => v.target === '/var/www/html/wp-content/themes/blixis'),
       'the theme is mounted under its slug',
     );
+    for (const fixture of ['blixis-child-fixture', 'blixis-child-invalid-fixture', 'blixis-other-fixture']) {
+      for (const service of ['wordpress', 'cli']) {
+        const mount = services[service].volumes.find((v) => v.target === `/var/www/html/wp-content/themes/${fixture}`);
+        assert.ok(mount, `${service} mounts ${fixture}`);
+        assert.equal(mount.type, 'bind');
+        assert.equal(mount.read_only, true);
+        assert.ok(existsSync(mount.source));
+      }
+    }
   },
 );

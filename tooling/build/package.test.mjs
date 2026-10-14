@@ -165,7 +165,17 @@ test('development files, tests, source maps and dependencies are not shipped', (
   const names = listZip(join(root, 'dist', 'blixis-1.2.3.zip'))
     .map((e) => e[0])
     .join();
-  for (const bad of ['package.json', 'tests', 'node_modules', '.map', 'theme.src.css', 'build-tokens.mjs'])
+  for (const bad of [
+    'package.json',
+    'tests',
+    'node_modules',
+    '.map',
+    'theme.src.css',
+    'build-tokens.mjs',
+    'tooling/',
+    'blixis-child-fixture',
+    'blixis-other-fixture',
+  ])
     assert.ok(!names.includes(bad), bad);
 });
 
