@@ -1,6 +1,6 @@
 # ADR 0003: Document model and persistence
 
-- Status: Accepted
+- Status: Accepted (storage clause conditional on the BWB-040 spike, tracked in #40)
 - Date: 2026-10-14
 - Issues: #7 (BWB-007), #19, #20, #40, #104
 - Deciders: owner, orchestrator

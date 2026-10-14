@@ -40,7 +40,7 @@ Route resolution matrix (default, prefix, unknown locale, unpublished locale 404
 Disabling native routing leaves documents intact; only `/nl/` URLs stop resolving (301 redirect option to default locale is a documented operator choice).
 
 ## Open questions
-- Owner: unpublished-locale response (404 chosen as default) vs redirect to default locale.
+- Decided 2026-10-14 (owner delegation): 404 stays the default for unpublished locales; a redirect-to-default option may be added later as an operator setting.
 - Which plugin adapter, if any, is first (decision deferred until market validation; not in Free 1.0).
 - Term/archive localisation strategy.
 
