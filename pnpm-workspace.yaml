@@ -7,9 +7,6 @@ packages:
 
 # Supply-chain policy (ADR 0010). Dependency install scripts are blocked unless a package is listed here.
 onlyBuiltDependencies: []
-# Tailwind's CLI needs this package for watch mode; its install script is not needed for our one-shot build.
-allowBuilds:
-  '@parcel/watcher': false
 # Do not install versions published less than one day ago.
 minimumReleaseAge: 1440
 # Record exact versions when adding dependencies.

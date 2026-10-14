@@ -13,8 +13,7 @@ test('theme CSS is current and scans only theme PHP templates', () => {
   const temp = mkdtempSync(join(tmpdir(), 'blx-theme-css-'));
   try {
     const output = join(temp, 'theme.css');
-    const cli = process.env.BLX_TAILWIND_BIN ?? join(theme, 'node_modules/.bin/tailwindcss');
-    const result = spawnSync(cli, ['-i', 'assets/css/theme.src.css', '-o', output, '--minify'], {
+    const result = spawnSync(process.execPath, ['build-css.mjs', output], {
       cwd: theme,
       encoding: 'utf8',
     });

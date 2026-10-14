@@ -59,6 +59,7 @@
     "phpunit.xml*",
     "*.map",
     "theme.src.css",
+    "build-css.mjs",
     "*.log",
     "*.test.*",
     "*.md.bak"
