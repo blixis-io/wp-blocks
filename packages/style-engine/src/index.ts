@@ -12,10 +12,8 @@ export {
 export {
   COMPILER_VERSION,
   COMPILE_LIMITS,
-  DEFAULT_BREAKPOINTS,
   LAYER_ORDER,
   compile,
-  type BreakpointDef,
   type CompileInput,
   type CompileIssue,
   type CompileIssueCode,
@@ -25,3 +23,25 @@ export {
   type TokenValue,
 } from './compile.ts';
 export { sha256Hex, shortHash } from './hash.ts';
+export {
+  DEFAULT_BREAKPOINTS,
+  breakpointsMatching,
+  validateBreakpoints,
+  viewportBreakpoint,
+  type BreakpointDef,
+} from './breakpoints.ts';
+export {
+  STATE_ORDER,
+  findDuplicateRule,
+  inspectProperty,
+  resolveProperty,
+  resolveStyle,
+  rulesFor,
+  type EditTarget,
+  type Inspected,
+  type Origin,
+  type Resolved,
+  type ResolveContext,
+  type ResolveRule,
+  type StyleSource,
+} from './resolve.ts';

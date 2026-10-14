@@ -1,5 +1,6 @@
 import type { BuilderDocument, ElementNode, StyleRule } from '@blixis/wp-core';
 import { at } from './at.ts';
+import { DEFAULT_BREAKPOINTS, validateBreakpoints, type BreakpointDef } from './breakpoints.ts';
 import { shortHash } from './hash.ts';
 import { sanitizeDeclarations, validateDeclaration } from './validate.ts';
 
@@ -8,19 +9,6 @@ export const COMPILER_VERSION = 1;
 
 type Mode = 'light' | 'dark';
 type State = 'hover' | 'focus' | 'focus-visible' | 'active';
-
-export interface BreakpointDef {
-  id: string;
-  /** `null` for the base (widest) breakpoint; a `max-width` in CSS pixels for the others. */
-  maxWidth: number | null;
-}
-
-/** ADR 0005: base, `tablet` up to 1024px, `mobile` up to 640px. Widest first; the order is fixed, the widths are configurable. */
-export const DEFAULT_BREAKPOINTS: readonly BreakpointDef[] = [
-  { id: 'base', maxWidth: null },
-  { id: 'tablet', maxWidth: 1024 },
-  { id: 'mobile', maxWidth: 640 },
-];
 
 /** A site-wide global class. Its position in the list decides precedence between classes (later wins), not `classIds` order. */
 export interface GlobalClass {
@@ -155,23 +143,6 @@ interface Group {
 
 const compare = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
 
-function validBreakpoints(list: readonly BreakpointDef[]): string | null {
-  const first = list[0];
-  if (first?.id !== 'base' || first.maxWidth !== null) return 'the first breakpoint must be base without a width';
-  const seen = new Set<string>(['base']);
-  let previous = Number.POSITIVE_INFINITY;
-  for (const bp of list.slice(1)) {
-    if (!/^[a-z][a-z0-9-]{0,31}$/.test(bp.id) || seen.has(bp.id)) return `invalid or repeated breakpoint id "${bp.id}"`;
-    seen.add(bp.id);
-    const width = bp.maxWidth;
-    if (width === null || !Number.isSafeInteger(width) || width < 1 || width > 10_000 || width >= previous) {
-      return `breakpoint "${bp.id}" needs an integer max-width below the previous one`;
-    }
-    previous = width;
-  }
-  return null;
-}
-
 /**
  * Compiles a document, its global classes and design tokens into one deterministic stylesheet (ADR 0005 section 3).
  *
@@ -200,7 +171,7 @@ export function compile(input: CompileInput, options: CompileOptions = {}): Comp
   };
 
   const breakpoints = input.breakpoints ?? DEFAULT_BREAKPOINTS;
-  const invalid = validBreakpoints(breakpoints);
+  const invalid = validateBreakpoints(breakpoints);
   if (invalid !== null) {
     issue('invalid-breakpoints', 'breakpoints', invalid);
     return { css: '', classNames, issues };

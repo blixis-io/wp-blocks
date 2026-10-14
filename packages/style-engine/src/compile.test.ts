@@ -7,6 +7,7 @@ import { at } from './at.ts';
 import { parse, resolve, resolveRoot, SELECTOR, type Context } from './cascade.test-helper.ts';
 import { COMPILER_VERSION, LAYER_ORDER, compile, type GlobalClass } from './compile.ts';
 import { sha256Hex, shortHash } from './hash.ts';
+import { resolveProperty, type ResolveRule, type State } from './resolve.ts';
 
 const here = dirname(fileURLToPath(import.meta.url));
 
@@ -510,49 +511,27 @@ describe('compile: conformance with the ADR 0005 fixtures', () => {
   });
 });
 
-// A TypeScript port of the lexicographic key of ADR 0005 section 1, independent of the compiler's layer/emission logic.
-const ORIGIN_RANK = { class: 0, element: 1 } as const;
-const STATE_RANK = [undefined, 'hover', 'focus', 'focus-visible', 'active'];
-const BPS = ['base', 'tablet', 'mobile'];
+// The reference resolver (resolve.ts) is the oracle: it implements the lexicographic key of ADR 0005 section 1 and is
+// independent of the compiler's layer and emission logic.
 function resolveByKey(
   rules: FixtureRule[],
   mode: 'light' | 'dark',
   viewport: string,
   states: string[],
 ): string | undefined {
-  let best: number[] | undefined;
-  let value: string | undefined;
-  for (const r of rules) {
-    if (r.mode !== undefined && r.mode !== mode) continue;
-    if (
-      r.breakpoint !== undefined &&
-      !['base', 'tablet', 'mobile']
-        .slice(0, viewport === 'desktop' ? 1 : viewport === 'tablet' ? 2 : 3)
-        .includes(r.breakpoint)
-    )
-      continue;
-    if (r.state !== undefined && !states.includes(r.state)) continue;
-    const layer = r.mode !== undefined ? (r.breakpoint !== undefined ? 3 : 2) : r.breakpoint !== undefined ? 1 : 0;
-    const key = [
-      ORIGIN_RANK[r.origin as 'class' | 'element'],
-      STATE_RANK.indexOf(r.state),
-      layer,
-      r.breakpoint === undefined ? -1 : BPS.indexOf(r.breakpoint),
-      r.classOrder ?? 0,
-    ];
-    const better =
-      best === undefined ||
-      key.some(
-        (k, i) =>
-          (k !== (best?.[i] ?? 0) ? k > (best?.[i] ?? 0) : false) &&
-          key.slice(0, i).every((p, j) => p === (best?.[j] ?? 0)),
-      );
-    if (better) {
-      best = key;
-      value = r.value;
-    }
-  }
-  return value;
+  const mapped: ResolveRule[] = rules.map((r) => ({
+    origin: r.origin as 'class' | 'element',
+    ...(r.classOrder === undefined ? {} : { classOrder: r.classOrder }),
+    ...(r.state === undefined ? {} : { state: r.state as State }),
+    ...(r.mode === undefined ? {} : { mode: r.mode }),
+    ...(r.breakpoint === undefined ? {} : { breakpoint: r.breakpoint }),
+    declarations: { color: r.value },
+  }));
+  return resolveProperty(mapped, 'color', {
+    breakpoint: viewport === 'desktop' ? 'base' : viewport,
+    mode,
+    states: states as State[],
+  })?.value;
 }
 
 describe('compile: randomized equivalence with the resolution key', () => {
