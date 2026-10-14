@@ -59,6 +59,8 @@ PHP requires `ext-intl` (NFC checks). The PHP helpers live under `tooling/php/sr
 
 Current suites: document fixtures and schema, design-token schema and corpus, the CSS declaration corpus and allow-list manifest, ADR 0005 resolution cases, the compile goldens and the element manifest. Rules enforced on both sides (`tests/fixtures/src/contracts.test.ts`, `tooling/php/tests/ContractsTest.php`):
 
+The CSS declaration corpus and CSS properties manifest are `full` PHP suites. `CssDeclarationValidatorTest` reads every declaration case and compares its canonical value or issue code, and checks that the plugin's bundled manifest is byte-identical to the style-engine manifest. The sync command copies both CSS and core-element manifests into `wordpress/plugin/data/`.
+
 1. Every JSON file in a directory named `corpus`, `manifest`, `schema`, `fixtures`, `golden` or `contracts`, anywhere in the repository (not a fixed list of roots), belongs to a suite. Only exact configuration paths (`tests/fixtures/package.json`, `tsconfig.json`, the registry itself) and `tooling/fixtures/` (inputs of the tooling tests) are exempt.
 2. Every file passes the strict JSON rules above (also schemas and manifests: they use integers only for now; a future schema needing fractional literals such as `multipleOf: 0.1` needs a documented exception and a PHP scanner mode first), and its canonical JSON is byte-identical in PHP and TypeScript.
 3. A pending or shape-only suite names a real roadmap issue; runners and test files exist.

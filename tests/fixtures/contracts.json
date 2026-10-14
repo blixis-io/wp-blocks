@@ -64,18 +64,20 @@
       "paths": ["packages/style-engine/corpus/declarations.json"],
       "ts": ["packages/style-engine/src/validate.test.ts"],
       "php": {
-        "level": "pending",
-        "issue": "BWB-048"
+        "level": "full",
+        "runner": "wordpress/plugin/tests/CssDeclarationValidatorTest.php",
+        "covers": ["test_declaration_corpus"]
       }
     },
     {
       "id": "css-properties-manifest",
       "description": "Allow-list data (properties, units, functions, colours, limits) the PHP CSS validator is built from.",
-      "paths": ["packages/style-engine/manifest/css-properties.json"],
+      "paths": ["packages/style-engine/manifest/css-properties.json", "wordpress/plugin/data/css-properties.json"],
       "ts": ["packages/style-engine/src/hardening.test.ts"],
       "php": {
-        "level": "pending",
-        "issue": "BWB-048"
+        "level": "full",
+        "runner": "wordpress/plugin/tests/CssDeclarationValidatorTest.php",
+        "covers": ["test_properties_manifest"]
       }
     },
     {
