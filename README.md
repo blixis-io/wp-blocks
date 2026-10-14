@@ -20,6 +20,7 @@ pnpm check:boundaries            # workspace dependency rules (ADR 0010)
 pnpm test:tooling                # tests for the repository tooling (20 tests)
 composer install                 # PHP tooling (PHP 8.2+ and Composer)
 pnpm check:php                   # PHPCS, PHPStan, PHPUnit
+pnpm wp:start && pnpm wp:smoke    # local WordPress in Docker (docs/engineering/LOCAL-DEVELOPMENT.md)
 python3 -I tests/fixtures/style-resolution/verify.py   # style-resolution reference fixtures (ADR 0005)
 ```
 

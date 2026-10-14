@@ -25,7 +25,14 @@
     "stan": "composer run stan",
     "test:php": "composer run test",
     "check:php": "composer run check",
-    "check:licenses": "node tooling/check-licenses.mjs"
+    "check:licenses": "node tooling/check-licenses.mjs",
+    "wp:start": "node tooling/wp-env/wp-env.mjs start",
+    "wp:stop": "node tooling/wp-env/wp-env.mjs down",
+    "wp:reset": "node tooling/wp-env/wp-env.mjs reset",
+    "wp:seed": "node tooling/wp-env/wp-env.mjs install",
+    "wp:cli": "node tooling/wp-env/wp-env.mjs cli",
+    "wp:logs": "node tooling/wp-env/wp-env.mjs logs",
+    "wp:smoke": "node tooling/wp-env/wp-env.mjs smoke"
   },
   "devDependencies": {
     "@commitlint/cli": "21.2.3",
