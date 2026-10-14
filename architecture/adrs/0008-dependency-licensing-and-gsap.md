@@ -2,7 +2,7 @@
 
 - Status: Reviewed
 - Date: 2026-10-14
-- Issues: #8 (BWB-008), #98, #99 (animation/Pro)
+- Issues: #8 (BWB-008), #87, #88 (Pro animation)
 - Deciders: owner (legal), orchestrator
 - Reviewers: Codex (see Review log)
 
@@ -16,7 +16,7 @@ Findings (2026-10-14; this is engineering diligence, not legal advice):
 ## Decision
 1. **GSAP is not adopted** in any Blixis package (theme, Builder, Plus, Pro, docs examples, tooling) and must not be added as a dependency or vendored. A CI check (dependency denylist) enforces this from P1.
 2. **Default animation engine: CSS transitions/animations and the Web Animations API** (browser-native, no licence exposure). FR-034 remains "approved engine only".
-3. **Reopening** requires (a) written consent from Webflow/GSAP or a legal opinion by counsel covering our exact use, (b) an owner-approved superseding ADR. Until then the Pro animation issue (#99) is scoped to CSS/WAAPI.
+3. **Reopening** requires (a) written consent from Webflow/GSAP or a legal opinion by counsel covering our exact use, (b) an owner-approved superseding ADR. Until then the Pro animation issues (#87 engine decision, #88 controls) are scoped to CSS/WAAPI.
 4. **Licence policy.** P1 adds an automated inventory (`license-checker`/Composer licences, SPDX) covering npm, Composer and bundled assets (fonts, icons, images, copied shadcn/ui source). Inventory output *feeds human review*; it is not the policy. Policy: every package distributed in a Free artifact must be GPL-compatible per the FSF list (permissive licences such as MIT/ISC/BSD/Apache-2.0/0BSD are expected; GPL-2.0-or-later and compatible LGPL also qualify; MPL-2.0 needs review). Dev-only tooling that is not distributed is out of scope for compatibility but is still recorded. Unknown, missing or non-listed licences fail CI until a recorded decision is added to `LICENSES.md`. The planned stack (React, TypeScript, Vite, Zustand, dnd-kit, Radix UI/shadcn/ui, Tailwind CSS, Vitest, Playwright) is **expected** to be compatible but must be confirmed from package metadata before first release. NOTICE is generated from the inventory.
 5. **Fonts:** preset fonts are installed through the WordPress Font Library; no font files are bundled unless their licence permits redistribution (SIL OFL or equivalent) and it is recorded in NOTICE.
 6. **Distribution:** Free plugin/theme source is GPL-compatible and contains no inactive premium code (WordPress.org guideline; re-read the current guidelines at submission). Paid add-ons are independent distributions; counsel reviews derivative-work implications before launch (owner action).
