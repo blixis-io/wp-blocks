@@ -1,0 +1,12 @@
+{
+  "name": "@blixis/wp-plugin",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Builder plugin JS build: packages the editor bundle for admin screens only.",
+  "license": "GPL-2.0-or-later",
+  "type": "module",
+  "dependencies": {
+    "@blixis/wp-editor": "workspace:*",
+    "@blixis/wp-design-tokens": "workspace:*"
+  }
+}

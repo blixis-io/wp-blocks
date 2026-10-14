@@ -1,0 +1,8 @@
+{
+  "name": "@blixis/wp-design-tokens",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Versioned token schema and resolution shared by theme, editor and style engine.",
+  "license": "GPL-2.0-or-later",
+  "type": "module"
+}

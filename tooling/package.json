@@ -1,0 +1,8 @@
+{
+  "name": "@blixis/wp-tooling",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Repository scripts and checks.",
+  "license": "GPL-2.0-or-later",
+  "type": "module"
+}

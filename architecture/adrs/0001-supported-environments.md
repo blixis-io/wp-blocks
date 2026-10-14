@@ -17,7 +17,7 @@ The blueprint proposed WordPress 7.0+ because of the Font Library, and left PHP/
 ## Decision
 1. **WordPress:** minimum **7.0**; tested against the minimum and the latest stable release. Reason: Font Library is a hard product requirement for classic themes. No Font-Library fallback is built (no second font subsystem, per PRD FR-005).
 2. **PHP:** minimum **8.2** for Blixis Theme, Builder, Plus and Pro; CI matrix 8.2 (minimum), 8.3 (WordPress-recommended), latest stable (8.5). We do not support PHP 7.4–8.1 even though WordPress itself runs on 7.4+. Rationale is support policy, not language features: 8.1 and below are end of life (no security fixes), and 8.2 is the oldest branch still receiving security fixes at decision time. When 8.2 reaches end of life (2026-12-31) the floor is expected to move to 8.3. A floor increase is an environment change, not an API break: it is announced one release ahead with an admin notice and changelog entry, and ships in a minor release; the plugin's `Requires PHP` header makes WordPress withhold the update from sites that do not meet it, so existing installs keep the last compatible version (activation is additionally guarded).
-3. **Node (development and CI only):** pin the current Active LTS (24.x) in `.nvmrc`/`engines`; CI also runs the oldest Maintenance LTS still supported. Node version is never a runtime requirement.
+3. **Node (development and CI only):** the repository pins Active LTS 24 (`.nvmrc`, `engines: >=24`). Node 22 (Maintenance) is not a supported development version. When Node 26 becomes LTS (scheduled 2026-10-28) CI adds it to the matrix; Node 24 leaves the matrix when it leaves Maintenance. Node version is never a runtime requirement. (Amended 2026-10-14 in BWB-011: the earlier text also called for the oldest Maintenance LTS.)
 4. **Package manager/tooling:** pnpm workspaces, Composer for PHP, Docker or `wp-env` for local WordPress (as in `CI-CD.md`), exact versions pinned in P1 (#11 onward).
 5. **Browsers (editor and public site):** the current and previous stable release of Chromium-based browsers, Firefox and Safari (WebKit). Public pages must remain readable without JavaScript.
 6. **Database/hosting:** whatever WordPress 7.0 requires; not further constrained. Multisite is tested but not promised in Free 1.0.
@@ -34,7 +34,7 @@ The blueprint proposed WordPress 7.0+ because of the Font Library, and left PHP/
 
 ## Test strategy
 - Activation guard unit/integration tests on unsupported WP/PHP versions (plugin and theme refuse to activate, no fatals, notice shown).
-- CI matrix: WP {7.0, latest} × PHP {8.2, 8.3, latest}; Node {24, oldest Maintenance LTS}.
+- CI matrix: WP {7.0, latest} × PHP {8.2, 8.3, latest}; Node {24, and 26 once it is LTS}.
 - A scheduled job re-checks php.net/nodejs.org/wordpress.org lifecycle pages and opens an issue when a floor is about to go end of life.
 
 ## Rollback

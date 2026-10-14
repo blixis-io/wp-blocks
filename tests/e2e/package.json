@@ -1,0 +1,11 @@
+{
+  "name": "@blixis/wp-e2e",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Playwright end-to-end suites.",
+  "license": "GPL-2.0-or-later",
+  "type": "module",
+  "dependencies": {
+    "@blixis/wp-core": "workspace:*"
+  }
+}

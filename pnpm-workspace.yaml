@@ -1,0 +1,6 @@
+packages:
+  - apps/*
+  - packages/*
+  - wordpress/*
+  - tests/*
+  - tooling

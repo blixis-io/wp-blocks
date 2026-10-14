@@ -4,3 +4,8 @@ node_modules/
 .env.*
 *.log
 coordination/.cache/
+dist/
+coverage/
+*.tsbuildinfo
+.turbo/
+vendor/

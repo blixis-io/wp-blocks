@@ -1,0 +1,13 @@
+{
+  "name": "@blixis/wp-extension-api",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Public, versioned extension API types and registration contract for Plus, Pro and third-party add-ons (ADR 0009). Add-on builds treat it as external: the Builder provides it at runtime, add-ons never bundle Builder code.",
+  "license": "GPL-2.0-or-later",
+  "type": "module",
+  "dependencies": {
+    "@blixis/wp-core": "workspace:*",
+    "@blixis/wp-element-registry": "workspace:*",
+    "@blixis/wp-capabilities": "workspace:*"
+  }
+}
