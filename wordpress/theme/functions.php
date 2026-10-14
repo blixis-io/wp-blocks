@@ -14,6 +14,8 @@ namespace Blixis\Theme;
 require_once __DIR__ . '/src/Compat.php';
 require_once __DIR__ . '/src/Setup.php';
 require_once __DIR__ . '/src/SetupState.php';
+require_once __DIR__ . '/src/TokenDraft.php';
+require_once __DIR__ . '/src/DesignSystemStore.php';
 require_once __DIR__ . '/src/SetupAdmin.php';
 
 Setup::register();

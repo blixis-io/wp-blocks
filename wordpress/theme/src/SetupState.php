@@ -121,6 +121,26 @@ final class SetupState {
 	}
 
 	/**
+	 * Resolve a wizard navigation action without WordPress state.
+	 *
+	 * @param int    $step Current step.
+	 * @param string $direction Back or next.
+	 * @return int|null Destination, or null for an invalid transition.
+	 */
+	public static function next_step( int $step, string $direction ): ?int {
+		if ( $step < 1 || $step > 6 ) {
+			return null;
+		}
+		if ( 'back' === $direction && $step > 1 ) {
+			return $step - 1;
+		}
+		if ( 'next' === $direction && $step < 6 ) {
+			return $step + 1;
+		}
+		return null;
+	}
+
+	/**
 	 * Read a user's resume step. Invalid data starts at the first step.
 	 *
 	 * @param int $user_id WordPress user ID.

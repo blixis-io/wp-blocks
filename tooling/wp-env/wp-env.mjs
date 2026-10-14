@@ -270,6 +270,82 @@ async function smoke() {
           check(response.status === 302, `${action} redirects after an authorized POST`);
           const state = JSON.parse(command('option', 'get', 'blixis_setup', '--format=json'));
           check(state.status === (action === 'start' ? 'in_progress' : 'dismissed'), `${action} updates site status`);
+          if (action === 'start') {
+            const wizardUrl = `${base}/wp-admin/themes.php?page=blixis-setup`;
+            const editorWizard = await http(wizardUrl, { headers: { cookie: editorCookie }, redirect: 'manual' });
+            check(editorWizard.status === 403, 'editor cannot open setup wizard');
+            const stepPage = async (step) => {
+              const response = await http(`${wizardUrl}&step=${step}`, { headers: { cookie: adminCookie } });
+              const html = await response.text();
+              check(
+                response.status === 200 &&
+                  html.includes(
+                    `<h2>${['', 'Choose preset', 'Colors', 'Typography', 'Spacing, radius and layout', 'Preview', 'Apply'][step]}</h2>`,
+                  ),
+                `wizard step ${step} renders`,
+              );
+              return html;
+            };
+            const submit = async (step, html, fields, direction = 'next') => {
+              const nonce = html.match(/name="blixis_setup_nonce_wizard" value="([a-z0-9]+)"/)?.[1];
+              check(Boolean(nonce), `wizard step ${step} has a nonce`);
+              return http(`${base}/wp-admin/admin-post.php`, {
+                method: 'POST',
+                redirect: 'manual',
+                headers: { cookie: adminCookie, 'content-type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({
+                  action: 'blixis_setup_wizard',
+                  step: String(step),
+                  direction,
+                  blixis_setup_nonce_wizard: nonce ?? '',
+                  ...fields,
+                }),
+              });
+            };
+            let html = await stepPage(1);
+            let response = await submit(1, html, { preset: 'ocean' });
+            check(response.status === 302, 'preset POST advances');
+            html = await stepPage(2);
+            const draftBefore = command('user', 'meta', 'get', 'admin', 'blixis_setup_draft');
+            check(draftBefore.includes('"preset":"ocean"'), 'preset POST saves user draft');
+            const colorFields = Object.fromEntries(
+              [...html.matchAll(/name="(tokens\[[^"]+\]\[(?:value|dark)\])" value="([^"]+)"/g)].map((m) => [
+                m[1],
+                m[2],
+              ]),
+            );
+            const low = { ...colorFields, 'tokens[color-text][value]': colorFields['tokens[color-bg][value]'] };
+            response = await submit(2, html, low);
+            check(
+              response.status === 302 && response.headers.get('location')?.includes('error=contrast'),
+              'low contrast POST rejected',
+            );
+            check(
+              command('user', 'meta', 'get', 'admin', 'blixis_setup_draft') === draftBefore,
+              'rejected contrast preserves draft',
+            );
+            response = await submit(2, html, colorFields);
+            check(response.status === 302, 'valid colors advance');
+            for (let step = 3; step <= 6; step++) {
+              html = await stepPage(step);
+              if (step < 5) {
+                const current = JSON.parse(command('user', 'meta', 'get', 'admin', 'blixis_setup_draft'));
+                const fields = Object.fromEntries(
+                  [...html.matchAll(/<select[^>]+name="tokens\[([^"]+)\]\[value\]"/g)].map((m) => [
+                    `tokens[${m[1]}][value]`,
+                    current.tokens[m[1]].value,
+                  ]),
+                );
+                response = await submit(step, html, fields);
+                check(response.status === 302, `wizard step ${step} advances`);
+              } else if (step === 5) {
+                response = await submit(step, html, {});
+                check(response.status === 302, 'preview advances to Apply');
+              }
+            }
+            command('user', 'meta', 'delete', 'admin', 'blixis_setup_draft');
+            command('user', 'meta', 'delete', 'admin', 'blixis_setup_ui');
+          }
         }
       }
       command(

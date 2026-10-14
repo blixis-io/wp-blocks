@@ -118,6 +118,17 @@
         "level": "pending",
         "issue": "BWB-112"
       }
+    },
+    {
+      "id": "setup-contrast-ratios",
+      "description": "Shared WCAG sRGB contrast ratios for TypeScript and PHP wizard validation.",
+      "paths": ["tests/fixtures/contrast-ratios.json"],
+      "ts": ["packages/design-tokens/src/contrast.test.ts"],
+      "php": {
+        "level": "full",
+        "runner": "wordpress/theme/tests/TokenDraftTest.php",
+        "covers": ["test_contrast_parity"]
+      }
     }
   ]
 }

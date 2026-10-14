@@ -1,0 +1,24 @@
+{
+  "cases": [
+    {
+      "foreground": "#000",
+      "background": "#fff",
+      "ratio": "21"
+    },
+    {
+      "foreground": "#777",
+      "background": "#fff",
+      "ratio": "4.478089453577214"
+    },
+    {
+      "foreground": "#ffffff",
+      "background": "#000000",
+      "ratio": "21"
+    },
+    {
+      "foreground": "#1e40af",
+      "background": "#ffffff",
+      "ratio": "8.722410784954462"
+    }
+  ]
+}
