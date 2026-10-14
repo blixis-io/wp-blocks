@@ -4,7 +4,9 @@
   "type": "project",
   "license": "GPL-2.0-or-later",
   "require": {
-    "php": ">=8.2"
+    "php": ">=8.2",
+    "ext-intl": "*",
+    "ext-json": "*"
   },
   "config": {
     "sort-packages": true,
@@ -48,5 +50,10 @@
     "test": "Run PHPUnit",
     "check": "Run all PHP checks",
     "audit": "Check dependencies for known security advisories"
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Blixis\\Tooling\\": "tooling/php/src/"
+    }
   }
 }

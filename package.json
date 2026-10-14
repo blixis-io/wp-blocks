@@ -20,7 +20,7 @@
     "commitlint": "commitlint --from origin/main --to HEAD",
     "check:boundaries": "node tooling/check-boundaries.mjs",
     "test:tooling": "node --test \"tooling/**/*.test.mjs\"",
-    "check": "pnpm run format:check && pnpm run lint && pnpm run typecheck && pnpm run check:boundaries && pnpm run test:tooling",
+    "check": "pnpm run format:check && pnpm run lint && pnpm run typecheck && pnpm run check:boundaries && pnpm run test:tooling && pnpm run test:unit",
     "lint:php": "composer run lint",
     "stan": "composer run stan",
     "test:php": "composer run test",
@@ -34,12 +34,14 @@
     "wp:logs": "node tooling/wp-env/wp-env.mjs logs",
     "wp:smoke": "node tooling/wp-env/wp-env.mjs smoke",
     "build": "node tooling/build/package.mjs --allow-missing --verify-reproducible",
-    "build:packages": "node tooling/build/package.mjs"
+    "build:packages": "node tooling/build/package.mjs",
+    "test:unit": "pnpm -r --if-present run test"
   },
   "devDependencies": {
     "@commitlint/cli": "21.2.3",
     "@commitlint/config-conventional": "21.2.3",
     "@eslint/js": "9.39.5",
+    "@types/node": "24.19.2",
     "eslint": "9.39.5",
     "eslint-config-prettier": "10.1.8",
     "eslint-plugin-jsx-a11y": "6.10.2",
@@ -48,6 +50,7 @@
     "husky": "9.1.7",
     "prettier": "3.9.10",
     "typescript": "6.0.3",
-    "typescript-eslint": "8.71.2"
+    "typescript-eslint": "8.71.2",
+    "vitest": "5.0.4"
   }
 }

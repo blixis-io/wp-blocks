@@ -4,6 +4,8 @@ parameters:
     level: 8
     phpVersion: 80200
     paths:
+        - tooling/php/src
+        - tooling/php/bin
         - tooling/php/tests
         - wordpress
     excludePaths:

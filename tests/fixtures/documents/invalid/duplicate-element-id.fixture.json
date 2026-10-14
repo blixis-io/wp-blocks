@@ -1,0 +1,19 @@
+{
+  "description": "Two elements share an id; documents with duplicate ids must be rejected (ADR 0003).",
+  "expected": { "error": "duplicate-element-id" },
+  "fixtureVersion": 1,
+  "id": "duplicate-element-id",
+  "input": {
+    "defaultLocale": "en_US",
+    "documentId": "doc-003",
+    "layoutRevision": 1,
+    "locales": ["en_US"],
+    "root": [
+      { "children": [], "id": "el-001", "props": {}, "type": "blixis/heading" },
+      { "children": [], "id": "el-001", "props": {}, "type": "blixis/text" }
+    ],
+    "schemaVersion": 1,
+    "translations": { "en_US": {} }
+  },
+  "tags": ["document", "invalid"]
+}

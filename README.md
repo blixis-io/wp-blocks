@@ -17,6 +17,7 @@ Requires Node 24 (`.nvmrc`) and pnpm (version pinned in `package.json`; `corepac
 ```bash
 pnpm install --frozen-lockfile   # or: pnpm setup
 pnpm check:boundaries            # workspace dependency rules (ADR 0010)
+pnpm test:unit                   # Vitest suites (fixtures, parity with PHP)
 pnpm test:tooling                # tests for the repository tooling (20 tests)
 composer install                 # PHP tooling (PHP 8.2+ and Composer)
 pnpm check:php                   # PHPCS, PHPStan, PHPUnit

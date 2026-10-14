@@ -42,7 +42,7 @@ Workflow: `.github/workflows/ci.yml`, run on every pull request and on pushes to
 | Job | What it enforces |
 |---|---|
 | Commit and PR title policy (PRs only) | commitlint on every commit in the PR and on the PR title (squash merges use the title as the commit subject): Conventional Commits and the no-AI-attribution rule |
-| JavaScript | `pnpm check`: format, lint, typecheck, workspace boundaries, tooling tests; style-resolution fixtures (ADR 0005) |
+| JavaScript | `pnpm check`: format, lint, typecheck, workspace boundaries, tooling tests, Vitest unit suites (incl. TS/PHP fixture parity); style-resolution fixtures (ADR 0005) |
 | PHP 8.2 / 8.3 / 8.5 | `composer validate --strict` and `composer run check` (PHPCS, PHPStan, PHPUnit) on the floor, the WordPress-recommended and the latest PHP (ADR 0001) |
 | Build and package | `pnpm build`: packages every scaffolded distribution (`tooling/build/distributions.json`) twice and fails if the archives differ; unscaffolded ones are reported as skipped; archives are uploaded as an artifact |
 | WordPress 7.0 / PHP 8.2 and 7.1 / PHP 8.5 | Starts the Compose environment (`docs/engineering/LOCAL-DEVELOPMENT.md`), seeds fixtures and runs `pnpm wp:smoke`; images pinned by digest |
