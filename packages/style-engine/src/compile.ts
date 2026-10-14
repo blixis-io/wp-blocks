@@ -43,6 +43,12 @@ export interface CompileInput {
   breakpoints?: readonly BreakpointDef[];
 }
 
+/**
+ * Bounds on the inputs that the document limits do not cover. Callers pass registries that were validated when saved; the
+ * compiler still refuses to do unbounded work for the extras and reports them.
+ */
+export const COMPILE_LIMITS = { maxClasses: 1000, maxTokens: 1000, maxRulesPerOwner: 256 } as const;
+
 export interface CompileOptions {
   /** Replaces the stable hash (tests only). */
   hash?: (text: string) => string;
@@ -56,6 +62,11 @@ export type CompileIssueCode =
   | 'unknown-class'
   | 'duplicate-class'
   | 'duplicate-token'
+  | 'duplicate-class-reference'
+  | 'invalid-identifier'
+  | 'too-many-classes'
+  | 'too-many-rules'
+  | 'too-many-tokens'
   | 'hash-collision';
 
 export interface CompileIssue {
@@ -110,13 +121,23 @@ const stateSuffix = (state: State | undefined): string => (state === undefined ?
 // ---- declarations ---------------------------------------------------------------------------------------------------
 
 /**
- * Custom properties first, then shorthands before longhands (fewer name parts first), then by name, so that a longhand
- * always follows the shorthand that contains it (`border` < `border-top` < `border-top-width`).
+ * Position of a property among the ones that overlap it: a declaration that covers more comes first, so the narrower one
+ * wins. Custom properties come first. Border properties are ranked explicitly (`border` < `border-width|style|color` <
+ * `border-top|right|bottom|left` < `border-top-width|...`), because their hyphen counts do not follow how much they cover;
+ * everything else is ranked by the number of name parts (`margin` < `margin-top`, `flex` < `flex-basis`, `gap` < `row-gap`).
  */
+function overlapRank(name: string): number {
+  if (name.startsWith('--')) return 0;
+  if (name === 'border') return 10;
+  if (name === 'border-width' || name === 'border-style' || name === 'border-color') return 20;
+  if (/^border-(?:top|right|bottom|left)$/.test(name)) return 30;
+  if (/^border-(?:top|right|bottom|left)-(?:width|style|color)$/.test(name)) return 40;
+  return name.split('-').length * 100;
+}
+
 function declarationText(declarations: Readonly<Record<string, string>>): string {
-  const rank = (name: string): number => (name.startsWith('--') ? 0 : name.split('-').length);
   return Object.keys(declarations)
-    .sort((a, b) => rank(a) - rank(b) || (a < b ? -1 : a > b ? 1 : 0))
+    .sort((a, b) => overlapRank(a) - overlapRank(b) || (a < b ? -1 : a > b ? 1 : 0))
     .map((name) => `${name}:${declarations[name] ?? ''}`)
     .join(';');
 }
@@ -164,6 +185,14 @@ function validBreakpoints(list: readonly BreakpointDef[]): string | null {
  */
 export function compile(input: CompileInput, options: CompileOptions = {}): CompileResult {
   const hash = options.hash ?? shortHash;
+  // Hashing refuses non-ASCII text; compile reports it instead of throwing.
+  const safeHash = (text: string): string | null => {
+    try {
+      return hash(text);
+    } catch {
+      return null;
+    }
+  };
   const issues: CompileIssue[] = [];
   const classNames = new Map<string, string[]>();
   const issue = (code: CompileIssueCode, path: string, message: string): void => {
@@ -199,11 +228,15 @@ export function compile(input: CompileInput, options: CompileOptions = {}): Comp
   };
 
   /** Validates one owner's rules (an element or a class) and returns those that can be emitted. */
-  const usable = (rules: readonly StyleRule[], path: string): { rule: StyleRule; decls: string }[] => {
+  const usable = (all: readonly StyleRule[], path: string, field: string): { rule: StyleRule; decls: string }[] => {
     const seen = new Set<string>();
     const out: { rule: StyleRule; decls: string }[] = [];
+    if (all.length > COMPILE_LIMITS.maxRulesPerOwner) {
+      issue('too-many-rules', path, `more than ${String(COMPILE_LIMITS.maxRulesPerOwner)} rules; the rest are ignored`);
+    }
+    const rules = all.slice(0, COMPILE_LIMITS.maxRulesPerOwner);
     rules.forEach((rule, index) => {
-      const where = `${path}.style[${String(index)}]`;
+      const where = `${path}.${field}[${String(index)}]`;
       if (rule.breakpoint !== undefined && !rankOf.has(rule.breakpoint)) {
         issue(
           'unknown-breakpoint',
@@ -216,25 +249,36 @@ export function compile(input: CompileInput, options: CompileOptions = {}): Comp
         issue('unknown-breakpoint', `${where}.breakpoint`, 'base is expressed by leaving the breakpoint out');
         return;
       }
+      const clean = sanitizeDeclarations(rule.declarations);
+      for (const problem of clean.issues) {
+        issue('invalid-declaration', `${where}.declarations.${problem.name}`, `${problem.code}: ${problem.message}`);
+      }
+      const decls = declarationText(clean.declarations);
+      if (decls === '') return;
+      // The first rule that has something to emit owns its (state, mode, breakpoint) combination.
       const identity = `${rule.state ?? '-'}|${rule.mode ?? '-'}|${rule.breakpoint ?? '-'}`;
       if (seen.has(identity)) {
         issue('duplicate-rule', where, 'two rules with the same state, mode and breakpoint; the first one is used');
         return;
       }
       seen.add(identity);
-      const clean = sanitizeDeclarations(rule.declarations);
-      for (const problem of clean.issues) {
-        issue('invalid-declaration', `${where}.declarations.${problem.name}`, `${problem.code}: ${problem.message}`);
-      }
-      const decls = declarationText(clean.declarations);
-      if (decls !== '') out.push({ rule, decls });
+      out.push({ rule, decls });
     });
     return out;
   };
 
   // Global classes: validated once, emitted only when an element uses them.
   const classInfo = new Map<string, { name: string; order: number; rules: { rule: StyleRule; decls: string }[] }>();
-  (input.classes ?? []).forEach((cls, index) => {
+  const classNameOwners = new Map<string, string>();
+  const allClasses = input.classes ?? [];
+  if (allClasses.length > COMPILE_LIMITS.maxClasses) {
+    issue(
+      'too-many-classes',
+      'classes',
+      `more than ${String(COMPILE_LIMITS.maxClasses)} classes; the rest are ignored`,
+    );
+  }
+  allClasses.slice(0, COMPILE_LIMITS.maxClasses).forEach((cls, index) => {
     if (classInfo.has(cls.id)) {
       issue(
         'duplicate-class',
@@ -243,11 +287,23 @@ export function compile(input: CompileInput, options: CompileOptions = {}): Comp
       );
       return;
     }
-    classInfo.set(cls.id, {
-      name: `blx-c-${hash(cls.id)}`,
-      order: index + 1,
-      rules: usable(cls.rules, `classes[${String(index)}]`),
-    });
+    const digest = safeHash(cls.id);
+    if (digest === null) {
+      issue('invalid-identifier', `classes[${String(index)}].id`, 'class ids must be ASCII');
+      return;
+    }
+    const name = `blx-c-${digest}`;
+    const other = classNameOwners.get(name);
+    if (other !== undefined) {
+      issue(
+        'hash-collision',
+        `classes[${String(index)}]`,
+        `the class name ${name} is already used by ${other}; this class is ignored`,
+      );
+      return;
+    }
+    classNameOwners.set(name, cls.id);
+    classInfo.set(cls.id, { name, order: index + 1, rules: usable(cls.rules, `classes[${String(index)}]`, 'rules') });
   });
   const usedClasses = new Set<string>();
 
@@ -261,9 +317,11 @@ export function compile(input: CompileInput, options: CompileOptions = {}): Comp
     const { node, path } = at(stack, stack.length - 1);
     stack.pop();
     const names: string[] = [];
-    const own = usable(node.style ?? [], path);
-    if (own.length > 0) {
-      const name = `blx-${hash(`${input.document.documentId}:${node.id}`)}`;
+    const own = usable(node.style ?? [], path, 'style');
+    const digest = own.length > 0 ? safeHash(`${input.document.documentId}:${node.id}`) : '';
+    if (digest === null) issue('invalid-identifier', path, 'document and element ids must be ASCII');
+    else if (own.length > 0) {
+      const name = `blx-${digest}`;
       const owner = owners.get(name);
       if (owner !== undefined && owner !== node.id) {
         issue('hash-collision', path, `the class name ${name} is already used by ${owner}; this element is not styled`);
@@ -273,7 +331,13 @@ export function compile(input: CompileInput, options: CompileOptions = {}): Comp
         for (const { rule, decls } of own) add('el', name, 0, rule, decls);
       }
     }
+    const referenced = new Set<string>();
     (node.classIds ?? []).forEach((id, index) => {
+      if (referenced.has(id)) {
+        issue('duplicate-class-reference', `${path}.classIds[${String(index)}]`, `the class ${id} is listed twice`);
+        return;
+      }
+      referenced.add(id);
       const info = classInfo.get(id);
       if (info === undefined) {
         issue('unknown-class', `${path}.classIds[${String(index)}]`, `the class ${id} is not defined`);
@@ -330,9 +394,13 @@ export function compile(input: CompileInput, options: CompileOptions = {}): Comp
 
 /** Tokens: custom properties on the root, base values first, then light and dark overrides (and their `auto` media forms). */
 function compileTokens(
-  tokens: readonly TokenValue[],
+  allTokens: readonly TokenValue[],
   issue: (code: CompileIssueCode, path: string, message: string) => void,
 ): string {
+  if (allTokens.length > COMPILE_LIMITS.maxTokens) {
+    issue('too-many-tokens', 'tokens', `more than ${String(COMPILE_LIMITS.maxTokens)} tokens; the rest are ignored`);
+  }
+  const tokens = allTokens.slice(0, COMPILE_LIMITS.maxTokens);
   const byMode = new Map<Mode | 'base', Record<string, string>>();
   const seen = new Set<string>();
   tokens.forEach((token, index) => {

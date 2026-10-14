@@ -604,3 +604,93 @@ describe('compile: randomized equivalence with the resolution key', () => {
     expect(checked).toBe(6000);
   });
 });
+
+describe('compile: review hardening', () => {
+  it('detects collisions between global class names and ignores the second class', () => {
+    const classes: GlobalClass[] = [
+      { id: 'cls-001', rules: [{ declarations: { color: 'red' } }] },
+      { id: 'cls-002', rules: [{ declarations: { color: 'blue' } }] },
+    ];
+    const d = doc([node('el-a', { classIds: ['cls-001'] }), node('el-b', { classIds: ['cls-002'] })]);
+    const result = compile({ document: d, classes }, { hash: () => 'cccccccccccc' });
+    expect(result.issues.map((i) => i.code)).toEqual(['hash-collision', 'unknown-class']);
+    expect(result.css).toContain('color:red');
+    expect(result.css).not.toContain('color:blue');
+    expect(result.classNames.has('el-b')).toBe(false);
+  });
+
+  it('bounds classes, tokens and rules per owner', () => {
+    const classes: GlobalClass[] = Array.from({ length: 1001 }, (_v, i) => ({
+      id: `cls-${String(i).padStart(4, '0')}`,
+      rules: [],
+    }));
+    const tokens = Array.from({ length: 1001 }, (_v, i) => ({ name: `--blx-t${String(i)}`, value: '1' }));
+    const result = compile({ document: doc([node('el-a')]), classes, tokens });
+    expect(result.issues.map((i) => i.code)).toEqual(['too-many-classes', 'too-many-tokens']);
+    expect(result.css).not.toContain('--blx-t1000');
+    expect(result.css).toContain('--blx-t999:1');
+    const rules: StyleRule[] = Array.from({ length: 257 }, (_v, i) => ({ declarations: { width: `${String(i)}px` } }));
+    const mutated = doc([node('el-a')]);
+    const first = at(mutated.root, 0) as { style?: StyleRule[] };
+    first.style = rules;
+    const limited = compile({ document: mutated });
+    expect(limited.issues[0]?.code).toBe('too-many-rules');
+    expect(limited.issues).toHaveLength(256);
+    expect(limited.css).toContain('width:0px');
+    expect(limited.css).not.toContain('width:256px');
+  });
+
+  it('puts narrower border settings after broader ones', () => {
+    const d = doc([
+      node('el-a', {
+        style: [
+          {
+            declarations: {
+              'border-top-color': 'red',
+              'border-top': '1px solid blue',
+              'border-color': 'green',
+              'border-width': '2px',
+              border: '3px solid black',
+              'border-top-width': '4px',
+              'border-radius': '4px',
+              'border-top-left-radius': '8px',
+            },
+          },
+        ],
+      }),
+    ]);
+    const { css } = compile({ document: d });
+    expect(css.indexOf('border:3px')).toBeLessThan(css.indexOf('border-width:2px'));
+    expect(css.indexOf('border-width:2px')).toBeLessThan(css.indexOf('border-top:1px'));
+    expect(css.indexOf('border-color:green')).toBeLessThan(css.indexOf('border-top:1px'));
+    expect(css.indexOf('border-top:1px')).toBeLessThan(css.indexOf('border-top-width:4px'));
+    expect(css.indexOf('border-radius:4px')).toBeLessThan(css.indexOf('border-top-left-radius:8px'));
+  });
+
+  it('lets the first rule that has something to emit own its combination', () => {
+    const d = doc([node('el-a')]);
+    (at(d.root, 0) as { style?: StyleRule[] }).style = [
+      { declarations: { behavior: 'url(x)' } },
+      { declarations: { color: 'red' } },
+      { declarations: { color: 'blue' } },
+    ];
+    const result = compile({ document: d });
+    expect(result.issues.map((i) => i.code)).toEqual(['invalid-declaration', 'duplicate-rule']);
+    expect(result.css).toContain('color:red');
+    expect(result.css).not.toContain('color:blue');
+  });
+
+  it('reports repeated class references and non-ASCII identifiers instead of throwing', () => {
+    const d = doc([node('el-a', { classIds: ['cls-001'] })]);
+    (at(d.root, 0) as { classIds?: string[] }).classIds = ['cls-001', 'cls-001'];
+    const classes: GlobalClass[] = [{ id: 'cls-001', rules: [{ declarations: { color: 'red' } }] }];
+    expect(compile({ document: d, classes }).issues.map((i) => i.code)).toEqual(['duplicate-class-reference']);
+    expect(compile({ document: d, classes }).classNames.get('el-a')).toHaveLength(1);
+
+    const unicode = doc([node('el-a', { style: [{ declarations: { color: 'red' } }] })]);
+    (unicode as { documentId: string }).documentId = 'döc-001';
+    const result = compile({ document: unicode, classes: [{ id: 'cls-é', rules: [] }] });
+    expect(result.issues.map((i) => i.code)).toEqual(['invalid-identifier', 'invalid-identifier']);
+    expect(result.classNames.size).toBe(0);
+  });
+});

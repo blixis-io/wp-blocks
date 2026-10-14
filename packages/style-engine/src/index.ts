@@ -11,6 +11,7 @@ export {
 } from './validate.ts';
 export {
   COMPILER_VERSION,
+  COMPILE_LIMITS,
   DEFAULT_BREAKPOINTS,
   LAYER_ORDER,
   compile,
