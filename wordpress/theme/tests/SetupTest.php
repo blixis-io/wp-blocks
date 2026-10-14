@@ -62,4 +62,16 @@ final class SetupTest extends TestCase {
 			$this->assertStringContainsString( $needle, $footer, $needle );
 		}
 	}
+
+	/**
+	 * The static theme asset follows the WordPress header stylesheet and uses the theme version.
+	 */
+	public function test_compiled_theme_style_is_enqueued(): void {
+		$styles = Setup::styles( 'https://example.test/child/style.css', 'https://example.test/blixis', '0.1.0' );
+		$this->assertSame( array( 'blixis-style', 'blixis-theme' ), array_keys( $styles ) );
+		$this->assertSame( 'https://example.test/blixis/assets/css/theme.css', $styles['blixis-theme']['url'] );
+		$this->assertSame( array( 'blixis-style' ), $styles['blixis-theme']['dependencies'] );
+		$this->assertSame( '0.1.0', $styles['blixis-theme']['version'] );
+		$this->assertFileExists( dirname( __DIR__ ) . '/assets/css/theme.css' );
+	}
 }

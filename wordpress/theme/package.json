@@ -5,7 +5,15 @@
   "description": "Blixis theme assets (Tailwind v4 build). No editor code.",
   "license": "GPL-2.0-or-later",
   "type": "module",
+  "scripts": {
+    "build:css": "node build-css.mjs"
+  },
   "dependencies": {
     "@blixis/wp-design-tokens": "workspace:*"
+  },
+  "devDependencies": {
+    "@tailwindcss/node": "4.3.3",
+    "@tailwindcss/oxide": "4.3.3",
+    "tailwindcss": "4.3.3"
   }
 }

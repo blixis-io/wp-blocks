@@ -15,7 +15,7 @@ Tags: custom-menu, featured-images, threaded-comments, translation-ready
 Blixis-Compat: 1
 */
 
-/* Minimal base styles. Design tokens (BWB-031) and the Tailwind build (BWB-030) extend this file's role later. */
+/* Theme header and accessibility defaults. Layout utilities live in assets/css/theme.css. */
 *,
 *::before,
 *::after {
@@ -37,14 +37,6 @@ img,
 video {
   max-width: 100%;
   height: auto;
-}
-
-.site-header,
-.site-main,
-.site-footer {
-  max-width: 72rem;
-  margin-inline: auto;
-  padding: 1rem;
 }
 
 .screen-reader-text {

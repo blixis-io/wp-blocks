@@ -1,5 +1,6 @@
 node_modules
 dist
+wordpress/theme/assets/css/theme.css
 coverage
 vendor
 pnpm-lock.yaml

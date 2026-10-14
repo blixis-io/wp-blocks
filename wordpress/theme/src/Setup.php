@@ -62,11 +62,40 @@ final class Setup {
 	}
 
 	/**
-	 * Loads the theme stylesheet, versioned by the theme version.
+	 * Loads the theme header styles and compiled utilities, versioned by the theme version.
 	 *
 	 * @return void
 	 */
 	public static function enqueue(): void {
-		wp_enqueue_style( 'blixis-style', get_stylesheet_uri(), array(), wp_get_theme()->get( 'Version' ) );
+		$version = wp_get_theme()->get( 'Version' );
+		if ( false === $version ) {
+			return;
+		}
+		foreach ( self::styles( get_stylesheet_uri(), get_template_directory_uri(), $version ) as $handle => $style ) {
+			wp_enqueue_style( $handle, $style['url'], $style['dependencies'], $style['version'] );
+		}
+	}
+
+	/**
+	 * Describes the styles in enqueue order.
+	 *
+	 * @param string $stylesheet_uri Active theme stylesheet URL.
+	 * @param string $template_uri   Parent theme directory URL.
+	 * @param string $version        Theme version.
+	 * @return array<string, array{url: string, dependencies: list<string>, version: string}> Styles by handle.
+	 */
+	public static function styles( string $stylesheet_uri, string $template_uri, string $version ): array {
+		return array(
+			'blixis-style' => array(
+				'url'          => $stylesheet_uri,
+				'dependencies' => array(),
+				'version'      => $version,
+			),
+			'blixis-theme' => array(
+				'url'          => $template_uri . '/assets/css/theme.css',
+				'dependencies' => array( 'blixis-style' ),
+				'version'      => $version,
+			),
+		);
 	}
 }

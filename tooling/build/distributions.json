@@ -6,7 +6,7 @@
       "kind": "theme",
       "source": "wordpress/theme",
       "main": "style.css",
-      "required": ["style.css", "index.php"],
+      "required": ["style.css", "index.php", "assets/css/theme.css"],
       "tier": "free",
       "identity": "Theme Name"
     },
@@ -58,6 +58,8 @@
     "phpstan.neon*",
     "phpunit.xml*",
     "*.map",
+    "theme.src.css",
+    "build-css.mjs",
     "*.log",
     "*.test.*",
     "*.md.bak"
