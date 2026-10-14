@@ -8,5 +8,15 @@
   "dependencies": {
     "@blixis/wp-core": "workspace:*",
     "@blixis/wp-design-tokens": "workspace:*"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./manifest/css-properties.json": "./manifest/css-properties.json"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "manifest:generate": "node scripts/generate-manifest.ts",
+    "manifest:check": "node scripts/generate-manifest.ts --check"
   }
 }

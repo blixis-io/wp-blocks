@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { DOCUMENT_LIMITS } from './limits.ts';
 import { BreakpointIdSchema, ModeSchema, NO_RESERVED_PROPERTY_NAMES, StateSchema } from './primitives.ts';
 
-/** A CSS property name or a `--blx-*` custom property. The value allow-list is enforced by BWB-023. */
+/** A CSS property name or a `--blx-*` custom property. The value allow-list is enforced by `@blixis/wp-style-engine` (BWB-023, docs/architecture/CSS-VALIDATION.md). */
 export const DECLARATION_NAME_PATTERN = '^(?:--blx-[a-z0-9-]{1,64}|[a-z][a-z0-9-]{0,63})$';
 
 /**

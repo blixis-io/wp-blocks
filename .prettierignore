@@ -8,3 +8,4 @@ docs
 tooling/fixtures/bad
 packages/core/schema
 packages/element-registry/manifest
+packages/style-engine/manifest
