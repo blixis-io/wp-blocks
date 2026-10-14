@@ -1,0 +1,5 @@
+Implemented BWB-038 on `feat/38-theme-accessibility-audit` without committing or pushing.
+
+The change adds a dependency-free [HTML structure auditor](tooling/a11y/audit-html.mjs) with unit tests, extends the [WordPress smoke](tooling/wp-env/wp-env.mjs) to audit seven seeded views in English and Arabic RTL, fixes theme headings and landmarks, and adds [RTL and color-use tests](tooling/theme-rtl.test.mjs). The automated checks and remaining manual checks are documented in [THEME.md](docs/architecture/THEME.md).
+
+**Verification:** Prettier, build, focused Node tests, 155 PHPUnit tests, package unit tests, PHPCS, and PHPStan in single-process debug mode passed. `pnpm run check` remains red because pnpm’s license inventory lacks a package index and the default PHPStan path cannot open a local TCP listener. Docker smoke could not run: access to the OrbStack Docker socket was denied. Run `pnpm wp:start && pnpm wp:smoke` where Docker is available before review.

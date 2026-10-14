@@ -8,6 +8,7 @@ import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { auditHtml } from '../a11y/audit-html.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const port = process.env.BLX_WP_PORT ?? '8888';
@@ -129,6 +130,19 @@ async function smoke() {
   check(login.status === 200 && login.text.includes('loginform'), 'login page renders');
   const missing = await get('/definitely-not-a-page/');
   check(missing.status === 404, 'unknown URL returns 404');
+  const pages = [
+    ['front page', '/', home],
+    ['about page', '/about/', about],
+    ['single post', '/blixis-sample-post/', await get('/blixis-sample-post/')],
+    ['search results', '/?s=Blixis', await get('/?s=Blixis')],
+    ['404', '/definitely-not-a-page/', missing],
+    ['category archive', '/category/blixis-news/', await get('/category/blixis-news/')],
+    ['posts index', '/blog/', await get('/blog/')],
+  ];
+  for (const [name, , response] of pages) {
+    check(response.status === (name === '404' ? 404 : 200), `${name} returns expected status`);
+    for (const finding of auditHtml(response.text)) check(false, `${name}: ${finding.rule}: ${finding.message}`);
+  }
 
   const out = (args) => {
     const r = capture(args);
@@ -152,6 +166,22 @@ async function smoke() {
 
   // The Blixis theme (BWB-029): active, rendering through its templates, and declaring compatibility.
   const wpOut = (...args) => out(['run', '--rm', '-T', 'cli', 'wp', ...args]);
+  const localeBefore = wpOut('eval', "echo get_option( 'WPLANG' ) ?: 'en_US';");
+  try {
+    wpOut('language', 'core', 'install', 'ar');
+    wpOut('site', 'switch-language', 'ar');
+    for (const [name, path] of pages) {
+      const response = await get(path);
+      check(
+        /<html\b[^>]*\blang=["']ar["']/.test(response.text) && /<html\b[^>]*\bdir=["']rtl["']/.test(response.text),
+        `${name} has Arabic HTML language and RTL direction`,
+      );
+      check(/<body\b[^>]*\bclass=["'][^"']*\brtl\b/.test(response.text), `${name} has RTL body class`);
+      for (const finding of auditHtml(response.text)) check(false, `${name} RTL: ${finding.rule}: ${finding.message}`);
+    }
+  } finally {
+    wpOut('site', 'switch-language', localeBefore);
+  }
   check(
     wpOut('theme', 'list', '--status=active', '--field=name').split('\n').includes('blixis'),
     'the Blixis theme is active',

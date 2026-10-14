@@ -8,7 +8,7 @@
 get_header();
 
 if ( have_posts() ) {
-	if ( is_home() ) {
+	if ( is_home() || is_front_page() ) {
 		?>
 		<header class="page-header">
 			<h1 class="page-title"><?php echo is_front_page() ? esc_html__( 'Latest posts', 'blixis' ) : esc_html( (string) single_post_title( '', false ) ); ?></h1>
