@@ -47,13 +47,14 @@ final class CoreDocumentRenderer {
 	/**
 	 * Render escaped element HTML.
 	 *
-	 * @param \stdClass $document Document.
-	 * @param string    $locale Locale.
-	 * @param string    $mode Mode.
+	 * @param \stdClass                    $document Document.
+	 * @param string                       $locale Locale.
+	 * @param string                       $mode Mode.
+	 * @param array<string, array<string>> $class_names Generated class names by element ID (from the CSS compiler).
 	 * @throws \RuntimeException When limits are exceeded.
 	 */
-	public function render( \stdClass $document, string $locale, string $mode ): string {
-		// Appearance affects CSS, which is compiled separately in BWB-044.
+	public function render( \stdClass $document, string $locale, string $mode, array $class_names = [] ): string {
+		// Appearance affects CSS only (compiled separately); the compiler's class names are attached to the elements.
 		unset( $mode );
 		$roots = \is_array( $document->root ?? null ) ? $document->root : [];
 		$stack = [];
@@ -89,7 +90,7 @@ final class CoreDocumentRenderer {
 				continue;
 			}
 			$values   = $this->content->values( $node, $document, $locale );
-			$output[] = $renderer->render( new ElementNode( $node->id, $node->type, $values ), new RenderContext( $child_html ) );
+			$output[] = $renderer->render( new ElementNode( $node->id, $node->type, $values, \is_array( $class_names[ $node->id ] ?? null ) ? $class_names[ $node->id ] : [] ), new RenderContext( $child_html ) );
 		}
 		return \implode( '', $output );
 	}

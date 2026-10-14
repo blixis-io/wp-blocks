@@ -41,8 +41,19 @@ final class Escape {
 	 * Apply the documented contract.
 	 *
 	 * @param ElementNode $node Node.
+	 * @param string      $base_class Fixed class of the element type, if any.
 	 */
-	public static function hooks( ElementNode $node ): string {
-		return ' data-blx-id="' . self::attr( $node->id ) . '" data-blx-type="' . self::attr( $node->type ) . '"';
+	public static function hooks( ElementNode $node, string $base_class = '' ): string {
+		$classes = [];
+		if ( '' !== $base_class ) {
+			$classes[] = $base_class;
+		}
+		// Generated class names come from the CSS compiler (`blx-<hex>` or `blx-c-<hex>`); anything else is dropped.
+		foreach ( $node->classes as $name ) {
+			if ( \is_string( $name ) && 1 === \preg_match( '/^blx-(?:c-)?[0-9a-f]{12}$/D', $name ) ) {
+				$classes[] = $name;
+			}
+		}
+		return ' data-blx-id="' . self::attr( $node->id ) . '" data-blx-type="' . self::attr( $node->type ) . '"' . ( [] === $classes ? '' : ' class="' . self::attr( \implode( ' ', $classes ) ) . '"' );
 	}
 }

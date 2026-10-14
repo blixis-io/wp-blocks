@@ -214,6 +214,9 @@ final class FrontendTest extends TestCase {
 		$this->assertStringNotContainsString( '<b>', $page['html'] );
 		$this->assertStringStartsWith( '/*blx-css:1*/', $page['css'] );
 		$this->assertStringContainsString( 'color:red', $page['css'] );
+		// The element carries the generated class and the stylesheet targets exactly that class.
+		$this->assertSame( 1, \preg_match( '/class="(blx-[0-9a-f]{12})"/', $page['html'], $match ) );
+		$this->assertStringContainsString( '.' . ( $match[1] ?? 'missing' ) . '{color:red}', $page['css'] );
 		$this->assertStringNotContainsString( '<', $page['css'] );
 	}
 

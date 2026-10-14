@@ -17,8 +17,9 @@ final class ElementNode {
 	 * @param string               $id Id.
 	 * @param string               $type Type.
 	 * @param array<string, mixed> $values Values.
+	 * @param array<mixed>         $classes Generated class names from the CSS compiler.
 	 */
-	public function __construct( public readonly string $id, public readonly string $type, public readonly array $values ) {}
+	public function __construct( public readonly string $id, public readonly string $type, public readonly array $values, public readonly array $classes = [] ) {}
 
 	/**
 	 * Apply the documented contract.

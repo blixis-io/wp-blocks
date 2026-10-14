@@ -34,11 +34,12 @@ final class PageRenderer {
 	 * @return ?array{html: string, css: string} Null when the output is unsafe or too large.
 	 */
 	public function render( PublishedDocument $published ): ?array {
-		$html = $this->renderer->render( $published->document, $published->locale, 'light' );
+		$compiled = Compiler::compile( $published->document );
+		$html     = $this->renderer->render( $published->document, $published->locale, 'light', $compiled->class_names );
 		if ( \strlen( $html ) > self::MAX_HTML || ! PreviewSanitizer::accepts( $html ) ) {
 			return null;
 		}
-		$css = Compiler::compile( $published->document )->css;
+		$css = $compiled->css;
 		// The compiler emits declarations from an allow-list, so '<' cannot occur; refuse it anyway (style element breakout).
 		if ( \strlen( $css ) > self::MAX_CSS || \str_contains( $css, '<' ) ) {
 			return null;
