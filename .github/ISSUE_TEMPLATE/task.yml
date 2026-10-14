@@ -1,7 +1,6 @@
 name: Task or feature
 description: Planned work that follows the issue conventions (docs/roadmap/ISSUE-CONVENTIONS.md)
 title: 'BWB-XXX: '
-labels: []
 body:
   - type: textarea
     id: outcome
