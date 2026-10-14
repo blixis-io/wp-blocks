@@ -1,0 +1,34 @@
+{
+  "document": {
+    "documentId": "doc-001",
+    "root": [
+      {
+        "id": "el-a",
+        "children": [],
+        "style": [
+          {
+            "mode": "dark",
+            "breakpoint": "tablet",
+            "declarations": {
+              "color": "red"
+            }
+          },
+          {
+            "mode": "dark",
+            "breakpoint": "mobile",
+            "declarations": {
+              "color": "blue"
+            }
+          },
+          {
+            "declarations": {
+              "color": "green"
+            }
+          }
+        ],
+        "classIds": []
+      }
+    ]
+  },
+  "classes": []
+}

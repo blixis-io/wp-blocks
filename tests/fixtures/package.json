@@ -10,7 +10,8 @@
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "generate:compile-corpus": "node src/generate-compile-corpus.ts"
   },
   "dependencies": {
     "@blixis/wp-core": "workspace:*",

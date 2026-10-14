@@ -44,3 +44,15 @@ Nothing throws. Every declaration goes through `sanitizeDeclarations` (docs/arch
 - Mutation checks (done by hand when writing the compiler): swapping the `bp` and `mode` layer order, or sorting by class order before breakpoint, makes tests fail.
 - The precedence matrix of ADR 0005 (all 16 layer combinations, states, classes) is a golden fixture checked against hand-written expectations: see `BREAKPOINTS-AND-STATES.md`.
 - Not yet covered: real-browser computed styles and theme-collision fixtures against third-party unlayered CSS (issue #147; the evaluator above proves ordering and layer logic, not browser behaviour, and it skips the token-origin fixture, which tokens tests cover by hand), the PHP compiler (BWB-027) and the editor canvas.
+
+## PHP twin (BWB-044)
+
+`Blixis\Builder\Css\Compiler::compile( $document, $classes, $tokens, $breakpoints )` in `wordpress/plugin/src/Css/` reproduces `compile()` byte for byte (`CompileResult`: `css`, `class_names`, `issues`; `Compiler::COMPILER_VERSION` is 1). It is pure PHP, uses `DeclarationValidator::sanitize` for every declaration, accepts decoded JSON as arrays or `stdClass`, and never throws. Comparators are total orders (`strcmp` is equivalent to JavaScript's code unit order because every generated identifier is ASCII).
+
+Parity is enforced by `wordpress/plugin/tests/CssCompilerTest.php`:
+
+- every `tests/fixtures/compile/*.fixture.json` against its `.golden.css`, class names and issues (contract `compile-goldens`);
+- `tests/fixtures/compile-corpus/*`, the stylesheets the TypeScript compiler produces for every case of `tests/fixtures/style-resolution/cases.json` (contract `style-resolution`). Regenerate with `pnpm --filter @blixis/wp-fixtures generate:compile-corpus`; a TypeScript test fails when the committed files differ from regenerated output, so the corpus cannot drift;
+- determinism (element order, key order), `{}` versus `[]` inputs, hostile identifiers, forced hash collisions and invalid breakpoint registries.
+
+No differences from the TypeScript compiler are known. The token-set corpus (`token-set-corpus`) is still checked in PHP only for JSON shape: validating and resolving whole token sets in PHP (aliases, cycles, per-mode resolution) is not needed by the compiler, because the theme prints the saved design system itself; it moves to the PHP hardening work (BWB-048).
