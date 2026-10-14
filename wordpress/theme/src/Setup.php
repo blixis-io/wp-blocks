@@ -22,13 +22,13 @@ final class Setup {
 	 * @return array<string, mixed> Feature name => argument (true for none).
 	 */
 	public static function features(): array {
-		return array(
+		return [
 			'automatic-feed-links' => true,
 			'title-tag'            => true,
 			'post-thumbnails'      => true,
 			'responsive-embeds'    => true,
-			'html5'                => array( 'search-form', 'comment-form', 'comment-list', 'gallery', 'caption', 'style', 'script' ),
-		);
+			'html5'                => [ 'search-form', 'comment-form', 'comment-list', 'gallery', 'caption', 'style', 'script' ],
+		];
 	}
 
 	/**
@@ -37,11 +37,11 @@ final class Setup {
 	 * @return void
 	 */
 	public static function register(): void {
-		add_action( 'after_setup_theme', array( self::class, 'setup' ) );
-		add_action( 'wp_enqueue_scripts', array( self::class, 'enqueue' ) );
-		add_filter( 'language_attributes', array( Appearance::class, 'filter_language_attributes' ) );
-		add_action( 'wp_head', array( Appearance::class, 'print_meta' ), 1 );
-		add_action( 'after_switch_theme', array( SetupState::class, 'activate' ) );
+		add_action( 'after_setup_theme', [ self::class, 'setup' ] );
+		add_action( 'wp_enqueue_scripts', [ self::class, 'enqueue' ] );
+		add_filter( 'language_attributes', [ Appearance::class, 'filter_language_attributes' ] );
+		add_action( 'wp_head', [ Appearance::class, 'print_meta' ], 1 );
+		add_action( 'after_switch_theme', [ SetupState::class, 'activate' ] );
 		SetupAdmin::register();
 	}
 
@@ -59,7 +59,7 @@ final class Setup {
 				add_theme_support( $feature, $argument );
 			}
 		}
-		register_nav_menus( array( 'primary' => __( 'Primary menu', 'blixis' ) ) );
+		register_nav_menus( [ 'primary' => __( 'Primary menu', 'blixis' ) ] );
 		if ( ! isset( $GLOBALS['content_width'] ) ) {
 			$GLOBALS['content_width'] = 720; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Documented classic theme setting.
 		}
@@ -99,31 +99,31 @@ final class Setup {
 	public static function styles( string $stylesheet_uri, string $template_uri, string $version ): array {
 		$parent_style = $template_uri . '/style.css';
 		$is_child     = $stylesheet_uri !== $parent_style;
-		$styles       = array(
-			$is_child ? 'blixis-parent-style' : 'blixis-style' => array(
+		$styles       = [
+			$is_child ? 'blixis-parent-style' : 'blixis-style' => [
 				'url'          => $parent_style,
-				'dependencies' => array(),
+				'dependencies' => [],
 				'version'      => $version,
-			),
-		);
-		$styles      += array(
-			'blixis-tokens' => array(
+			],
+		];
+		$styles      += [
+			'blixis-tokens' => [
 				'url'          => $template_uri . '/assets/css/tokens.css',
-				'dependencies' => array( $is_child ? 'blixis-parent-style' : 'blixis-style' ),
+				'dependencies' => [ $is_child ? 'blixis-parent-style' : 'blixis-style' ],
 				'version'      => $version,
-			),
-			'blixis-theme'  => array(
+			],
+			'blixis-theme'  => [
 				'url'          => $template_uri . '/assets/css/theme.css',
-				'dependencies' => array( 'blixis-tokens' ),
+				'dependencies' => [ 'blixis-tokens' ],
 				'version'      => $version,
-			),
-		);
+			],
+		];
 		if ( $is_child ) {
-			$styles['blixis-style'] = array(
+			$styles['blixis-style'] = [
 				'url'          => $stylesheet_uri,
-				'dependencies' => array( 'blixis-theme' ),
+				'dependencies' => [ 'blixis-theme' ],
 				'version'      => $version,
-			);
+			];
 		}
 		return $styles;
 	}

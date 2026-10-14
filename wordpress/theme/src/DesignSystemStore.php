@@ -51,23 +51,23 @@ final class DesignSystemStore {
 	 * @param array<string>        $extra_fonts Server-derived installed font stacks.
 	 * @return array{version: 1, tokenVersion: int, preset: string, updated_at: string, tokens: array<string, mixed>}|null
 	 */
-	public static function normalize( mixed $value, array $seed, array $extra_fonts = array() ): ?array {
+	public static function normalize( mixed $value, array $seed, array $extra_fonts = [] ): ?array {
 		if ( ! \is_array( $value ) || 1 !== ( $value['version'] ?? null ) || ! \is_int( $value['tokenVersion'] ?? null ) || $value['tokenVersion'] < 1 ) {
 			return null;
 		}
 		if ( ! \is_string( $value['preset'] ?? null ) || 1 !== \preg_match( '/^[a-z][a-z0-9-]{0,31}$/', $value['preset'] ) ) {
 			return null;
 		}
-		if ( ! \is_string( $value['updated_at'] ?? null ) || ! \is_array( $value['tokens'] ?? null ) || array() !== TokenDraft::validate( $value['tokens'], $seed, $extra_fonts ) ) {
+		if ( ! \is_string( $value['updated_at'] ?? null ) || ! \is_array( $value['tokens'] ?? null ) || [] !== TokenDraft::validate( $value['tokens'], $seed, $extra_fonts ) ) {
 			return null;
 		}
-		return array(
+		return [
 			'version'      => 1,
 			'tokenVersion' => $value['tokenVersion'],
 			'preset'       => $value['preset'],
 			'updated_at'   => $value['updated_at'],
 			'tokens'       => $value['tokens'],
-		);
+		];
 	}
 
 	/**
@@ -80,13 +80,13 @@ final class DesignSystemStore {
 	 * @return array{version: 1, tokenVersion: int, preset: string, updated_at: string, tokens: array<string, mixed>}
 	 */
 	public static function next_state( ?array $current, array $tokens, string $preset, string $updated_at ): array {
-		return array(
+		return [
 			'version'      => 1,
 			'tokenVersion' => null === $current ? 1 : $current['tokenVersion'] + 1,
 			'preset'       => $preset,
 			'updated_at'   => $updated_at,
 			'tokens'       => $tokens,
-		);
+		];
 	}
 
 	/**
@@ -114,16 +114,16 @@ final class DesignSystemStore {
 	 * @return array{state: array<string, mixed>, history: list<array<string, mixed>>}|null Null when there is nothing to restore.
 	 */
 	public static function rollback_plan( ?array $current, array $history, string $updated_at ): ?array {
-		if ( null === $current || array() === $history ) {
+		if ( null === $current || [] === $history ) {
 			return null;
 		}
 		$restored                 = \array_shift( $history );
 		$restored['tokenVersion'] = $current['tokenVersion'] + 1;
 		$restored['updated_at']   = $updated_at;
-		return array(
+		return [
 			'state'   => $restored,
 			'history' => \array_values( $history ),
-		);
+		];
 	}
 
 	/**
@@ -185,11 +185,11 @@ final class DesignSystemStore {
 	 */
 	public static function history(): array {
 		$seed = self::seed();
-		$raw  = get_option( self::HISTORY_OPTION, array() );
+		$raw  = get_option( self::HISTORY_OPTION, [] );
 		if ( null === $seed || ! \is_array( $raw ) ) {
-			return array();
+			return [];
 		}
-		$out = array();
+		$out = [];
 		foreach ( $raw as $entry ) {
 			$state = self::normalize( $entry, $seed, FontLibrary::allowed_stacks() );
 			if ( null !== $state ) {
@@ -210,26 +210,26 @@ final class DesignSystemStore {
 	 */
 	public static function apply( array $tokens, string $preset = 'custom', string $appearance = 'auto' ): array {
 		$seed = self::seed();
-		if ( null === $seed || array() !== TokenDraft::validate( $tokens, $seed, FontLibrary::allowed_stacks() ) || Appearance::normalize( $appearance ) !== $appearance ) {
-			return array(
+		if ( null === $seed || [] !== TokenDraft::validate( $tokens, $seed, FontLibrary::allowed_stacks() ) || Appearance::normalize( $appearance ) !== $appearance ) {
+			return [
 				'ok'     => false,
 				'reason' => 'invalid',
-			);
+			];
 		}
 		$current = self::current();
 		$state   = self::next_state( $current, $tokens, $preset, gmdate( DATE_ATOM ) );
 		update_option( self::HISTORY_OPTION, self::push_history( self::history(), $current ), false );
 		if ( ! update_option( self::OPTION, $state, true ) ) {
-			return array(
+			return [
 				'ok'     => false,
 				'reason' => 'not-saved',
-			);
+			];
 		}
 		update_option( Appearance::OPTION, $appearance, true );
-		return array(
+		return [
 			'ok'           => true,
 			'tokenVersion' => $state['tokenVersion'],
-		);
+		];
 	}
 
 	/**
@@ -240,21 +240,21 @@ final class DesignSystemStore {
 	public static function rollback(): array {
 		$plan = self::rollback_plan( self::current(), self::history(), gmdate( DATE_ATOM ) );
 		if ( null === $plan ) {
-			return array(
+			return [
 				'ok'     => false,
 				'reason' => 'nothing-to-restore',
-			);
+			];
 		}
 		if ( ! update_option( self::OPTION, $plan['state'], true ) ) {
-			return array(
+			return [
 				'ok'     => false,
 				'reason' => 'not-saved',
-			);
+			];
 		}
 		update_option( self::HISTORY_OPTION, $plan['history'], false );
-		return array(
+		return [
 			'ok'           => true,
 			'tokenVersion' => (int) $plan['state']['tokenVersion'],
-		);
+		];
 	}
 }

@@ -16,12 +16,12 @@ require_once dirname( __DIR__ ) . '/src/Fixtures.php';
 
 use Blixis\Tooling\Fixtures;
 
-$blixis_argv = $_SERVER['argv'] ?? array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- CLI argument list.
+$blixis_argv = $_SERVER['argv'] ?? []; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- CLI argument list.
 if ( ! is_array( $blixis_argv ) ) {
-	$blixis_argv = array();
+	$blixis_argv = [];
 }
 $blixis_args = array_values( array_map( 'strval', array_slice( $blixis_argv, 1 ) ) );
-if ( array() === $blixis_args ) {
+if ( [] === $blixis_args ) {
 	fwrite( STDERR, "usage: canonicalize.php <file.fixture.json>...\n" );
 	exit( 2 );
 }

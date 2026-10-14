@@ -100,7 +100,7 @@ final class StrictJson {
 			$this->number();
 			return;
 		}
-		foreach ( array( 'true', 'false', 'null' ) as $literal ) {
+		foreach ( [ 'true', 'false', 'null' ] as $literal ) {
 			if ( substr( $this->text, $this->pos, strlen( $literal ) ) === $literal ) {
 				$this->pos += strlen( $literal );
 				return;
@@ -127,7 +127,7 @@ final class StrictJson {
 			++$this->pos;
 			return;
 		}
-		$keys = array();
+		$keys = [];
 		while ( true ) {
 			$this->skip_whitespace();
 			if ( '{' === $open ) {

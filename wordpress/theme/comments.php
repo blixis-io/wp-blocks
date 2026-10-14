@@ -21,7 +21,7 @@ if ( post_password_required() ) {
 			?>
 		</h2>
 		<ol class="comment-list">
-			<?php wp_list_comments( array( 'style' => 'ol' ) ); ?>
+			<?php wp_list_comments( [ 'style' => 'ol' ] ); ?>
 		</ol>
 		<?php the_comments_navigation(); ?>
 	<?php endif; ?>

@@ -42,7 +42,7 @@ final class DesignSystemStoreTest extends TestCase {
 	 * @return array<string, mixed>
 	 */
 	private static function state( int $version ): array {
-		return DesignSystemStore::next_state( 1 === $version ? null : array( 'tokenVersion' => $version - 1 ), self::seed(), 'custom', '2026-01-01T00:00:00+00:00' );
+		return DesignSystemStore::next_state( 1 === $version ? null : [ 'tokenVersion' => $version - 1 ], self::seed(), 'custom', '2026-01-01T00:00:00+00:00' );
 	}
 
 	/**
@@ -63,21 +63,21 @@ final class DesignSystemStoreTest extends TestCase {
 	 */
 	public function test_css_skips_unsafe_values_and_names(): void {
 		$css = DesignSystemStore::css(
-			array(
-				'color-bg'   => array( 'value' => '#fff' ),
-				'color-evil' => array( 'value' => 'red;} body{display:none' ),
-				'color-tag'  => array( 'value' => '</style><script>' ),
-				'color-url'  => array( 'value' => 'url(https://x.example/a)' ),
-				'Bad Name'   => array( 'value' => '#000' ),
-				'color-low'  => array(
+			[
+				'color-bg'   => [ 'value' => '#fff' ],
+				'color-evil' => [ 'value' => 'red;} body{display:none' ],
+				'color-tag'  => [ 'value' => '</style><script>' ],
+				'color-url'  => [ 'value' => 'url(https://x.example/a)' ],
+				'Bad Name'   => [ 'value' => '#000' ],
+				'color-low'  => [
 					'value' => '#111',
 					'dark'  => '#222;x',
-				),
-				'color-same' => array(
+				],
+				'color-same' => [
 					'value' => '#333',
 					'dark'  => '#333',
-				),
-			)
+				],
+			]
 		);
 		$this->assertStringContainsString( '--blx-color-bg:#fff', $css );
 		$this->assertStringContainsString( '--blx-color-low:#111', $css );
@@ -87,7 +87,7 @@ final class DesignSystemStoreTest extends TestCase {
 		$this->assertStringNotContainsString( 'Bad', $css );
 		$this->assertStringNotContainsString( '#222', $css );
 		$this->assertStringNotContainsString( 'data-theme="dark"', $css, 'no dark rule when no valid dark value differs' );
-		$this->assertSame( '', DesignSystemStore::css( array() ) );
+		$this->assertSame( '', DesignSystemStore::css( [] ) );
 	}
 
 	/**
@@ -95,12 +95,12 @@ final class DesignSystemStoreTest extends TestCase {
 	 */
 	public function test_css_has_the_dark_forms(): void {
 		$css = DesignSystemStore::css(
-			array(
-				'color-bg' => array(
+			[
+				'color-bg' => [
 					'value' => '#ffffff',
 					'dark'  => '#000000',
-				),
-			)
+				],
+			]
 		);
 		$this->assertSame(
 			'@layer blx.tokens{:where(:root){--blx-color-bg:#ffffff}:where(html[data-theme="dark"]){--blx-color-bg:#000000}@media (prefers-color-scheme:dark){:where(html:not([data-theme="light"]):not([data-theme="dark"])){--blx-color-bg:#000000}}}',
@@ -113,7 +113,7 @@ final class DesignSystemStoreTest extends TestCase {
 	 */
 	public function test_next_state_raises_the_version(): void {
 		$this->assertSame( 1, self::state( 1 )['tokenVersion'] );
-		$this->assertSame( 8, DesignSystemStore::next_state( array( 'tokenVersion' => 7 ), array(), 'ocean', 'now' )['tokenVersion'] );
+		$this->assertSame( 8, DesignSystemStore::next_state( [ 'tokenVersion' => 7 ], [], 'ocean', 'now' )['tokenVersion'] );
 	}
 
 	/**
@@ -123,7 +123,7 @@ final class DesignSystemStoreTest extends TestCase {
 		$seed  = self::seed();
 		$state = self::state( 3 );
 		$this->assertSame( $state, DesignSystemStore::normalize( $state, $seed ) );
-		foreach ( array( false, null, 'x', array(), array_merge( $state, array( 'version' => 2 ) ), array_merge( $state, array( 'tokenVersion' => 0 ) ), array_merge( $state, array( 'tokenVersion' => '3' ) ), array_merge( $state, array( 'preset' => 'Bad Preset' ) ), array_merge( $state, array( 'tokens' => array( 'unknown' => array( 'value' => 'x' ) ) ) ), array_merge( $state, array( 'tokens' => 'x' ) ) ) as $bad ) {
+		foreach ( [ false, null, 'x', [], array_merge( $state, [ 'version' => 2 ] ), array_merge( $state, [ 'tokenVersion' => 0 ] ), array_merge( $state, [ 'tokenVersion' => '3' ] ), array_merge( $state, [ 'preset' => 'Bad Preset' ] ), array_merge( $state, [ 'tokens' => [ 'unknown' => [ 'value' => 'x' ] ] ] ), array_merge( $state, [ 'tokens' => 'x' ] ) ] as $bad ) {
 			$this->assertNull( DesignSystemStore::normalize( $bad, $seed ) );
 		}
 	}
@@ -132,38 +132,38 @@ final class DesignSystemStoreTest extends TestCase {
 	 * The history keeps the newest entries only.
 	 */
 	public function test_history_is_bounded_and_newest_first(): void {
-		$history = array();
+		$history = [];
 		for ( $i = 1; $i <= 8; ++$i ) {
-			$history = DesignSystemStore::push_history( $history, array( 'tokenVersion' => $i ) );
+			$history = DesignSystemStore::push_history( $history, [ 'tokenVersion' => $i ] );
 		}
 		$this->assertCount( DesignSystemStore::MAX_HISTORY, $history );
 		$this->assertSame( 8, $history[0]['tokenVersion'] );
 		$this->assertSame( 4, $history[4]['tokenVersion'] );
-		$this->assertSame( array(), DesignSystemStore::push_history( array(), null ) );
+		$this->assertSame( [], DesignSystemStore::push_history( [], null ) );
 	}
 
 	/**
 	 * Rollback restores the newest earlier content under a higher version and drops the replaced state.
 	 */
 	public function test_rollback_plan(): void {
-		$this->assertNull( DesignSystemStore::rollback_plan( null, array(), 'now' ) );
-		$this->assertNull( DesignSystemStore::rollback_plan( array( 'tokenVersion' => 2 ), array(), 'now' ) );
+		$this->assertNull( DesignSystemStore::rollback_plan( null, [], 'now' ) );
+		$this->assertNull( DesignSystemStore::rollback_plan( [ 'tokenVersion' => 2 ], [], 'now' ) );
 		$plan = DesignSystemStore::rollback_plan(
-			array( 'tokenVersion' => 5 ),
-			array(
-				array(
+			[ 'tokenVersion' => 5 ],
+			[
+				[
 					'tokenVersion' => 4,
 					'preset'       => 'ocean',
-					'tokens'       => array( 'a' => 1 ),
-				),
-				array( 'tokenVersion' => 3 ),
-			),
+					'tokens'       => [ 'a' => 1 ],
+				],
+				[ 'tokenVersion' => 3 ],
+			],
 			'later'
 		);
 		$this->assertNotNull( $plan );
 		$this->assertSame( 6, $plan['state']['tokenVersion'] );
 		$this->assertSame( 'ocean', $plan['state']['preset'] );
 		$this->assertSame( 'later', $plan['state']['updated_at'] );
-		$this->assertSame( array( array( 'tokenVersion' => 3 ) ), $plan['history'] );
+		$this->assertSame( [ [ 'tokenVersion' => 3 ] ], $plan['history'] );
 	}
 }

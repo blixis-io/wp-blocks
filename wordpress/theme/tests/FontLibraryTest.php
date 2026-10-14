@@ -27,11 +27,11 @@ final class FontLibraryTest extends TestCase {
 			'montserrat',
 			'Montserrat',
 			'{"fontFamily":"Montserrat, sans-serif","preview":"https://s.w.org/x.svg"}',
-			array(
+			[
 				'{"src":"https://example.test/a.woff2","fontWeight":"400","fontStyle":"normal","fontFamily":"Montserrat"}',
 				'{"fontWeight":"700","fontStyle":"italic","fontFamily":"Montserrat"}',
 				'not json',
-			)
+			]
 		);
 		$this->assertNotNull( $json );
 		$family = FontLibrary::parse_family( (string) $json );
@@ -39,8 +39,8 @@ final class FontLibraryTest extends TestCase {
 		$this->assertSame( 'montserrat', $family['slug'] );
 		$this->assertSame( 'Montserrat', $family['css_family'] );
 		$this->assertCount( 2, $family['faces'] );
-		$this->assertNull( FontLibrary::from_post_data( 'x', 'X', 'not json', array() ) );
-		$this->assertSame( 'Open Sans', FontLibrary::parse_family( (string) FontLibrary::from_post_data( 'open-sans', 'Open Sans', '{"fontFamily":"\'Open Sans\', sans-serif"}', array() ) )['css_family'] ?? null );
+		$this->assertNull( FontLibrary::from_post_data( 'x', 'X', 'not json', [] ) );
+		$this->assertSame( 'Open Sans', FontLibrary::parse_family( (string) FontLibrary::from_post_data( 'open-sans', 'Open Sans', '{"fontFamily":"\'Open Sans\', sans-serif"}', [] ) )['css_family'] ?? null );
 	}
 
 	/** A real family and variable range produce one safe stack. */
@@ -51,16 +51,16 @@ final class FontLibraryTest extends TestCase {
 		}
 		$this->assertSame( 'inter', $family['slug'] );
 		$this->assertSame(
-			array(
-				array(
+			[
+				[
 					'weight' => '100 900',
 					'style'  => 'normal',
-				),
-				array(
+				],
+				[
 					'weight' => '700',
 					'style'  => 'italic',
-				),
-			),
+				],
+			],
 			$family['faces']
 		);
 		$this->assertSame( '"Inter", system-ui, sans-serif', FontLibrary::css_stack( $family['css_family'], 'sans-serif' ) );
@@ -68,32 +68,32 @@ final class FontLibraryTest extends TestCase {
 
 	/** CSS-breaking strings, invalid variants and large posts are rejected. */
 	public function test_reject_hostile_data(): void {
-		foreach ( array( 'Bad"Name', 'Bad;Name', 'Bad{Name', 'url(x)', \str_repeat( 'A', 65 ) ) as $name ) {
+		foreach ( [ 'Bad"Name', 'Bad;Name', 'Bad{Name', 'url(x)', \str_repeat( 'A', 65 ) ] as $name ) {
 			$this->assertNull(
 				FontLibrary::parse_family(
 					self::json(
-						array(
+						[
 							'slug'       => 'bad',
 							'name'       => 'Bad',
 							'fontFamily' => $name,
-							'fontFace'   => array(),
-						)
+							'fontFace'   => [],
+						]
 					)
 				)
 			);
 			$this->assertNull( FontLibrary::css_stack( $name, 'sans-serif' ) );
 		}
 		$this->assertNull( FontLibrary::css_stack( 'Inter', 'url(x)' ) );
-		foreach ( array( '99', '950', '900 100', '400;url(x)' ) as $weight ) {
+		foreach ( [ '99', '950', '900 100', '400;url(x)' ] as $weight ) {
 			$this->assertNull(
 				FontLibrary::parse_family(
 					self::json(
-						array(
+						[
 							'slug'       => 'bad',
 							'name'       => 'Bad',
 							'fontFamily' => 'Bad',
-							'fontFace'   => array( array( 'fontWeight' => $weight ) ),
-						)
+							'fontFace'   => [ [ 'fontWeight' => $weight ] ],
+						]
 					)
 				)
 			);
@@ -101,24 +101,24 @@ final class FontLibraryTest extends TestCase {
 		$this->assertNull(
 			FontLibrary::parse_family(
 				self::json(
-					array(
+					[
 						'slug'       => 'bad',
 						'name'       => 'Bad',
 						'fontFamily' => 'Bad',
-						'fontFace'   => array( array( 'fontStyle' => 'italic;}' ) ),
-					)
+						'fontFace'   => [ [ 'fontStyle' => 'italic;}' ] ],
+					]
 				)
 			)
 		);
 		$this->assertNull(
 			FontLibrary::parse_family(
 				self::json(
-					array(
+					[
 						'slug'       => '../bad',
 						'name'       => 'Bad',
 						'fontFamily' => 'Bad',
-						'fontFace'   => array(),
-					)
+						'fontFace'   => [],
+					]
 				)
 			)
 		);
@@ -127,20 +127,20 @@ final class FontLibraryTest extends TestCase {
 
 	/** Duplicate slugs and families beyond the cap are ignored. */
 	public function test_dedupe_and_cap(): void {
-		$posts = array();
+		$posts = [];
 		for ( $i = 0; $i < 60; $i++ ) {
 			$posts[] = self::json(
-				array(
+				[
 					'slug'       => 'font-' . $i,
 					'name'       => 'Font ' . $i,
 					'fontFamily' => 'Font ' . $i,
-					'fontFace'   => array(),
-				)
+					'fontFace'   => [],
+				]
 			);
 		}
 		$posts[] = $posts[0];
 		$this->assertCount( FontLibrary::MAX_FAMILIES, FontLibrary::parse_families( $posts ) );
-		$this->assertCount( 1, FontLibrary::parse_families( array( $posts[0], $posts[0] ) ) );
+		$this->assertCount( 1, FontLibrary::parse_families( [ $posts[0], $posts[0] ] ) );
 	}
 
 	/** Only injected server-derived stacks pass the pure token validator. */
@@ -148,9 +148,9 @@ final class FontLibraryTest extends TestCase {
 		$seed                       = self::seed();
 		$seed['font-body']['value'] = '"Inter", system-ui, sans-serif';
 		$this->assertArrayHasKey( 'font-body-value', TokenDraft::validate( $seed, self::seed() ) );
-		$this->assertSame( array(), TokenDraft::validate( $seed, self::seed(), array( '"Inter", system-ui, sans-serif' ) ) );
+		$this->assertSame( [], TokenDraft::validate( $seed, self::seed(), [ '"Inter", system-ui, sans-serif' ] ) );
 		$seed['font-body']['value'] = 'Evil; background:url(x)';
-		$this->assertArrayHasKey( 'font-body-value', TokenDraft::validate( $seed, self::seed(), array( '"Inter", system-ui, sans-serif' ) ) );
+		$this->assertArrayHasKey( 'font-body-value', TokenDraft::validate( $seed, self::seed(), [ '"Inter", system-ui, sans-serif' ] ) );
 	}
 
 	/**

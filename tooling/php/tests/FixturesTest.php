@@ -58,13 +58,13 @@ final class FixturesTest extends TestCase {
 	 * @return array<string, array{string}>
 	 */
 	public static function unsafe_numbers(): array {
-		return array(
-			'float'         => array( '{"a":1.5}' ),
-			'float integer' => array( '{"a":1.0}' ),
-			'exponent'      => array( '{"a":1e3}' ),
-			'unsafe int'    => array( '{"a":9007199254740993}' ),
-			'nested'        => array( '{"a":[{"b":0.1}]}' ),
-		);
+		return [
+			'float'         => [ '{"a":1.5}' ],
+			'float integer' => [ '{"a":1.0}' ],
+			'exponent'      => [ '{"a":1e3}' ],
+			'unsafe int'    => [ '{"a":9007199254740993}' ],
+			'nested'        => [ '{"a":[{"b":0.1}]}' ],
+		];
 	}
 
 	/**
@@ -72,7 +72,7 @@ final class FixturesTest extends TestCase {
 	 */
 	public function test_non_nfc_text_is_rejected(): void {
 		$decomposed = "e\u{0301}"; // "e" followed by a combining acute accent.
-		$json       = json_encode( array( 'k' => $decomposed ) );
+		$json       = json_encode( [ 'k' => $decomposed ] );
 		$this->assertIsString( $json );
 		$this->expectException( InvalidArgumentException::class );
 		Fixtures::decode( $json );
@@ -82,7 +82,7 @@ final class FixturesTest extends TestCase {
 	 * Every committed fixture loads and has a stable hash.
 	 */
 	public function test_all_committed_fixtures_load(): void {
-		$all      = array();
+		$all      = [];
 		$iterator = new \RecursiveIteratorIterator( new \RecursiveDirectoryIterator( dirname( __DIR__, 3 ) . '/tests/fixtures', \FilesystemIterator::SKIP_DOTS ) );
 		foreach ( $iterator as $file ) {
 			if ( $file instanceof \SplFileInfo && str_ends_with( $file->getFilename(), '.fixture.json' ) && ! str_contains( $file->getPathname(), 'node_modules' ) ) {
@@ -113,24 +113,24 @@ final class FixturesTest extends TestCase {
 	 * @return array<string, array{string}>
 	 */
 	public static function strict_json_rejections(): array {
-		return array(
-			'1.0'                  => array( '{"a":1.0}' ),
-			'1e3'                  => array( '{"a":1e3}' ),
-			'-0'                   => array( '{"a":-0}' ),
-			'-0.0'                 => array( '{"a":-0.0}' ),
-			'unsafe integer'       => array( '{"a":9007199254740992}' ),
-			'duplicate key'        => array( '{"a":1,"a":2}' ),
-			'duplicate nested key' => array( '{"x":{"a":1,"a":1}}' ),
-			'lone high surrogate'  => array( '{"a":"\\ud800"}' ),
-			'lone low surrogate'   => array( '{"\\udc00":1}' ),
-			'trailing comma'       => array( '[1,]' ),
-			'single quotes'        => array( "{'a':1}" ),
-			'trailing content'     => array( '{} {}' ),
-			'unquoted key'         => array( '{a:1}' ),
-			'raw control char'     => array( "[\"a\tb\"]" ),
-			'leading zero'         => array( '[01]' ),
-			'plus sign'            => array( '[+1]' ),
-		);
+		return [
+			'1.0'                  => [ '{"a":1.0}' ],
+			'1e3'                  => [ '{"a":1e3}' ],
+			'-0'                   => [ '{"a":-0}' ],
+			'-0.0'                 => [ '{"a":-0.0}' ],
+			'unsafe integer'       => [ '{"a":9007199254740992}' ],
+			'duplicate key'        => [ '{"a":1,"a":2}' ],
+			'duplicate nested key' => [ '{"x":{"a":1,"a":1}}' ],
+			'lone high surrogate'  => [ '{"a":"\\ud800"}' ],
+			'lone low surrogate'   => [ '{"\\udc00":1}' ],
+			'trailing comma'       => [ '[1,]' ],
+			'single quotes'        => [ "{'a':1}" ],
+			'trailing content'     => [ '{} {}' ],
+			'unquoted key'         => [ '{a:1}' ],
+			'raw control char'     => [ "[\"a\tb\"]" ],
+			'leading zero'         => [ '[01]' ],
+			'plus sign'            => [ '[+1]' ],
+		];
 	}
 
 	/**
@@ -195,16 +195,16 @@ final class FixturesTest extends TestCase {
 	 */
 	public static function bad_envelopes(): array {
 		$base = static fn ( string $patch ): string => '{"description":"d","expected":{},"fixtureVersion":1,"id":"sample","input":{},"tags":["a"]' . $patch . "}\n";
-		return array(
-			'blank description' => array( '{"description":" ","expected":{},"fixtureVersion":1,"id":"sample","input":{},"tags":[]}' . "\n" ),
-			'bad tag'           => array( '{"description":"d","expected":{},"fixtureVersion":1,"id":"sample","input":{},"tags":["Bad_Tag"]}' . "\n" ),
-			'non-string tag'    => array( '{"description":"d","expected":{},"fixtureVersion":1,"id":"sample","input":{},"tags":[1]}' . "\n" ),
-			'tags not array'    => array( '{"description":"d","expected":{},"fixtureVersion":1,"id":"sample","input":{},"tags":"a"}' . "\n" ),
-			'extra key'         => array( $base( ',"extra":1' ) ),
-			'wrong id'          => array( '{"description":"d","expected":{},"fixtureVersion":1,"id":"other","input":{},"tags":[]}' . "\n" ),
-			'wrong version'     => array( '{"description":"d","expected":{},"fixtureVersion":2,"id":"sample","input":{},"tags":[]}' . "\n" ),
-			'no final newline'  => array( '{"description":"d","expected":{},"fixtureVersion":1,"id":"sample","input":{},"tags":[]}' ),
-			'CRLF'              => array( "{\"description\":\"d\",\"expected\":{},\"fixtureVersion\":1,\"id\":\"sample\",\"input\":{},\"tags\":[]}\r\n" ),
-		);
+		return [
+			'blank description' => [ '{"description":" ","expected":{},"fixtureVersion":1,"id":"sample","input":{},"tags":[]}' . "\n" ],
+			'bad tag'           => [ '{"description":"d","expected":{},"fixtureVersion":1,"id":"sample","input":{},"tags":["Bad_Tag"]}' . "\n" ],
+			'non-string tag'    => [ '{"description":"d","expected":{},"fixtureVersion":1,"id":"sample","input":{},"tags":[1]}' . "\n" ],
+			'tags not array'    => [ '{"description":"d","expected":{},"fixtureVersion":1,"id":"sample","input":{},"tags":"a"}' . "\n" ],
+			'extra key'         => [ $base( ',"extra":1' ) ],
+			'wrong id'          => [ '{"description":"d","expected":{},"fixtureVersion":1,"id":"other","input":{},"tags":[]}' . "\n" ],
+			'wrong version'     => [ '{"description":"d","expected":{},"fixtureVersion":2,"id":"sample","input":{},"tags":[]}' . "\n" ],
+			'no final newline'  => [ '{"description":"d","expected":{},"fixtureVersion":1,"id":"sample","input":{},"tags":[]}' ],
+			'CRLF'              => [ "{\"description\":\"d\",\"expected\":{},\"fixtureVersion\":1,\"id\":\"sample\",\"input\":{},\"tags\":[]}\r\n" ],
+		];
 	}
 }

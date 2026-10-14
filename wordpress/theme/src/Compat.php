@@ -60,7 +60,7 @@ final class Compat {
 	 * @return string
 	 */
 	private static function header_value( string $directory ): string {
-		$header = get_file_data( rtrim( $directory, '/\\' ) . '/style.css', array( 'compat' => self::HEADER ) );
+		$header = get_file_data( rtrim( $directory, '/\\' ) . '/style.css', [ 'compat' => self::HEADER ] );
 		return trim( $header['compat'] );
 	}
 
