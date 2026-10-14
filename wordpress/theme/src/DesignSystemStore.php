@@ -205,11 +205,12 @@ final class DesignSystemStore {
 	 *
 	 * @param array<string, mixed> $tokens Validated draft tokens.
 	 * @param string               $preset Preset the draft started from.
+	 * @param string               $appearance Site-wide website appearance.
 	 * @return array{ok: true, tokenVersion: int}|array{ok: false, reason: string}
 	 */
-	public static function apply( array $tokens, string $preset = 'custom' ): array {
+	public static function apply( array $tokens, string $preset = 'custom', string $appearance = 'auto' ): array {
 		$seed = self::seed();
-		if ( null === $seed || array() !== TokenDraft::validate( $tokens, $seed, FontLibrary::allowed_stacks() ) ) {
+		if ( null === $seed || array() !== TokenDraft::validate( $tokens, $seed, FontLibrary::allowed_stacks() ) || Appearance::normalize( $appearance ) !== $appearance ) {
 			return array(
 				'ok'     => false,
 				'reason' => 'invalid',
@@ -224,6 +225,7 @@ final class DesignSystemStore {
 				'reason' => 'not-saved',
 			);
 		}
+		update_option( Appearance::OPTION, $appearance, true );
 		return array(
 			'ok'           => true,
 			'tokenVersion' => $state['tokenVersion'],

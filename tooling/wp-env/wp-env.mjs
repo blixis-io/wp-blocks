@@ -5,7 +5,7 @@
 //   BLX_WP_PORT                                host port on 127.0.0.1 (default 8888)
 //   BLX_EXPECT_WP, BLX_EXPECT_PHP              smoke test expectations (version prefixes)
 import { spawnSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { auditHtml } from '../a11y/audit-html.mjs';
@@ -166,6 +166,44 @@ async function smoke() {
 
   // The Blixis theme (BWB-029): active, rendering through its templates, and declaring compatibility.
   const wpOut = (...args) => out(['run', '--rm', '-T', 'cli', 'wp', ...args]);
+  // BWB-108: absent/invalid follows the system; explicit modes appear on html and in native controls.
+  const appearanceBefore = capture(['run', '--rm', '-T', 'cli', 'wp', 'option', 'get', 'blixis_appearance']);
+  const htmlTag = (page) => page.match(/<html\b[^>]*>/i)?.[0] ?? '';
+  const checkAppearance = async (value, expectedAttribute, expectedMeta) => {
+    const page = (await get('/')).text;
+    check(
+      expectedAttribute
+        ? htmlTag(page).includes(`data-theme="${expectedAttribute}"`)
+        : !/\bdata-theme\s*=/.test(htmlTag(page)),
+      `${value} site appearance has the expected html attribute`,
+    );
+    check(
+      page.includes(`<meta name="color-scheme" content="${expectedMeta}">`),
+      `${value} site appearance has the expected color-scheme meta tag`,
+    );
+    for (const finding of auditHtml(page)) check(false, `${value} appearance: ${finding.rule}: ${finding.message}`);
+  };
+  try {
+    capture(['run', '--rm', '-T', 'cli', 'wp', 'option', 'delete', 'blixis_appearance']);
+    await checkAppearance('default', null, 'light dark');
+    for (const mode of ['dark', 'light']) {
+      wpOut('option', 'update', 'blixis_appearance', mode);
+      await checkAppearance(mode, mode, mode);
+    }
+    wpOut('option', 'update', 'blixis_appearance', 'invalid');
+    await checkAppearance('invalid', null, 'light dark');
+    check(
+      !/<script\b/i.test(readFileSync(join(root, 'wordpress', 'theme', 'src', 'Appearance.php'), 'utf8')) &&
+        !/<script\b/i.test(readFileSync(join(root, 'wordpress', 'theme', 'header.php'), 'utf8')),
+      'theme appearance output and header add no inline script',
+    );
+  } finally {
+    if (appearanceBefore.status === 0) {
+      wpOut('option', 'update', 'blixis_appearance', String(appearanceBefore.stdout).trim());
+    } else {
+      capture(['run', '--rm', '-T', 'cli', 'wp', 'option', 'delete', 'blixis_appearance']);
+    }
+  }
   const localeBefore = wpOut('eval', "echo get_option( 'WPLANG' ) ?: 'en_US';");
   try {
     wpOut('language', 'core', 'install', 'ar');
@@ -409,7 +447,19 @@ async function smoke() {
                 response = await submit(step, html, fields);
                 check(response.status === 302, `wizard step ${step} advances`);
               } else if (step === 5) {
-                response = await submit(step, html, {});
+                check(html.includes('Auto follows each visitor'), 'preview explains automatic website appearance');
+                check(html.includes('<h3>Light</h3>') && html.includes('<h3>Dark</h3>'), 'preview shows both modes');
+                const appearanceDraftBefore = command('user', 'meta', 'get', 'admin', 'blixis_setup_draft');
+                response = await submit(step, html, { appearance: 'invalid' });
+                check(
+                  response.status === 302 && response.headers.get('location')?.includes('error=invalid'),
+                  'invalid website appearance is rejected',
+                );
+                check(
+                  command('user', 'meta', 'get', 'admin', 'blixis_setup_draft') === appearanceDraftBefore,
+                  'invalid website appearance preserves the draft',
+                );
+                response = await submit(step, html, { appearance: 'auto' });
                 check(response.status === 302, 'preview advances to Apply');
               }
             }
@@ -421,6 +471,14 @@ async function smoke() {
               'apply saves the design system',
             );
             const saved = JSON.parse(command('option', 'get', 'blixis_design_system', '--format=json'));
+            check(command('option', 'get', 'blixis_appearance') === 'auto', 'Apply saves the website appearance');
+            check(
+              command(
+                'eval',
+                "echo array_key_exists('blixis_appearance', wp_load_alloptions()) ? 'autoload' : 'no';",
+              ) === 'autoload',
+              'the website appearance option is autoloaded',
+            );
             check(
               saved.tokenVersion === 1 && saved.preset === 'ocean',
               'the saved design system is version 1 of the ocean preset',
@@ -586,6 +644,12 @@ async function smoke() {
         command('option', 'delete', 'blixis_setup');
       }
     }
+  }
+  // The wizard also writes this option; leave the fixture site's prior setting intact.
+  if (appearanceBefore.status === 0) {
+    wpOut('option', 'update', 'blixis_appearance', String(appearanceBefore.stdout).trim());
+  } else {
+    capture(['run', '--rm', '-T', 'cli', 'wp', 'option', 'delete', 'blixis_appearance']);
   }
   // WP_DEBUG_LOG writes PHP warnings, notices and deprecations to wp-content/debug.log. Only what this run appended counts
   // (the log may hold older entries), and nothing in it may point into the theme.

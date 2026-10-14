@@ -45,6 +45,12 @@ Administrators with `edit_theme_options` see a non-blocking notice on admin scre
 
 Appearance → Blixis setup has six server-rendered steps: preset or Custom, colors, typography, spacing/radius/layout, a side-by-side light/dark preview, and Apply. Every POST checks `edit_theme_options` and a step-specific nonce, then redirects safely. Back, Next and Cancel work without JavaScript. The per-user `blixis_setup_ui` resume step is separate from the site-wide status. `blixis_setup_draft` stores bounded JSON in user meta; invalid values and low-contrast semantic pairs are rejected before writing it. The preview uses scoped variables and reports contrast in each mode. The Apply button validates the saved draft and calls `DesignSystemStore::apply()` (below); only after that succeeds is setup marked `completed` and the draft deleted.
 
+## Website appearance (BWB-108)
+
+The site's default website appearance is the autoloaded `blixis_appearance` option: `auto` (the default when absent or invalid), `light`, or `dark`. The preview step saves this choice in the bounded draft and still shows both token modes. Apply saves the option with the design system. Design-system history and rollback restore tokens only; they do not change website appearance.
+
+The theme adds `data-theme="light"` or `data-theme="dark"` to `<html>` through `language_attributes` for a forced site mode, unless another filter already supplied the attribute. Auto leaves the attribute absent so the compiler's system-preference selectors apply on the first paint without JavaScript. A `color-scheme` meta tag and matching theme CSS keep browser controls in the chosen mode. This setting is independent of editor chrome appearance and website translation locale. BWB-113 can later set a visitor preference on `<html>` with an initial-paint script; this issue adds neither visitor storage nor a toggle.
+
 ## Fonts (BWB-036)
 
 Typography offers system stacks and up to 50 published `wp_font_family` posts from the WordPress Font Library. `FontLibrary` parses each post's `post_content` JSON, rejects unsafe names and variants, deduplicates by slug, and shows the available weights/styles. The wizard saves a quoted family name with `system-ui, sans-serif` fallback. Every draft read, step submission, apply, and saved-state read revalidates that exact stack against currently installed families. If a selected family is removed, the saved option remains intact but its CSS is ignored in favor of bundled defaults until the family returns or another design is applied.

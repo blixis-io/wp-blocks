@@ -1,0 +1,5 @@
+Implemented BWB-108 on `feat/108-site-appearance-preference`. The theme now uses an autoloaded `blixis_appearance` option, defaulting invalid or absent values to `auto`. Forced light or dark adds `data-theme` to the public `<html>` tag without duplicating an existing attribute; auto leaves it absent. A `color-scheme` meta tag and rebuilt theme CSS keep native controls aligned with the mode, with no initial-paint JavaScript.
+
+The six-step wizard now saves the appearance choice on Apply and still previews both modes. Design-system rollback restores tokens only, as documented in [THEME.md](docs/architecture/THEME.md). I added [PHPUnit coverage](wordpress/theme/tests/AppearanceTest.php) and extended the WordPress smoke checks.
+
+Formatting, build, PHP lint, PHPUnit (158 tests), and PHPStan in single-process mode pass. The requested full checks remain unverified: `pnpm check` is blocked by a missing pnpm package index and the sandbox’s PHPStan listener restriction; `composer run check` hits the same listener restriction. Docker smoke could not run because Docker API access was denied. No commit or push was made, and no stray files remain.

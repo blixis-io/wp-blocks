@@ -39,6 +39,8 @@ final class Setup {
 	public static function register(): void {
 		add_action( 'after_setup_theme', array( self::class, 'setup' ) );
 		add_action( 'wp_enqueue_scripts', array( self::class, 'enqueue' ) );
+		add_filter( 'language_attributes', array( Appearance::class, 'filter_language_attributes' ) );
+		add_action( 'wp_head', array( Appearance::class, 'print_meta' ), 1 );
 		add_action( 'after_switch_theme', array( SetupState::class, 'activate' ) );
 		SetupAdmin::register();
 	}

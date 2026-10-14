@@ -67,14 +67,15 @@ final class SetupAdmin {
 	/** Render the current step; an explicit step query supports revisiting prior steps. */
 	public static function page(): void {
 		self::require_capability();
-		$state     = SetupState::get();
-		$user_id   = get_current_user_id();
-		$resume    = SetupState::resume_step( $user_id );
-		$requested = isset( $_GET['step'] ) ? (int) $_GET['step'] : $resume; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only navigation.
-		$step      = max( 1, min( $resume, $requested ) );
-		$stored    = self::draft( $user_id );
-		$preset    = $stored['preset'] ?? 'custom';
-		$tokens    = $stored['tokens'] ?? self::preset_tokens( 'custom' );
+		$state      = SetupState::get();
+		$user_id    = get_current_user_id();
+		$resume     = SetupState::resume_step( $user_id );
+		$requested  = isset( $_GET['step'] ) ? (int) $_GET['step'] : $resume; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only navigation.
+		$step       = max( 1, min( $resume, $requested ) );
+		$stored     = self::draft( $user_id );
+		$preset     = $stored['preset'] ?? 'custom';
+		$tokens     = $stored['tokens'] ?? self::preset_tokens( 'custom' );
+		$appearance = $stored['appearance'] ?? Appearance::site_mode();
 		if ( null === $tokens ) {
 			$tokens = array();
 		}
@@ -122,7 +123,7 @@ final class SetupAdmin {
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 				<input type="hidden" name="action" value="blixis_setup_wizard"><input type="hidden" name="step" value="<?php echo esc_attr( (string) $step ); ?>">
 				<?php wp_nonce_field( 'blixis_setup_step_' . $step, 'blixis_setup_nonce_wizard' ); ?>
-				<?php self::fields( $step, $preset, $tokens ); ?>
+				<?php self::fields( $step, $preset, $tokens, $appearance ); ?>
 				<p class="submit">
 				<?php
 				if ( $step > 1 ) :
@@ -151,8 +152,9 @@ else :
 	 * @param int                  $step Step.
 	 * @param string               $preset Preset.
 	 * @param array<string, mixed> $tokens Draft.
+	 * @param string               $appearance Site appearance draft.
 	 */
-	private static function fields( int $step, string $preset, array $tokens ): void {
+	private static function fields( int $step, string $preset, array $tokens, string $appearance ): void {
 		if ( 1 === $step ) {
 			echo '<fieldset><legend>' . esc_html__( 'Choose a starting design', 'blixis' ) . '</legend>';
 			foreach ( self::PRESETS as $id => $label ) {
@@ -193,6 +195,15 @@ else :
 				printf( '<p class="notice notice-info">%s <a href="%s">%s</a></p>', esc_html__( 'No Font Library families are installed.', 'blixis' ), esc_url( admin_url( 'font-library.php' ) ), esc_html__( 'Open Appearance > Fonts', 'blixis' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped substitutions.
 			}
 		} elseif ( 5 === $step ) {
+			echo '<fieldset><legend>' . esc_html__( 'Appearance', 'blixis' ) . '</legend>';
+			foreach ( array(
+				'auto'  => __( 'Auto', 'blixis' ),
+				'light' => __( 'Light', 'blixis' ),
+				'dark'  => __( 'Dark', 'blixis' ),
+			) as $mode => $label ) {
+				printf( '<label><input type="radio" name="appearance" value="%s" %s> %s</label>', esc_attr( $mode ), checked( $appearance, $mode, false ), esc_html( $label ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Each substitution is escaped.
+			}
+			echo '<p>' . esc_html__( 'Auto follows each visitor\'s system setting.', 'blixis' ) . '</p></fieldset>';
 			echo '<p>' . esc_html__( 'Website appearance in both modes. Editor appearance and language are separate.', 'blixis' ) . '</p><div class="blixis-preview">';
 			foreach ( array(
 				'value' => 'Light',
@@ -340,8 +351,9 @@ else :
 				self::redirect_step( $step, 'unavailable' );
 			}
 			$draft = array(
-				'preset' => $preset,
-				'tokens' => $tokens,
+				'preset'     => $preset,
+				'tokens'     => $tokens,
+				'appearance' => $draft['appearance'] ?? Appearance::site_mode(),
 			);
 		} elseif ( null === $draft ) {
 			self::redirect_step( 1, 'invalid' );
@@ -365,13 +377,19 @@ else :
 				self::redirect_step( $step, \count( TokenDraft::contrast_errors( $tokens ) ) ? 'contrast' : 'invalid' );
 			}
 			$draft['tokens'] = $tokens;
+		} elseif ( 5 === $step ) {
+			$appearance = isset( $_POST['appearance'] ) ? wp_unslash( $_POST['appearance'] ) : null; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Checked above.
+			if ( ! \is_string( $appearance ) || ! \in_array( $appearance, array( 'auto', 'light', 'dark' ), true ) ) {
+				self::redirect_step( $step, 'invalid' );
+			}
+			$draft['appearance'] = $appearance;
 		}
 		if ( 6 === $step ) {
 			$seed = self::preset_tokens( $draft['preset'] );
 			if ( null === $seed || TokenDraft::validate( $draft['tokens'], $seed, FontLibrary::allowed_stacks() ) ) {
 				self::redirect_step( 6, 'invalid' );
 			}
-			$result = DesignSystemStore::apply( $draft['tokens'], $draft['preset'] );
+			$result = DesignSystemStore::apply( $draft['tokens'], $draft['preset'], $draft['appearance'] );
 			if ( ! $result['ok'] ) {
 				self::redirect_step( 6, 'not-saved' );
 			}
@@ -420,7 +438,7 @@ else :
 	 * Read a validated per-user draft.
 	 *
 	 * @param int $user_id User ID.
-	 * @return array{preset: string, tokens: array<string, mixed>}|null Draft.
+	 * @return array{preset: string, tokens: array<string, mixed>, appearance: string}|null Draft.
 	 */
 	private static function draft( int $user_id ): ?array {
 		$raw = get_user_meta( $user_id, self::DRAFT_META, true );
@@ -428,7 +446,7 @@ else :
 			return null;
 		}
 		$data = json_decode( $raw, true );
-		if ( ! \is_array( $data ) || \array_keys( $data ) !== array( 'preset', 'tokens' ) || ! \is_string( $data['preset'] ) || ! isset( self::PRESETS[ $data['preset'] ] ) ) {
+		if ( ! \is_array( $data ) || ! \in_array( \array_keys( $data ), array( array( 'preset', 'tokens' ), array( 'preset', 'tokens', 'appearance' ) ), true ) || ! \is_string( $data['preset'] ) || ! isset( self::PRESETS[ $data['preset'] ] ) || ( \array_key_exists( 'appearance', $data ) && Appearance::normalize( $data['appearance'] ) !== $data['appearance'] ) ) {
 			return null;
 		}
 		$seed = self::preset_tokens( $data['preset'] );
@@ -436,8 +454,9 @@ else :
 			return null;
 		}
 		return array(
-			'preset' => $data['preset'],
-			'tokens' => $data['tokens'],
+			'preset'     => $data['preset'],
+			'tokens'     => $data['tokens'],
+			'appearance' => $data['appearance'] ?? Appearance::site_mode(),
 		);
 	}
 
