@@ -794,6 +794,151 @@ async function smoke() {
         const nlHistory = await json(await api(`${nlPath}/revisions`, { cookie: adminCookie, nonce: adminNonce }));
         check(nlHistory.current === 2 && nlHistory.revisions?.length === 1, 'a locale stream has its own history');
         command('post', 'delete', histPost, '--force');
+        // Publication (BWB-046): one pointer, separate layout and locale publishing, impact reports, rollback, capability split.
+        const contributorId = command('user', 'get', 'contributor_con', '--field=ID');
+        const pubPost = command(
+          'post',
+          'create',
+          '--post_type=page',
+          '--post_status=publish',
+          '--post_title=Publish smoke',
+          '--post_content=PLAIN PUBLISH',
+          '--porcelain',
+        );
+        const draftOfContributor = command(
+          'post',
+          'create',
+          '--post_type=post',
+          '--post_status=draft',
+          '--post_title=Contributor draft',
+          `--post_author=${contributorId}`,
+          '--porcelain',
+        );
+        const contributorCookie = await loginAs('contributor_con');
+        const contributorNonce = await nonceOf(contributorCookie);
+        const heading = (id) => ({ id, type: 'blixis/heading', props: {}, children: [] });
+        const layoutBody = (ids) =>
+          JSON.stringify({ schemaVersion: 1, documentId: 'doc-pub', layoutRevision: 1, root: ids.map(heading) });
+        const contentBody = (texts) =>
+          JSON.stringify({
+            schemaVersion: 1,
+            contentRevision: 1,
+            entries: Object.fromEntries(
+              Object.entries(texts).map(([id, text]) => [id, { status: 'translated', values: { text } }]),
+            ),
+          });
+        const putStream = (post, path, body, expected) =>
+          api(`${post}/${path}`, {
+            cookie: adminCookie,
+            nonce: adminNonce,
+            method: 'PUT',
+            ifMatch: `"${expected}"`,
+            body,
+          });
+        const postAction = (post, action, payload, expected, who = { cookie: adminCookie, nonce: adminNonce }) =>
+          api(`${post}/${action}`, { ...who, method: 'POST', ifMatch: `"${expected}"`, body: JSON.stringify(payload) });
+        const pubState = async (post = pubPost) =>
+          json(await api(`${post}/published`, { cookie: adminCookie, nonce: adminNonce }));
+        const pubPage = async () => (await get(`/?page_id=${pubPost}`)).text;
+
+        await putStream(pubPost, 'layout', layoutBody(['hed-1', 'hed-2']), 0);
+        await putStream(pubPost, 'content/en_US', contentBody({ 'hed-1': 'Hello live' }), 0);
+        await putStream(pubPost, 'content/nl_NL', contentBody({ 'hed-2': 'Tweede kop' }), 0);
+        check(
+          (await pubState()).layout?.state === 'unpublished' && (await pubPage()).includes('PLAIN PUBLISH'),
+          'saved working data is not live and the state is unpublished',
+        );
+        check(
+          (
+            await postAction(pubPost, 'publish', { layout: true, locale: 'en_US' }, 0, {
+              cookie: subscriberCookie,
+              nonce: subscriberNonce,
+            })
+          ).status === 403,
+          'a subscriber cannot publish',
+        );
+        await putStream(draftOfContributor, 'layout', layoutBody(['hed-1']), 0);
+        const contributorRead = await api(`${draftOfContributor}/published`, {
+          cookie: contributorCookie,
+          nonce: contributorNonce,
+        });
+        const contributorPublish = await postAction(draftOfContributor, 'publish', { layout: true }, 0, {
+          cookie: contributorCookie,
+          nonce: contributorNonce,
+        });
+        check(
+          contributorRead.status === 200 && contributorPublish.status === 403,
+          'someone who may edit but not publish can read the state and cannot publish',
+        );
+        check(
+          (await postAction(pubPost, 'publish', { layout: true, locale: 'en_US' }, 3)).status === 409,
+          'publishing with a stale pointer revision is a conflict',
+        );
+        const first = await postAction(pubPost, 'publish', { layout: true, locale: 'en_US' }, 0);
+        const firstBody = await json(first);
+        check(
+          first.status === 200 && firstBody.pointerRevision === 1 && first.headers.get('etag') === '"1"',
+          'the first publication advances the pointer to revision 1',
+        );
+        let pubHtml = await pubPage();
+        check(
+          pubHtml.includes('Hello live') &&
+            pubHtml.includes('data-blx-id="hed-2"') &&
+            !pubHtml.includes('PLAIN PUBLISH'),
+          'the published layout and English content are live',
+        );
+        const afterFirst = await pubState();
+        check(
+          afterFirst.layout?.state === 'published' && afterFirst.locales?.en_US?.state === 'published',
+          'the state reports published',
+        );
+        await putStream(pubPost, 'content/en_US', contentBody({ 'hed-1': 'Hello EDITED' }), 1);
+        pubHtml = await pubPage();
+        check(pubHtml.includes('Hello live') && !pubHtml.includes('EDITED'), 'autosaved changes never reach visitors');
+        check(
+          (await pubState()).locales?.en_US?.state === 'published-with-pending-changes',
+          'the state reports pending changes',
+        );
+        const dutch = await postAction(pubPost, 'publish', { locale: 'nl_NL' }, 1);
+        check(dutch.status === 200, 'publishing Dutch only moves the Dutch content');
+        check((await pubPage()).includes('Hello live'), 'publishing Dutch leaves the live English page unchanged');
+        await putStream(pubPost, 'layout', layoutBody(['hed-1']), 1);
+        const blocked = await postAction(pubPost, 'publish', { layout: true }, 2);
+        const blockedBody = await json(blocked);
+        check(
+          blocked.status === 409 &&
+            blockedBody.code === 'blixis_publish_blocked' &&
+            blockedBody.data?.impacted?.[0]?.locale === 'nl_NL',
+          'a layout change that breaks a published locale is blocked with an impact report',
+        );
+        check((await pubState()).pointerRevision === 2, 'a blocked publish changes nothing');
+        const confirmed = await postAction(pubPost, 'publish', { layout: true, confirmImpact: true }, 2);
+        check(
+          confirmed.status === 200 && (await json(confirmed)).pinnedLocales?.join() === 'nl_NL',
+          'with confirmation the broken locale stays pinned to its previous layout',
+        );
+        pubHtml = await pubPage();
+        check(
+          pubHtml.includes('Hello live') && !pubHtml.includes('data-blx-id="hed-2"'),
+          'the compatible locale uses the new layout immediately',
+        );
+        const back = await postAction(pubPost, 'rollback', { locale: 'en_US', contentSnapshot: 1 }, 3);
+        const backBody = await json(back);
+        check(
+          back.status === 200 && backBody.contentSnapshot === 2 && backBody.pointerRevision === 4,
+          'a locale rollback republishes the old snapshot under a new number',
+        );
+        check(
+          (await postAction(pubPost, 'rollback', { locale: 'en_US', contentSnapshot: 99 }, 4)).status === 404,
+          'rolling back to an unknown snapshot is 404',
+        );
+        pubHtml = await pubPage();
+        check(
+          pubHtml.includes('data-blx-id="hed-2"'),
+          'the locale rollback restores the layout the content was published against',
+        );
+        command('post', 'delete', pubPost, '--force');
+        command('post', 'delete', draftOfContributor, '--force');
         // Media (BWB-045): raster library images only, validated responsive attributes, alt text, picker route.
         const mediaIds = JSON.parse(command('eval-file', '/fixtures/media-smoke.php').split('\n').pop());
         const mediaApi = async (id, { cookie, nonce } = {}) =>

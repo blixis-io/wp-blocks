@@ -32,6 +32,13 @@ final class FakePostAccess implements PostAccess {
 	 */
 	public bool $can_edit = true;
 
+	/**
+	 * Whether publishing is allowed.
+	 *
+	 * @var bool
+	 */
+	public bool $can_publish = true;
+
 	/** Implement the access contract. */
 	public function is_authenticated(): bool {
 		return $this->authenticated;
@@ -59,5 +66,15 @@ final class FakePostAccess implements PostAccess {
 	 */
 	public function can_edit( int $post_id ): bool {
 		return $this->can_edit;
+	}
+
+	/**
+	 * Publishing permission.
+	 *
+	 * @param int $post_id Post ID.
+	 */
+	public function can_publish( int $post_id ): bool {
+		unset( $post_id );
+		return $this->can_publish;
 	}
 }

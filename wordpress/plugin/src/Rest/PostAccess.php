@@ -33,4 +33,12 @@ interface PostAccess {
 	 * @param int $post_id Post ID.
 	 */
 	public function can_edit( int $post_id ): bool;
+
+	/**
+	 * Whether the current user may publish this post (the publish capability, not just edit).
+	 *
+	 * @param int $post_id Post ID.
+	 * @return bool
+	 */
+	public function can_publish( int $post_id ): bool;
 }

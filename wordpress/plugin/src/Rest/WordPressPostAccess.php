@@ -44,4 +44,14 @@ final class WordPressPostAccess implements PostAccess {
 	public function can_edit( int $post_id ): bool {
 		return \current_user_can( 'edit_post', $post_id );
 	}
+
+	/**
+	 * Whether the current user may publish this post.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return bool
+	 */
+	public function can_publish( int $post_id ): bool {
+		return \current_user_can( 'publish_post', $post_id );
+	}
 }
