@@ -61,6 +61,8 @@ Not covered yet: element registry checks (legal parents/children, registered pro
 
 ## Versioning rules
 
+The cross-cutting rules for all versioned artifacts, including a change checklist, are in `VERSIONING-AND-COMPATIBILITY.md`; this section is the document-specific part.
+
 - **Compatible (no version bump):** adding an optional field. Unknown fields on the document, elements, style rules, translation entries and metadata are allowed and must round-trip unchanged; consumers ignore what they do not know. (Reserved keys are never allowed.)
 - **Breaking (bump `schemaVersion`, add an append-only migration and golden fixtures):** removing or renaming a field, changing the meaning of a value, tightening a pattern or limit, or making an optional field required.
 - Loading a document with a newer `schemaVersion` than the running code understands fails safely without rewriting it (no silent loss, ADR 0003).

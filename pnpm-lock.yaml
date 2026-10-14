@@ -154,6 +154,12 @@ importers:
       '@blixis/wp-core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@blixis/wp-design-tokens':
+        specifier: workspace:*
+        version: link:../../packages/design-tokens
+      '@blixis/wp-element-registry':
+        specifier: workspace:*
+        version: link:../../packages/element-registry
       '@blixis/wp-style-engine':
         specifier: workspace:*
         version: link:../../packages/style-engine

@@ -29,39 +29,40 @@ Further scripts (lint, typecheck, build, e2e) arrive with BWB-013 to BWB-018.
 
 ## Documents
 
-| File                                                | Purpose                                                                                            |
-| --------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `docs/product/PRD.md`                               | Scope, audience, personas, capabilities, non-goals, release criteria                               |
-| `docs/product/UX-JOURNEYS.md`                       | Draft user journeys and prototype acceptance (BWB-009)                                             |
-| `docs/product/FEATURE-MATRIX.md`                    | Free / Plus / Pro packaging and entitlement rules                                                  |
-| `docs/architecture/SYSTEM.md`                       | Modules, rendering, CSS strategy, editor, theme contracts                                          |
-| `docs/architecture/DOCUMENT-SCHEMA.md`              | Document schema v1: shape, formats, versioning rules, what `validateDocument` adds (BWB-019)       |
-| `docs/architecture/COMMANDS.md`                     | Document commands, inverses and undo/redo history (BWB-022)                                        |
-| `docs/architecture/EXTENSION-API.md`                | Element registry and extension API v1: definitions, classification, namespaces, manifest (BWB-021) |
-| `docs/architecture/CSS-VALIDATION.md`               | CSS declaration allow-list, value grammar, sanitization and corpus (BWB-023)                       |
-| `docs/architecture/CSS-COMPILER.md`                 | Deterministic scoped CSS compiler: layers, selectors, modes, breakpoints, tokens (BWB-024)         |
-| `docs/architecture/BREAKPOINTS-AND-STATES.md`       | Breakpoints, states, precedence and inheritance, reference resolver and inspector API (BWB-025)    |
-| `docs/architecture/DESIGN-TOKENS.md`                | Design token schema, references, resolver and validation (BWB-026)                                 |
-| `docs/architecture/SCHEMAS-AND-APIS.md`             | Initial document contracts, endpoints, migrations and plugin extension API                         |
-| `docs/architecture/WORDPRESS.md`                    | Theme activation, font library, persistence, access and portability                                |
-| `docs/engineering/TESTING.md`                       | Test layers, coverage, CI gates, E2E matrix                                                        |
-| `docs/engineering/GITFLOW.md`                       | GitHub Flow, Conventional Commits, PR policy, no AI attribution                                    |
-| `docs/engineering/CODE-STANDARDS.md`                | TypeScript, React, PHP, REST and architectural conventions                                         |
-| `docs/engineering/STYLEGUIDES.md`                   | UI, token, accessibility, visual-editor UX, CSS conventions                                        |
-| `docs/engineering/THREAT-MODEL.md`                  | Assets, roles, trust boundaries, STRIDE threats and required controls (BWB-010)                    |
-| `docs/engineering/ACCESSIBILITY-BASELINE.md`        | WCAG 2.2 AA requirements, verification and performance rules (BWB-010)                             |
-| `docs/architecture/adrs/`                           | Architecture decision records                                                                      |
-| `tests/fixtures/style-resolution/`                  | Reference fixtures and verifier for ADR 0005                                                       |
-| `docs/engineering/SECURITY.md`                      | Threat model, supply chain, sandboxing, licensing                                                  |
-| `docs/engineering/CI-CD.md`                         | GitHub Actions, builds, release and versioning                                                     |
-| `docs/roadmap/ROADMAP.md`                           | Phases, gates, dependencies, deliverables                                                          |
-| `docs/roadmap/issues.csv`                           | **Canonical issue inventory** for provisioning GitHub                                              |
-| `docs/roadmap/ISSUE-CONVENTIONS.md`                 | Labels, issue descriptions, priorities, statuses                                                   |
-| `docs/github/PROJECT-SETUP.md`                      | GitHub CLI and Projects provisioning runbook                                                       |
-| `docs/agent/START-HERE.md`                          | **Copy/paste agent prompt** with mandatory plan-first execution                                    |
-| `docs/agent/AGENT-RULES.md`                         | Rules for future implementation sessions                                                           |
-| `docs/public-docs-plan/ASTRO-STARLIGHT.md`          | End-state Astro docs, API reference, tutorials, samples, Playwright                                |
-| `docs/public-docs-plan/INFORMATION-ARCHITECTURE.md` | Docs navigation and publishing gates                                                               |
+| File                                                | Purpose                                                                                                            |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `docs/product/PRD.md`                               | Scope, audience, personas, capabilities, non-goals, release criteria                                               |
+| `docs/product/UX-JOURNEYS.md`                       | Draft user journeys and prototype acceptance (BWB-009)                                                             |
+| `docs/product/FEATURE-MATRIX.md`                    | Free / Plus / Pro packaging and entitlement rules                                                                  |
+| `docs/architecture/SYSTEM.md`                       | Modules, rendering, CSS strategy, editor, theme contracts                                                          |
+| `docs/architecture/DOCUMENT-SCHEMA.md`              | Document schema v1: shape, formats, versioning rules, what `validateDocument` adds (BWB-019)                       |
+| `docs/architecture/COMMANDS.md`                     | Document commands, inverses and undo/redo history (BWB-022)                                                        |
+| `docs/architecture/EXTENSION-API.md`                | Element registry and extension API v1: definitions, classification, namespaces, manifest (BWB-021)                 |
+| `docs/architecture/CSS-VALIDATION.md`               | CSS declaration allow-list, value grammar, sanitization and corpus (BWB-023)                                       |
+| `docs/architecture/CSS-COMPILER.md`                 | Deterministic scoped CSS compiler: layers, selectors, modes, breakpoints, tokens (BWB-024)                         |
+| `docs/architecture/BREAKPOINTS-AND-STATES.md`       | Breakpoints, states, precedence and inheritance, reference resolver and inspector API (BWB-025)                    |
+| `docs/architecture/DESIGN-TOKENS.md`                | Design token schema, references, resolver and validation (BWB-026)                                                 |
+| `docs/architecture/VERSIONING-AND-COMPATIBILITY.md` | Version inventory, compatible vs breaking changes, change checklist, extension API and element SDK rules (BWB-028) |
+| `docs/architecture/SCHEMAS-AND-APIS.md`             | Initial document contracts, endpoints, migrations and plugin extension API                                         |
+| `docs/architecture/WORDPRESS.md`                    | Theme activation, font library, persistence, access and portability                                                |
+| `docs/engineering/TESTING.md`                       | Test layers, coverage, CI gates, E2E matrix                                                                        |
+| `docs/engineering/GITFLOW.md`                       | GitHub Flow, Conventional Commits, PR policy, no AI attribution                                                    |
+| `docs/engineering/CODE-STANDARDS.md`                | TypeScript, React, PHP, REST and architectural conventions                                                         |
+| `docs/engineering/STYLEGUIDES.md`                   | UI, token, accessibility, visual-editor UX, CSS conventions                                                        |
+| `docs/engineering/THREAT-MODEL.md`                  | Assets, roles, trust boundaries, STRIDE threats and required controls (BWB-010)                                    |
+| `docs/engineering/ACCESSIBILITY-BASELINE.md`        | WCAG 2.2 AA requirements, verification and performance rules (BWB-010)                                             |
+| `docs/architecture/adrs/`                           | Architecture decision records                                                                                      |
+| `tests/fixtures/style-resolution/`                  | Reference fixtures and verifier for ADR 0005                                                                       |
+| `docs/engineering/SECURITY.md`                      | Threat model, supply chain, sandboxing, licensing                                                                  |
+| `docs/engineering/CI-CD.md`                         | GitHub Actions, builds, release and versioning                                                                     |
+| `docs/roadmap/ROADMAP.md`                           | Phases, gates, dependencies, deliverables                                                                          |
+| `docs/roadmap/issues.csv`                           | **Canonical issue inventory** for provisioning GitHub                                                              |
+| `docs/roadmap/ISSUE-CONVENTIONS.md`                 | Labels, issue descriptions, priorities, statuses                                                                   |
+| `docs/github/PROJECT-SETUP.md`                      | GitHub CLI and Projects provisioning runbook                                                                       |
+| `docs/agent/START-HERE.md`                          | **Copy/paste agent prompt** with mandatory plan-first execution                                                    |
+| `docs/agent/AGENT-RULES.md`                         | Rules for future implementation sessions                                                                           |
+| `docs/public-docs-plan/ASTRO-STARLIGHT.md`          | End-state Astro docs, API reference, tutorials, samples, Playwright                                                |
+| `docs/public-docs-plan/INFORMATION-ARCHITECTURE.md` | Docs navigation and publishing gates                                                                               |
 
 ## Architectural decisions requiring explicit review
 
