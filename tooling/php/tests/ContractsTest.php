@@ -58,9 +58,9 @@ final class ContractsTest extends TestCase {
 	private static function files_under( string $path ): array {
 		$absolute = self::root() . '/' . $path;
 		if ( is_file( $absolute ) ) {
-			return array( $path );
+			return [ $path ];
 		}
-		$found    = array();
+		$found    = [];
 		$iterator = new \RecursiveIteratorIterator( new \RecursiveDirectoryIterator( $absolute, \FilesystemIterator::SKIP_DOTS ) );
 		foreach ( $iterator as $file ) {
 			if ( $file instanceof \SplFileInfo && 'json' === $file->getExtension() ) {
@@ -89,7 +89,7 @@ final class ContractsTest extends TestCase {
 	 */
 	public function test_registry_is_consistent_for_php(): void {
 		$roadmap = (string) file_get_contents( self::root() . '/docs/roadmap/issues.csv' ) . "\n" . (string) file_get_contents( self::root() . '/docs/roadmap/issues-addendum.csv' );
-		$levels  = array();
+		$levels  = [];
 		foreach ( self::suites() as $suite ) {
 			$this->assertNotSame( '', trim( $suite->description ), $suite->id );
 			foreach ( $suite->paths as $path ) {
@@ -103,7 +103,7 @@ final class ContractsTest extends TestCase {
 				$this->assertFileExists( self::root() . '/' . $runner );
 			}
 			$level = $suite->php->level;
-			$this->assertContains( $level, array( 'full', 'shape', 'pending' ), $suite->id );
+			$this->assertContains( $level, [ 'full', 'shape', 'pending' ], $suite->id );
 			if ( 'pending' !== $level ) {
 				$this->assertFileExists( self::root() . '/' . $suite->php->runner, $suite->id );
 				$this->assertNotEmpty( $suite->php->covers, $suite->id );
@@ -132,7 +132,7 @@ final class ContractsTest extends TestCase {
 	 */
 	private static function validate( mixed $data, string $schema, string $schema_id ): \Opis\JsonSchema\ValidationResult {
 		static $validator  = null;
-		static $registered = array();
+		static $registered = [];
 		if ( null === $validator ) {
 			$validator = new Validator();
 		}
@@ -165,8 +165,8 @@ final class ContractsTest extends TestCase {
 	 */
 	private static function failure_points( \Opis\JsonSchema\Errors\ValidationError $error ): array {
 		$subs = $error->subErrors();
-		if ( array() !== $subs ) {
-			$out = array();
+		if ( [] !== $subs ) {
+			$out = [];
 			foreach ( $subs as $sub ) {
 				$out = array_merge( $out, self::failure_points( $sub ) );
 			}
@@ -175,13 +175,13 @@ final class ContractsTest extends TestCase {
 		$pointer = '/' . implode( '/', array_map( 'strval', $error->data()->fullPath() ) );
 		$pointer = rtrim( $pointer, '/' );
 		if ( 'required' === $error->keyword() ) {
-			$out = array();
-			foreach ( (array) ( $error->args()['missing'] ?? array() ) as $name ) {
-				$out[] = array( $pointer . '/' . $name, 'required' );
+			$out = [];
+			foreach ( (array) ( $error->args()['missing'] ?? [] ) as $name ) {
+				$out[] = [ $pointer . '/' . $name, 'required' ];
 			}
 			return $out;
 		}
-		return array( array( $pointer, $error->keyword() ) );
+		return [ [ $pointer, $error->keyword() ] ];
 	}
 
 	/**
@@ -222,9 +222,9 @@ final class ContractsTest extends TestCase {
 	 * @return array<string, array{string}>
 	 */
 	public static function document_fixtures(): array {
-		$out = array();
+		$out = [];
 		foreach ( self::files_under( 'tests/fixtures/documents' ) as $file ) {
-			$out[ basename( $file ) ] = array( $file );
+			$out[ basename( $file ) ] = [ $file ];
 		}
 		return $out;
 	}
@@ -257,14 +257,14 @@ final class ContractsTest extends TestCase {
 			. '"root":[{"id":"el-001","type":"blixis/text","props":{},"children":[CHILD]}],"classListVersion":0,"classRefs":{},'
 			. '"translations":{"en_US":TRANSLATIONS},"metadata":{"updatedAt":"2026-01-01T00:00:00Z","editorVersion":"0.0.0"}}';
 		$ok  = '{"id":"el-002","type":"blixis/text","props":{},"children":[]}';
-		return array(
-			'a nested child is valid ($ref recursion)'   => array( str_replace( array( 'CHILD', 'TRANSLATIONS' ), array( $ok, '{}' ), $doc ), '', 'valid' ),
-			'a nested child is checked ($ref recursion)' => array( str_replace( array( 'CHILD', 'TRANSLATIONS' ), array( '{"id":"el-002","type":"text","props":{},"children":[]}', '{}' ), $doc ), '/root/0/children/0/type', 'pattern' ),
-			'a reserved key is refused (key pattern)'    => array( str_replace( array( 'CHILD', 'TRANSLATIONS', '"props":{}' ), array( '', '{}', '"props":{"constructor":1}' ), $doc ), '/root/0/props', 'pattern' ),
-			'a non-ASCII letter in an id is refused'     => array( str_replace( array( 'CHILD', 'TRANSLATIONS', 'el-001' ), array( '', '{}', "el-\u{e9}01" ), $doc ), '/root/0/id', 'pattern' ),
-			'an empty object is an object, not an array' => array( str_replace( array( 'CHILD', 'TRANSLATIONS' ), array( '', '[]' ), $doc ), '/translations/en_US', 'type' ),
-			'props must be an object, [] is refused'     => array( str_replace( array( 'CHILD', 'TRANSLATIONS', '"props":{}' ), array( '', '{}', '"props":[]' ), $doc ), '/root/0/props', 'type' ),
-		);
+		return [
+			'a nested child is valid ($ref recursion)'   => [ str_replace( [ 'CHILD', 'TRANSLATIONS' ], [ $ok, '{}' ], $doc ), '', 'valid' ],
+			'a nested child is checked ($ref recursion)' => [ str_replace( [ 'CHILD', 'TRANSLATIONS' ], [ '{"id":"el-002","type":"text","props":{},"children":[]}', '{}' ], $doc ), '/root/0/children/0/type', 'pattern' ],
+			'a reserved key is refused (key pattern)'    => [ str_replace( [ 'CHILD', 'TRANSLATIONS', '"props":{}' ], [ '', '{}', '"props":{"constructor":1}' ], $doc ), '/root/0/props', 'pattern' ],
+			'a non-ASCII letter in an id is refused'     => [ str_replace( [ 'CHILD', 'TRANSLATIONS', 'el-001' ], [ '', '{}', "el-\u{e9}01" ], $doc ), '/root/0/id', 'pattern' ],
+			'an empty object is an object, not an array' => [ str_replace( [ 'CHILD', 'TRANSLATIONS' ], [ '', '[]' ], $doc ), '/translations/en_US', 'type' ],
+			'props must be an object, [] is refused'     => [ str_replace( [ 'CHILD', 'TRANSLATIONS', '"props":{}' ], [ '', '{}', '"props":[]' ], $doc ), '/root/0/props', 'type' ],
+		];
 	}
 
 	/**
@@ -284,7 +284,7 @@ final class ContractsTest extends TestCase {
 		$this->assertFalse( $result->isValid() );
 		$error = $result->error();
 		$this->assertNotNull( $error );
-		$this->assertContains( array( $pointer, $keyword ), self::failure_points( $error ) );
+		$this->assertContains( [ $pointer, $keyword ], self::failure_points( $error ) );
 	}
 
 	/**
@@ -294,10 +294,10 @@ final class ContractsTest extends TestCase {
 	 */
 	public static function token_cases(): array {
 		$corpus = self::json( 'packages/style-engine/corpus/token-sets.json' );
-		$out    = array();
+		$out    = [];
 		if ( $corpus instanceof stdClass && is_array( $corpus->cases ) ) {
 			foreach ( $corpus->cases as $case ) {
-				$out[ $case->id ] = array( $case->id, $case );
+				$out[ $case->id ] = [ $case->id, $case ];
 			}
 		}
 		return $out;
@@ -311,7 +311,7 @@ final class ContractsTest extends TestCase {
 	 */
 	#[DataProvider( 'token_cases' )]
 	public function test_token_corpus_matches_the_json_schema( string $id, stdClass $token_case ): void {
-		$shape_errors = array( 'schema', 'reserved-key', 'unreadable' );
+		$shape_errors = [ 'schema', 'reserved-key', 'unreadable' ];
 		$expected     = true;
 		if ( false === $token_case->expect->ok ) {
 			foreach ( $token_case->expect->issues as $issue ) {

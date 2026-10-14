@@ -33,27 +33,27 @@ final class FontLibrary {
 		if ( ! self::safe_name( $data['name'] ) || ! self::safe_name( $data['fontFamily'] ) || ! \is_array( $data['fontFace'] ?? null ) || ! \array_is_list( $data['fontFace'] ) || \count( $data['fontFace'] ) > 100 ) {
 			return null;
 		}
-		$faces = array();
+		$faces = [];
 		foreach ( $data['fontFace'] as $face ) {
 			if ( ! \is_array( $face ) ) {
 				return null;
 			}
 			$weight = $face['fontWeight'] ?? '400';
 			$style  = $face['fontStyle'] ?? 'normal';
-			if ( ! \is_string( $weight ) || ! \is_string( $style ) || ! self::safe_weight( $weight ) || ! \in_array( $style, array( 'normal', 'italic', 'oblique' ), true ) ) {
+			if ( ! \is_string( $weight ) || ! \is_string( $style ) || ! self::safe_weight( $weight ) || ! \in_array( $style, [ 'normal', 'italic', 'oblique' ], true ) ) {
 				return null;
 			}
-			$faces[ $weight . '/' . $style ] = array(
+			$faces[ $weight . '/' . $style ] = [
 				'weight' => $weight,
 				'style'  => $style,
-			);
+			];
 		}
-		return array(
+		return [
 			'slug'       => $data['slug'],
 			'name'       => $data['name'],
 			'css_family' => $data['fontFamily'],
 			'faces'      => \array_values( $faces ),
-		);
+		];
 	}
 
 	/**
@@ -85,7 +85,7 @@ final class FontLibrary {
 	 * @return string|null Safe stack.
 	 */
 	public static function css_stack( string $family, string $fallback ): ?string {
-		return self::safe_name( $family ) && \in_array( $fallback, array( 'sans-serif', 'serif', 'monospace' ), true ) ? '"' . $family . '", system-ui, ' . $fallback : null;
+		return self::safe_name( $family ) && \in_array( $fallback, [ 'sans-serif', 'serif', 'monospace' ], true ) ? '"' . $family . '", system-ui, ' . $fallback : null;
 	}
 
 	/**
@@ -95,7 +95,7 @@ final class FontLibrary {
 	 * @return list<array{slug: string, name: string, css_family: string, faces: list<array{weight: string, style: string}>}>
 	 */
 	public static function parse_families( array $json_posts ): array {
-		$out = array();
+		$out = [];
 		foreach ( $json_posts as $json ) {
 			if ( ! \is_string( $json ) ) {
 				continue;
@@ -129,23 +129,23 @@ final class FontLibrary {
 			return null;
 		}
 		$first = \trim( \explode( ',', $family['fontFamily'] )[0], " \t\n\r\0\x0B\"'" );
-		$faces = array();
+		$faces = [];
 		foreach ( $face_contents as $face_json ) {
 			$face = \is_string( $face_json ) ? \json_decode( $face_json, true ) : null;
 			if ( \is_array( $face ) ) {
-				$faces[] = array(
+				$faces[] = [
 					'fontWeight' => $face['fontWeight'] ?? '400',
 					'fontStyle'  => $face['fontStyle'] ?? 'normal',
-				);
+				];
 			}
 		}
 		$encoded = \json_encode( // phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- Pure helper used without WordPress.
-			array(
+			[
 				'slug'       => $slug,
 				'name'       => $title,
 				'fontFamily' => $first,
 				'fontFace'   => $faces,
-			)
+			]
 		);
 		return false === $encoded ? null : $encoded;
 	}
@@ -161,23 +161,23 @@ final class FontLibrary {
 			return $families;
 		}
 		$posts = get_posts(
-			array(
+			[
 				'post_type'   => 'wp_font_family',
 				'post_status' => 'publish',
 				'numberposts' => self::MAX_FAMILIES,
 				'orderby'     => 'ID',
 				'order'       => 'ASC',
-			)
+			]
 		);
-		$json  = array();
+		$json  = [];
 		foreach ( $posts as $post ) {
 			$faces = get_posts(
-				array(
+				[
 					'post_type'   => 'wp_font_face',
 					'post_status' => 'publish',
 					'post_parent' => $post->ID,
 					'numberposts' => 100,
-				)
+				]
 			);
 			$entry = self::from_post_data( $post->post_name, $post->post_title, $post->post_content, \array_map( static fn( $face ) => $face->post_content, $faces ) );
 			if ( null !== $entry ) {
@@ -194,7 +194,7 @@ final class FontLibrary {
 	 * @return list<string>
 	 */
 	public static function allowed_stacks(): array {
-		$stacks = array();
+		$stacks = [];
 		foreach ( self::installed() as $family ) {
 			$stack = self::css_stack( $family['css_family'], 'sans-serif' );
 			if ( null !== $stack ) {

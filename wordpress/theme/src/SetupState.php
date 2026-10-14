@@ -27,18 +27,18 @@ final class SetupState {
 	 * @return array{version: 1, status: string, updated_at: string, preset?: string}|null
 	 */
 	public static function normalize( mixed $value ): ?array {
-		if ( ! is_array( $value ) || array_diff( array_keys( $value ), array( 'version', 'status', 'updated_at', 'preset' ) ) || self::VERSION !== ( $value['version'] ?? null ) || ! is_string( $value['status'] ?? null ) || ! in_array( $value['status'], array( 'not_started', 'in_progress', 'completed', 'dismissed' ), true ) || ! is_string( $value['updated_at'] ?? null ) ) {
+		if ( ! is_array( $value ) || array_diff( array_keys( $value ), [ 'version', 'status', 'updated_at', 'preset' ] ) || self::VERSION !== ( $value['version'] ?? null ) || ! is_string( $value['status'] ?? null ) || ! in_array( $value['status'], [ 'not_started', 'in_progress', 'completed', 'dismissed' ], true ) || ! is_string( $value['updated_at'] ?? null ) ) {
 			return null;
 		}
 		$date = \DateTimeImmutable::createFromFormat( DATE_ATOM, $value['updated_at'] );
 		if ( false === $date || $date->format( DATE_ATOM ) !== $value['updated_at'] ) {
 			return null;
 		}
-		$state = array(
+		$state = [
 			'version'    => self::VERSION,
 			'status'     => $value['status'],
 			'updated_at' => $value['updated_at'],
-		);
+		];
 		if ( array_key_exists( 'preset', $value ) ) {
 			if ( ! is_string( $value['preset'] ) || 1 !== preg_match( '/^[a-z][a-z0-9-]{0,63}$/', $value['preset'] ) ) {
 				return null;
@@ -55,11 +55,11 @@ final class SetupState {
 	 * @return array{version: 1, status: string, updated_at: string}
 	 */
 	public static function initial( string $updated_at ): array {
-		return array(
+		return [
 			'version'    => self::VERSION,
 			'status'     => 'not_started',
 			'updated_at' => $updated_at,
-		);
+		];
 	}
 
 	/**
@@ -78,7 +78,7 @@ final class SetupState {
 			$state['updated_at'] = $updated_at;
 			return null === self::normalize( $state ) ? null : $state;
 		}
-		if ( null === $state || ! in_array( $state['status'], array( 'not_started', 'in_progress' ), true ) ) {
+		if ( null === $state || ! in_array( $state['status'], [ 'not_started', 'in_progress' ], true ) ) {
 			return null;
 		}
 		if ( 'start' === $action ) {
@@ -120,10 +120,10 @@ final class SetupState {
 	 * @return array{resume_step: int}|null
 	 */
 	public static function normalize_ui( mixed $value ): ?array {
-		if ( ! is_array( $value ) || array_keys( $value ) !== array( 'resume_step' ) || ! is_int( $value['resume_step'] ) || $value['resume_step'] < 1 || $value['resume_step'] > 6 ) {
+		if ( ! is_array( $value ) || array_keys( $value ) !== [ 'resume_step' ] || ! is_int( $value['resume_step'] ) || $value['resume_step'] < 1 || $value['resume_step'] > 6 ) {
 			return null;
 		}
-		return array( 'resume_step' => $value['resume_step'] );
+		return [ 'resume_step' => $value['resume_step'] ];
 	}
 
 	/**
@@ -168,7 +168,7 @@ final class SetupState {
 		if ( $user_id <= 0 || $step < 1 || $step > 6 ) {
 			return false;
 		}
-		update_user_meta( $user_id, self::USER_META, array( 'resume_step' => $step ) );
+		update_user_meta( $user_id, self::USER_META, [ 'resume_step' => $step ] );
 		return true;
 	}
 }

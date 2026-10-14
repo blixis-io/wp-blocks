@@ -89,7 +89,7 @@ final class Fixtures {
 		}
 		$keys = array_keys( get_object_vars( $fixture ) );
 		sort( $keys, SORT_STRING );
-		if ( array( 'description', 'expected', 'fixtureVersion', 'id', 'input', 'tags' ) !== $keys ) {
+		if ( [ 'description', 'expected', 'fixtureVersion', 'id', 'input', 'tags' ] !== $keys ) {
 			throw new InvalidArgumentException( 'Fixture keys must be exactly description, expected, fixtureVersion, id, input, tags.' ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- CLI tooling.
 		}
 		if ( 1 !== $fixture->fixtureVersion ) {
@@ -123,7 +123,7 @@ final class Fixtures {
 	 * @throws InvalidArgumentException On an invalid envelope or a duplicate id.
 	 */
 	public static function load_all( string $dir ): array {
-		$files    = array();
+		$files    = [];
 		$iterator = new \RecursiveIteratorIterator( new \RecursiveDirectoryIterator( $dir, \FilesystemIterator::SKIP_DOTS ) );
 		foreach ( $iterator as $file ) {
 			if ( $file instanceof \SplFileInfo && str_ends_with( $file->getFilename(), '.fixture.json' ) && ! str_contains( $file->getPathname(), 'node_modules' ) ) {
@@ -131,8 +131,8 @@ final class Fixtures {
 			}
 		}
 		sort( $files, SORT_STRING );
-		$seen     = array();
-		$fixtures = array();
+		$seen     = [];
+		$fixtures = [];
 		foreach ( $files as $file ) {
 			$fixture = self::load( $file );
 			$id      = (string) $fixture->id;
@@ -153,7 +153,7 @@ final class Fixtures {
 	 */
 	private static function sort_keys( mixed $value ): mixed {
 		if ( is_array( $value ) ) {
-			return array_map( array( self::class, 'sort_keys' ), $value );
+			return array_map( [ self::class, 'sort_keys' ], $value );
 		}
 		if ( $value instanceof stdClass ) {
 			$vars = get_object_vars( $value );

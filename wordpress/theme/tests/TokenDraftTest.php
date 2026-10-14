@@ -21,7 +21,7 @@ require_once \dirname( __DIR__ ) . '/src/TokenDraft.php';
 final class TokenDraftTest extends TestCase {
 	/** Every bundled choice must pass draft validation. */
 	public function test_bundled_seeds(): void {
-		foreach ( array( 'custom', 'ocean', 'forest', 'sunset', 'minimal' ) as $preset ) {
+		foreach ( [ 'custom', 'ocean', 'forest', 'sunset', 'minimal' ] as $preset ) {
 			$path = \dirname( __DIR__ ) . '/design/' . ( 'custom' === $preset ? 'default-tokens.json' : 'presets/' . $preset . '.json' );
 			$this->assertNotNull( TokenDraft::seed( $path, $preset ), $preset );
 		}
@@ -34,10 +34,10 @@ final class TokenDraftTest extends TestCase {
 		$bad                        = $seed;
 		$bad['color-text']['value'] = 'red;background:url(x)';
 		$this->assertArrayHasKey( 'color-text-value', TokenDraft::validate( $bad, $seed ) );
-		$bad['color-text']['value'] = array( '#000' );
+		$bad['color-text']['value'] = [ '#000' ];
 		$this->assertArrayHasKey( 'color-text-value', TokenDraft::validate( $bad, $seed ) );
 		$bad               = $seed;
-		$bad['unexpected'] = array( 'value' => '#000' );
+		$bad['unexpected'] = [ 'value' => '#000' ];
 		$this->assertArrayHasKey( 'tokens', TokenDraft::validate( $bad, $seed ) );
 		$bad                       = $seed;
 		$bad['font-body']['value'] = \str_repeat( 'x', 9000 );

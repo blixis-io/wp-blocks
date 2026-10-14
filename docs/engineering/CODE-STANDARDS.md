@@ -83,3 +83,5 @@ When a package gets PHP code: put it under `wordpress/<package>/src` (PSR-4, nam
 **Known limits.** PHPCompatibility 9.x only knows PHP features up to 8.0, so the PHP 8.2 floor is enforced by PHPStan (`phpVersion: 80200`) and by running CI on PHP 8.2 (ADR 0001), not by PHPCompatibility alone. The text-domain check is global until each package has PHP code (then add per-package domains). `composer audit` (`composer run audit`) belongs in the CI dependency scan (BWB-015).
 
 **PHP in namespaces.** Call PHP's special functions (`defined`, `strlen`, `count`, `is_*`, `in_array`, ...) with a leading backslash (`\defined( 'ABSPATH' )`) so the engine can optimise them and IDEs do not warn (PHP6616).
+
+**Array syntax.** Use short arrays (`[ ... ]`), never `array( ... )`. This departs from WordPress Coding Standards on purpose: `phpcs.xml.dist` excludes the short-array prohibition and enforces `Generic.Arrays.DisallowLongArraySyntax`; `composer lint:fix` converts old code.

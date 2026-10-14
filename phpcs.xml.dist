@@ -24,7 +24,11 @@
 	<config name="minimum_wp_version" value="7.0"/>
 	<rule ref="PHPCompatibilityWP"/>
 
-	<rule ref="WordPress-Extra"/>
+	<rule ref="WordPress-Extra">
+		<!-- Project decision: short array syntax [] instead of array() (docs/engineering/CODE-STANDARDS.md). -->
+		<exclude name="Universal.Arrays.DisallowShortArraySyntax"/>
+	</rule>
+	<rule ref="Generic.Arrays.DisallowLongArraySyntax"/>
 	<rule ref="WordPress-Docs"/>
 
 	<!-- PSR-4 autoloading (docs/engineering/CODE-STANDARDS.md) replaces the class-*.php file naming convention. -->

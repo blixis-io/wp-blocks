@@ -32,22 +32,22 @@ final class SetupStateTest extends TestCase {
 	 */
 	public static function invalid_values(): array {
 		$valid = SetupState::initial( self::NOW );
-		return array(
-			'missing'        => array( false ),
-			'not an array'   => array( 'garbage' ),
-			'future version' => array( array_merge( $valid, array( 'version' => 2 ) ) ),
-			'string version' => array( array_merge( $valid, array( 'version' => '1' ) ) ),
-			'unknown status' => array( array_merge( $valid, array( 'status' => 'broken' ) ) ),
-			'bad date'       => array( array_merge( $valid, array( 'updated_at' => 'yesterday' ) ) ),
-			'invalid preset' => array( array_merge( $valid, array( 'preset' => '<script>' ) ) ),
-			'unknown field'  => array( array_merge( $valid, array( 'extra' => true ) ) ),
-			'missing date'   => array(
-				array(
+		return [
+			'missing'        => [ false ],
+			'not an array'   => [ 'garbage' ],
+			'future version' => [ array_merge( $valid, [ 'version' => 2 ] ) ],
+			'string version' => [ array_merge( $valid, [ 'version' => '1' ] ) ],
+			'unknown status' => [ array_merge( $valid, [ 'status' => 'broken' ] ) ],
+			'bad date'       => [ array_merge( $valid, [ 'updated_at' => 'yesterday' ] ) ],
+			'invalid preset' => [ array_merge( $valid, [ 'preset' => '<script>' ] ) ],
+			'unknown field'  => [ array_merge( $valid, [ 'extra' => true ] ) ],
+			'missing date'   => [
+				[
 					'version' => 1,
 					'status'  => 'not_started',
-				),
-			),
-		);
+				],
+			],
+		];
 	}
 
 	/**
@@ -65,7 +65,7 @@ final class SetupStateTest extends TestCase {
 	 * Valid status and preset survive normalization.
 	 */
 	public function test_normalizes_valid_state(): void {
-		$state = array_merge( SetupState::initial( self::NOW ), array( 'preset' => 'forest' ) );
+		$state = array_merge( SetupState::initial( self::NOW ), [ 'preset' => 'forest' ] );
 		$this->assertSame( $state, SetupState::normalize( $state ) );
 	}
 
@@ -82,8 +82,8 @@ final class SetupStateTest extends TestCase {
 		$this->assertNotNull( $dismissed );
 		$this->assertSame( 'dismissed', $dismissed['status'] );
 		$this->assertNull( SetupState::transition( $initial, 'invalid', self::NOW ) );
-		$this->assertNull( SetupState::transition( array_merge( $initial, array( 'status' => 'completed' ) ), 'start', self::NOW ) );
-		$this->assertNull( SetupState::transition( array_merge( $initial, array( 'status' => 'dismissed' ) ), 'start', self::NOW ) );
+		$this->assertNull( SetupState::transition( array_merge( $initial, [ 'status' => 'completed' ] ), 'start', self::NOW ) );
+		$this->assertNull( SetupState::transition( array_merge( $initial, [ 'status' => 'dismissed' ] ), 'start', self::NOW ) );
 	}
 
 	/** Wizard navigation is bounded and has no Apply transition yet. */
@@ -100,15 +100,15 @@ final class SetupStateTest extends TestCase {
 	 * Resume position accepts only a single valid step and cannot influence site status.
 	 */
 	public function test_user_interface_state_is_separate(): void {
-		$this->assertSame( array( 'resume_step' => 3 ), SetupState::normalize_ui( array( 'resume_step' => 3 ) ) );
-		$this->assertNull( SetupState::normalize_ui( array( 'resume_step' => '3' ) ) );
-		$this->assertNull( SetupState::normalize_ui( array( 'resume_step' => 7 ) ) );
+		$this->assertSame( [ 'resume_step' => 3 ], SetupState::normalize_ui( [ 'resume_step' => 3 ] ) );
+		$this->assertNull( SetupState::normalize_ui( [ 'resume_step' => '3' ] ) );
+		$this->assertNull( SetupState::normalize_ui( [ 'resume_step' => 7 ] ) );
 		$this->assertNull(
 			SetupState::normalize_ui(
-				array(
+				[
 					'resume_step' => 2,
 					'status'      => 'completed',
-				)
+				]
 			)
 		);
 	}

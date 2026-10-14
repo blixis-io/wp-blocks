@@ -27,7 +27,7 @@ final class SetupTest extends TestCase {
 	 */
 	public function test_features(): void {
 		$features = Setup::features();
-		foreach ( array( 'title-tag', 'post-thumbnails', 'html5', 'responsive-embeds', 'automatic-feed-links' ) as $name ) {
+		foreach ( [ 'title-tag', 'post-thumbnails', 'html5', 'responsive-embeds', 'automatic-feed-links' ] as $name ) {
 			$this->assertArrayHasKey( $name, $features );
 		}
 		$this->assertContains( 'comment-form', $features['html5'] );
@@ -39,10 +39,10 @@ final class SetupTest extends TestCase {
 	 */
 	public function test_templates_exist_and_are_well_formed(): void {
 		$root = dirname( __DIR__ );
-		foreach ( array( 'style.css', 'index.php', 'functions.php', 'header.php', 'footer.php', 'single.php', 'page.php', 'archive.php', 'search.php', '404.php', 'comments.php' ) as $file ) {
+		foreach ( [ 'style.css', 'index.php', 'functions.php', 'header.php', 'footer.php', 'single.php', 'page.php', 'archive.php', 'search.php', '404.php', 'comments.php' ] as $file ) {
 			$this->assertFileExists( $root . '/' . $file );
 		}
-		foreach ( array( 'single.php', 'page.php', 'archive.php', 'search.php', '404.php', 'index.php' ) as $file ) {
+		foreach ( [ 'single.php', 'page.php', 'archive.php', 'search.php', '404.php', 'index.php' ] as $file ) {
 			$source = (string) file_get_contents( $root . '/' . $file ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Test reads a local file.
 			$this->assertStringContainsString( 'get_header()', $source, $file );
 			$this->assertStringContainsString( 'get_footer()', $source, $file );
@@ -55,10 +55,10 @@ final class SetupTest extends TestCase {
 	public function test_header_and_footer_keep_landmarks_and_hooks(): void {
 		$header = (string) file_get_contents( dirname( __DIR__ ) . '/header.php' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Test reads a local file.
 		$footer = (string) file_get_contents( dirname( __DIR__ ) . '/footer.php' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Test reads a local file.
-		foreach ( array( 'skip-link', 'id="content"', '<main', 'wp_head()', 'wp_body_open()', 'language_attributes()', 'name="viewport"' ) as $needle ) {
+		foreach ( [ 'skip-link', 'id="content"', '<main', 'wp_head()', 'wp_body_open()', 'language_attributes()', 'name="viewport"' ] as $needle ) {
 			$this->assertStringContainsString( $needle, $header, $needle );
 		}
-		foreach ( array( '</main>', 'wp_footer()', '</html>' ) as $needle ) {
+		foreach ( [ '</main>', 'wp_footer()', '</html>' ] as $needle ) {
 			$this->assertStringContainsString( $needle, $footer, $needle );
 		}
 	}
@@ -68,19 +68,19 @@ final class SetupTest extends TestCase {
 	 */
 	public function test_compiled_theme_style_is_enqueued(): void {
 		$styles = Setup::styles( 'https://example.test/child/style.css', 'https://example.test/blixis', '0.1.0' );
-		$this->assertSame( array( 'blixis-parent-style', 'blixis-tokens', 'blixis-theme', 'blixis-style' ), array_keys( $styles ) );
+		$this->assertSame( [ 'blixis-parent-style', 'blixis-tokens', 'blixis-theme', 'blixis-style' ], array_keys( $styles ) );
 		$this->assertSame( 'https://example.test/blixis/style.css', $styles['blixis-parent-style']['url'] );
-		$this->assertSame( array( 'blixis-theme' ), $styles['blixis-style']['dependencies'] );
+		$this->assertSame( [ 'blixis-theme' ], $styles['blixis-style']['dependencies'] );
 		$this->assertSame( 'https://example.test/blixis/assets/css/tokens.css', $styles['blixis-tokens']['url'] );
-		$this->assertSame( array( 'blixis-parent-style' ), $styles['blixis-tokens']['dependencies'] );
+		$this->assertSame( [ 'blixis-parent-style' ], $styles['blixis-tokens']['dependencies'] );
 		$this->assertSame( '0.1.0', $styles['blixis-tokens']['version'] );
 		$this->assertSame( 'https://example.test/blixis/assets/css/theme.css', $styles['blixis-theme']['url'] );
-		$this->assertSame( array( 'blixis-tokens' ), $styles['blixis-theme']['dependencies'] );
+		$this->assertSame( [ 'blixis-tokens' ], $styles['blixis-theme']['dependencies'] );
 		$this->assertSame( '0.1.0', $styles['blixis-theme']['version'] );
 		$this->assertFileExists( dirname( __DIR__ ) . '/assets/css/tokens.css' );
 		$this->assertFileExists( dirname( __DIR__ ) . '/assets/css/theme.css' );
 		$parent_styles = Setup::styles( 'https://example.test/blixis/style.css', 'https://example.test/blixis', '0.1.0' );
-		$this->assertSame( array( 'blixis-style', 'blixis-tokens', 'blixis-theme' ), array_keys( $parent_styles ) );
-		$this->assertSame( array(), $parent_styles['blixis-style']['dependencies'] );
+		$this->assertSame( [ 'blixis-style', 'blixis-tokens', 'blixis-theme' ], array_keys( $parent_styles ) );
+		$this->assertSame( [], $parent_styles['blixis-style']['dependencies'] );
 	}
 }

@@ -29,28 +29,28 @@ final class CompatTest extends TestCase {
 	 * @return array<string, array{string|false|null, int|null}>
 	 */
 	public static function values(): array {
-		return array(
-			'one'                => array( '1', 1 ),
-			'two digits'         => array( '12', 12 ),
-			'the maximum'        => array( '9999', 9999 ),
-			'surrounding spaces' => array( "  3\t", 3 ),
-			'missing header'     => array( false, null ),
-			'null'               => array( null, null ),
-			'empty'              => array( '', null ),
-			'zero'               => array( '0', null ),
-			'leading zero'       => array( '01', null ),
-			'negative'           => array( '-1', null ),
-			'plus sign'          => array( '+1', null ),
-			'decimal'            => array( '1.5', null ),
-			'exponent'           => array( '1e2', null ),
-			'words'              => array( 'yes', null ),
-			'digits and text'    => array( '1 beta', null ),
-			'too large'          => array( '10000', null ),
-			'huge'               => array( '99999999999999999999', null ),
-			'binary'             => array( '0b11', null ),
-			'unicode digits'     => array( "\u{0661}", null ),
-			'newline inside'     => array( "1\n2", null ),
-		);
+		return [
+			'one'                => [ '1', 1 ],
+			'two digits'         => [ '12', 12 ],
+			'the maximum'        => [ '9999', 9999 ],
+			'surrounding spaces' => [ "  3\t", 3 ],
+			'missing header'     => [ false, null ],
+			'null'               => [ null, null ],
+			'empty'              => [ '', null ],
+			'zero'               => [ '0', null ],
+			'leading zero'       => [ '01', null ],
+			'negative'           => [ '-1', null ],
+			'plus sign'          => [ '+1', null ],
+			'decimal'            => [ '1.5', null ],
+			'exponent'           => [ '1e2', null ],
+			'words'              => [ 'yes', null ],
+			'digits and text'    => [ '1 beta', null ],
+			'too large'          => [ '10000', null ],
+			'huge'               => [ '99999999999999999999', null ],
+			'binary'             => [ '0b11', null ],
+			'unicode digits'     => [ "\u{0661}", null ],
+			'newline inside'     => [ "1\n2", null ],
+		];
 	}
 
 	/**
@@ -70,17 +70,17 @@ final class CompatTest extends TestCase {
 	 * @return array<string, array{string, string, int|null}>
 	 */
 	public static function child_cases(): array {
-		return array(
-			'no headers at all'                     => array( '', '', null ),
-			'child absent, parent valid'            => array( '', '2', 2 ),
-			'child absent, parent invalid'          => array( '', 'x', null ),
-			'child valid, parent absent'            => array( '3', '', 3 ),
-			'child valid and different'             => array( '3', '2', 3 ),
-			'child valid and equal'                 => array( '2', '2', 2 ),
-			'child invalid, parent valid'           => array( 'x', '2', null ),
-			'child zero, parent valid'              => array( '0', '2', null ),
-			'child only whitespace counts as empty' => array( "  \t", '2', 2 ),
-		);
+		return [
+			'no headers at all'                     => [ '', '', null ],
+			'child absent, parent valid'            => [ '', '2', 2 ],
+			'child absent, parent invalid'          => [ '', 'x', null ],
+			'child valid, parent absent'            => [ '3', '', 3 ],
+			'child valid and different'             => [ '3', '2', 3 ],
+			'child valid and equal'                 => [ '2', '2', 2 ],
+			'child invalid, parent valid'           => [ 'x', '2', null ],
+			'child zero, parent valid'              => [ '0', '2', null ],
+			'child only whitespace counts as empty' => [ "  \t", '2', 2 ],
+		];
 	}
 
 	/**

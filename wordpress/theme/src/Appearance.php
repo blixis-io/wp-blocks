@@ -21,7 +21,7 @@ final class Appearance {
 	 * @param mixed $value Option value.
 	 */
 	public static function normalize( mixed $value ): string {
-		return \in_array( $value, array( 'auto', 'light', 'dark' ), true ) ? $value : 'auto';
+		return \in_array( $value, [ 'auto', 'light', 'dark' ], true ) ? $value : 'auto';
 	}
 
 	/** Read the site's default website appearance. */

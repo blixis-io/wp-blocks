@@ -21,10 +21,10 @@ require_once dirname( __DIR__ ) . '/src/Appearance.php';
 final class AppearanceTest extends TestCase {
 	/** Invalid or absent values follow the system. */
 	public function test_normalize(): void {
-		foreach ( array( 'auto', 'light', 'dark' ) as $mode ) {
+		foreach ( [ 'auto', 'light', 'dark' ] as $mode ) {
 			$this->assertSame( $mode, Appearance::normalize( $mode ) );
 		}
-		foreach ( array( false, null, '', 'DARK', 'system', 0, array( 'dark' ) ) as $invalid ) {
+		foreach ( [ false, null, '', 'DARK', 'system', 0, [ 'dark' ] ] as $invalid ) {
 			$this->assertSame( 'auto', Appearance::normalize( $invalid ) );
 		}
 	}
