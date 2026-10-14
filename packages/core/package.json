@@ -4,5 +4,18 @@
   "private": true,
   "description": "Document schema, commands, migrations, snapshots. Pure TypeScript, no UI, no DOM.",
   "license": "GPL-2.0-or-later",
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "zod": "4.6.7"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema/document.schema.json": "./schema/document.schema.json"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "schema:generate": "node scripts/generate-schema.ts",
+    "schema:check": "node scripts/generate-schema.ts --check"
+  }
 }

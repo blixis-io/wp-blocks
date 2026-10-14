@@ -5,6 +5,7 @@ import tseslint from 'typescript-eslint';
 import reactHooks from 'eslint-plugin-react-hooks';
 import jsxA11y from 'eslint-plugin-jsx-a11y';
 import prettier from 'eslint-config-prettier';
+import { builtinModules } from 'node:module';
 
 export default tseslint.config(
   { ignores: ['**/node_modules/**', '**/dist/**', '**/coverage/**', '**/vendor/**', 'docs/**', 'pnpm-lock.yaml'] },
@@ -44,6 +45,46 @@ export default tseslint.config(
         'error',
         {
           patterns: [
+            {
+              group: [
+                'react',
+                'react/*',
+                'react-dom',
+                'react-dom/*',
+                'zustand',
+                'zustand/*',
+                '@dnd-kit/*',
+                'tailwindcss',
+                'tailwindcss/*',
+              ],
+              message: 'This package must stay framework-free (ADR 0010).',
+            },
+            { group: ['gsap', 'gsap/*', '@gsap/*'], message: 'GSAP is not approved (ADR 0008).' },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    // The core package runs in the browser editor and is mirrored by PHP: no Node APIs in its source (tests and scripts may).
+    files: ['packages/core/src/**/*.{ts,js,mjs}'],
+    ignores: ['packages/core/src/**/*.test.{ts,js,mjs}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          // Bare built-in names (`fs`, `path`, ...) are as forbidden as `node:*`.
+          paths: builtinModules
+            .filter((m) => !m.startsWith('_'))
+            .map((name) => ({
+              name,
+              message: 'packages/core source must not use Node APIs (it runs in the browser editor).',
+            })),
+          patterns: [
+            {
+              group: ['node:*'],
+              message: 'packages/core source must not use Node APIs (it runs in the browser editor).',
+            },
             {
               group: [
                 'react',

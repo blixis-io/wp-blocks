@@ -1,0 +1,33 @@
+{
+  "description": "Element types must be namespaced (vendor/name).",
+  "expected": {
+    "error": "schema"
+  },
+  "fixtureVersion": 1,
+  "id": "schema-bad-element-type",
+  "input": {
+    "defaultLocale": "en_US",
+    "documentId": "doc-010",
+    "layoutRevision": 1,
+    "locales": ["en_US"],
+    "root": [
+      {
+        "children": [],
+        "id": "el-001",
+        "props": {},
+        "type": "heading"
+      }
+    ],
+    "schemaVersion": 1,
+    "translations": {
+      "en_US": {}
+    },
+    "classListVersion": 0,
+    "classRefs": {},
+    "metadata": {
+      "updatedAt": "2026-01-01T00:00:00Z",
+      "editorVersion": "0.0.0"
+    }
+  },
+  "tags": ["document", "invalid", "schema"]
+}

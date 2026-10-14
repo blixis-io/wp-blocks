@@ -169,3 +169,18 @@ test('Prettier flags badly formatted code', () => {
   const r = run(['prettier', '--config', join(root, '.prettierrc.json'), '--check', file]);
   assert.notEqual(r.status, 0);
 });
+
+test('ESLint keeps Node APIs out of packages/core source but allows them in its tests and scripts', () => {
+  const code = "import { readFileSync } from 'node:fs';\nexport default readFileSync;\n";
+  assert.ok(eslintStdin('packages/core/src/example.mjs', code).includes('no-restricted-imports'));
+  for (const bare of ['fs', 'path', 'crypto', 'fs/promises', 'child_process']) {
+    assert.ok(
+      eslintStdin('packages/core/src/example.mjs', `import x from '${bare}';\nexport default x;\n`).includes(
+        'no-restricted-imports',
+      ),
+      bare,
+    );
+  }
+  assert.ok(!eslintStdin('packages/core/src/example.test.mjs', code).includes('no-restricted-imports'));
+  assert.ok(!eslintStdin('packages/core/scripts/example.mjs', code).includes('no-restricted-imports'));
+});

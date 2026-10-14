@@ -1,0 +1,37 @@
+{
+  "description": "Unknown top-level and element fields are valid and must round-trip unchanged.",
+  "expected": {
+    "valid": true
+  },
+  "fixtureVersion": 1,
+  "id": "schema-unknown-future-field",
+  "input": {
+    "defaultLocale": "en_US",
+    "documentId": "doc-010",
+    "layoutRevision": 1,
+    "locales": ["en_US"],
+    "root": [
+      {
+        "children": [],
+        "id": "el-001",
+        "props": {},
+        "type": "blixis/heading",
+        "x-note": "kept"
+      }
+    ],
+    "schemaVersion": 1,
+    "translations": {
+      "en_US": {}
+    },
+    "classListVersion": 0,
+    "classRefs": {},
+    "metadata": {
+      "updatedAt": "2026-01-01T00:00:00Z",
+      "editorVersion": "0.0.0"
+    },
+    "x-future": {
+      "flag": true
+    }
+  },
+  "tags": ["document", "forward-compatibility"]
+}

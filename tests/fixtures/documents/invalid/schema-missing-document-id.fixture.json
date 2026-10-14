@@ -1,0 +1,32 @@
+{
+  "description": "The required documentId is missing: rejected by the JSON Schema.",
+  "expected": {
+    "error": "schema"
+  },
+  "fixtureVersion": 1,
+  "id": "schema-missing-document-id",
+  "input": {
+    "defaultLocale": "en_US",
+    "layoutRevision": 1,
+    "locales": ["en_US"],
+    "root": [
+      {
+        "children": [],
+        "id": "el-001",
+        "props": {},
+        "type": "blixis/heading"
+      }
+    ],
+    "schemaVersion": 1,
+    "translations": {
+      "en_US": {}
+    },
+    "classListVersion": 0,
+    "classRefs": {},
+    "metadata": {
+      "updatedAt": "2026-01-01T00:00:00Z",
+      "editorVersion": "0.0.0"
+    }
+  },
+  "tags": ["document", "invalid", "schema"]
+}

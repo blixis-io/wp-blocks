@@ -1,0 +1,65 @@
+{
+  "description": "Sparse style rules covering base, breakpoint, mode, mode+breakpoint and state (ADR 0005).",
+  "expected": {
+    "valid": true
+  },
+  "fixtureVersion": 1,
+  "id": "style-rules-all-layers",
+  "input": {
+    "defaultLocale": "en_US",
+    "documentId": "doc-010",
+    "layoutRevision": 1,
+    "locales": ["en_US"],
+    "root": [
+      {
+        "children": [],
+        "id": "el-001",
+        "props": {},
+        "style": [
+          {
+            "declarations": {
+              "color": "black"
+            }
+          },
+          {
+            "breakpoint": "mobile",
+            "declarations": {
+              "color": "gray"
+            }
+          },
+          {
+            "declarations": {
+              "color": "white"
+            },
+            "mode": "dark"
+          },
+          {
+            "breakpoint": "mobile",
+            "declarations": {
+              "color": "lightgray"
+            },
+            "mode": "dark"
+          },
+          {
+            "declarations": {
+              "color": "orange"
+            },
+            "state": "hover"
+          }
+        ],
+        "type": "blixis/heading"
+      }
+    ],
+    "schemaVersion": 1,
+    "translations": {
+      "en_US": {}
+    },
+    "classListVersion": 0,
+    "classRefs": {},
+    "metadata": {
+      "updatedAt": "2026-01-01T00:00:00Z",
+      "editorVersion": "0.0.0"
+    }
+  },
+  "tags": ["document", "style", "dark-mode"]
+}
