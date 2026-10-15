@@ -126,3 +126,23 @@ Every successful write of a working stream (layout or one locale's content) keep
 **Rollback:** `POST /documents/{id}/rollback` with `{ locale, contentSnapshot }` or `{ layoutSnapshot }` republishes an old snapshot under a new number (history is append-only). A locale rollback restores the pair (base layout, content) exactly; a layout rollback follows the same impact rules as a layout publish. Unknown snapshots are 404 `blixis_snapshot_not_found`.
 
 Snapshots carry the working revision they came from (`sourceRevision`), the layout they were made for (`baseLayout`) and the element types their entries referred to (`elementTypes`). Pruning of unreferenced snapshots stays a separate, explicit step (`SnapshotStore::collect`).
+
+## Theme compatibility guard
+
+The Builder plugin reads `Blixis-Compat` from the active stylesheet's `style.css` using WordPress `get_file_data`. Any child theme declaration wins, including an empty or invalid one; only an absent header inherits its parent's declaration. The plugin supports contract version 1. It does not load theme PHP to decide compatibility. A read failure is treated as `not-declared` and never stops the plugin from loading. The per-request cache is keyed by blog ID, stylesheet, and template, so switching blogs or themes within one request refreshes compatibility; it keeps at most eight contexts.
+
+| Reason | Meaning |
+| --- | --- |
+| `ok` | Effective declaration is supported. |
+| `not-declared` | Neither stylesheet declares a version, or reading failed. |
+| `invalid-declaration` | Effective header is present but is not a plain positive integer at most 9999. |
+| `too-old` | Valid version is below the plugin's supported range. |
+| `too-new` | Valid version is above the plugin's supported range. |
+
+When incompatible, document layout/content PUT, revision restore, publish, and rollback return HTTP 423 `blixis_theme_incompatible` after normal authentication and post capability checks. The error data is `{ reason, theme, declared, supportedMin, supportedMax }`. Unauthenticated requests still receive 401, and forbidden requests receive a uniform 403 without revealing theme status. No builder storage is touched by a locked write. Document GET, revision lists, published state, preview, and media GET remain available under their existing permissions.
+
+`GET /blixis/v1/status` requires authentication and `edit_posts` (401/403 otherwise), returns `Cache-Control: private, no-store`, and reports the theme name, compatibility, declaration, reason, supported bounds, editing enabled/lock reason, and plugin version. It is read-only.
+
+Published pages continue rendering through the plugin on incompatible themes. A second inline style, `blixis-builder-fallback`, supplies minimal container, image and button rules in `@layer blx.theme`, with literal fallbacks for design tokens. The render cache key includes the compatibility reason as well as stylesheet name/version, so a changed declaration changes the key even when the theme version is unchanged. Builder JSON and published pointers are preserved through a theme switch.
+
+The warning notice appears on dashboard, themes, and plugins screens for users with `edit_posts`. These are the entry points where a site owner can see the lock or change themes without repeating it on every editing screen. Its theme name and themes link are escaped and its text is translatable.

@@ -146,6 +146,7 @@ final class PublicationController {
 		$messages = [
 			401 => 'Authentication is required.',
 			403 => 'Publishing is forbidden.',
+			423 => 'The active theme does not support Blixis editing.',
 			404 => 'Snapshot not found.',
 			409 => 'The publication could not be applied.',
 			422 => 'The request cannot be applied.',

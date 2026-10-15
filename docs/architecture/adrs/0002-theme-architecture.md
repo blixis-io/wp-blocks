@@ -35,6 +35,8 @@ Theme and plugin are separate packages; replacing the theme type requires a supe
 
 ## Open questions
 - Marker format (`Blixis-Compat` header vs `theme.json` key vs filter): confirm in the compatibility-guard spike (BWB-047).
+
+Resolved in BWB-047: the marker is the `Blixis-Compat` header in `style.css`.
 - WordPress.org theme-review constraints on required-plugin behaviour.
 
 ## Review log

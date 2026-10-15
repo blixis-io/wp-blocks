@@ -306,8 +306,8 @@ final class PublisherTest extends TestCase {
 
 	/** The request policy: capability split, strict bodies and required preconditions. */
 	public function test_request_policy(): void {
-		$access  = new \Blixis\Builder\Rest\FakePostAccess();
-		$site    = new class() implements \Blixis\Builder\Rest\SiteLocale {
+		$access = new \Blixis\Builder\Rest\FakePostAccess();
+		$site   = new class() implements \Blixis\Builder\Rest\SiteLocale {
 			/**
 			 * Fixed locale.
 			 *
@@ -317,7 +317,24 @@ final class PublisherTest extends TestCase {
 				return 'en_US';
 			}
 		};
-		$request = new \Blixis\Builder\Rest\PublicationRequest( $this->publisher, $access, $site );
+		\Blixis\Builder\Theme\ThemeCompat::reset_for_tests();
+		$reader  = new class() implements \Blixis\Builder\Theme\CompatibilityReader {
+			/** Fixture context. */
+			public function context_key(): string {
+				return 'publisher-supported';
+			}
+			/** Supported contract. */
+			public function declared(): int {
+				return 1; }
+			/** Valid declaration. */
+			public function invalid_declaration(): bool {
+				return false; }
+			/** Fixture theme. */
+			public function active_theme_name(): string {
+				return 'Fixture'; }
+		};
+		$guard   = new \Blixis\Builder\Rest\ThemeGuard( $access, new \Blixis\Builder\Theme\ThemeCompat( $reader ) );
+		$request = new \Blixis\Builder\Rest\PublicationRequest( $this->publisher, $access, $site, $guard );
 		$this->assertNull( $request->permission( 5, true ) );
 		$access->can_publish = false;
 		$this->assertNull( $request->permission( 5, false ), 'editors may read the state' );
@@ -337,5 +354,30 @@ final class PublisherTest extends TestCase {
 		foreach ( [ '{}', '{"layoutSnapshot":1,"locale":"nl_NL"}', '{"contentSnapshot":1}', '{"layoutSnapshot":0}', '{"layoutSnapshot":1,"contentSnapshot":1,"locale":"nl_NL"}' ] as $bad ) {
 			$this->assertSame( 422, $request->rollback( 5, '"0"', $bad )->status, $bad );
 		}
+		$access->can_publish = true;
+		\Blixis\Builder\Theme\ThemeCompat::reset_for_tests();
+		$invalid_reader = new class() implements \Blixis\Builder\Theme\CompatibilityReader {
+			/** Fixture context. */
+			public function context_key(): string {
+				return 'publisher-invalid';
+			}
+			/** Invalid declaration. */
+			public function declared(): ?int {
+				return null;
+			}
+			/** Header was present. */
+			public function invalid_declaration(): bool {
+				return true;
+			}
+			/** Theme name. */
+			public function active_theme_name(): string {
+				return 'Fixture';
+			}
+		};
+		$locked         = new \Blixis\Builder\Rest\PublicationRequest( $this->publisher, $access, $site, new \Blixis\Builder\Rest\ThemeGuard( $access, new \Blixis\Builder\Theme\ThemeCompat( $invalid_reader ) ) );
+		$this->assertNull( $locked->permission( 5, false ) );
+		$lock_result = $locked->permission( 5, true );
+		$this->assertInstanceOf( \Blixis\Builder\Publication\PublishResult::class, $lock_result );
+		$this->assertSame( 423, $lock_result->status );
 	}
 }

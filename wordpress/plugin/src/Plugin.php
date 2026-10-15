@@ -13,6 +13,8 @@ use Blixis\Builder\Frontend\Frontend;
 use Blixis\Builder\Storage\MetaRegistration;
 use Blixis\Builder\Rest\DocumentController;
 use Blixis\Builder\Rest\MediaController;
+use Blixis\Builder\Rest\StatusController;
+use Blixis\Builder\Theme\AdminNotice;
 
 \defined( 'ABSPATH' ) || exit;
 
@@ -27,6 +29,8 @@ final class Plugin {
 		MetaRegistration::hooks();
 		\add_action( 'rest_api_init', [ DocumentController::class, 'register' ] );
 		\add_action( 'rest_api_init', [ MediaController::class, 'register' ] );
+		\add_action( 'rest_api_init', [ StatusController::class, 'register' ] );
+		AdminNotice::hooks();
 		Frontend::hooks();
 	}
 
