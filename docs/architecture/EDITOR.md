@@ -175,6 +175,7 @@ The core registry defines the initial six elements and their persisted property 
 |---|---|
 | BWB-051 canvas bridge | Done: see "Canvas (BWB-051)". Uses `subscribe` (events carry the document) and `viewport`, `breakpointId`, `previewMode`, `contentLocale`, `selectedId`, `hoveredId` from the store |
 | BWB-052 structure tree | Done: `select`, `expandedIds`, keyboard focus and selection breadcrumb |
+| BWB-129 left panel | Done: Structure / Elements tabs, filtered tree, row Delete, registry palette and Add Elements / Global Style dock |
 | BWB-059 drag and drop | `dispatch({ type: 'move' ... })` and canvas rectangles |
 | BWB-053/054 inspector | Done: injected registry, `selectedId`, translated/invariant fields and discrete style history |
 | BWB-055 save and autosave | `subscribe` for change events, `dirty`, `revisions` (`If-Match`), `splitDocument` for the bodies, `markSaved` with the document that was sent |
@@ -187,6 +188,14 @@ Vitest with jsdom, no extra dependencies. `src/test/state-helpers.ts` builds iso
 ## Structure tree and selection (BWB-052)
 
 The virtual WAI-ARIA tree defaults to the first two expandable levels plus ancestors of the selected element. A separate initialization flag and a validated per-post storage entry distinguish the untouched default from a user who collapsed every node, so browser reloads and locale changes do not reopen the tree. Keyboard focus has its own `focusedId` and roving tab stop; Left/Right follow the editor chrome direction, while selection remains independent. Each row reports sibling position and set size. The breadcrumb uses ordered list semantics, explicit hidden separators, full ids in `title`, and `aria-current="location"` on the selected item.
+
+## Left panel and palette (BWB-129)
+
+`StructurePanel` owns the upper Radix tabs (Structure / Elements); the dock beneath it owns Add Elements / Global Style. The upper Structure view keeps the existing virtual WAI-ARIA tree and its roving-focus keyboard model. Search matches the translated element label, registered type or stable element id, renders matching ancestors while filtering, highlights visible matching text, announces a match count and clears on Escape. The palette has an independent search field and groups injected registry definitions by their declared category. Labels use the editor interface locale; website content locale and website preview appearance do not affect panel chrome.
+
+Each palette card is an accessible button. Insertion first tries to place the new type inside the selected element when `ElementRegistry.canNest(..., 'create')` allows it. Otherwise it tries immediately after the selection under its existing parent, then at the end of the root. No legal position, an unloaded document or a locked document disables the card and exposes a translated reason. The card dispatches core's `insert` command with the registered definition's invariant defaults; core validates nesting, document limits and ids. The bridge provides the normal undo step, the created element is selected, and the existing selected-ancestor effect expands its tree path. The Global Style dock tab is a translated placeholder until the design-system editor exists.
+
+Row actions currently expose Delete through core's `remove` command. The core command contract does not define Duplicate, so the panel does not offer a nonfunctional duplicate action. Search and palette navigation remain independent of the tree's Arrow/Home/End selection model. Panel controls use editor chrome tokens and logical inline/block spacing for RTL.
 
 ## Canvas (BWB-051)
 

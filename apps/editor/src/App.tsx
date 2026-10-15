@@ -19,7 +19,7 @@ import { Header } from './Header';
 import { LoadStatus } from './LoadStatus';
 import { createTranslator } from './i18n';
 import { I18nProvider, useI18n } from './i18n-react';
-import { StructurePanel } from './StructurePanel';
+import { StructurePanel, ElementsPanel } from './StructurePanel';
 import { StoreProvider, useEditorStore, useEditorStoreApi, type EditorStore } from './state';
 import { Inspector } from './inspector/Inspector';
 
@@ -106,8 +106,8 @@ function Shell({
           className="blx-panel blx-panel-left"
           hidden={!panels.left}
         >
-          <h2 className="blx-panel-title">{t('panel.structure')}</h2>
-          <StructurePanel />
+          <StructurePanel editingEnabled={bootstrap.editingEnabled} />
+          <ElementsPanel editingEnabled={bootstrap.editingEnabled} />
         </nav>
         <main id={CANVAS_ID} tabIndex={-1} className="blx-main" aria-label={t('canvas.title')}>
           <LoadStatus />
@@ -126,7 +126,7 @@ function Shell({
                           title={node.id}
                           onClick={() => store.getState().select(node.id)}
                         >
-                          {elementLabel(node.type)} <span className="blx-outline-id">{node.id.slice(0, 12)}</span>
+                          {elementLabel(node.type, t)} <span className="blx-outline-id">{node.id.slice(0, 12)}</span>
                         </button>
                       </li>
                     ))}
@@ -158,7 +158,7 @@ function Shell({
             ) : (
               <>
                 <span className="sr-only">{t('inspector.selected')}: </span>
-                <span className="font-medium">{elementLabel(selected.type)}</span>{' '}
+                <span className="font-medium">{elementLabel(selected.type, t)}</span>{' '}
                 <span className="blx-outline-id">{selected.id}</span>
               </>
             )}

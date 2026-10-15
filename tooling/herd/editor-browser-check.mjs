@@ -326,7 +326,48 @@ try {
   assert.ok(picked.current?.includes('hero-h1'), 'the clicked element is marked aria-current');
   assert.ok(picked.inspector.includes('hero-h1'), 'the inspector header shows the selected element');
 
+  // BWB-129 palette insert updates both the tree and live canvas; undo removes the inserted element again.
+  await ev(`document.querySelector('[data-element-type="blixis/text"]')?.click()`);
+  await sleep(1500);
+  const paletteInsert = await ev(`(() => {
+    const row = [...document.querySelectorAll('nav[aria-label="Structure"] [role="treeitem"]')].find((item) => item.dataset.id?.startsWith('el-new-'));
+    const id = row?.dataset.id;
+    const previewHas = id ? !!document.querySelector('main iframe')?.contentDocument?.querySelector('[data-blx-id="' + CSS.escape(id) + '"]') : false;
+    return { id, previewHas, undo: document.querySelector('button[aria-label="Undo"]')?.getAttribute('aria-disabled') };
+  })()`);
+  assert.ok(paletteInsert.id, 'clicking a Text palette card inserts and selects a new structure element');
+  assert.equal(paletteInsert.previewHas, true, 'the canvas preview gains the inserted Text element');
+  assert.notEqual(paletteInsert.undo, 'true', 'undo becomes available after palette insertion');
+  await ev(`document.querySelector('button[aria-label="Undo"]')?.click()`);
+  await sleep(1200);
+  const paletteUndo = await ev(`(() => {
+    const treeHas = [...document.querySelectorAll('nav[aria-label="Structure"] [role="treeitem"]')].some((item) => item.dataset.id?.startsWith('el-new-'));
+    const previewHas = [...(document.querySelector('main iframe')?.contentDocument?.querySelectorAll('[data-blx-id]') ?? [])].some((item) => item.getAttribute('data-blx-id')?.startsWith('el-new-'));
+    return { treeHas, previewHas };
+  })()`);
+  assert.equal(paletteUndo.treeHas, false, 'undo removes the inserted element from the structure tree');
+  assert.equal(paletteUndo.previewHas, false, 'undo removes the inserted element from the canvas preview');
+
+  await ev(
+    `(() => { const input = document.querySelector('nav[aria-label="Structure"] input[placeholder="Search elements..."]'); if (!input) return false; const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set; setter?.call(input, 'hero-h1'); input.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`,
+  );
+  const searchResult = await ev(
+    `(() => ({ rows: [...document.querySelectorAll('nav[aria-label="Structure"] [role="treeitem"]')].map((item) => item.dataset.id), count: document.querySelector('nav[aria-label="Structure"] [aria-live="polite"]')?.textContent }))()`,
+  );
+  assert.ok(
+    searchResult.rows.some((id) => id?.includes('hero-h1')),
+    'the Structure search keeps matching rows visible',
+  );
+  assert.ok(searchResult.rows.length < loaded.outline.length, 'the Structure search filters out nonmatching tree rows');
+  await ev(
+    `(() => { const input = document.querySelector('nav[aria-label="Structure"] input[placeholder="Search elements..."]'); if (input) { const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set; setter?.call(input, ''); input.dispatchEvent(new Event('input', { bubbles: true })); } })()`,
+  );
+
   // Inspector text edits reach the live preview and undo restores the original document value.
+  await ev(
+    `[...document.querySelectorAll('nav[aria-label="Structure"] [role="treeitem"]')].find((b) => b.textContent.includes('hero-h1')).click()`,
+  );
+  await sleep(400);
   await ev(
     `(() => { const label = [...document.querySelectorAll('aside[aria-label="Inspector"] label')].find((item) => item.textContent.trim() === 'Text'); document.getElementById(label?.htmlFor)?.focus(); })()`,
   );
@@ -368,7 +409,7 @@ try {
   );
   assert.notEqual(spacingAfter, spacingBefore, 'spacing changes the compiled canvas preview CSS');
   await ev(
-    `([...document.querySelectorAll('[role=tab]')].find((tab) => tab.textContent.trim() === 'Content'))?.click()`,
+    `(() => { const tab = [...document.querySelectorAll('[role=tab]')].find((item) => item.textContent.trim() === 'Content'); tab?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0, ctrlKey: false })); })()`,
   );
 
   // Canvas (BWB-051): a sandboxed same-origin iframe with the dedicated canvas document and its trusted runtime.
