@@ -54,11 +54,19 @@ function ShortcutRow({ keys, children }: { keys: readonly string[]; children: Re
 }
 
 /** The dialog body; the trigger is supplied by the toolbar so it takes part in the roving focus order. */
-export function ShortcutsDialog({ trigger }: { trigger: ReactNode }) {
+export function ShortcutsDialog({
+  trigger,
+  open,
+  onOpenChange,
+}: {
+  trigger: ReactNode | null;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}) {
   const { t } = useI18n();
   return (
-    <Dialog>
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      {trigger === null ? null : <DialogTrigger asChild>{trigger}</DialogTrigger>}
       <DialogContent
         title={t('shortcuts.title')}
         description={t('shortcuts.description')}

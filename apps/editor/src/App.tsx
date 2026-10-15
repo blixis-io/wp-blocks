@@ -90,8 +90,6 @@ function Shell({
           onTogglePanel={togglePanel}
           appearance={preference}
           onAppearance={onPreference}
-          structureId={STRUCTURE_ID}
-          inspectorId={INSPECTOR_ID}
         />
         {locked ? (
           <div role="status" className="blx-banner" data-testid="lock-banner">

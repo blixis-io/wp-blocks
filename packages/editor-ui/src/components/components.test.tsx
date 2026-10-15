@@ -79,6 +79,9 @@ describe('Icon', () => {
     save: 'diskette-linear',
     close: 'close-linear',
     container: 'box-linear',
+    pages: 'box-linear',
+    documents: 'box-linear',
+    more: 'menu-dots-linear',
     button: 'cursor-square-linear',
     fallback: 'widget-3-linear',
     system: 'moon-stars-linear',
@@ -107,6 +110,30 @@ describe('Icon', () => {
         new RegExp(`\\b${semanticName}: ${String(variable)}\\b|\\b${semanticName},`),
       );
     }
+  });
+
+  it('maps header actions to deliberate semantic icon names', () => {
+    const headerIcons = {
+      pages: 'pages',
+      documents: 'documents',
+      more: 'more',
+      preview: 'preview',
+      save: 'save',
+      publish: 'publish',
+      chevron: 'chevronDown',
+      success: 'check',
+    } as const;
+    expect(headerIcons).toEqual({
+      pages: 'pages',
+      documents: 'documents',
+      more: 'more',
+      preview: 'preview',
+      save: 'save',
+      publish: 'publish',
+      chevron: 'chevronDown',
+      success: 'check',
+    });
+    for (const name of Object.values(headerIcons)) expect(ICONS[name]).toBeDefined();
   });
 
   it('maps inspector actions to explicit semantic icon names', () => {
@@ -152,6 +179,10 @@ describe('Icon', () => {
   it('keeps distinct actions on distinct glyphs except documented equivalent names', () => {
     const exceptions = new Set([
       'appearance|light',
+      'container|pages',
+      'container|documents',
+      'documents|pages',
+      'menuDots|more',
       'button|move',
       'caretRight|forward',
       'fallback|section',
