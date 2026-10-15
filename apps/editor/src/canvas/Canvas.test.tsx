@@ -438,6 +438,105 @@ describe('selection and hover', () => {
     endpoint.deliver({ type: 'pong', n: 1 });
     expect(screen.queryByRole('alert')).toBeNull();
   });
+
+  it('requests selected rectangles, subtracts reported canvas scroll, and clips them to the frame wrapper', async () => {
+    const s = setup();
+    await ready(s);
+    const endpoint = s.endpoints.last();
+    s.pending[0]?.resolve(previewResult('<p data-blx-id="el-text-1">x</p>'));
+    await flush(0);
+    endpoint.deliver({ type: 'rendered', revision: 1 });
+    act(() => {
+      s.store.getState().select('el-text-1');
+    });
+    endpoint.deliver({ type: 'size', width: 900, height: 1200 });
+    await flush(20);
+    expect(endpoint.sent.filter((message) => message.type === 'request-rects')).toEqual([
+      { type: 'request-rects', revision: 1 },
+    ]);
+    endpoint.deliver({ type: 'rects', revision: 1, items: [{ id: 'el-text-1', x: 12, y: 120, w: 100, h: 24 }] });
+    endpoint.deliver({ type: 'scroll', x: 0, y: 40 });
+    const overlay = screen.getByTestId('selection-overlay');
+    expect(overlay.getAttribute('style')).toContain('top: 80px');
+    expect(screen.getByTestId('canvas-overlay-viewport').className).toContain('blx-overlay-viewport');
+  });
+
+  it('renders an accessible ancestor breadcrumb and clicking an ancestor changes selection', async () => {
+    const s = setup();
+    await ready(s);
+    act(() => {
+      s.store.getState().select('el-heading-1');
+    });
+    const breadcrumb = screen.getByRole('navigation', { name: 'Selected element path' });
+    const items = within(breadcrumb).getAllByRole('listitem');
+    expect(items).toHaveLength(3);
+    expect(within(breadcrumb).getAllByRole('button', { current: 'location' })).toHaveLength(1);
+    expect(
+      within(breadcrumb)
+        .getByRole('button', { name: /Heading.*el-heading/ })
+        .getAttribute('title'),
+    ).toBe('el-heading-1');
+    fireEvent.click(within(breadcrumb).getByRole('button', { name: /Section.*el-section-1/ }));
+    expect(s.store.getState().selectedId).toBe('el-section-1');
+  });
+
+  it('does not ask for rectangle scans on hover or when no element is selected', async () => {
+    const s = setup();
+    await ready(s);
+    const endpoint = s.endpoints.last();
+    endpoint.deliver({ type: 'size', width: 900, height: 1200 });
+    act(() => {
+      s.store.getState().hover('el-text-1');
+    });
+    await flush(20);
+    expect(endpoint.sent.filter((message) => message.type === 'request-rects')).toEqual([]);
+  });
+
+  it('filters NaN, out-of-contract and foreign rectangle ids at the session boundary', async () => {
+    const s = setup();
+    await ready(s);
+    const endpoint = s.endpoints.last();
+    s.pending[0]?.resolve(previewResult('<p data-blx-id="el-text-1">x</p>'));
+    await flush(0);
+    endpoint.deliver({ type: 'rendered', revision: 1 });
+    act(() => {
+      s.store.getState().select('el-text-1');
+    });
+    await flush(20);
+    endpoint.deliver({
+      type: 'rects',
+      revision: 1,
+      items: [
+        { id: 'el-text-1', x: 2, y: 3, w: 10, h: 11 },
+        { id: 'el-text-1', x: Number.NaN, y: 3, w: 10, h: 11 },
+        { id: 'el-text-1', x: 1_000_001, y: 3, w: 10, h: 11 },
+        { id: 'el-heading-1', x: 2, y: 3, w: 10, h: 11 },
+      ],
+    });
+    expect(screen.getByTestId('selection-overlay').getAttribute('style')).toContain('left: 2px');
+    expect(screen.getAllByTestId('selection-overlay')).toHaveLength(1);
+  });
+
+  it('accepts rectangles for the canvas last-rendered revision after the next preview fails', async () => {
+    const s = setup();
+    await ready(s);
+    const endpoint = s.endpoints.last();
+    s.pending[0]?.resolve(previewResult('<p data-blx-id="el-text-1">x</p>'));
+    await flush(0);
+    endpoint.deliver({ type: 'rendered', revision: 1 });
+    act(() => {
+      s.store.getState().select('el-text-1');
+    });
+    await flush(20);
+    act(() => {
+      s.store.getState().dispatch({ type: 'update-props', id: 'el-heading-1', set: { level: 3 } });
+    });
+    await flush(150);
+    s.pending[1]?.resolve({ ok: false, error: { kind: 'network' } });
+    await flush(0);
+    endpoint.deliver({ type: 'rects', revision: 1, items: [{ id: 'el-text-1', x: 2, y: 3, w: 10, h: 11 }] });
+    expect(screen.getByTestId('selection-overlay').getAttribute('style')).toContain('left: 2px');
+  });
 });
 
 describe('error states', () => {
@@ -526,6 +625,18 @@ describe('error states', () => {
 });
 
 describe('lifecycle', () => {
+  it('cancels a queued rectangle request on unmount', async () => {
+    const s = setup();
+    await ready(s);
+    const endpoint = s.endpoints.last();
+    act(() => {
+      s.store.getState().select('el-text-1');
+    });
+    s.view.unmount();
+    await flush(100);
+    expect(endpoint.sent.some((message) => message.type === 'request-rects')).toBe(false);
+  });
+
   it('closes the endpoint, cancels timers and aborts the request on unmount', async () => {
     const s = setup();
     await ready(s);
@@ -704,7 +815,7 @@ describe('desktop width follows the area', () => {
   it('measures again when the container resizes, once per animation frame, and only for the desktop viewport', async () => {
     const s = setup();
     await ready(s);
-    const observer = Observed.instances.find((o) => o.targets.includes(frame().parentElement as Element));
+    const observer = Observed.instances.find((o) => o.targets.length === 1 && o.targets[0] === frame().parentElement);
     expect(observer).toBeDefined();
     const endpoint = s.endpoints.last();
     endpoint.sent.length = 0;
@@ -745,6 +856,43 @@ describe('desktop width follows the area', () => {
     s.view.unmount();
     expect(observer?.disconnected).toBe(true);
   });
+
+  it('positions the clipped overlay wrapper on the iframe content box without scaling', async () => {
+    const s = setup();
+    await ready(s);
+    const iframe = frame();
+    const stage = screen.getByTestId('canvas-stage');
+    const rect = (left: number, top: number, width: number, height: number): DOMRect => ({
+      left,
+      top,
+      width,
+      height,
+      right: left + width,
+      bottom: top + height,
+      x: left,
+      y: top,
+      toJSON: () => ({}),
+    });
+    vi.spyOn(iframe, 'getBoundingClientRect').mockReturnValue(rect(100, 50, 500, 700));
+    vi.spyOn(stage, 'getBoundingClientRect').mockReturnValue(rect(20, 10, 800, 900));
+    Object.defineProperties(iframe, {
+      clientLeft: { value: 1, configurable: true },
+      clientTop: { value: 1, configurable: true },
+      clientWidth: { value: 498, configurable: true },
+      clientHeight: { value: 698, configurable: true },
+    });
+    const observer = Observed.instances.find(
+      (value) => value.targets.includes(stage) && value.targets.includes(iframe),
+    );
+    act(() => {
+      observer?.callback();
+      s.store.getState().select('el-text-1');
+    });
+    expect(screen.getByTestId('canvas-overlay-viewport').getAttribute('style')).toContain('left: 81px');
+    expect(screen.getByTestId('canvas-overlay-viewport').getAttribute('style')).toContain('top: 41px');
+    expect(screen.getByTestId('canvas-overlay-viewport').getAttribute('style')).toContain('width: 498px');
+    expect(screen.getByTestId('canvas-overlay-viewport').getAttribute('style')).toContain('height: 698px');
+  });
 });
 
 describe('localisation and accessibility', () => {
@@ -770,6 +918,20 @@ describe('localisation and accessibility', () => {
     });
     expect(await axeViolations(screen.getByTestId('editor-root'))).toEqual([]);
     s.endpoints.last().violate('protocol-violation');
+    expect(await axeViolations(screen.getByTestId('editor-root'))).toEqual([]);
+    vi.useFakeTimers();
+  });
+
+  it('is axe clean with a canvas breadcrumb and a collapsed tree node', async () => {
+    const s = setup();
+    await ready(s);
+    act(() => {
+      s.store.getState().select('el-heading-1');
+      s.store.getState().setExpanded('el-section-2', false);
+    });
+    expect(screen.getByRole('navigation', { name: 'Selected element path' })).toBeTruthy();
+    expect(screen.getByRole('treeitem', { name: /el-section-2/ }).getAttribute('aria-expanded')).toBe('false');
+    vi.useRealTimers();
     expect(await axeViolations(screen.getByTestId('editor-root'))).toEqual([]);
     vi.useFakeTimers();
   });

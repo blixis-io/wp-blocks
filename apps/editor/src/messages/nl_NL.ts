@@ -42,6 +42,7 @@ export const nl_NL: Record<MessageKey, string> = {
   'panel.structure.emptyDocument': 'Deze pagina heeft nog geen elementen.',
   'panel.structure.loadFailed': 'Het document kon niet worden geladen. Zie de melding in het hoofdgebied.',
   'panel.structure.list': 'Pagina-elementen',
+  'canvas.breadcrumb': 'Pad van geselecteerd element',
   'load.error.title': 'Het document kon niet worden geladen.',
   'load.error.unauthenticated': 'Je sessie is verlopen. Laad de pagina opnieuw en log opnieuw in.',
   'load.error.forbidden': 'Je mag deze pagina niet bewerken.',

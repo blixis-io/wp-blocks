@@ -27,6 +27,7 @@ export type CanvasMessage =
   | { type: 'ready' }
   | { type: 'rendered'; revision: number }
   | { type: 'size'; width: number; height: number }
+  | { type: 'scroll'; x: number; y: number }
   | { type: 'pick'; id: string; shift: boolean; alt: boolean }
   | { type: 'hover'; id: string | null }
   | { type: 'rects'; revision: number; items: ElementRect[] }
@@ -154,6 +155,13 @@ function parseCanvas(data: unknown): Parsed<CanvasMessage> {
       if (f === null) return fail('malformed');
       if (!isInt(f['width'], 1, LIMITS.sizeMax) || !isInt(f['height'], 1, LIMITS.sizeMax)) return fail('invalid-field');
       return succeed({ type, width: f['width'], height: f['height'] });
+    }
+    case 'scroll': {
+      const f = readExact(data, ['type', 'x', 'y']);
+      if (f === null) return fail('malformed');
+      if (!isFiniteWithin(f['x'], LIMITS.coordinateMax) || !isFiniteWithin(f['y'], LIMITS.coordinateMax))
+        return fail('invalid-field');
+      return succeed({ type, x: f['x'], y: f['y'] });
     }
     case 'pick': {
       const f = readExact(data, ['type', 'id', 'shift', 'alt']);

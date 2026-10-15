@@ -24,6 +24,63 @@ const deferred = <T>() => {
 };
 
 describe('document slice: loading', () => {
+  it('defaults to two expanded levels and remembers an intentionally collapsed-all tree across reloads', async () => {
+    const { store } = await makeLoadedStore();
+    expect(new Set(store.getState().expandedIds)).toEqual(new Set(['el-section-1', 'el-section-2', 'el-container-1']));
+    for (const id of [...store.getState().expandedIds]) store.getState().setExpanded(id, false);
+    expect(store.getState().expandedIds).toEqual([]);
+    await store.getState().loadDocument();
+    expect(store.getState().expandedIds).toEqual([]);
+    expect(store.getState().expandedInitialized).toBe(true);
+  });
+
+  it('restores an intentionally collapsed-all expansion set in a fresh editor store', async () => {
+    const storage = memoryStorage();
+    const bootstrap = makeBootstrap();
+    const streams = streamsOf(makeDocument());
+    const first = createEditorStore({ client: fakeClient(streams), bootstrap, storage });
+    await first.getState().loadDocument();
+    for (const id of [...first.getState().expandedIds]) first.getState().setExpanded(id, false);
+    const reloaded = createEditorStore({ client: fakeClient(streams), bootstrap, storage });
+    expect(reloaded.getState().expandedInitialized).toBe(true);
+    await reloaded.getState().loadDocument();
+    expect(reloaded.getState().expandedIds).toEqual([]);
+  });
+
+  it('keeps expanded structure ids and prunes ids when nodes disappear', async () => {
+    const { store } = await makeLoadedStore();
+    const parent = store.getState().document?.root[0];
+    expect(parent).toBeTruthy();
+    if (!parent) return;
+    store.getState().setExpanded(parent.id, false);
+    expect(store.getState().expandedIds).not.toContain(parent.id);
+    store.getState().setExpanded(parent.id, true);
+    expect(store.getState().expandedIds).toContain(parent.id);
+    store.getState().dispatch({ type: 'remove', id: parent.id });
+    expect(store.getState().expandedIds).not.toContain(parent.id);
+  });
+
+  it('preserves the expanded-id array reference for edits that do not prune expansion', async () => {
+    const { store } = await makeLoadedStore();
+    const expanded = store.getState().expandedIds;
+    store.getState().dispatch({ type: 'update-props', id: 'el-heading-1', set: { level: 3 } });
+    expect(store.getState().expandedIds).toBe(expanded);
+  });
+
+  it('expands selected ancestors together in one state update', async () => {
+    const { store } = await makeLoadedStore();
+    const notifications: number[] = [];
+    const unsubscribe = store.subscribe(() => {
+      notifications.push(1);
+    });
+    store.getState().setExpanded('el-container-1', false);
+    notifications.length = 0;
+    store.getState().expandMany(['el-section-1', 'el-container-1']);
+    expect(store.getState().expandedIds).toEqual(expect.arrayContaining(['el-section-1', 'el-container-1']));
+    expect(notifications).toHaveLength(1);
+    unsubscribe();
+  });
+
   it('starts idle and loads layout plus every enabled locale in parallel', async () => {
     const { store, client, document } = makeStore();
     expect(store.getState()).toMatchObject({ status: 'idle', document: null, error: null, canUndo: false });

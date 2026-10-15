@@ -224,7 +224,7 @@ describe('render', () => {
     expect(styles[0]?.getAttribute('nonce')).toBe(NONCE);
     expect(types(h)).toEqual(['ready', 'rendered']); // layout waits for the next frame, rects are never pushed
     h.frames.run();
-    expect(types(h)).toEqual(['ready', 'rendered', 'size']);
+    expect(types(h)).toEqual(['ready', 'rendered', 'size', 'scroll']);
     expect(h.sent[1]).toEqual({ type: 'rendered', revision: 3 });
     // a second render replaces content and css instead of adding elements
     render(h, '<p data-blx-id="el-text-1">x</p>', '.b{}', 4);
@@ -542,7 +542,7 @@ describe('size and rects', () => {
     expect(h.frames.requested - before).toBe(1); // 20 resize ticks and a render: one scheduled pass
     expect(types(h)).toEqual(['rendered']);
     h.frames.run();
-    expect(h.sent.at(-1)).toEqual({ type: 'size', width: 640, height: 800 });
+    expect(h.sent.findLast((message) => message.type === 'size')).toEqual({ type: 'size', width: 640, height: 800 });
     h.sent.length = 0;
     h.observer.callback();
     h.frames.run();
@@ -577,6 +577,29 @@ describe('size and rects', () => {
     expect(types(h)).not.toContain('rects'); // not repeated without a new request
   });
 
+  it('sends bounded scroll coordinates after ready and coalesces scroll events per frame', () => {
+    const h = begin();
+    const previousX = Object.getOwnPropertyDescriptor(window, 'scrollX');
+    const previousY = Object.getOwnPropertyDescriptor(window, 'scrollY');
+    Object.defineProperty(window, 'scrollX', { value: 24.5, configurable: true });
+    Object.defineProperty(window, 'scrollY', { value: 88, configurable: true });
+    const before = h.frames.requested;
+    window.dispatchEvent(new Event('scroll'));
+    window.dispatchEvent(new Event('scroll'));
+    expect(h.frames.requested - before).toBe(0); // ready already scheduled the shared layout pass
+    h.frames.run();
+    expect(h.sent.filter((message) => message.type === 'scroll')).toEqual([{ type: 'scroll', x: 24.5, y: 88 }]);
+    window.dispatchEvent(new Event('scroll'));
+    window.dispatchEvent(new Event('scroll'));
+    expect(h.frames.pending()).toBe(1);
+    h.frames.run();
+    expect(h.sent.filter((message) => message.type === 'scroll')).toHaveLength(2);
+    if (previousX) Object.defineProperty(window, 'scrollX', previousX);
+    else delete (window as { scrollX?: number }).scrollX;
+    if (previousY) Object.defineProperty(window, 'scrollY', previousY);
+    else delete (window as { scrollY?: number }).scrollY;
+  });
+
   it('answers a request-rects before any render with revision 0', () => {
     const h = begin();
     h.deliver({ type: 'request-rects', revision: 9 });
@@ -590,7 +613,10 @@ describe('size and rects', () => {
     h.deliver({ type: 'request-rects', revision: 1 });
     h.frames.run();
     const rects = h.sent.find((m) => m.type === 'rects');
-    expect(rects?.type === 'rects' && rects.items.length).toBe(5000);
+    expect(
+      rects?.type === 'rects' && rects.items.length,
+      JSON.stringify({ types: types(h), html: h.root.children.length }),
+    ).toBe(5000);
     const bad = need(h.root.querySelector('i'));
     vi.spyOn(bad, 'getBoundingClientRect').mockReturnValue(box(Number.NaN, 0, 1, 1));
     h.sent.length = 0;

@@ -18,6 +18,21 @@ import type { CoalesceMark } from './history-slice';
 import { hasElement, repairSelection } from './selection-slice';
 import type { EditorState } from './store';
 
+const pruneExpanded = (root: BuilderDocument['root'], expanded: readonly string[]): readonly string[] => {
+  const withChildren = new Set<string>();
+  const stack = [...root];
+  while (stack.length) {
+    const node = stack.pop();
+    if (!node) continue;
+    if (node.children.length) withChildren.add(node.id);
+    stack.push(...node.children);
+  }
+  const next = expanded.filter((id) => {
+    return withChildren.has(id);
+  });
+  return next.length === expanded.length ? expanded : next;
+};
+
 /** Edits closer together than this, on the same element and properties, become one undo step. */
 export const COALESCE_WINDOW_MS = 1000;
 
@@ -91,6 +106,7 @@ export const createBridgeSlice =
       const document: BuilderDocument = history.document;
       const selectedId = repairSelection(state.selectedId, state.document, document);
       const hoveredId = state.hoveredId !== null && hasElement(document, state.hoveredId) ? state.hoveredId : null;
+      const expandedIds = pruneExpanded(document.root, state.expandedIds);
       set({
         document,
         history,
@@ -99,6 +115,7 @@ export const createBridgeSlice =
         coalesce,
         selectedId,
         hoveredId,
+        expandedIds,
         dirty: state.savedDocument === null ? state.dirty : computeDirty(document, state.savedDocument, state.dirty),
       });
       emitter.emit({ type, document });

@@ -123,14 +123,15 @@ Selection is validated against the document. After every command, undo, redo and
 
 ### UI wiring
 
-`main.tsx` creates the store with `createRestClient` (injectable in tests through `mountEditor`'s options) and `EditorApp` calls `loadDocument` on mount (aborted on unmount). The toolbar Undo and Redo buttons follow `canUndo`/`canRedo` (`aria-disabled`) and work by click and keyboard; Mod+Z and Mod+Shift+Z are BWB-056 and are NOT bound. The Structure panel shows a read-only outline (nested list, each item a button that selects, `aria-current="true"` on the selected one) with loading, error (`role="alert"`, generic catalog text for 401, 403, 409, 423, network and invalid documents, never server text) and empty states; the real tree with drag and drop is BWB-052/059. The Inspector header shows the selected element's type and id. The canvas placeholder (shown when the bootstrap has no `canvasUrl`) shows the content locale from the settings slice.
+`main.tsx` creates the store with `createRestClient` (injectable in tests through `mountEditor`'s options) and `EditorApp` calls `loadDocument` on mount (aborted on unmount). The toolbar Undo and Redo buttons follow `canUndo`/`canRedo` (`aria-disabled`) and work by click and keyboard; Mod+Z and Mod+Shift+Z are BWB-056 and are NOT bound. The Structure panel shows a virtual WAI-ARIA tree with keyboard selection, loading, error (`role="alert"`, generic catalog text for 401, 403, 409, 423, network and invalid documents, never server text) and empty states; tree drag and drop is BWB-059. The Inspector header shows the selected element's type and id. The canvas placeholder (shown when the bootstrap has no `canvasUrl`) shows the content locale from the settings slice.
 
 ### What plugs in later
 
 | Issue | Plugs into |
 |---|---|
 | BWB-051 canvas bridge | Done: see "Canvas (BWB-051)". Uses `subscribe` (events carry the document) and `viewport`, `breakpointId`, `previewMode`, `contentLocale`, `selectedId`, `hoveredId` from the store |
-| BWB-052 tree, BWB-059 drag and drop | `dispatch({ type: 'move' ... })`, `select`, `hover`, replace `StructurePanel` |
+| BWB-052 structure tree | `select`, `expandedIds`, keyboard focus and selection breadcrumb |
+| BWB-059 drag and drop | `dispatch({ type: 'move' ... })` and canvas rectangles |
 | BWB-053 inspector | `selectedId`, `dispatch` with `coalesceKey` for text fields |
 | BWB-055 save and autosave | `subscribe` for change events, `dirty`, `revisions` (`If-Match`), `splitDocument` for the bodies, `markSaved` with the document that was sent |
 | BWB-056 shortcuts | `undo`, `redo` |
@@ -139,7 +140,13 @@ Selection is validated against the document. After every command, undo, redo and
 
 Vitest with jsdom, no extra dependencies. `src/test/state-helpers.ts` builds isolated stores over a fake `RestClient`, a manual clock and an in-memory storage. Covered: compose/split round trip including hostile payloads (reserved keys, huge, deeply nested, wrong types, getters, locale mismatch); the slices; bridge atomicity (a subscriber never sees a torn state); failing commands changing nothing; undo/redo parity with core's `History` on seeded random command sequences (valid and invalid mixed: undoing everything gives the loaded document, redoing reproduces every intermediate one); coalescing bursts, including seeded random bursts; selection repair; load races and failure; dirty tracking; settings independence and persistence validation; React glue, outline, errors in both catalogs and axe; re-entrancy of listeners (nested dispatch and undo, removal during delivery, throwing listeners); coalescing regressions (type-then-revert, a burst interrupted by another command); refusal of edits after a failed reload; a bounded performance test (1,000 `update-props` plus a 300-step coalesced burst on a 5,000-element document with dirty comparison, under a generous 10 s bound that only catches accidental per-keystroke whole-tree work, not a benchmark). The REST client tests cover redirects (`redirect: 'error'` is passed on every request; a response with `redirected === true` is a network error) and a maximal document (5,000 elements, just under 2 MiB) loading through the real client.
 
+## Structure tree and selection (BWB-052)
+
+The virtual WAI-ARIA tree defaults to the first two expandable levels plus ancestors of the selected element. A separate initialization flag and a validated per-post storage entry distinguish the untouched default from a user who collapsed every node, so browser reloads and locale changes do not reopen the tree. Keyboard focus has its own `focusedId` and roving tab stop; Left/Right follow the editor chrome direction, while selection remains independent. Each row reports sibling position and set size. The breadcrumb uses ordered list semantics, explicit hidden separators, full ids in `title`, and `aria-current="location"` on the selected item.
+
 ## Canvas (BWB-051)
+
+The canvas overlay wrapper matches the iframe content box and clips overflow. It displays selected-element rectangles only; rectangles are document-relative, scroll-adjusted, and rendered at scale 1.
 
 The full protocol, sandbox rationale, threat table and non-guarantees are in `docs/architecture/CANVAS-CONTRACT.md`. This section is the editor view of it.
 
@@ -180,6 +187,7 @@ Landmarks are unique and named; disabled placeholders use `aria-disabled` and st
 |---|---|
 | BWB-050 | Done: document store, command bridge, Undo/Redo, dirty state (see "State and command bridge"). |
 | BWB-051 | Done: canvas iframe, `@blixis/wp-canvas-bridge`, the canvas runtime, real viewport and preview appearance controls (see "Canvas (BWB-051)"). |
-| BWB-052, BWB-053 | Structure panel tree, inspector tabs, drag and drop (request the `rects` with `request-rects`; the canvas no longer pushes them). |
+| BWB-052 | Structure tree, selection breadcrumb and clipped canvas selection overlay using `request-rects`. |
+| BWB-053, BWB-059 | Inspector tabs and drag and drop. |
 | BWB-055 | Save/Publish through `restRoot` + `nonce`; lock handling. |
 | BWB-056..058 | Shortcuts, content-locale switcher, translation status. |

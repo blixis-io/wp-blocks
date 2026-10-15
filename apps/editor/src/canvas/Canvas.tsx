@@ -1,5 +1,5 @@
 import { Moon, Sun } from 'lucide-react';
-import { useState, type CSSProperties } from 'react';
+import { useLayoutEffect, useState, type CSSProperties } from 'react';
 import type { RestClient } from '../api/types';
 import type { MessageKey } from '../i18n';
 import { useI18n } from '../i18n-react';
@@ -84,8 +84,13 @@ export function Canvas({ canvasUrl, client, createEndpoint, debounceMs }: Canvas
   const contentLocale = useEditorStore((state) => state.contentLocale);
   const viewport = useEditorStore((state) => state.viewport);
   const previewMode = useEditorStore((state) => state.previewMode);
+  const selectedId = useEditorStore((state) => state.selectedId);
   const [frame, setFrame] = useState<HTMLIFrameElement | null>(null);
+  const [stage, setStage] = useState<HTMLDivElement | null>(null);
   const [attempt, setAttempt] = useState(0);
+  const [overlayBox, setOverlayBox] = useState<{ left: number; top: number; width: number; height: number } | null>(
+    null,
+  );
   const src = canvasSrc(canvasUrl, contentLocale);
   const session = useCanvasSession({
     store,
@@ -97,12 +102,32 @@ export function Canvas({ canvasUrl, client, createEndpoint, debounceMs }: Canvas
     ...(debounceMs === undefined ? {} : { debounceMs }),
   });
   const width = FRAME_WIDTHS[viewport];
+  useLayoutEffect(() => {
+    if (!frame || !stage) {
+      return;
+    }
+    const measure = (): void => {
+      const frameBox = frame.getBoundingClientRect();
+      const stageBox = stage.getBoundingClientRect();
+      setOverlayBox({
+        left: frameBox.left - stageBox.left + frame.clientLeft,
+        top: frameBox.top - stageBox.top + frame.clientTop,
+        width: frame.clientWidth,
+        height: frame.clientHeight,
+      });
+    };
+    measure();
+    const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(measure) : null;
+    observer?.observe(stage);
+    observer?.observe(frame);
+    return () => observer?.disconnect();
+  }, [frame, stage]);
   const restart = (): void => {
     setAttempt((value) => value + 1);
   };
 
   return (
-    <div className="blx-canvas-stage" data-testid="canvas-stage">
+    <div className="blx-canvas-stage" data-testid="canvas-stage" ref={setStage}>
       {session.status === 'connecting' ? (
         <p role="status" className="blx-canvas-note" data-testid="canvas-connecting">
           {t('canvas.connecting')}
@@ -140,6 +165,30 @@ export function Canvas({ canvasUrl, client, createEndpoint, debounceMs }: Canvas
         data-session={session.status}
         style={width === null ? undefined : ({ '--blx-frame-width': `${String(width)}px` } as CSSProperties)}
       />
+      {frame && overlayBox && selectedId !== null ? (
+        <div
+          className="blx-overlay-viewport"
+          data-testid="canvas-overlay-viewport"
+          aria-hidden="true"
+          style={overlayBox}
+        >
+          {session.rects
+            .filter((rect) => rect.id === selectedId)
+            .map((rect) => (
+              <div
+                key={rect.id}
+                data-testid="selection-overlay"
+                className="blx-selection-overlay"
+                style={{
+                  left: rect.x - session.scroll.x,
+                  top: rect.y - session.scroll.y,
+                  width: rect.w,
+                  height: rect.h,
+                }}
+              />
+            ))}
+        </div>
+      ) : null}
     </div>
   );
 }

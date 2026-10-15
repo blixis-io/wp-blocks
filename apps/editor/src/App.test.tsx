@@ -433,7 +433,7 @@ describe('document load failure', () => {
 describe('inspector selection label', () => {
   it('announces which element is selected with the translated prefix', async () => {
     const { user } = setup();
-    await user.click(await screen.findByRole('button', { name: /el-heading-1/ }));
+    await user.click(await screen.findByRole('treeitem', { name: /el-heading-1/ }));
     const selection = screen.getByTestId('inspector-selection');
     expect(selection.textContent).toContain('Selected element:');
     expect(selection.textContent).toContain('el-heading-1');

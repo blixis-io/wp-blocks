@@ -6,9 +6,10 @@ import { createEmitter } from './events';
 import { createHistorySlice, type HistorySlice } from './history-slice';
 import { createSelectionSlice, type SelectionSlice } from './selection-slice';
 import { createSettingsSlice, type SettingsSlice } from './settings-slice';
+import { createStructureSlice, type StructureSlice } from './structure-slice';
 
 /** Everything the editor state holds. The slices are separate files; the bridge slice carries the only write path. */
-export type EditorState = DocumentSlice & SelectionSlice & HistorySlice & SettingsSlice & BridgeSlice;
+export type EditorState = DocumentSlice & SelectionSlice & HistorySlice & SettingsSlice & BridgeSlice & StructureSlice;
 export type EditorStore = StoreApi<EditorState>;
 
 /**
@@ -23,6 +24,7 @@ export function createEditorStore(deps: EditorStoreDeps): EditorStore {
     ...createSelectionSlice(...args),
     ...createHistorySlice(...args),
     ...createSettingsSlice(resolved)(...args),
+    ...createStructureSlice(resolved)(...args),
     ...createBridgeSlice(resolved, emitter)(...args),
   }));
 }

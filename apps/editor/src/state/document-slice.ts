@@ -5,6 +5,7 @@ import type { ResolvedDeps } from './context';
 import type { ApiError, StreamRead } from './deps';
 import type { Emitter } from './events';
 import { repairSelection } from './selection-slice';
+import { persistExpanded } from './structure-slice';
 import type { EditorState } from './store';
 
 export type LoadError = { type: 'api'; error: ApiError } | { type: 'invalid'; error: ComposeError };
@@ -159,6 +160,8 @@ export const createDocumentSlice =
             return;
           }
           const document = composed.document;
+          const validExpanded = new Set(allExpandableIds(document.root));
+          const defaultExpanded = expandableIds(document.root);
           set((state) => ({
             status: 'ready',
             error: null,
@@ -172,7 +175,12 @@ export const createDocumentSlice =
             coalesce: null,
             selectedId: repairSelection(state.selectedId, state.document, document),
             hoveredId: null,
+            expandedInitialized: state.expandedInitialized || document.root.length > 0,
+            expandedIds: state.expandedInitialized
+              ? state.expandedIds.filter((id) => validExpanded.has(id))
+              : defaultExpanded,
           }));
+          if (get().expandedInitialized) persistExpanded(deps, get().expandedIds);
           emitter.emit({ type: 'load', document });
         } finally {
           external?.removeEventListener('abort', onExternalAbort);
@@ -203,3 +211,29 @@ export const createDocumentSlice =
       },
     };
   };
+
+function expandableIds(root: BuilderDocument['root']): string[] {
+  const ids: string[] = [];
+  const stack = root.map((node) => ({ node, depth: 1 }));
+  while (stack.length) {
+    const item = stack.pop();
+    if (!item) continue;
+    if (item.node.children.length) {
+      if (item.depth <= 2) ids.push(item.node.id);
+      for (const node of item.node.children) stack.push({ node, depth: item.depth + 1 });
+    }
+  }
+  return ids;
+}
+
+function allExpandableIds(root: BuilderDocument['root']): string[] {
+  const ids: string[] = [];
+  const stack = [...root];
+  while (stack.length) {
+    const node = stack.pop();
+    if (!node) continue;
+    if (node.children.length) ids.push(node.id);
+    stack.push(...node.children);
+  }
+  return ids;
+}

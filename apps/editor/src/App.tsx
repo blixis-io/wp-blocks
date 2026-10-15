@@ -11,7 +11,7 @@ import { Lock } from 'lucide-react';
 import type { RestClient } from './api/types';
 import { Canvas, PreviewAppearance, type CanvasTestOptions } from './canvas/Canvas';
 import { useEffect, useMemo, useState } from 'react';
-import type { ElementNode } from '@blixis/wp-core';
+import { findPath, nodeAt, type ElementNode } from '@blixis/wp-core';
 import type { EditorBootstrap } from './bootstrap';
 import { useChromeTheme, type ChromePreference } from './chrome-theme';
 import { elementLabel } from './element-label';
@@ -20,7 +20,7 @@ import { LoadStatus } from './LoadStatus';
 import { createTranslator } from './i18n';
 import { I18nProvider, useI18n } from './i18n-react';
 import { StructurePanel } from './StructurePanel';
-import { StoreProvider, useEditorStore, type EditorStore } from './state';
+import { StoreProvider, useEditorStore, useEditorStoreApi, type EditorStore } from './state';
 
 const STRUCTURE_ID = 'blx-structure';
 const INSPECTOR_ID = 'blx-inspector';
@@ -52,6 +52,7 @@ function Shell({
   onPreference: (next: ChromePreference) => void;
 }) {
   const { t } = useI18n();
+  const store = useEditorStoreApi();
   const panels = useEditorStore((state) => state.panels);
   const togglePanel = useEditorStore((state) => state.togglePanel);
   const contentLocale = useEditorStore((state) => state.contentLocale);
@@ -61,6 +62,15 @@ function Shell({
     () => (selectedId === null ? null : findElement(document?.root, selectedId)),
     [selectedId, document],
   );
+  const breadcrumb = useMemo(() => {
+    if (selectedId === null || document === null) return [];
+    const path = findPath(document.root, selectedId);
+    return (
+      path
+        ?.map((_, index) => nodeAt(document.root, path.slice(0, index + 1)))
+        .filter((node): node is ElementNode => node !== undefined) ?? []
+    );
+  }, [selectedId, document]);
   const locked = !bootstrap.editingEnabled;
   return (
     <>
@@ -102,6 +112,26 @@ function Shell({
           <LoadStatus />
           {bootstrap.canvasUrl !== undefined && bootstrap.canvasUrl !== null && client !== undefined ? (
             <>
+              {breadcrumb.length ? (
+                <nav aria-label={t('canvas.breadcrumb')}>
+                  <ol className="blx-breadcrumb">
+                    {breadcrumb.map((node, index) => (
+                      <li key={node.id}>
+                        {index > 0 ? <span aria-hidden="true">/</span> : null}
+                        <button
+                          type="button"
+                          className="ed-focus-ring"
+                          aria-current={node.id === selectedId ? 'location' : undefined}
+                          title={node.id}
+                          onClick={() => store.getState().select(node.id)}
+                        >
+                          {elementLabel(node.type)} <span className="blx-outline-id">{node.id.slice(0, 12)}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ol>
+                </nav>
+              ) : null}
               <PreviewAppearance />
               <Canvas canvasUrl={bootstrap.canvasUrl} client={client} {...canvas} />
             </>

@@ -58,8 +58,17 @@ interface Snapshot {
   status: CanvasStatus;
   problem: PreviewProblem | null;
   contentSize: { width: number; height: number } | null;
+  rects: readonly { id: string; x: number; y: number; w: number; h: number }[];
+  scroll: { x: number; y: number };
 }
-const INITIAL: Snapshot = { owner: null, status: 'connecting', problem: null, contentSize: null };
+const INITIAL: Snapshot = {
+  owner: null,
+  status: 'connecting',
+  problem: null,
+  contentSize: null,
+  rects: [],
+  scroll: { x: 0, y: 0 },
+};
 
 export type CreateParentEndpoint = (options: ParentEndpointOptions) => ParentEndpoint;
 
@@ -82,6 +91,8 @@ export interface CanvasSession {
   problem: PreviewProblem | null;
   /** Last size the canvas reported (informational). */
   contentSize: { width: number; height: number } | null;
+  rects: Snapshot['rects'];
+  scroll: Snapshot['scroll'];
   /** Requests a new preview now (after a failed one). */
   refresh: () => void;
 }
@@ -114,8 +125,22 @@ export function useCanvasSession(options: CanvasSessionOptions): CanvasSession {
     let started = false;
     // The last answer that was sent to the canvas, and whether the document changed (or a request was lost) since.
     let lastRender: { html: string; css: string; revision: number } | null = null;
+    let lastRenderedRevision = 0;
     let dirty = false;
     let lastWidth = 0;
+    let rectHandle: number | null = null;
+    const requestRects = (): void => {
+      if (rectHandle !== null) return;
+      rectHandle = frames.request(() => {
+        rectHandle = null;
+        const state = store.getState();
+        if (disposed || !ready || state.selectedId === null) {
+          update({ rects: [] });
+          return;
+        }
+        endpoint.send({ type: 'request-rects', revision: lastRenderedRevision });
+      });
+    };
     let counter = 0;
     let timer: ReturnType<typeof setTimeout> | null = null;
     let controller: AbortController | null = null;
@@ -159,6 +184,7 @@ export function useCanvasSession(options: CanvasSessionOptions): CanvasSession {
           }
           const render = { html: result.value.html, css: result.value.css, revision };
           dirty = false;
+          lastRenderedRevision = revision;
           lastRender = render;
           if (!endpoint.send({ type: 'render', ...render })) update({ problem: 'invalid' });
         });
@@ -193,15 +219,24 @@ export function useCanvasSession(options: CanvasSessionOptions): CanvasSession {
           endpoint.send({ type: 'select', id: state.selectedId });
           endpoint.send({ type: 'hover', id: state.hoveredId });
           update({ status: 'ready', problem: null });
+          requestRects();
           if (lastRender !== null && !dirty) endpoint.send({ type: 'render', ...lastRender });
           else schedule(0);
           break;
         }
         case 'rendered':
-          if (message.revision === counter) update({ problem: null });
+          if (message.revision === counter) {
+            lastRenderedRevision = message.revision;
+            update({ problem: null });
+            requestRects();
+          }
           break;
         case 'size':
           update({ contentSize: { width: message.width, height: message.height } });
+          requestRects();
+          break;
+        case 'scroll':
+          update({ scroll: { x: message.x, y: message.y } });
           break;
         case 'pick':
           // Shift and Alt are reserved for multi-select and duplicate; ignored for now.
@@ -215,6 +250,23 @@ export function useCanvasSession(options: CanvasSessionOptions): CanvasSession {
           update({ problem: 'canvas' });
           break;
         case 'rects':
+          if (message.revision === lastRenderedRevision) {
+            const state = store.getState();
+            const valid = new Set([state.selectedId].filter((id): id is string => id !== null));
+            const rects = message.items.filter(
+              (item) =>
+                valid.has(item.id) &&
+                [item.x, item.y, item.w, item.h].every(Number.isFinite) &&
+                Math.abs(item.x) <= LIMITS.coordinateMax &&
+                Math.abs(item.y) <= LIMITS.coordinateMax &&
+                item.w >= 0 &&
+                item.h >= 0 &&
+                item.w <= LIMITS.coordinateMax &&
+                item.h <= LIMITS.coordinateMax,
+            );
+            update({ rects });
+          }
+          break;
         case 'pong':
           break;
       }
@@ -300,6 +352,10 @@ export function useCanvasSession(options: CanvasSessionOptions): CanvasSession {
       }
       if (state.selectedId !== previous.selectedId) endpoint.send({ type: 'select', id: state.selectedId });
       if (state.hoveredId !== previous.hoveredId) endpoint.send({ type: 'hover', id: state.hoveredId });
+      if (state.selectedId !== previous.selectedId) {
+        update({ rects: [] });
+        requestRects();
+      }
       if (state.status === 'ready' && previous.status !== 'ready') schedule(debounceMs);
     });
 
@@ -310,6 +366,7 @@ export function useCanvasSession(options: CanvasSessionOptions): CanvasSession {
       unsubscribeStore();
       observer?.disconnect();
       if (measureHandle !== null) frames.cancel(measureHandle);
+      if (rectHandle !== null) frames.cancel(rectHandle);
       frame.removeEventListener('load', onLoad);
       cancelPending();
       refreshRef.current = () => undefined;
@@ -317,7 +374,14 @@ export function useCanvasSession(options: CanvasSessionOptions): CanvasSession {
     };
   }, [frame, store, client, src, attempt, create, debounceMs]);
 
-  return { status: current.status, problem: current.problem, contentSize: current.contentSize, refresh };
+  return {
+    status: current.status,
+    problem: current.problem,
+    contentSize: current.contentSize,
+    rects: current.rects,
+    scroll: current.scroll,
+    refresh,
+  };
 }
 
 /**
