@@ -12,6 +12,7 @@ import { ChoiceControl } from './controls/choice-control';
 import { MediaControl } from './controls/media-control';
 import { InspectorSection } from './InspectorSection';
 import { PROPERTIES } from '@blixis/wp-style-engine';
+import { BoxModelControl } from './controls/box-model-control';
 
 type Tab = InspectorTab;
 
@@ -194,13 +195,13 @@ export function Inspector({
     return (
       <div className="blx-inspector-sections">
         <p className="blx-inspector-viewport">{t(`inspector.viewport.${viewport}` as never)}</p>
-        {(['typography', 'color', 'spacing', 'layout', 'effects'] as const).map((group) => {
+        {(['typography', 'color', 'boxModel', 'layout', 'effects'] as const).map((group) => {
           const groupIds: Record<typeof group, string[]> = {
             typography: ['font-family', 'font-weight', 'font-size', 'line-height', 'letter-spacing', 'text-transform'],
             color: ['color', 'background-color'],
-            spacing: ['margin', 'padding'],
+            boxModel: [],
             layout: ['width', 'text-align', 'display'],
-            effects: ['border-radius', 'border-width', 'border-style', 'border-color', 'box-shadow'],
+            effects: ['border-radius', 'border-style', 'border-color', 'box-shadow'],
           };
           const fields = STYLE_FIELDS.filter(
             (field) =>
@@ -215,6 +216,14 @@ export function Inspector({
               title={t(`inspector.section.${group}` as never)}
               defaultCollapsed={group === 'layout' || group === 'effects'}
             >
+              {group === 'boxModel' ? (
+                <BoxModelControl
+                  element={element}
+                  breakpoint={breakpoint}
+                  breakpoints={breakpoints}
+                  editable={editable}
+                />
+              ) : null}
               {fields.map((field) => (
                 <StyleControl
                   key={field.id}
