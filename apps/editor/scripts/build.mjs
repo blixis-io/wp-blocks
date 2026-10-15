@@ -134,7 +134,13 @@ async function writeNotice(outDir, metafiles) {
   }
   const packages = [...byId.values()];
   packages.sort((a, b) => (a.name === b.name ? a.version.localeCompare(b.version) : a.name.localeCompare(b.name)));
-  const sections = packages.map((p) => `${p.name}@${p.version}\nLicense: ${p.licence}\n\n${p.text}\n`);
+  const sections = packages.map((p) => {
+    const attribution =
+      p.name === '@iconify-icons/solar'
+        ? '\nSolar Icon Set by 480 Design, CC BY 4.0, https://creativecommons.org/licenses/by/4.0/\nSource: https://www.figma.com/community/file/1166831539721848736\nSolar icons are used unmodified.\n'
+        : '';
+    return `${p.name}@${p.version}\nLicense: ${p.licence}\n\n${p.text}${attribution}\n`;
+  });
   const header =
     'Third-party software bundled into editor.js and canvas.js (Blixis Blocks editor).\n' +
     'Inline legal comments of the bundle are in editor.js.LEGAL.txt.\n';

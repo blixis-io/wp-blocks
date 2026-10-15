@@ -25,7 +25,7 @@ The baseline measured by `pnpm build:editor` before BWB-127 was **971,854 bytes*
 
 ### Icon API
 
-`@blixis/wp-editor-ui` exports `Icon`, `ICONS`, `ELEMENT_ICONS` and `elementIconName`. The `Icon` component accepts a typed semantic name, Phosphor weight (`regular` by default; `thin`, `light`, `bold`, `fill` or `duotone` are available), numeric size, optional accessible `label`, and opt-in `mirrorInRtl` for directional glyphs. Icons are hidden from assistive technology unless a label is provided. The central registry imports named Phosphor components individually so unused icons can be removed from the bundle. Core element types are all mapped; unrecognized types use `fallback`.
+`@blixis/wp-editor-ui` exports `Icon`, `ICONS`, `ELEMENT_ICONS` and `elementIconName`. The `Icon` component accepts a typed semantic name, numeric size, optional accessible `label`, and opt-in `mirrorInRtl` for directional glyphs. Icons are hidden from assistive technology unless a label is provided. The central registry imports individual Solar Linear data modules so only registered glyphs are bundled; there is no Iconify runtime API or CDN. Solar's CC BY 4.0 attribution and unmodified-use statement ship in generated `assets/editor/NOTICE.txt`. Core element types are all mapped; unrecognized types use `fallback`. ADR 0012 records the package-scoped licence exception.
 
 ## Shell layout and landmarks
 
@@ -187,9 +187,13 @@ Vitest with jsdom, no extra dependencies. `src/test/state-helpers.ts` builds iso
 
 ## Structure tree and selection (BWB-052)
 
+Tree rows use `aria-level` for logical indentation and decorative 1px CSS guide lines for parent/child relationships. Each level indents the full row content by 16px; row geometry stays fixed at 28px across hover, focus and selection. The row action keeps its layout slot while hidden. Guide marks are hidden from assistive technology; the existing treeitem hierarchy, roving focus and keyboard model remain the semantic structure. Indentation and guide placement use logical inline properties for RTL.
+
 The virtual WAI-ARIA tree defaults to the first two expandable levels plus ancestors of the selected element. A separate initialization flag and a validated per-post storage entry distinguish the untouched default from a user who collapsed every node, so browser reloads and locale changes do not reopen the tree. Keyboard focus has its own `focusedId` and roving tab stop; Left/Right follow the editor chrome direction, while selection remains independent. Each row reports sibling position and set size. The breadcrumb uses ordered list semantics, explicit hidden separators, full ids in `title`, and `aria-current="location"` on the selected item.
 
 ## Left panel and palette (BWB-129)
+
+The palette uses a compact three-column grid, with each icon above its label.
 
 `StructurePanel` owns the upper Radix tabs (Structure / Elements); the dock beneath it owns Add Elements / Global Style. The upper Structure view keeps the existing virtual WAI-ARIA tree and its roving-focus keyboard model. Search matches the translated element label, registered type or stable element id, renders matching ancestors while filtering, highlights visible matching text, announces a match count and clears on Escape. The palette has an independent search field and groups injected registry definitions by their declared category. Labels use the editor interface locale; website content locale and website preview appearance do not affect panel chrome.
 
@@ -198,6 +202,8 @@ Each palette card is an accessible button. Insertion first tries to place the ne
 Row actions currently expose Delete through core's `remove` command. The core command contract does not define Duplicate, so the panel does not offer a nonfunctional duplicate action. Search and palette navigation remain independent of the tree's Arrow/Home/End selection model. Panel controls use editor chrome tokens and logical inline/block spacing for RTL.
 
 ## Canvas (BWB-051)
+
+The canvas stage reserves a fixed-height breadcrumb bar even when nothing is selected. Breadcrumbs occupy its inline-start side and the content Light/Dark radio control sits at inline-end. Its explanation appears as a tooltip and accessible description. This control changes website content appearance; editor chrome appearance remains independent.
 
 The canvas overlay wrapper matches the iframe content box and clips overflow. It displays selected-element rectangles only; rectangles are document-relative, scroll-adjusted, and rendered at scale 1.
 

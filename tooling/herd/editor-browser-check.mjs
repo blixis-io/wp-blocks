@@ -337,7 +337,7 @@ try {
   })()`);
   assert.ok(paletteInsert.id, 'clicking a Text palette card inserts and selects a new structure element');
   assert.equal(paletteInsert.previewHas, true, 'the canvas preview gains the inserted Text element');
-  assert.notEqual(paletteInsert.undo, 'true', 'undo becomes available after palette insertion');
+  assert.equal(paletteInsert.undo, null, 'enabled header Undo has no aria-disabled attribute');
   await ev(`document.querySelector('button[aria-label="Undo"]')?.click()`);
   await sleep(1200);
   const paletteUndo = await ev(`(() => {
@@ -452,6 +452,97 @@ try {
     canvas = await frameInfo();
   }
   assert.ok(canvas.found, 'the editor shows the canvas iframe');
+  const initialStageLayout = await ev(`(() => {
+    const frame = document.querySelector('main iframe');
+    const bar = document.querySelector('.blx-stage-bar');
+    const crumbs = bar?.querySelector('.blx-stage-crumbs');
+    const toggle = bar?.querySelector('.blx-canvas-bar');
+    const a = crumbs?.getBoundingClientRect(); const b = toggle?.getBoundingClientRect();
+    const rows = [...document.querySelectorAll('nav[aria-label="Structure"] [role=treeitem]')];
+    const levels = [1, 2, 3].map((level) => rows.find((row) => row.getAttribute('aria-level') === String(level)));
+    const iconLeft = (row) => row?.querySelector('.blx-tree-icon')?.getBoundingClientRect().left;
+    const child = levels[1];
+    const parentIcon = levels[0]?.querySelector('.blx-tree-icon')?.getBoundingClientRect();
+    const guide = child?.querySelector('.blx-tree-guide');
+    const guideBox = guide?.getBoundingClientRect();
+    const elbow = guide ? getComputedStyle(guide, '::after') : null;
+    const guideLine = guide ? getComputedStyle(guide, '::before') : null;
+    const guideColor = guideLine?.borderInlineStartColor ?? '';
+    const textColor = child ? getComputedStyle(child).color : '';
+    const colorAlpha = Number(guideColor.match(/(?:\\/|,)\\s*([\\d.]+)\\s*\\)$/)?.[1] ?? 1);
+    const rowTarget = child;
+    const initialRow = rowTarget?.getBoundingClientRect();
+    const initialLabel = rowTarget?.querySelector('.blx-outline-label')?.getBoundingClientRect();
+    const topActive = document.querySelector('.blx-left-tabs[aria-label] [role="tab"][aria-selected="true"]');
+    const activeStyle = topActive ? getComputedStyle(topActive) : null;
+    const underline = topActive ? getComputedStyle(topActive, '::after') : null;
+    const dockActive = document.querySelector('.blx-dock-tabs .blx-left-tabs [role="tab"][aria-selected="true"]');
+    const dockUnderline = dockActive ? getComputedStyle(dockActive, '::after') : null;
+    return { top: frame?.getBoundingClientRect().top, crumbTop: a?.top, crumbBottom: a?.bottom, toggleTop: b?.top, toggleBottom: b?.bottom, crumbRight: a?.right, toggleLeft: b?.left,
+      levels: levels.map((row) => row?.getAttribute('aria-level')), iconLefts: levels.map(iconLeft),
+      parentIconCenter: parentIcon ? parentIcon.left + parentIcon.width / 2 : null, guideX: guideBox?.left,
+      elbowWidth: Number.parseFloat(elbow?.width ?? '0'), elbowRight: (guideBox?.left ?? 0) + Number.parseFloat(elbow?.width ?? '0'),
+      childIcon: iconLeft(child), lineWidth: Number.parseFloat(guideLine?.borderInlineStartWidth ?? '0px'), guideColor, textColor, colorAlpha,
+      rowHeight: initialRow?.height, labelTop: initialLabel?.top,
+      topUnderlineBorder: activeStyle?.borderBlockEndWidth, topUnderlineContent: underline?.content,
+      dockUnderlineBorder: dockActive ? getComputedStyle(dockActive).borderBlockEndWidth : null, dockUnderlineContent: dockUnderline?.content };
+  })()`);
+  assert.ok(
+    initialStageLayout.toggleTop < initialStageLayout.crumbBottom &&
+      initialStageLayout.toggleBottom > initialStageLayout.crumbTop,
+    'appearance toggle shares the breadcrumb row',
+  );
+  assert.ok(
+    initialStageLayout.toggleLeft >= initialStageLayout.crumbRight,
+    'appearance toggle sits at the end side in LTR',
+  );
+  assert.deepEqual(initialStageLayout.levels, ['1', '2', '3'], 'the browser fixture exposes three nested tree levels');
+  for (let index = 1; index < 3; index += 1) {
+    assert.ok(
+      Math.abs(initialStageLayout.iconLefts[index] - initialStageLayout.iconLefts[index - 1] - 16) <= 1,
+      `level ${index + 1} icon is indented exactly 16px from its parent`,
+    );
+  }
+  assert.ok(
+    Math.abs(initialStageLayout.guideX - initialStageLayout.parentIconCenter) <= 1,
+    'guide line sits under parent icon centre',
+  );
+  assert.ok(
+    Math.abs(initialStageLayout.elbowRight - initialStageLayout.childIcon) <= 1,
+    'child elbow reaches the child icon column',
+  );
+  assert.ok(initialStageLayout.lineWidth <= 1, 'guide line is at most one pixel wide');
+  assert.ok(
+    initialStageLayout.colorAlpha > 0 && initialStageLayout.colorAlpha <= 0.5,
+    'guide line has intentionally subtle alpha',
+  );
+  assert.notEqual(
+    initialStageLayout.guideColor,
+    initialStageLayout.textColor,
+    'guide line colour differs from tree text',
+  );
+  assert.equal(initialStageLayout.rowHeight, 28, 'tree rows use a fixed 28px height');
+  assert.equal(initialStageLayout.topUnderlineContent, 'none', 'Structure tab has no duplicate pseudo underline');
+  assert.equal(initialStageLayout.topUnderlineBorder, '2px', 'Structure tab has one 2px border underline');
+  assert.equal(initialStageLayout.dockUnderlineContent, 'none', 'Add Elements tab has no duplicate pseudo underline');
+  assert.equal(initialStageLayout.dockUnderlineBorder, '2px', 'Add Elements tab has one 2px border underline');
+  const rowBox = await ev(
+    `(() => { const row = document.querySelector('nav[aria-label="Structure"] [role="treeitem"][aria-level="2"]'); const label = row?.querySelector('.blx-outline-label'); const r = row?.getBoundingClientRect(); const l = label?.getBoundingClientRect(); return { x: r?.x + r?.width / 2, y: r?.y + r?.height / 2, height: r?.height, labelTop: l?.top }; })()`,
+  );
+  await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: rowBox.x, y: rowBox.y });
+  const hoveredTreeRow = await ev(
+    `(() => { const row = document.querySelector('nav[aria-label="Structure"] [role="treeitem"][aria-level="2"]'); return { height: row?.getBoundingClientRect().height, labelTop: row?.querySelector('.blx-outline-label')?.getBoundingClientRect().top }; })()`,
+  );
+  assert.equal(hoveredTreeRow.height, rowBox.height, 'hover preserves the tree row height');
+  assert.equal(hoveredTreeRow.labelTop, rowBox.labelTop, 'hover preserves the label vertical position');
+  await ev(`document.querySelector('nav[aria-label="Structure"] [role="treeitem"][aria-level="2"]')?.click()`);
+  const selectedTreeRow = await ev(
+    `(() => { const row = document.querySelector('nav[aria-label="Structure"] [role="treeitem"][aria-level="2"]'); return { selected: row?.getAttribute('aria-selected'), height: row?.getBoundingClientRect().height, labelTop: row?.querySelector('.blx-outline-label')?.getBoundingClientRect().top }; })()`,
+  );
+  assert.equal(selectedTreeRow.selected, 'true', 'the browser row is selected for the selection geometry check');
+  assert.equal(selectedTreeRow.height, rowBox.height, 'selection preserves the tree row height');
+  assert.equal(selectedTreeRow.labelTop, rowBox.labelTop, 'selection preserves the label vertical position');
+  const noSelectionTop = initialStageLayout.top;
   assert.equal(
     canvas.sandbox,
     'allow-scripts allow-same-origin',
@@ -514,6 +605,21 @@ try {
     clickCount: 1,
   });
   await sleep(600);
+  assert.equal(
+    await ev(`document.querySelector('main iframe').getBoundingClientRect().top`),
+    noSelectionTop,
+    'selecting an element does not move the canvas iframe',
+  );
+  const longBreadcrumbTop = await ev(`(() => {
+    const crumbs = document.querySelector('.blx-stage-crumbs');
+    const label = crumbs.querySelector('button');
+    const original = label?.textContent;
+    if (label) label.textContent = 'Long breadcrumb '.repeat(80);
+    const top = document.querySelector('main iframe').getBoundingClientRect().top;
+    if (label && original !== undefined && original !== null) label.textContent = original;
+    return top;
+  })()`);
+  assert.equal(longBreadcrumbTop, noSelectionTop, 'a long breadcrumb does not move the canvas iframe');
   const afterPick = await ev(
     `({ inspector: document.querySelector('aside[aria-label="Inspector"]').textContent, focusInFrame: document.activeElement?.tagName === 'IFRAME', marked: document.querySelector('main iframe').contentDocument.querySelectorAll('[data-blx-selected]').length })`,
   );

@@ -56,7 +56,7 @@ function repo(extra = (r) => r) {
   put('wordpress/plugin/assets/editor/editor.css', '.blx-editor{}\n');
   put('wordpress/plugin/assets/editor/canvas.js', '(()=>{})();\n');
   put('wordpress/plugin/assets/editor/manifest.json', '{"version":1}\n');
-  put('wordpress/plugin/assets/editor/NOTICE.txt', 'licences\n');
+  put('wordpress/plugin/assets/editor/NOTICE.txt', 'Solar Icon Set by 480 Design, CC BY 4.0; used unmodified.\n');
   put('wordpress/plugin/assets/editor/editor.js.LEGAL.txt', 'legal\n');
   put('wordpress/plugin/package.json', JSON.stringify({ name: '@blixis/wp-plugin', version: '0.1.0' }));
   extra({ root, put });
@@ -118,6 +118,10 @@ test('entries are sorted, timestamps fixed to the DOS epoch, permissions normali
   );
   build(root, 'dist');
   const entries = listZip(join(root, 'dist', 'blixis-builder-0.1.0.zip'));
+  assert.ok(
+    entries.some(([name]) => name === 'blixis-builder/assets/editor/NOTICE.txt'),
+    'Solar attribution NOTICE ships in the plugin zip',
+  );
   assert.deepEqual(
     entries.map((e) => e[0]),
     [

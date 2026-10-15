@@ -88,6 +88,36 @@ describe('selected state indicator', () => {
   });
 });
 
+describe('structure tree layout contract', () => {
+  it('uses depth variables for full-width row indentation and parent-centred guides', () => {
+    expect(source).toMatch(
+      /padding-inline-start:\s*calc\(var\(--tree-pad,\s*8px\)\s*\+\s*var\(--tree-depth\)\s*\*\s*var\(--tree-indent,\s*16px\)\)/,
+    );
+    expect(source).toMatch(
+      /inset-inline-start:\s*calc\([\s\S]*var\(--tree-pad\)\s*\+\s*var\(--tree-chevron\)\s*\+\s*var\(--tree-gap\)\s*\+\s*var\(--tree-icon-center\)\s*\+[\s\S]*var\(--guide-depth,\s*0\)\s*\*\s*var\(--tree-indent\)/,
+    );
+    expect(source).toMatch(
+      /border-inline-start:\s*1px solid color-mix\(in srgb, var\(--ed-border\) 35%, transparent\)/,
+    );
+    expect(source).toMatch(/color-mix\(in srgb, var\(--ed-primary\) 45%, transparent\)/);
+  });
+  it('keeps row geometry fixed and changes hover/selection appearance only', () => {
+    expect(source).toMatch(
+      /\.blx-outline-item\s*\{[^}]*block-size:\s*28px;[^}]*box-sizing:\s*border-box;[^}]*line-height:\s*20px;/,
+    );
+    expect(source).toMatch(/\.blx-row-menu-trigger\s*\{[^}]*visibility:\s*hidden;[^}]*opacity:\s*0;/);
+    expect(source).toMatch(/\.blx-outline-item:hover\s*\{\s*background:/);
+    expect(source).toMatch(/\.blx-outline-item\[aria-selected='true'\]\s*\{\s*background:[^}]*color:/);
+    expect(source).not.toMatch(
+      /\.blx-outline-item:hover\s*\{[^}]*\b(?:padding|margin|border|font-weight|height|line-height)\s*:/,
+    );
+    expect(source).not.toMatch(
+      /\.blx-outline-item\[aria-selected='true'\]\s*\{[^}]*\b(?:padding|margin|border|font-weight|height|line-height)\s*:/,
+    );
+    expect(source).toMatch(/\.blx-left-tabs \[role='tab'\]\[aria-selected='true'\]::after\s*\{\s*content:\s*none;/);
+  });
+});
+
 describe('css walker', () => {
   it('flags unscoped selectors and accepts scoped ones', () => {
     const css =
@@ -169,11 +199,14 @@ describe('editor build', () => {
       ['zod', 'MIT'],
       ['tailwind-merge', 'MIT'],
       ['class-variance-authority', 'Apache-2.0'],
-      ['@phosphor-icons/react', 'MIT'],
+      ['@iconify-icons/solar', 'CC-BY-4.0'],
       ['@radix-ui/react-direction', 'MIT'],
     ] as const) {
       expect(notice).toMatch(new RegExp(`^${name}@\\d+\\.\\d+\\.\\d+\\nLicense: ${licence}\\n`, 'm'));
     }
+    expect(notice).toContain('Solar Icon Set by 480 Design, CC BY 4.0');
+    expect(notice).toContain('Solar icons are used unmodified.');
+    expect(notice).toContain('https://creativecommons.org/licenses/by/4.0/');
     expect(notice).not.toMatch(/@blixis\//);
     expect(readFileSync(join(a, 'editor.js.LEGAL.txt'), 'utf8')).toMatch(/@license React/);
   });

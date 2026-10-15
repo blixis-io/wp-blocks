@@ -29,3 +29,6 @@
 ## Incident planning
 
 Document key compromise, vulnerability reporting, emergency patch pipeline, migration rollback, backups and release revocation procedure before beta.
+# Dependency licence exceptions
+
+`tooling/licenses.json` keeps the distributed allowlist broad and conservative. A reviewed exception may be recorded only for an exact ecosystem/package, version and SPDX licence, with a reason and ADR decision reference. The exception applies only to distributed dependencies; changing package identity, version or licence fails the check. Do not add an exceptional licence to `distributed` to bypass package-specific review. Shipped attribution belongs in the generated NOTICE and must be required in distribution packaging.

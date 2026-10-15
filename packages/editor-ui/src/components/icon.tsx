@@ -9,16 +9,19 @@ export interface IconProps {
   className?: string;
 }
 
-/** Accessible Phosphor icon. Decorative by default; named labels expose meaningful icons to AT. */
-export function Icon({ name, size = 16, weight = 'regular', label, mirrorInRtl = false, className }: IconProps) {
-  const Glyph = ICONS[name];
-  const classes = [className, mirrorInRtl ? 'rtl:-scale-x-100' : undefined].filter(Boolean).join(' ');
+/** Solar Linear SVG. Decorative by default; named labels expose meaningful icons to AT. */
+export function Icon({ name, size = 16, label, mirrorInRtl = false, className }: IconProps) {
+  const icon = ICONS[name];
   return (
-    <Glyph
-      size={size}
-      weight={weight}
-      className={classes || undefined}
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox={`0 0 ${String(icon.width ?? 24)} ${String(icon.height ?? 24)}`}
+      className={[className, mirrorInRtl ? 'rtl:-scale-x-100' : undefined].filter(Boolean).join(' ') || undefined}
       {...(label ? { 'aria-label': label, role: 'img' as const } : { 'aria-hidden': true })}
+      focusable="false"
+      dangerouslySetInnerHTML={{ __html: icon.body }}
     />
   );
 }
