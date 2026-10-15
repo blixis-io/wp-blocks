@@ -16,9 +16,19 @@ const manifestPath = join(from, 'manifest.json');
 if (!existsSync(manifestPath))
   throw new Error('apps/editor/dist/manifest.json is missing; run `pnpm --filter @blixis/wp-editor run build` first');
 const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
-if (manifest.version !== 1 || manifest.js !== 'editor.js' || manifest.css !== 'editor.css')
+if (
+  manifest.version !== 1 ||
+  manifest.js !== 'editor.js' ||
+  manifest.css !== 'editor.css' ||
+  manifest.canvasJs !== 'canvas.js'
+) {
   throw new Error('unexpected editor manifest');
-if (sha256(join(from, manifest.js)) !== manifest.jsSha256 || sha256(join(from, manifest.css)) !== manifest.cssSha256) {
+}
+if (
+  sha256(join(from, manifest.js)) !== manifest.jsSha256 ||
+  sha256(join(from, manifest.css)) !== manifest.cssSha256 ||
+  sha256(join(from, manifest.canvasJs)) !== manifest.canvasJsSha256
+) {
   throw new Error('editor bundle does not match its manifest hashes');
 }
 rmSync(to, { recursive: true, force: true });
@@ -27,6 +37,6 @@ mkdirSync(to, { recursive: true });
 for (const legal of ['NOTICE.txt', 'editor.js.LEGAL.txt']) {
   if (!existsSync(join(from, legal))) throw new Error(`apps/editor/dist/${legal} is missing; rebuild the editor`);
 }
-for (const name of ['editor.js', 'editor.css', 'manifest.json', 'NOTICE.txt', 'editor.js.LEGAL.txt'])
+for (const name of ['editor.js', 'editor.css', 'canvas.js', 'manifest.json', 'NOTICE.txt', 'editor.js.LEGAL.txt'])
   copyFileSync(join(from, name), join(to, name));
 console.log(`editor assets copied to wordpress/plugin/assets/editor (${manifest.jsSha256.slice(0, 12)}…)`);

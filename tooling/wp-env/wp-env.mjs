@@ -1604,9 +1604,67 @@ async function smoke() {
         check(
           boot?.restRoot?.startsWith(base) &&
             boot.adminUrl?.startsWith(base) &&
-            (boot.viewUrl === null || boot.viewUrl.startsWith(base)),
+            (boot.viewUrl === null || boot.viewUrl.startsWith(base)) &&
+            boot.canvasUrl?.startsWith(`${base}/wp-admin/admin.php?page=blixis-canvas&post=${edPost}`),
           'bootstrap URLs are same-origin',
         );
+        const canvasUrl = `${base}/wp-admin/admin.php?page=blixis-canvas&post=${edPost}&locale=en_US`;
+        const canvasResponse = await http(canvasUrl, { headers: { cookie: adminCookie } });
+        const canvasHtml = await canvasResponse.text();
+        const canvasCsp = canvasResponse.headers.get('content-security-policy') ?? '';
+        const canvasStyleNonce = /(?:^|;\s*)style-src[^;]*'nonce-([^']+)'/.exec(canvasCsp)?.[1] ?? null;
+        const canvasScriptNonce = /<script\b[^>]*\bnonce="([^"]+)"/.exec(canvasHtml)?.[1] ?? null;
+        const canvasMetaText = /<meta name="blixis-canvas" content="([^"]+)">/.exec(canvasHtml)?.[1] ?? '';
+        let canvasMeta = null;
+        try {
+          canvasMeta = JSON.parse(
+            canvasMetaText.replaceAll('&quot;', '"').replaceAll('&#039;', "'").replaceAll('&amp;', '&'),
+          );
+        } catch {
+          canvasMeta = null;
+        }
+        const canvasSecond = await http(canvasUrl, { headers: { cookie: adminCookie } });
+        const canvasSecondCsp = canvasSecond.headers.get('content-security-policy') ?? '';
+        const canvasSecondNonce = /(?:^|;\s*)style-src[^;]*'nonce-([^']+)'/.exec(canvasSecondCsp)?.[1] ?? null;
+        const canvasSecondHtml = await canvasSecond.text();
+        const canvasSecondScriptNonce = /<script\b[^>]*\bnonce="([^"]+)"/.exec(canvasSecondHtml)?.[1] ?? null;
+        check(
+          canvasResponse.status === 200 &&
+            canvasResponse.headers.get('cache-control') === 'private, no-store' &&
+            canvasResponse.headers.get('x-content-type-options') === 'nosniff' &&
+            canvasResponse.headers.get('x-frame-options') === 'SAMEORIGIN' &&
+            canvasResponse.headers.get('referrer-policy') === 'same-origin' &&
+            canvasStyleNonce === canvasMeta?.cspNonce &&
+            canvasScriptNonce === canvasStyleNonce &&
+            canvasSecondNonce !== null &&
+            canvasSecondNonce !== canvasStyleNonce &&
+            canvasSecondScriptNonce === canvasSecondNonce &&
+            canvasSecondCsp ===
+              `default-src 'none'; script-src 'nonce-${canvasSecondNonce}'; style-src 'self' 'nonce-${canvasSecondNonce}'; img-src 'self' data:; font-src 'self'; connect-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'; object-src 'none'` &&
+            canvasCsp ===
+              `default-src 'none'; script-src 'nonce-${canvasStyleNonce}'; style-src 'self' 'nonce-${canvasStyleNonce}'; img-src 'self' data:; font-src 'self'; connect-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'; object-src 'none'`,
+          'the canvas document has exact private headers, frame and referrer policies, and matching fresh script/style/CSP nonces',
+        );
+        check(
+          canvasHtml.includes('id="blx-canvas-root"') &&
+            canvasHtml.includes('canvas.js') &&
+            !/adminmenu|wp-admin\/css|admin-bar|wpadminbar|wp-includes\/js/.test(canvasHtml),
+          'the canvas is standalone and loads its runtime without wp-admin chrome',
+        );
+        const canvasJs = await http(new URL(/src="([^"]+canvas\.js[^"]*)"/.exec(canvasHtml)?.[1] ?? '/', base).href);
+        check(canvasJs.status === 200 && (await canvasJs.text()).length > 0, 'the canvas runtime is served');
+        command(
+          'option',
+          'update',
+          'blixis_design_system',
+          JSON.stringify({ tokens: { hostile: { value: 'red;}</style><script>x' } } }),
+        );
+        const hostileCanvas = await (await http(canvasUrl, { headers: { cookie: adminCookie } })).text();
+        check(
+          !hostileCanvas.includes('red;}</style><script>x'),
+          'hostile saved token values never appear in canvas CSS',
+        );
+        command('option', 'delete', 'blixis_design_system');
         const csp = edResponse.headers.get('content-security-policy') ?? '';
         check(
           csp.includes("script-src 'self'") &&
@@ -1641,6 +1699,10 @@ async function smoke() {
           'the editor bundle and stylesheet are served from the plugin',
         );
         check((await editorPage(edPost, null)).status === 302, 'an anonymous visitor is sent to the login');
+        check(
+          (await http(canvasUrl, { redirect: 'manual' })).status === 302,
+          'an anonymous canvas visitor is sent to the login',
+        );
         const subscriberEditor = await editorPage(edPost, subscriberCookie);
         const missingEditor = await editorPage('99999999', adminCookie);
         const nonOptedId = command(
@@ -1652,6 +1714,13 @@ async function smoke() {
           '--porcelain',
         );
         const nonOptedEditor = await editorPage(nonOptedId, adminCookie);
+        const subscriberCanvas = await http(canvasUrl, { headers: { cookie: subscriberCookie } });
+        const missingCanvas = await http(`${base}/wp-admin/admin.php?page=blixis-canvas&post=99999999`, {
+          headers: { cookie: adminCookie },
+        });
+        const nonOptedCanvas = await http(`${base}/wp-admin/admin.php?page=blixis-canvas&post=${nonOptedId}`, {
+          headers: { cookie: adminCookie },
+        });
         const normalizeEditor403 = async (response) => (await response.text()).replace(/\s+/g, ' ').trim();
         const subscriberBody = await normalizeEditor403(subscriberEditor);
         const missingBody = await normalizeEditor403(missingEditor);
@@ -1667,6 +1736,17 @@ async function smoke() {
             subscriberBody === missingBody &&
             missingBody === nonOptedBody,
           'no rights, a missing post and a non-opted-in type return the same 403 body',
+        );
+        const subscriberCanvasBody = (await subscriberCanvas.text()).replace(/\s+/g, ' ').trim();
+        const missingCanvasBody = (await missingCanvas.text()).replace(/\s+/g, ' ').trim();
+        const nonOptedCanvasBody = (await nonOptedCanvas.text()).replace(/\s+/g, ' ').trim();
+        check(
+          subscriberCanvas.status === 403 &&
+            missingCanvas.status === 403 &&
+            nonOptedCanvas.status === 403 &&
+            subscriberCanvasBody === missingCanvasBody &&
+            missingCanvasBody === nonOptedCanvasBody,
+          'canvas subscriber, missing and non-opted-in requests return the same 403 body',
         );
         command('post', 'delete', nonOptedId, '--force');
         const authorEditor = await editorPage(edPost, authorCookie);
@@ -1693,9 +1773,11 @@ async function smoke() {
         );
         command('theme', 'activate', 'blixis-other-fixture');
         const lockedEditor = await editorPage(edPost, adminCookie);
+        const lockedCanvas = await http(canvasUrl, { headers: { cookie: adminCookie } });
         const lockedBoot = bootstrapOf(await lockedEditor.text());
         check(
           lockedEditor.status === 200 &&
+            lockedCanvas.status === 200 &&
             lockedBoot?.editingEnabled === false &&
             typeof lockedBoot.lockReason === 'string',
           'on an incompatible theme the editor opens read-only with the lock reason',

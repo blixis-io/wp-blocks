@@ -45,6 +45,7 @@ final class EditorScreenTest extends TestCase {
 	/** URL and query parsing reject hostile values and use default locale fallback. */
 	public function test_url_and_request_parsing(): void {
 		$this->assertSame( 'https://example.test/wp-admin/admin.php?page=blixis-editor&post=42&locale=nl_NL', EditorUrl::build( 'https://example.test/wp-admin/admin.php', 42, 'nl_NL' ) );
+		$this->assertSame( 'https://example.test/wp-admin/admin.php?page=blixis-canvas&post=42&locale=nl_NL', EditorUrl::build_canvas( 'https://example.test/wp-admin/admin.php', 42, 'nl_NL' ) );
 		$locales = new LocaleConfig( 'en_US', [ 'en_US', 'nl_NL' ] );
 		foreach ( [ [ 'post' => '0' ], [ 'post' => '-1' ], [ 'post' => '1e3' ], [ 'post' => '999999999999999999999999' ], [ 'post' => [ '42' ] ], [ 'post' => '<script>' ] ] as $query ) {
 			$this->assertSame( 0, EditorRequest::parse( $query, $locales )->post_id );
@@ -109,7 +110,7 @@ final class EditorScreenTest extends TestCase {
 				'editorLocale'  => 'en_US',
 			]
 		);
-		$this->assertSame( [ 'version', 'restRoot', 'nonce', 'postId', 'postTitle', 'postType', 'contentLocale', 'defaultLocale', 'enabledLocales', 'editorLocale', 'pluginVersion', 'themeName', 'editingEnabled', 'lockReason', 'adminUrl', 'viewUrl', 'cspNonce', 'contentLocaleExplicit' ], \array_keys( $bootstrap ) );
+		$this->assertSame( [ 'version', 'restRoot', 'nonce', 'postId', 'postTitle', 'postType', 'contentLocale', 'defaultLocale', 'enabledLocales', 'editorLocale', 'pluginVersion', 'themeName', 'editingEnabled', 'lockReason', 'adminUrl', 'canvasUrl', 'viewUrl', 'cspNonce', 'contentLocaleExplicit' ], \array_keys( $bootstrap ) );
 		$this->assertSame( 200, \mb_strlen( $bootstrap['postTitle'] ) );
 		$this->assertSame( 'nl_NL', $bootstrap['contentLocale'] );
 		$this->assertSame( 'en_US', $bootstrap['editorLocale'] );
@@ -200,6 +201,13 @@ final class EditorScreenTest extends TestCase {
 		$this->assertStringNotContainsString( 'unsafe-inline', $headers['Content-Security-Policy'] );
 		$this->assertStringNotContainsString( 'unsafe-eval', $headers['Content-Security-Policy'] );
 		$this->assertSame( 'private, no-store', $headers['Cache-Control'] );
+		$canvas_headers = EditorHeaders::canvas_list( $nonce );
+		$this->assertSame( "default-src 'none'; script-src 'nonce-AAAAAAAAAAAAAAAAAAAAAAAA'; style-src 'self' 'nonce-AAAAAAAAAAAAAAAAAAAAAAAA'; img-src 'self' data:; font-src 'self'; connect-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'; object-src 'none'", $canvas_headers['Content-Security-Policy'] );
+		$this->assertStringNotContainsString( "script-src 'self'", $canvas_headers['Content-Security-Policy'] );
+		foreach ( [ $headers, $canvas_headers ] as $document_headers ) {
+			$this->assertSame( 'SAMEORIGIN', $document_headers['X-Frame-Options'] );
+			$this->assertSame( 'same-origin', $document_headers['Referrer-Policy'] );
+		}
 	}
 
 	/** Nonces are random per response, well-formed, and a malformed one can never reach the header. */
@@ -236,42 +244,59 @@ final class EditorScreenTest extends TestCase {
 		$hash = \str_repeat( 'a', 64 );
 		\file_put_contents( $directory . '/editor.js', 'bundle' );
 		\file_put_contents( $directory . '/editor.css', 'bundle' );
+		\file_put_contents( $directory . '/canvas.js', 'bundle' );
 		\file_put_contents(
 			$path,
 			\json_encode(
 				[
-					'version'   => 1,
-					'js'        => 'editor.js',
-					'css'       => 'editor.css',
-					'jsSha256'  => $hash,
-					'cssSha256' => $hash,
+					'version'        => 1,
+					'js'             => 'editor.js',
+					'css'            => 'editor.css',
+					'jsSha256'       => $hash,
+					'cssSha256'      => $hash,
+					'canvasJs'       => 'canvas.js',
+					'canvasJsSha256' => $hash,
 				]
 			)
 		);
 		$this->assertSame(
 			[
-				'js_url'  => 'https://example.test/assets/editor/editor.js',
-				'css_url' => 'https://example.test/assets/editor/editor.css',
-				'version' => $hash . '.' . $hash,
+				'js_url'     => 'https://example.test/assets/editor/editor.js',
+				'css_url'    => 'https://example.test/assets/editor/editor.css',
+				'canvas_url' => 'https://example.test/assets/editor/canvas.js',
+				'version'    => $hash . '.' . $hash . '.' . $hash,
 			],
 			EditorAssets::from_manifest( $path, 'https://example.test/assets/editor' )
 		);
-		foreach ( [ [ 'version' => 2 ], [ 'js' => '../editor.js' ], [ 'cssSha256' => 'not-hex' ] ] as $override ) {
+		foreach ( [ [ 'version' => 2 ], [ 'js' => '../editor.js' ], [ 'canvasJs' => 'other.js' ], [ 'cssSha256' => 'not-hex' ], [ 'canvasJsSha256' => 'NOT-HEX' ], [ 'extra' => true ], [ 'canvasJs' => null ] ] as $override ) {
 			$valid = [
-				'version'   => 1,
-				'js'        => 'editor.js',
-				'css'       => 'editor.css',
-				'jsSha256'  => $hash,
-				'cssSha256' => $hash,
+				'version'        => 1,
+				'js'             => 'editor.js',
+				'css'            => 'editor.css',
+				'jsSha256'       => $hash,
+				'cssSha256'      => $hash,
+				'canvasJs'       => 'canvas.js',
+				'canvasJsSha256' => $hash,
 			];
 			\file_put_contents( $path, \json_encode( \array_merge( $valid, $override ) ) );
 			$this->assertNull( EditorAssets::from_manifest( $path, 'https://example.test/assets/editor' ) );
 		}
+		$missing = [
+			'version'   => 1,
+			'js'        => 'editor.js',
+			'css'       => 'editor.css',
+			'jsSha256'  => $hash,
+			'cssSha256' => $hash,
+			'canvasJs'  => 'canvas.js',
+		];
+		\file_put_contents( $path, \json_encode( $missing ) );
+		$this->assertNull( EditorAssets::from_manifest( $path, 'https://example.test/assets/editor' ) );
 		\file_put_contents( $path, \str_repeat( 'x', 4097 ) );
 		$this->assertNull( EditorAssets::from_manifest( $path, 'https://example.test/assets/editor' ) );
 		\unlink( $path );
 		\unlink( $directory . '/editor.js' );
 		\unlink( $directory . '/editor.css' );
+		\unlink( $directory . '/canvas.js' );
 		\rmdir( $directory );
 	}
 }

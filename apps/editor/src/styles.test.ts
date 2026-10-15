@@ -103,7 +103,7 @@ describe('editor build', () => {
   it('scopes every CSS rule and is reproducible, with a matching manifest', { timeout: 120_000 }, () => {
     const a = build();
     const b = build();
-    for (const file of ['editor.js', 'editor.css', 'manifest.json', 'editor.js.LEGAL.txt', 'NOTICE.txt']) {
+    for (const file of ['editor.js', 'canvas.js', 'editor.css', 'manifest.json', 'editor.js.LEGAL.txt', 'NOTICE.txt']) {
       expect(readFileSync(join(a, file)).equals(readFileSync(join(b, file)))).toBe(true);
     }
     const css = readFileSync(join(a, 'editor.css'), 'utf8');
@@ -120,7 +120,29 @@ describe('editor build', () => {
       css: 'editor.css',
       jsSha256: sha('editor.js'),
       cssSha256: sha('editor.css'),
+      canvasJs: 'canvas.js',
+      canvasJsSha256: sha('canvas.js'),
     });
+    expect(Object.keys(manifest)).toEqual([
+      'version',
+      'js',
+      'css',
+      'jsSha256',
+      'cssSha256',
+      'canvasJs',
+      'canvasJsSha256',
+    ]);
+    // The canvas runtime is the only script inside the preview iframe: plain TypeScript, no React, no dynamic code.
+    const canvas = readFileSync(join(a, 'canvas.js'), 'utf8');
+    expect(canvas.length).toBeGreaterThan(2000);
+    expect(canvas.length).toBeLessThan(100_000);
+    expect(canvas).not.toMatch(/react/i);
+    expect(canvas).not.toMatch(/gsap|sourceMappingURL/i);
+    // no dynamic code, no storage, no navigation, no new windows: the runtime only renders, measures and reports
+    expect(canvas).not.toMatch(/\beval\s*\(|new\s+Function/);
+    expect(canvas).not.toMatch(/document\.cookie|localStorage|sessionStorage|indexedDB/);
+    expect(canvas).not.toMatch(/location\.assign|location\.replace|window\.open/);
+    expect(canvas).toContain('blx-canvas-hello');
     const js = readFileSync(join(a, 'editor.js'), 'utf8');
     expect(js).not.toMatch(/sourceMappingURL/);
     expect(js).not.toMatch(/gsap/i);

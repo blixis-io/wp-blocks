@@ -31,7 +31,7 @@ export function mountEditor(container: HTMLElement, bootstrap?: EditorBootstrap,
   const { restRoot, nonce, postId } = resolved.value;
   const client = (options.createClient ?? createRestClient)({ restRoot, nonce, postId });
   const store = createEditorStore({ client, bootstrap: resolved.value });
-  root.render(<EditorApp bootstrap={resolved.value} store={store} />);
+  root.render(<EditorApp bootstrap={resolved.value} store={store} client={client} />);
   return root;
 }
 

@@ -1,4 +1,4 @@
-// Builds dist/editor.js (esbuild), dist/editor.css (Tailwind v4 via @tailwindcss/node + @tailwindcss/oxide, like the
+// Builds dist/editor.js and dist/canvas.js (esbuild; the canvas runtime is a second, React-free bundle), dist/editor.css (Tailwind v4 via @tailwindcss/node + @tailwindcss/oxide, like the
 // theme: no CLI, no Vite plugin) and dist/manifest.json. Deterministic: two runs produce identical bytes.
 import { createHash } from 'node:crypto';
 import { mkdir, readdir, readFile, writeFile, rm } from 'node:fs/promises';
@@ -29,6 +29,24 @@ const jsOptions = (outfile) => ({
   charset: 'ascii',
   logLevel: 'warning',
   define: { 'process.env.NODE_ENV': '"production"' },
+  tsconfig: join(root, 'tsconfig.json'),
+});
+
+/** The canvas runtime: the only script of the canvas iframe. Plain TypeScript, no React, no third-party code expected. */
+const canvasOptions = (outfile) => ({
+  entryPoints: [join(root, 'src/canvas/runtime.ts')],
+  outfile,
+  bundle: true,
+  format: 'iife',
+  target: 'es2022',
+  platform: 'browser',
+  minify: true,
+  sourcemap: false,
+  legalComments: 'none',
+  metafile: true,
+  absWorkingDir: root,
+  charset: 'ascii',
+  logLevel: 'warning',
   tsconfig: join(root, 'tsconfig.json'),
 });
 
@@ -68,8 +86,9 @@ export function stripPropertiesFallback(css) {
 export async function buildEditor({ outDir = join(root, 'dist') } = {}) {
   await rm(outDir, { recursive: true, force: true });
   await mkdir(outDir, { recursive: true });
-  const result = await esbuild(jsOptions(join(outDir, 'editor.js')));
-  await writeNotice(outDir, result.metafile);
+  const editor = await esbuild(jsOptions(join(outDir, 'editor.js')));
+  const canvas = await esbuild(canvasOptions(join(outDir, 'canvas.js')));
+  await writeNotice(outDir, [editor.metafile, canvas.metafile]);
   return writeAssets(outDir);
 }
 
@@ -84,15 +103,17 @@ function packageDirOf(input) {
 }
 
 /**
- * Writes `NOTICE.txt`: every third-party package that is bundled into editor.js (taken from esbuild's metafile, so
+ * Writes `NOTICE.txt`: every third-party package that is bundled into editor.js or canvas.js (taken from esbuild's metafile, so
  * it is exactly what ships), with exact version, licence id and licence text (ADR 0008 section 4). Sorted, so the
  * file is reproducible.
  */
-async function writeNotice(outDir, metafile) {
+async function writeNotice(outDir, metafiles) {
   const dirs = new Set();
-  for (const input of Object.keys(metafile.inputs)) {
-    const dir = packageDirOf(input);
-    if (dir !== null) dirs.add(dir);
+  for (const metafile of metafiles) {
+    for (const input of Object.keys(metafile.inputs)) {
+      const dir = packageDirOf(input);
+      if (dir !== null) dirs.add(dir);
+    }
   }
   const byId = new Map();
   for (const dir of dirs) {
@@ -115,7 +136,7 @@ async function writeNotice(outDir, metafile) {
   packages.sort((a, b) => (a.name === b.name ? a.version.localeCompare(b.version) : a.name.localeCompare(b.name)));
   const sections = packages.map((p) => `${p.name}@${p.version}\nLicense: ${p.licence}\n\n${p.text}\n`);
   const header =
-    'Third-party software bundled into editor.js (Blixis Blocks editor).\n' +
+    'Third-party software bundled into editor.js and canvas.js (Blixis Blocks editor).\n' +
     'Inline legal comments of the bundle are in editor.js.LEGAL.txt.\n';
   await writeFile(join(outDir, 'NOTICE.txt'), `${[header, ...sections].join(`\n${'-'.repeat(72)}\n\n`)}`);
 }
@@ -124,7 +145,16 @@ async function writeAssets(outDir) {
   await writeFile(join(outDir, 'editor.css'), await buildCss());
   const js = await readFile(join(outDir, 'editor.js'));
   const css = await readFile(join(outDir, 'editor.css'));
-  const manifest = { version: 1, js: 'editor.js', css: 'editor.css', jsSha256: sha256(js), cssSha256: sha256(css) };
+  const canvasJs = await readFile(join(outDir, 'canvas.js'));
+  const manifest = {
+    version: 1,
+    js: 'editor.js',
+    css: 'editor.css',
+    jsSha256: sha256(js),
+    cssSha256: sha256(css),
+    canvasJs: 'canvas.js',
+    canvasJsSha256: sha256(canvasJs),
+  };
   await writeFile(join(outDir, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
   return manifest;
 }
@@ -141,21 +171,32 @@ async function main() {
   if (args.includes('--watch')) {
     const dist = outDir;
     await mkdir(dist, { recursive: true });
-    const ctx = await esbuildContext({
-      ...jsOptions(join(dist, 'editor.js')),
-      plugins: [
-        {
-          name: 'assets',
-          setup: (b) =>
-            b.onEnd((result) =>
-              writeNotice(dist, result.metafile)
-                .then(() => writeAssets(dist))
-                .then(() => console.log('rebuilt')),
-            ),
-        },
-      ],
-    });
-    await ctx.watch();
+    const metafiles = {};
+    const finish = () => {
+      if (metafiles.editor === undefined || metafiles.canvas === undefined) return Promise.resolve();
+      return writeNotice(dist, [metafiles.editor, metafiles.canvas])
+        .then(() => writeAssets(dist))
+        .then(() => console.log('rebuilt'));
+    };
+    const watching = (name, options) =>
+      esbuildContext({
+        ...options,
+        plugins: [
+          {
+            name: 'assets',
+            setup: (b) =>
+              b.onEnd((result) => {
+                metafiles[name] = result.metafile;
+                return finish();
+              }),
+          },
+        ],
+      });
+    const contexts = [
+      await watching('editor', jsOptions(join(dist, 'editor.js'))),
+      await watching('canvas', canvasOptions(join(dist, 'canvas.js'))),
+    ];
+    await Promise.all(contexts.map((ctx) => ctx.watch()));
     return;
   }
   const first = await buildEditor({ outDir });

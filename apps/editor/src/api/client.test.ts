@@ -297,6 +297,148 @@ describe('REST client redirects and size envelope', () => {
   });
 });
 
+describe('preview client contract', () => {
+  const preview = {
+    html: '<p>safe</p>',
+    css: '.x{}',
+    locale: 'en_US',
+    mode: 'light',
+    layoutRevision: 2,
+    contentRevision: null,
+    source: 'working',
+  };
+  it('sends the bounded preview POST without If-Match', async () => {
+    const fetchMock = vi.fn<typeof fetch>(() => Promise.resolve(response(preview)));
+    expect(await client(fetchMock as typeof fetch).preview({ locale: 'en_US', mode: 'light' })).toEqual({
+      ok: true,
+      value: preview,
+    });
+    const [input, init] = fetchMock.mock.calls[0] ?? [];
+    const requestUrl = input instanceof URL ? input.href : typeof input === 'string' ? input : (input?.url ?? '');
+    expect(requestUrl).toBe(`${location.origin}/wp-json/blixis/v1/documents/42/preview`);
+    expect(init?.method).toBe('POST');
+    expect(new Headers(init?.headers).get('Content-Type')).toBe('application/json');
+    expect(new Headers(init?.headers).get('X-WP-Nonce')).toBe('nonce-secret');
+    expect(new Headers(init?.headers).has('If-Match')).toBe(false);
+    expect(init?.body).toBe(JSON.stringify({ locale: 'en_US', mode: 'light' }));
+  });
+
+  it('rejects invalid inputs and oversized request bodies without sending', async () => {
+    const fetchMock = vi.fn();
+    const api = client(fetchMock as typeof fetch);
+    expect(await api.preview({ locale: '../x' })).toMatchObject({
+      ok: false,
+      error: { code: 'blixis_invalid_locale' },
+    });
+    expect(await api.preview({ mode: 'auto' as 'light' })).toMatchObject({
+      ok: false,
+      error: { code: 'blixis_invalid_mode' },
+    });
+    expect(await api.preview({ document: { text: 'x'.repeat(2 * 1024 * 1024) } })).toEqual({
+      ok: false,
+      error: { kind: 'too-large' },
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects hostile or oversized responses and maps server errors', async () => {
+    const invalidValues = [
+      { ...preview, extra: 1 },
+      { ...preview, locale: '../x' },
+      { ...preview, source: 'published' },
+      { ...preview, mode: 'auto' },
+      { ...preview, layoutRevision: -1 },
+      { ...preview, html: 'x'.repeat(1_048_577) },
+      { ...preview, css: 'x'.repeat(262_145) },
+      JSON.parse(
+        '{"html":"","css":"","locale":"en_US","mode":"light","layoutRevision":null,"contentRevision":null,"source":"request","__proto__":{}}',
+      ),
+    ];
+    for (const value of invalidValues)
+      expect(await client(vi.fn(() => Promise.resolve(response(value)))).preview({})).toEqual({
+        ok: false,
+        error: { kind: 'invalid-response' },
+      });
+    for (const status of [413, 422, 403, 423]) {
+      const code =
+        status === 413
+          ? 'blixis_too_large'
+          : status === 422
+            ? 'blixis_invalid_document'
+            : status === 403
+              ? 'rest_forbidden'
+              : 'blixis_theme_incompatible';
+      const api = client(
+        vi.fn(() => Promise.resolve(response({ code, message: 'private', data: { status } }, status))),
+      );
+      expect(await api.preview({})).toMatchObject({ ok: false, error: { kind: 'http', status, code } });
+    }
+  });
+
+  it('applies the streamed response cap and abort handling to previews', async () => {
+    const hugeUtf8 = { ...preview, html: '😀'.repeat(600_000) };
+    expect(await client(vi.fn(() => Promise.resolve(response(hugeUtf8)))).preview({})).toEqual({
+      ok: false,
+      error: { kind: 'invalid-response' },
+    });
+    const abort = new AbortController();
+    const api = client(
+      vi.fn(
+        (_input: RequestInfo | URL, init?: RequestInit) =>
+          new Promise<Response>((_resolve, reject) =>
+            init?.signal?.addEventListener('abort', () => {
+              reject(new DOMException('Aborted', 'AbortError'));
+            }),
+          ),
+      ),
+    );
+    const pending = api.preview({}, { signal: abort.signal });
+    abort.abort();
+    expect(await pending).toEqual({ ok: false, error: { kind: 'aborted' } });
+    vi.useFakeTimers();
+    const timed = createRestClient({
+      restRoot: root,
+      nonce: 'nonce-secret',
+      postId: 42,
+      timeoutMs: 10,
+      fetchImpl: vi.fn(
+        (_input: RequestInfo | URL, init?: RequestInit) =>
+          new Promise<Response>((_resolve, reject) =>
+            init?.signal?.addEventListener('abort', () => {
+              reject(new DOMException('Aborted', 'AbortError'));
+            }),
+          ),
+      ),
+    });
+    const pendingTimeout = timed.preview({});
+    await vi.advanceTimersByTimeAsync(10);
+    expect(await pendingTimeout).toEqual({ ok: false, error: { kind: 'network' } });
+    vi.useRealTimers();
+  });
+
+  it('accepts WordPress escaped non-ASCII JSON while keeping decoded output limits', async () => {
+    const arabic = 'ع'.repeat(200_000);
+    const encoded = JSON.stringify({ ...preview, html: arabic }).replaceAll('ع', '\\u0639');
+    expect(new TextEncoder().encode(encoded).byteLength).toBeGreaterThan(1_200_000);
+    const escapedResponse = () => new Response(encoded, { headers: { 'Content-Type': 'application/json' } });
+    expect(await client(vi.fn(() => Promise.resolve(escapedResponse()))).preview({})).toMatchObject({
+      ok: true,
+      value: { html: arabic },
+    });
+
+    const overTransportCap = new Response('x'.repeat(6 * (1_048_576 + 262_144) + 4_097));
+    expect(await client(vi.fn(() => Promise.resolve(overTransportCap))).preview({})).toEqual({
+      ok: false,
+      error: { kind: 'too-large' },
+    });
+    const decodedHtmlOverLimit = response({ ...preview, html: 'ع'.repeat(1_048_577) });
+    expect(await client(vi.fn(() => Promise.resolve(decodedHtmlOverLimit))).preview({})).toEqual({
+      ok: false,
+      error: { kind: 'invalid-response' },
+    });
+  });
+});
+
 describe('describeApiError', () => {
   it.each([
     [{ kind: 'http', status: 401 }, 'unauthenticated'],

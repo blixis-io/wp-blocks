@@ -34,7 +34,8 @@
         "assets/editor/editor.css",
         "assets/editor/manifest.json",
         "assets/editor/NOTICE.txt",
-        "assets/editor/editor.js.LEGAL.txt"
+        "assets/editor/editor.js.LEGAL.txt",
+        "assets/editor/canvas.js"
       ],
       "tier": "free",
       "identity": "Plugin Name"

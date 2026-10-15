@@ -165,6 +165,10 @@ final class EditorScreen {
 		if ( ! EditorBootstrap::same_origin( $admin_url, \admin_url() ) ) {
 			$admin_url = \admin_url( 'edit.php?post_type=' . \rawurlencode( $post->post_type ) );
 		}
+		$canvas_url = EditorUrl::canvas_for_post( $request->post_id, $request->content_locale );
+		if ( ! EditorBootstrap::same_origin( $canvas_url, \admin_url() ) ) {
+			$canvas_url = '';
+		}
 		$view_url = \is_post_publicly_viewable( $post ) ? \get_permalink( $request->post_id ) : null;
 		if ( \is_string( $view_url ) && ! EditorBootstrap::same_origin( $view_url, \admin_url() ) ) {
 			$view_url = null;
@@ -188,6 +192,7 @@ final class EditorScreen {
 				'editingEnabled'        => EditorAccessResult::ALLOWED === $access->state,
 				'lockReason'            => EditorAccessResult::THEME_LOCKED === $access->state ? $access->lock_reason : null,
 				'adminUrl'              => $admin_url,
+				'canvasUrl'             => '' !== $canvas_url ? $canvas_url : null,
 				'viewUrl'               => \is_string( $view_url ) && '' !== $view_url ? $view_url : null,
 			]
 		);

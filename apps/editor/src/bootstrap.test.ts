@@ -32,6 +32,26 @@ describe('parseBootstrap', () => {
     ).toBe(true);
   });
 
+  it('accepts an absent, a null and a same-origin canvasUrl and returns the normalised href', () => {
+    const url = `${location.origin}/wp-admin/admin.php?page=blixis-canvas&post=42&locale=fr_FR`;
+    expect(parseBootstrap(makeBootstrap(), ORIGIN).ok).toBe(true);
+    expect(parseBootstrap(makeBootstrap({ canvasUrl: null }), ORIGIN).ok).toBe(true);
+    const result = parseBootstrap(makeBootstrap({ canvasUrl: url }), ORIGIN);
+    expect(result.ok && result.value.canvasUrl).toBe(url);
+  });
+
+  it.each([
+    ['javascript: canvasUrl', { canvasUrl: 'javascript:alert(1)' }],
+    ['data: canvasUrl', { canvasUrl: 'data:text/html,<script>1</script>' }],
+    ['cross-origin canvasUrl', { canvasUrl: 'https://evil.example/canvas' }],
+    ['relative canvasUrl', { canvasUrl: '/wp-admin/admin.php?page=blixis-canvas' }],
+    ['credentials in canvasUrl', { canvasUrl: `http://user:pw@${location.host}/c` }],
+    ['backslash canvasUrl', { canvasUrl: `${ORIGIN}\\@evil.example/` }],
+    ['non-string canvasUrl', { canvasUrl: 5 as unknown as string }],
+  ])('refuses %s', (_name, override) => {
+    expect(parseBootstrap(makeBootstrap(override), ORIGIN).ok).toBe(false);
+  });
+
   it.each([
     ['javascript: restRoot', { restRoot: 'javascript:alert(1)' }],
     ['data: adminUrl', { adminUrl: 'data:text/html,hi' }],

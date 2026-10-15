@@ -6,6 +6,8 @@ const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 export async function axeViolations(context: Element | Document = document): Promise<string[]> {
   const result = await axe.run(context, {
     runOnly: { type: 'tag', values: WCAG_TAGS },
+    // The canvas iframe holds a separate document (checked in the browser); the iframe element itself is still audited.
+    iframes: false,
     // jsdom has no layout engine, so colour contrast is verified separately from the design tokens.
     // The host WordPress admin page owns <title> and <html lang>.
     rules: {

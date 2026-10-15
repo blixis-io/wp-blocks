@@ -9,10 +9,10 @@ The editor fills the viewport (`position: fixed; inset: 0`, CSS grid, no page sc
 | Region | Element | Notes |
 |---|---|---|
 | Skip link | `a.blx-skip` | First in tab order, targets `#blx-canvas`. |
-| Header | `header[role=banner]` containing `role=toolbar` | One roving tab stop (Arrow keys, Home, End). Back to admin, structure toggle, title and content-locale chip, Undo/Redo, viewport group, Preview, Save, Publish, keyboard shortcuts, editor appearance group, editor language chip, inspector toggle. |
+| Header | `header[role=banner]` containing `role=toolbar` | One roving tab stop (Arrow keys, Home, End). Back to admin, structure toggle, title and content-locale chip, Undo/Redo, viewport group (sizes the preview frame), Preview, Save, Publish, keyboard shortcuts, editor appearance group, editor language chip, inspector toggle. |
 | Lock banner | `div[role=status]` | Shown when `editingEnabled` is false; shows `lockReason`. |
 | Structure | `nav[aria-label=Structure]#blx-structure` | Placeholder with empty state. Collapsible. |
-| Canvas | `main#blx-canvas` | `tabindex=-1`: it is reached through the skip link (the link moves focus here); Tab does not stop on it. Placeholder: "Canvas arrives with the canvas protocol." and the content locale. |
+| Canvas | `main#blx-canvas` | `tabindex=-1`: it is reached through the skip link (the link moves focus here); Tab does not stop on it. Contains the "Preview appearance" group, the load/connection/preview statuses and the preview iframe (see "Canvas (BWB-051)"). Without `canvasUrl` it shows the placeholder "Canvas arrives with the canvas protocol." and the content locale. |
 | Inspector | `aside[aria-label=Inspector]#blx-inspector` | Tabs Content / Style / Settings with empty states. Collapsible. |
 
 Panel toggles have a fixed accessible name ("Structure panel", "Inspector panel"); `aria-expanded` alone carries the state, so it is not announced twice. They also carry `aria-controls`; collapsed panels get `hidden`. State is remembered in `localStorage` key `blixis-editor-panels` (every access is wrapped in try/catch). Undo, Redo, Save and Publish are disabled placeholders (`aria-disabled`, still focusable so their tooltip explains why); the document store and save arrive with BWB-050 and BWB-055.
@@ -26,10 +26,12 @@ The PHP admin screen prints `<script type="application/json" id="blixis-editor-b
   "postType": "page", "contentLocale": "fr_FR", "defaultLocale": "en_US", "enabledLocales": ["en_US", "fr_FR"],
   "editorLocale": "en_US", "pluginVersion": "0.1.0", "themeName": "...", "editingEnabled": true,
   "lockReason": null, "adminUrl": "https://site/wp-admin/", "viewUrl": "https://site/about/",
+  "canvasUrl": "https://site/wp-admin/admin.php?page=blixis-canvas&post=42&locale=fr_FR",
   "cspNonce": "base64-from-the-response-header" }
 ```
 
 - `restRoot`, `adminUrl` and `viewUrl` (nullable) must be credential-free http(s) URLs on `location.origin`, without control characters or backslashes. The editor uses the normalised `new URL(value).href`, never the raw string (so `https:host/x` style spellings are not passed through as written). `viewUrl` is the default-locale permalink for now; BWB-057 localises it. Why: the nonce authorises REST calls as the current user; a cross-origin `restRoot` would send it to another origin, and `javascript:`/`data:` links in the toolbar would be script injection.
+- `canvasUrl` (optional, `null` allowed) is the same-origin URL of the dedicated canvas document, validated and normalised like `restRoot`. Absent or `null` means the canvas is unavailable and the editor keeps the placeholder. The editor adds `locale=<content locale>` itself, so a content-language switch loads the right document.
 - `contentLocaleExplicit` (optional boolean, default `false`; the strict schema accepts it) says whether the link asked for `contentLocale` explicitly (`locale=` in the editor URL). Only then does the bootstrap locale win over the locale remembered for the post; a generic link omits it and the remembered locale wins, then the bootstrap locale (the site default for such a link).
 - `cspNonce` (16 to 64 base64/base64url characters) is the nonce of the response's `style-src`. `mountEditor` assigns it to `globalThis.__webpack_nonce__` before rendering, so the `<style>` elements that Radix dialogs inject (scroll lock) are allowed without `unsafe-inline`; it is not set when the bootstrap is invalid.
 - Locales are WordPress locale ids and use exactly the grammar of `MetaKeys::is_valid_locale` in the plugin (`/^[a-z]{2,3}(_[A-Za-z0-9]{2,8})*$/`, at most 20 characters; no hyphens). `postType` is a slug; strings have length limits. The schema is a `z.strictObject`: unknown top-level keys (including `__proto__`), missing fields and wrong types are refused, not stripped.
@@ -40,9 +42,10 @@ The PHP admin screen prints `<script type="application/json" id="blixis-editor-b
 | Setting | Where it lives | Applied to | Never derived from |
 |---|---|---|---|
 | Editor chrome appearance (system, light, dark) | `localStorage` `blixis-editor-chrome` | `data-editor-theme` on `.blx-editor` only | Site appearance, content locale |
-| Site appearance (visitor light/dark) | The theme (`data-theme` on the site `<html>`) | The website and, later, the canvas content | Editor chrome appearance |
+| Site appearance (visitor light/dark) | The theme (`data-theme` on the site `<html>`) | The website | Editor chrome appearance |
+| Preview appearance (website content light/dark in the editor) | Settings slice `previewMode`, per-post `localStorage` | The preview request (`mode`), `data-blx-mode` in the canvas document, the frame backdrop. Toggled by the "Preview appearance" group in the canvas area | Editor chrome appearance, the visitor's preference |
 | Editor interface locale | `bootstrap.editorLocale` | `lang` and `dir` on `.blx-editor`, `t()` catalogs | Content locale |
-| Content (translation) locale | Settings slice (initial value from `bootstrap.contentLocale`) | Displayed in the chip and canvas placeholder; later selects the content document | Editor locale |
+| Content (translation) locale | Settings slice (initial value from `bootstrap.contentLocale`) | The chip, the preview request `locale`, `lang`/`dir` of the canvas document | Editor locale |
 
 The chrome theme never touches `<html>`/`<body>`; `matchMedia('(prefers-color-scheme: dark)')` is consulted only to resolve `system`, with a change listener. Tests assert both isolations.
 
@@ -62,11 +65,12 @@ Because the layer is lower priority than unlayered CSS, the PHP screen must not 
 
 - `editor.js`: esbuild, one minified ES2022 IIFE (browser floor below), `process.env.NODE_ENV` set to `"production"`, no source map, ASCII output. Legal comments are written to `editor.js.LEGAL.txt` (`legalComments: 'external'`).
 - Browser floor: the code targets ES2022 and the TypeScript `lib` is the repository default (ES2023, no ES2024 override). `String.prototype.isWellFormed` (ES2024), which core's value validation needs, goes through `isWellFormed()` in `packages/core/src/json/well-formed.ts`: the native method when present, otherwise a code-unit loop with identical results (no regular expression lookbehind, which Safari before 16.4 cannot parse). A grep of the built bundle finds no `toWellFormed`, `findLast`, `Object.groupBy`, `replaceAll`, `Array.fromAsync` or `Promise.withResolvers`; `isWellFormed` appears once, inside the feature-detecting helper. `toSorted`/`toReversed`/`toSpliced` match only methods of a Radix collection class that implements them itself, not `Array.prototype`. The bundle does use ES2022 library calls (`Object.hasOwn`, `.at()`) and the web API `structuredClone` (element registry), so the practical floor is roughly Chrome 98, Safari 15.4 and Firefox 94 (`structuredClone`); nothing newer is reached at runtime. This is verified by reading the bundle, not by running old browsers.
+- `canvas.js`: the second bundle, built from `src/canvas/runtime.ts` (the canvas runtime that runs inside the preview iframe). Minified ES2022 IIFE, no source map, no React, no third-party code (about 14 KB). The build test asserts that it contains no `react`, no `eval`/`new Function`, no cookie or storage access and the hello message name.
 - `editor.css`: the scoped Tailwind output.
-- `manifest.json`: `{ "version": 1, "js", "css", "jsSha256", "cssSha256" }`. The hashes are used for cache busting (the PHP asset version) and for integrity verification at build and sync time only (`tooling/build/sync-editor-assets.mjs`). There is no Subresource Integrity attribute and no runtime hash check in PHP. The PHP manifest reader accepts exactly these five keys, so the notice files are not listed in it.
-- `NOTICE.txt` (ADR 0008 section 4): generated by the build from esbuild's metafile, so it lists exactly the third-party packages bundled into `editor.js` (React, Radix, zod, tailwind-merge, class-variance-authority, lucide-react and their dependencies) with name, exact version, licence id and licence text from `node_modules`, sorted for reproducibility. `editor.js.LEGAL.txt` holds the inline legal comments esbuild preserved.
+- `manifest.json`: `{ "version": 1, "js", "css", "jsSha256", "cssSha256", "canvasJs", "canvasJsSha256" }` (exactly these keys, in this order). The hashes are used for cache busting (the PHP asset version) and for integrity verification at build and sync time only (`tooling/build/sync-editor-assets.mjs`). There is no Subresource Integrity attribute and no runtime hash check in PHP. The PHP manifest reader accepts exactly these seven keys, so the notice files are not listed in it.
+- `NOTICE.txt` (ADR 0008 section 4): generated by the build from esbuild's metafiles of both bundles, so it lists exactly the third-party packages bundled into `editor.js` or `canvas.js` (React, Radix, zod, tailwind-merge, class-variance-authority, lucide-react and their dependencies) with name, exact version, licence id and licence text from `node_modules`, sorted for reproducibility. `editor.js.LEGAL.txt` holds the inline legal comments esbuild preserved.
 
-`node apps/editor/scripts/build.mjs --verify-reproducible` builds twice and compares; `styles.test.ts` also builds twice into temp directories (`--out`) and compares bytes. `pnpm --filter @blixis/wp-editor run dev` is a watch build.
+`node apps/editor/scripts/build.mjs --verify-reproducible` builds twice and compares (both bundles and the manifest); `styles.test.ts` also builds twice into temp directories (`--out`) and compares bytes. `pnpm --filter @blixis/wp-editor run dev` is a watch build.
 
 ## State and command bridge (BWB-050)
 
@@ -104,7 +108,7 @@ The server stores the layout stream (the document without `translations`) and on
 |---|---|---|
 | Editor chrome appearance | `chrome-theme.ts`, key `blixis-editor-chrome` | `data-editor-theme` on `.blx-editor` |
 | Editor interface locale | `bootstrap.editorLocale` | `lang`, `dir`, catalogs |
-| Website content appearance (`previewMode`, `light` or `dark`) | settings slice | what the canvas shows (BWB-054) |
+| Website content appearance (`previewMode`, `light` or `dark`; "Preview appearance" group) | settings slice | what the canvas shows and what the preview route renders (BWB-051) |
 | Content locale (`contentLocale`) | settings slice | which language is edited |
 
 None of them reads or writes another one, and none touches `<html>`; tests assert this on the store and on `document.documentElement`. `setContentLocale` refuses locales that are not enabled. `viewport` maps to a breakpoint id and canvas width through an injected breakpoint registry (default: desktop `base`, tablet `tablet` at 1024 px, mobile `mobile` at 640 px). `viewport`, `previewMode` and `contentLocale` are remembered per post under `blixis-editor-view-<postId>` as JSON, validated field by field on read (garbage, wrong types, unknown locales, reserved keys and oversized values are ignored; storage errors are swallowed). The bootstrap content locale wins over the remembered one only when `contentLocaleExplicit` is true and the locale is enabled; otherwise the remembered (still enabled) locale wins, then the bootstrap locale. Panels keep the existing `blixis-editor-panels` key.
@@ -119,13 +123,13 @@ Selection is validated against the document. After every command, undo, redo and
 
 ### UI wiring
 
-`main.tsx` creates the store with `createRestClient` (injectable in tests through `mountEditor`'s options) and `EditorApp` calls `loadDocument` on mount (aborted on unmount). The toolbar Undo and Redo buttons follow `canUndo`/`canRedo` (`aria-disabled`) and work by click and keyboard; Mod+Z and Mod+Shift+Z are BWB-056 and are NOT bound. The Structure panel shows a read-only outline (nested list, each item a button that selects, `aria-current="true"` on the selected one) with loading, error (`role="alert"`, generic catalog text for 401, 403, 409, 423, network and invalid documents, never server text) and empty states; the real tree with drag and drop is BWB-052/059. The Inspector header shows the selected element's type and id. The canvas placeholder shows the content locale from the settings slice.
+`main.tsx` creates the store with `createRestClient` (injectable in tests through `mountEditor`'s options) and `EditorApp` calls `loadDocument` on mount (aborted on unmount). The toolbar Undo and Redo buttons follow `canUndo`/`canRedo` (`aria-disabled`) and work by click and keyboard; Mod+Z and Mod+Shift+Z are BWB-056 and are NOT bound. The Structure panel shows a read-only outline (nested list, each item a button that selects, `aria-current="true"` on the selected one) with loading, error (`role="alert"`, generic catalog text for 401, 403, 409, 423, network and invalid documents, never server text) and empty states; the real tree with drag and drop is BWB-052/059. The Inspector header shows the selected element's type and id. The canvas placeholder (shown when the bootstrap has no `canvasUrl`) shows the content locale from the settings slice.
 
 ### What plugs in later
 
 | Issue | Plugs into |
 |---|---|
-| BWB-051 canvas bridge | `subscribe` (events carry the document) and `viewport`, `previewMode`, `contentLocale`, `selectedId` from the store |
+| BWB-051 canvas bridge | Done: see "Canvas (BWB-051)". Uses `subscribe` (events carry the document) and `viewport`, `breakpointId`, `previewMode`, `contentLocale`, `selectedId`, `hoveredId` from the store |
 | BWB-052 tree, BWB-059 drag and drop | `dispatch({ type: 'move' ... })`, `select`, `hover`, replace `StructurePanel` |
 | BWB-053 inspector | `selectedId`, `dispatch` with `coalesceKey` for text fields |
 | BWB-055 save and autosave | `subscribe` for change events, `dirty`, `revisions` (`If-Match`), `splitDocument` for the bodies, `markSaved` with the document that was sent |
@@ -134,6 +138,26 @@ Selection is validated against the document. After every command, undo, redo and
 ### Testing approach
 
 Vitest with jsdom, no extra dependencies. `src/test/state-helpers.ts` builds isolated stores over a fake `RestClient`, a manual clock and an in-memory storage. Covered: compose/split round trip including hostile payloads (reserved keys, huge, deeply nested, wrong types, getters, locale mismatch); the slices; bridge atomicity (a subscriber never sees a torn state); failing commands changing nothing; undo/redo parity with core's `History` on seeded random command sequences (valid and invalid mixed: undoing everything gives the loaded document, redoing reproduces every intermediate one); coalescing bursts, including seeded random bursts; selection repair; load races and failure; dirty tracking; settings independence and persistence validation; React glue, outline, errors in both catalogs and axe; re-entrancy of listeners (nested dispatch and undo, removal during delivery, throwing listeners); coalescing regressions (type-then-revert, a burst interrupted by another command); refusal of edits after a failed reload; a bounded performance test (1,000 `update-props` plus a 300-step coalesced burst on a 5,000-element document with dirty comparison, under a generous 10 s bound that only catches accidental per-keystroke whole-tree work, not a benchmark). The REST client tests cover redirects (`redirect: 'error'` is passed on every request; a response with `redirected === true` is a network error) and a maximal document (5,000 elements, just under 2 MiB) loading through the real client.
+
+## Canvas (BWB-051)
+
+The full protocol, sandbox rationale, threat table and non-guarantees are in `docs/architecture/CANVAS-CONTRACT.md`. This section is the editor view of it.
+
+| Piece | File | Notes |
+|---|---|---|
+| Protocol package | `packages/canvas-bridge` | Pure TypeScript. Schemas, limits, `createParentEndpoint`, `createCanvasEndpoint`. It has no dependencies besides `@blixis/wp-core` (types and a pattern test), no React, no DOM types. |
+| Runtime | `src/canvas/runtime.ts`, `src/canvas/guards.ts` | Bundle entry of `canvas.js`. Importing the module has no side effect unless the document has the `blixis-canvas` meta tag. |
+| Session hook | `src/canvas/useCanvasSession.ts` | Handshake, debounced preview, store to canvas and canvas to store forwarding. |
+| Component | `src/canvas/Canvas.tsx` | The iframe, the statuses, `PreviewAppearance`. |
+
+* The shell passes the REST client and the bootstrap's `canvasUrl` to `Canvas`. `EditorApp` takes an optional `client` prop (set by `mountEditor`); without it, or without `canvasUrl`, the placeholder stays.
+* The iframe element has a title ("Page preview (French (France))": the language display name from `Intl.DisplayNames` in the editor language, the locale id only as fallback), exactly `sandbox="allow-scripts allow-same-origin"` and no `src` until the endpoint listens. It stays keyboard reachable as a normal iframe. A pick in the canvas moves focus back to `main#blx-canvas` so users are not left inside the preview document.
+* Viewport buttons (radio group in the toolbar) set `settings.viewport`; the desktop width is measured again when the area resizes (`ResizeObserver` on the container, one measurement per animation frame); the frame is `min(100%, var(--blx-frame-width))` wide: desktop fills the area, tablet 768 px, mobile 375 px. These frame widths live in `FRAME_WIDTHS` and are independent of the breakpoint registry's widths (1024 and 640), which stay the style engine's breakpoints; the registry's `breakpointId` is what the canvas receives.
+* "Preview appearance" (Light / Dark, a `radiogroup` of `role=radio` items with `aria-checked`, the same pattern as the viewport control) is the website CONTENT appearance. It is not the editor appearance menu in the toolbar: it only changes `previewMode`, the `mode` request of the preview and `data-blx-mode` in the canvas; tests assert that the chrome theme, its storage key and `<html>` stay untouched.
+* Only `RestClient.preview` talks to the server; there is no `fetch` in the canvas code. Failed previews map the `ApiError` kind and status to catalog texts (`canvas.preview.error.*`, en_US and nl_NL); server text is never displayed.
+* A reload of the canvas document (every `load` event after the first) puts the session back to `connecting`, re-handshakes and, on `ready`, re-sends viewport, mode, selection, hover and the last render (or fetches a fresh preview when the document changed meanwhile). See "Frame reloads" in the contract.
+* Content locale changes recreate the frame (new `src`, new handshake with the new `locale`/`dir`); the editor locale is never sent.
+* `tooling/herd/editor-browser-check.mjs` checks the canvas in a real browser: sandbox flags, strict CSP header, rendered elements without active content, a real click that selects an element, a forged handshake from a second frame, a frame reload that reconnects, a CSP enforcement probe (inline script and handler blocked, violation reported), frame widths for tablet and mobile and the independence of the preview appearance from the chrome appearance.
 
 ## Adding a component
 
@@ -155,7 +179,7 @@ Landmarks are unique and named; disabled placeholders use `aria-disabled` and st
 | Issue | Plugs into |
 |---|---|
 | BWB-050 | Done: document store, command bridge, Undo/Redo, dirty state (see "State and command bridge"). |
-| BWB-051..053 | Structure panel tree, inspector tabs, drag and drop. |
-| BWB-054 | Canvas iframe and `@blixis/wp-canvas-bridge`; the viewport group gets behaviour. |
+| BWB-051 | Done: canvas iframe, `@blixis/wp-canvas-bridge`, the canvas runtime, real viewport and preview appearance controls (see "Canvas (BWB-051)"). |
+| BWB-052, BWB-053 | Structure panel tree, inspector tabs, drag and drop (request the `rects` with `request-rects`; the canvas no longer pushes them). |
 | BWB-055 | Save/Publish through `restRoot` + `nonce`; lock handling. |
 | BWB-056..058 | Shortcuts, content-locale switcher, translation status. |

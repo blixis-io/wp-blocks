@@ -54,6 +54,7 @@ function repo(extra = (r) => r) {
   put('wordpress/plugin/data/css-properties.json', '{"properties":{}}\n');
   put('wordpress/plugin/assets/editor/editor.js', '(()=>{})();\n');
   put('wordpress/plugin/assets/editor/editor.css', '.blx-editor{}\n');
+  put('wordpress/plugin/assets/editor/canvas.js', '(()=>{})();\n');
   put('wordpress/plugin/assets/editor/manifest.json', '{"version":1}\n');
   put('wordpress/plugin/assets/editor/NOTICE.txt', 'licences\n');
   put('wordpress/plugin/assets/editor/editor.js.LEGAL.txt', 'legal\n');
@@ -121,6 +122,7 @@ test('entries are sorted, timestamps fixed to the DOS epoch, permissions normali
     entries.map((e) => e[0]),
     [
       'blixis-builder/assets/editor/NOTICE.txt',
+      'blixis-builder/assets/editor/canvas.js',
       'blixis-builder/assets/editor/editor.css',
       'blixis-builder/assets/editor/editor.js',
       'blixis-builder/assets/editor/editor.js.LEGAL.txt',
@@ -134,7 +136,7 @@ test('entries are sorted, timestamps fixed to the DOS epoch, permissions normali
   for (const [, date] of entries) assert.deepEqual(date, [1980, 1, 1, 0, 0, 0]);
   assert.deepEqual(
     entries.map((e) => e[2]),
-    [0o644, 0o644, 0o644, 0o644, 0o644, 0o755, 0o644, 0o644, 0o644],
+    [0o644, 0o644, 0o644, 0o644, 0o644, 0o644, 0o755, 0o644, 0o644, 0o644],
   );
   assert.ok(
     entries.every((e) => e[3] === 0x800),

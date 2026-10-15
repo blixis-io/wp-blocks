@@ -1,6 +1,6 @@
 // Drives headless Chrome over the DevTools protocol against the Herd dev site to check the Blixis editor shell in a real
 // browser: it signs in with the development credentials (admin / password, see HERD-DEVELOPMENT.md), opens the editor for the
-// demo page and asserts landmarks, toolbar keyboard navigation, the shortcuts dialog (focus trap and return), the editor
+// demo page and asserts landmarks, the sandboxed canvas iframe (strict CSP, render, pick, viewport, preview appearance, a forged handshake from a second frame, a frame reload and a CSP enforcement probe), toolbar keyboard navigation, the shortcuts dialog (focus trap and return), the editor
 // chrome appearance (independent of the website), panel collapse, persistence across a reload, and that nothing logs a
 // console error or a content-security-policy violation. Development only. Run: node tooling/herd/editor-browser-check.mjs
 import assert from 'node:assert/strict';
@@ -62,6 +62,7 @@ try {
   const pending = new Map();
   const problems = [];
   const apiResponses = [];
+  const contexts = new Map(); // frameId -> default execution context id (for evaluating inside a specific frame)
   ws.onmessage = (event) => {
     const message = JSON.parse(event.data);
     if (message.id && pending.has(message.id)) {
@@ -72,6 +73,11 @@ try {
       /blixis\/v1|rest_route=\/blixis\/v1/.test(message.params.response.url)
     ) {
       apiResponses.push({ url: message.params.response.url, status: message.params.response.status });
+    } else if (message.method === 'Runtime.executionContextCreated') {
+      const { id, auxData } = message.params.context;
+      if (auxData?.frameId && auxData.isDefault) contexts.set(auxData.frameId, id);
+    } else if (message.method === 'Runtime.executionContextDestroyed') {
+      for (const [frameId, id] of contexts) if (id === message.params.executionContextId) contexts.delete(frameId);
     } else if (message.method === 'Runtime.exceptionThrown') {
       problems.push(`exception: ${message.params.exceptionDetails.text}`);
     } else if (message.method === 'Runtime.consoleAPICalled' && message.params.type === 'error') {
@@ -91,6 +97,21 @@ try {
   const ev = async (expression) => {
     const response = await send('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true });
     return response.result?.result?.value;
+  };
+  // Evaluates inside another frame's own JavaScript realm (so `parent.postMessage` really comes from that frame's window).
+  const evIn = async (frameId, expression) => {
+    const contextId = contexts.get(frameId);
+    assert.ok(contextId, `an execution context exists for frame ${frameId}`);
+    const response = await send('Runtime.evaluate', { expression, contextId, awaitPromise: true, returnByValue: true });
+    assert.ok(
+      !response.result?.exceptionDetails,
+      `evaluation in frame ${frameId} failed: ${JSON.stringify(response.result?.exceptionDetails ?? response.error)}`,
+    );
+    return response.result?.result?.value;
+  };
+  const childFrameId = async (name) => {
+    const tree = (await send('Page.getFrameTree')).result.frameTree;
+    return tree.childFrames?.find((child) => child.frame.name === name)?.frame.id ?? null;
   };
   const press = (key, code = key) =>
     send('Input.dispatchKeyEvent', {
@@ -125,7 +146,7 @@ try {
   const shell = await ev(`({
     root: !!document.querySelector('#blixis-editor-root .blx-editor'),
     banner: !!document.querySelector('[role=banner], header'),
-    toolbar: !!document.querySelector('[role=toolbar]'),
+    toolbar: !!document.querySelector('header [role=toolbar]'),
     structure: !!document.querySelector('nav[aria-label="Structure"]'),
     main: !!document.querySelector('main'),
     inspector: !!document.querySelector('aside[aria-label="Inspector"]'),
@@ -141,7 +162,7 @@ try {
   assert.equal(shell.scrolls, false, 'the editor fills the viewport without page scroll');
 
   // Toolbar roving tabindex: arrows, Home and End.
-  await ev(`document.querySelector('[role=toolbar] button:not([disabled])')?.focus()`);
+  await ev(`document.querySelector('header [role=toolbar] button:not([disabled])')?.focus()`);
   const first = await ev(
     `document.activeElement?.getAttribute('aria-label') ?? document.activeElement?.textContent.trim()`,
   );
@@ -150,7 +171,7 @@ try {
     `document.activeElement?.getAttribute('aria-label') ?? document.activeElement?.textContent.trim()`,
   );
   const items = await ev(
-    `[...document.querySelectorAll('[role=toolbar] button, [role=toolbar] a')].map((b) => (b.getAttribute('aria-label') ?? b.textContent).trim() + ':' + b.tabIndex + (b.disabled ? ':disabled' : '')).join(' | ')`,
+    `[...document.querySelectorAll('header [role=toolbar] button, header [role=toolbar] a')].map((b) => (b.getAttribute('aria-label') ?? b.textContent).trim() + ':' + b.tabIndex + (b.disabled ? ':disabled' : '')).join(' | ')`,
   );
   assert.notEqual(second, first, `ArrowRight moves focus along the toolbar (${items})`);
   await press('End');
@@ -164,7 +185,7 @@ try {
   assert.notEqual(
     last,
     home,
-    `End and Home jump to the ends of the toolbar (first=${first}, second=${second}, last=${last}, home=${home}, items=${await ev(`[...document.querySelectorAll('[role=toolbar] button, [role=toolbar] a')].map((b) => (b.getAttribute('aria-label') ?? b.textContent).trim() + ':' + b.tabIndex).join(' | ')`)})`,
+    `End and Home jump to the ends of the toolbar (first=${first}, second=${second}, last=${last}, home=${home}, items=${await ev(`[...document.querySelectorAll('header [role=toolbar] button, header [role=toolbar] a')].map((b) => (b.getAttribute('aria-label') ?? b.textContent).trim() + ':' + b.tabIndex).join(' | ')`)})`,
   );
   assert.equal(home, items.split(' | ')[0]?.split(':')[0], 'Home jumps to the first toolbar item');
   assert.equal(last, items.split(' | ').at(-1)?.split(':')[0], 'End jumps to the last toolbar item');
@@ -304,12 +325,310 @@ try {
   );
   assert.ok(picked.current?.includes('hero-h1'), 'the clicked element is marked aria-current');
   assert.ok(picked.inspector.includes('hero-h1'), 'the inspector header shows the selected element');
-  const contentLocale = await ev(`document.querySelector('[data-testid="content-locale"]')?.textContent`);
-  assert.ok(/en_US/.test(contentLocale ?? ''), 'the canvas shows the content locale from the settings');
+
+  // Canvas (BWB-051): a sandboxed same-origin iframe with the dedicated canvas document and its trusted runtime.
+  const frameInfo = () =>
+    ev(`(() => {
+      const frame = document.querySelector('main iframe');
+      const doc = frame?.contentDocument ?? null;
+      const root = doc?.getElementById('blx-canvas-root') ?? null;
+      const box = frame?.getBoundingClientRect();
+      return {
+        found: !!frame,
+        sandbox: frame?.getAttribute('sandbox') ?? null,
+        title: frame?.getAttribute('title') ?? null,
+        src: frame?.getAttribute('src') ?? null,
+        sameOrigin: doc !== null,
+        elements: root ? root.querySelectorAll('[data-blx-id]').length : 0,
+        scripts: root ? root.querySelectorAll('script, iframe, object, embed, form, style, link').length : 0,
+        inlineHandlers: root ? [...root.querySelectorAll('*')].filter((el) => [...el.attributes].some((a) => a.name.startsWith('on'))).length : 0,
+        mode: root?.getAttribute('data-blx-mode') ?? null,
+        width: box ? Math.round(box.width) : 0,
+        x: box ? box.x : 0,
+        y: box ? box.y : 0,
+      };
+    })()`);
+  let canvas = await frameInfo();
+  for (let i = 0; i < 25 && canvas.elements === 0; i += 1) {
+    await sleep(200);
+    canvas = await frameInfo();
+  }
+  assert.ok(canvas.found, 'the editor shows the canvas iframe');
+  assert.equal(
+    canvas.sandbox,
+    'allow-scripts allow-same-origin',
+    'the canvas iframe uses exactly the documented sandbox',
+  );
+  assert.ok(canvas.title && canvas.title.length > 3, 'the canvas iframe has a title');
+  assert.ok(/page=blixis-canvas/.test(canvas.src ?? ''), 'the iframe loads the dedicated canvas document');
+  assert.ok(canvas.sameOrigin, 'the canvas document is same-origin (its trusted runtime needs it)');
+  assert.ok(canvas.elements > 0, `the preview renders elements with data-blx-id (${JSON.stringify(canvas)})`);
+  assert.equal(canvas.scripts, 0, 'no script, frame, object, form, style or link element in the rendered content');
+  assert.equal(canvas.inlineHandlers, 0, 'no inline event handler attributes in the rendered content');
+  const policy = await ev(
+    `fetch(document.querySelector('main iframe').getAttribute('src'), { credentials: 'same-origin' }).then((r) => r.headers.get('content-security-policy'))`,
+  );
+  assert.ok(
+    /script-src 'nonce-[^']+'(;|$)/.test(policy ?? '') &&
+      !/script-src[^;]*'self'/.test(policy ?? '') &&
+      !/unsafe-inline|unsafe-eval/.test(policy ?? ''),
+    `the canvas document has a strict CSP (${policy})`,
+  );
+  assert.equal(
+    await ev(`document.querySelector('[data-testid="canvas-stage"] [role=alert]') === null`),
+    true,
+    'no preview or connection error is shown',
+  );
+
+  // A click inside the canvas selects the element (pick over the MessageChannel), and focus does not stay in the iframe.
+  const target = await ev(`(() => {
+    const frame = document.querySelector('main iframe');
+    const el = [...frame.contentDocument.querySelectorAll('[data-blx-id]')].find((e) => e.getAttribute('data-blx-id').includes('hero-h1'));
+    if (!el) return null;
+    el.scrollIntoView({ block: 'center' });
+    const r = el.getBoundingClientRect();
+    const f = frame.getBoundingClientRect();
+    return { id: el.getAttribute('data-blx-id'), x: f.x + r.x + Math.min(r.width / 2, 40), y: f.y + r.y + Math.min(r.height / 2, 10) };
+  })()`);
+  assert.ok(target, 'the canvas contains the hero heading');
+  await send('Input.dispatchMouseEvent', {
+    type: 'mousePressed',
+    x: target.x,
+    y: target.y,
+    button: 'left',
+    clickCount: 1,
+  });
+  await send('Input.dispatchMouseEvent', {
+    type: 'mouseReleased',
+    x: target.x,
+    y: target.y,
+    button: 'left',
+    clickCount: 1,
+  });
+  await sleep(600);
+  const afterPick = await ev(
+    `({ inspector: document.querySelector('aside[aria-label="Inspector"]').textContent, focusInFrame: document.activeElement?.tagName === 'IFRAME', marked: document.querySelector('main iframe').contentDocument.querySelectorAll('[data-blx-selected]').length })`,
+  );
+  assert.ok(afterPick.inspector.includes(target.id), 'picking an element in the canvas selects it in the editor');
+  assert.equal(afterPick.marked, 1, 'the selected element is marked in the canvas');
+  assert.equal(afterPick.focusInFrame, false, 'focus does not stay inside the iframe after a pick');
+
+  // Viewport buttons size the frame; the content is not scaled.
+  for (const [name, width] of [
+    ['Tablet', 768],
+    ['Mobile', 375],
+  ]) {
+    await ev(
+      `[...document.querySelectorAll('[role=radio]')].find((b) => b.getAttribute('aria-label') === ${JSON.stringify(name)}).click()`,
+    );
+    await sleep(500);
+    const sized = await frameInfo();
+    assert.ok(Math.abs(sized.width - width) <= 2, `${name} sizes the canvas frame to ${width}px (got ${sized.width})`);
+  }
+  await ev(
+    `[...document.querySelectorAll('[role=radio]')].find((b) => b.getAttribute('aria-label') === 'Desktop').click()`,
+  );
+  await sleep(400);
+
+  // Preview appearance is the WEBSITE content appearance and independent of the editor chrome appearance.
+  const chromeBefore = await ev(`document.querySelector('.blx-editor').getAttribute('data-editor-theme')`);
+  await ev(
+    `[...document.querySelectorAll('[role=radiogroup][aria-label="Preview appearance"] [role=radio]')].find((b) => b.textContent.trim() === 'Dark').click()`,
+  );
+  await sleep(1200);
+  const previewDark = await frameInfo();
+  assert.equal(previewDark.mode, 'dark', 'the canvas content switches to the dark website appearance');
+  assert.equal(
+    await ev(`document.querySelector('.blx-editor').getAttribute('data-editor-theme')`),
+    chromeBefore,
+    'the editor chrome appearance is not changed by the preview appearance',
+  );
+  await ev(
+    `[...document.querySelectorAll('[role=radiogroup][aria-label="Preview appearance"] [role=radio]')].find((b) => b.textContent.trim() === 'Light').click()`,
+  );
+  await sleep(800);
+  assert.equal((await frameInfo()).mode, 'light', 'the canvas content returns to the light website appearance');
+  // The preview appearance and the viewport control are the same kind of single-choice group (role=radio + aria-checked).
+  const choice = await ev(`(() => {
+    const groups = ['Preview width', 'Preview appearance'].map((name) => document.querySelector('[role=radiogroup][aria-label="' + name + '"]'));
+    return groups.map((g) => g ? [...g.querySelectorAll('[role=radio]')].map((r) => r.getAttribute('aria-checked')) : null);
+  })()`);
+  assert.ok(
+    choice.every((items) => items && items.length >= 2 && items.filter((v) => v === 'true').length === 1),
+    `both choice controls are radio groups with exactly one checked item (${JSON.stringify(choice)})`,
+  );
+  const frameTitle = (await frameInfo()).title ?? '';
+  assert.ok(
+    !/\([a-z]{2,3}_[A-Za-z0-9]+\)/.test(frameTitle),
+    `the frame title shows a language name, not the raw id (${frameTitle})`,
+  );
+
+  // ---- Handshake hardening in a real browser -------------------------------------------------------------------------
+  // Count every MessageChannel the editor creates: one per accepted handshake, so a forged hello would show as an extra one.
+  await ev(`(() => {
+    const Native = window.MessageChannel;
+    window.__blxChannels = 0;
+    window.MessageChannel = function () { window.__blxChannels += 1; return new Native(); };
+  })()`);
+  const channels = () => ev(`window.__blxChannels`);
+  const sessionState = () => ev(`document.querySelector('main iframe')?.getAttribute('data-session')`);
+  assert.equal(await sessionState(), 'ready', 'the canvas session is connected before the handshake checks');
+  const desktopWidth = (await frameInfo()).width;
+  const viewportWidthIs = async (name, width) => {
+    await ev(
+      `[...document.querySelectorAll('[role=radio]')].find((b) => b.getAttribute('aria-label') === ${JSON.stringify(name)}).click()`,
+    );
+    for (let i = 0; i < 20; i += 1) {
+      await sleep(100);
+      if (Math.abs((await frameInfo()).width - width) <= 2) return true;
+    }
+    return false;
+  };
+
+  // (a) A forged handshake from a SECOND same-origin frame: it posts valid-looking hellos from its own window.
+  const problemsBeforeForgery = problems.length;
+  const channelsBeforeForgery = await channels();
+  await ev(`(() => {
+    const forger = document.createElement('iframe');
+    forger.name = 'blx-forger';
+    forger.setAttribute('sandbox', 'allow-scripts allow-same-origin');
+    forger.setAttribute('title', 'forger');
+    forger.srcdoc = '<p>forger</p>';
+    document.body.appendChild(forger);
+  })()`);
+  await sleep(500);
+  const forgerId = await childFrameId('blx-forger');
+  assert.ok(forgerId, 'the forger frame exists');
+  await evIn(
+    forgerId,
+    `window.__received = 0; window.addEventListener('message', () => { window.__received += 1; }); true`,
+  );
+  const forged = await evIn(
+    forgerId,
+    `(() => {
+      for (let i = 0; i < 5; i += 1) {
+        parent.postMessage({ type: 'blx-canvas-hello', version: 1, nonce: 'Forged' + i + 'ABCDEFGHIJKLMNOPQ' }, window.origin);
+      }
+      return { origin: window.origin, sameOrigin: window.origin === parent.window.origin };
+    })()`,
+  );
+  assert.ok(forged.sameOrigin, `the forger is same-origin with the editor (${JSON.stringify(forged)})`);
+  await sleep(500);
+  assert.equal(await channels(), channelsBeforeForgery, 'a hello from a second frame creates no MessageChannel');
+  assert.equal(
+    await evIn(forgerId, `window.__received`),
+    0,
+    'the forger never receives an init (no port is sent to it)',
+  );
+  assert.equal(await sessionState(), 'ready', 'the real canvas stays connected after the forged hellos');
+  assert.ok(await viewportWidthIs('Tablet', 768), 'the real canvas still follows viewport changes after the forgery');
+  assert.ok(await viewportWidthIs('Desktop', desktopWidth), 'back to the desktop viewport');
+  assert.deepEqual(problems.slice(problemsBeforeForgery), [], 'the forged handshake logged no error');
+
+  // (b) Frame reload: the canvas document is reloaded; the editor must notice, re-handshake (exactly one new channel, even
+  // while the forger keeps posting hellos) and show the content again.
+  await evIn(
+    forgerId,
+    `window.__spam = setInterval(() => parent.postMessage({ type: 'blx-canvas-hello', version: 1, nonce: 'Spam' + Math.random().toString(36).slice(2).padEnd(18, 'x') }, window.origin), 15); true`,
+  );
+  const channelsBeforeReload = await channels();
+  await ev(`(() => {
+    const win = document.querySelector('main iframe').contentWindow;
+    win.__blxMarker = 'old-document';
+    win.location.reload();
+  })()`);
+  let recovered = false;
+  for (let i = 0; i < 40 && !recovered; i += 1) {
+    await sleep(250);
+    recovered = await ev(`(() => {
+      const frame = document.querySelector('main iframe');
+      let fresh = false;
+      let elements = 0;
+      try {
+        fresh = frame.contentWindow.__blxMarker === undefined;
+        elements = frame.contentDocument.querySelectorAll('#blx-canvas-root [data-blx-id]').length;
+      } catch { /* the document is navigating */ }
+      return fresh && elements > 0 && frame.getAttribute('data-session') === 'ready';
+    })()`);
+  }
+  assert.ok(
+    recovered,
+    `after a frame reload the canvas shows its content again and the state is connected (${await sessionState()})`,
+  );
+  await sleep(500);
+  assert.equal(
+    await channels(),
+    channelsBeforeReload + 1,
+    'the reload produced exactly one new handshake, none for the forger',
+  );
+  assert.equal(await sessionState(), 'ready', 'the editor is still connected after the spam');
+  await ev(
+    `[...document.querySelectorAll('[role=radiogroup][aria-label="Preview appearance"] [role=radio]')].find((b) => b.textContent.trim() === 'Dark').click()`,
+  );
+  await sleep(1200);
+  assert.equal((await frameInfo()).mode, 'dark', 'the reloaded canvas receives the editor messages again (appearance)');
+  await ev(
+    `[...document.querySelectorAll('[role=radiogroup][aria-label="Preview appearance"] [role=radio]')].find((b) => b.textContent.trim() === 'Light').click()`,
+  );
+  await sleep(800);
+  assert.equal((await frameInfo()).mode, 'light', 'and back to light');
+  assert.ok(await viewportWidthIs('Mobile', 375), 'the reloaded canvas follows the viewport');
+  assert.ok(await viewportWidthIs('Desktop', desktopWidth), 'back to the desktop viewport after the reload');
+  await evIn(forgerId, `clearInterval(window.__spam); true`);
+  await ev(`document.querySelector('iframe[name="blx-forger"]')?.remove()`);
+  assert.deepEqual(problems.slice(problemsBeforeForgery), [], 'the reload and the spam logged no error');
+
+  // (c) CSP enforcement: inject an inline script and an inline handler into the canvas document the way a bug would. The
+  // policy must stop both (a flag stays unset) and the browser must report the violations.
+  const problemsBeforeProbe = problems.length;
+  await ev(`(() => {
+    const frame = document.querySelector('main iframe');
+    const win = frame.contentWindow;
+    const doc = frame.contentDocument;
+    win.__blxPwn = undefined;
+    win.__blxImgErrored = false;
+    const script = doc.createElement('script');
+    script.textContent = 'window.__blxPwn = "inline-script"';
+    doc.body.appendChild(script);
+    const img = doc.createElement('img');
+    img.setAttribute('onerror', 'window.__blxPwn = "inline-handler"');
+    img.addEventListener('error', () => { win.__blxImgErrored = true; });
+    img.setAttribute('src', 'data:image/png;base64,AAAA');
+    doc.body.appendChild(img);
+  })()`);
+  await sleep(1000);
+  const probe = await ev(`(() => {
+    const win = document.querySelector('main iframe').contentWindow;
+    return { pwn: win.__blxPwn ?? null, imgErrored: win.__blxImgErrored };
+  })()`);
+  assert.equal(
+    probe.pwn,
+    null,
+    `neither the injected inline script nor the inline handler ran (${JSON.stringify(probe)})`,
+  );
+  assert.equal(probe.imgErrored, true, 'control: the broken image really failed, so its onerror handler was exercised');
+  const probeProblems = problems.splice(problemsBeforeProbe);
+  const violations = probeProblems.filter((entry) => /Content Security Policy/i.test(entry));
+  assert.ok(
+    violations.some((entry) => /inline script/i.test(entry)),
+    `the browser reported the blocked inline script (${JSON.stringify(probeProblems)})`,
+  );
+  assert.ok(
+    violations.some((entry) => /inline event handler/i.test(entry)),
+    `the browser reported the blocked inline handler (${JSON.stringify(probeProblems)})`,
+  );
+  assert.deepEqual(
+    probeProblems.filter((entry) => !violations.includes(entry)),
+    [],
+    'the probe caused only the expected CSP reports',
+  );
+  await ev(
+    `(() => { const doc = document.querySelector('main iframe').contentDocument; doc.body.querySelectorAll('script, img').forEach((el) => el.remove()); })()`,
+  );
   const wrong = apiResponses.filter((entry) => entry.status !== 200);
   assert.ok(
     apiResponses.length >= 3 && wrong.length === 0,
-    `layout and both content streams load with 200 (${JSON.stringify(apiResponses)})`,
+    `layout, both content streams and the previews load with 200 (${JSON.stringify(apiResponses)})`,
   );
 
   if (SCREENSHOT) {

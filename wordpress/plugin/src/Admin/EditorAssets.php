@@ -20,7 +20,7 @@ final class EditorAssets {
 	 *
 	 * @param string $manifest_path Absolute path to manifest.json.
 	 * @param string $asset_base_url Public URL of the editor asset directory.
-	 * @return ?array{js_url: string, css_url: string, version: string}
+	 * @return ?array{js_url: string, css_url: string, canvas_url: string, version: string}
 	 */
 	public static function from_manifest( string $manifest_path, string $asset_base_url ): ?array {
 		$size = \is_file( $manifest_path ) ? \filesize( $manifest_path ) : false;
@@ -32,15 +32,16 @@ final class EditorAssets {
 			return null;
 		}
 		$data = \json_decode( $raw, true );
-		$keys = [ 'version', 'js', 'css', 'jsSha256', 'cssSha256' ];
-		if ( ! \is_array( $data ) || [] !== \array_diff( \array_keys( $data ), $keys ) || [] !== \array_diff( $keys, \array_keys( $data ) ) || 1 !== ( $data['version'] ?? null ) || ! self::valid_name( $data['js'] ?? null, 'editor.js' ) || ! self::valid_name( $data['css'] ?? null, 'editor.css' ) || ! self::valid_hash( $data['jsSha256'] ?? null ) || ! self::valid_hash( $data['cssSha256'] ?? null ) || ! \is_file( \dirname( $manifest_path ) . '/editor.js' ) || ! \is_file( \dirname( $manifest_path ) . '/editor.css' ) ) {
+		$keys = [ 'version', 'js', 'css', 'jsSha256', 'cssSha256', 'canvasJs', 'canvasJsSha256' ];
+		if ( ! \is_array( $data ) || [] !== \array_diff( \array_keys( $data ), $keys ) || [] !== \array_diff( $keys, \array_keys( $data ) ) || 1 !== ( $data['version'] ?? null ) || ! self::valid_name( $data['js'] ?? null, 'editor.js' ) || ! self::valid_name( $data['css'] ?? null, 'editor.css' ) || ! self::valid_name( $data['canvasJs'] ?? null, 'canvas.js' ) || ! self::valid_hash( $data['jsSha256'] ?? null ) || ! self::valid_hash( $data['cssSha256'] ?? null ) || ! self::valid_hash( $data['canvasJsSha256'] ?? null ) || ! \is_file( \dirname( $manifest_path ) . '/editor.js' ) || ! \is_file( \dirname( $manifest_path ) . '/editor.css' ) || ! \is_file( \dirname( $manifest_path ) . '/canvas.js' ) ) {
 			return null;
 		}
 		$base = \rtrim( $asset_base_url, '/' ) . '/';
 		return [
-			'js_url'  => $base . 'editor.js',
-			'css_url' => $base . 'editor.css',
-			'version' => $data['jsSha256'] . '.' . $data['cssSha256'],
+			'js_url'     => $base . 'editor.js',
+			'css_url'    => $base . 'editor.css',
+			'canvas_url' => $base . 'canvas.js',
+			'version'    => $data['jsSha256'] . '.' . $data['cssSha256'] . '.' . $data['canvasJsSha256'],
 		];
 	}
 
