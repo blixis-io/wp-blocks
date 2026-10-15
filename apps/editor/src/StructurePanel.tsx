@@ -1,4 +1,4 @@
-import { ScrollArea } from '@blixis/wp-editor-ui';
+import { Icon, ScrollArea, elementIconName } from '@blixis/wp-editor-ui';
 import type { ElementNode } from '@blixis/wp-core';
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { findPath, nodeAt } from '@blixis/wp-core';
@@ -116,9 +116,10 @@ const OutlineItem = memo(function OutlineItem({
           }
         }}
       >
-        {hasChildren ? (expanded ? '▾' : '▸') : '·'}
+        {hasChildren ? <Icon name={expanded ? 'chevronDown' : 'caretRight'} size={14} mirrorInRtl={!expanded} /> : null}
       </span>
       <span>
+        <Icon name={elementIconName(node.type)} size={16} className="me-1 align-text-bottom" />
         {elementLabel(node.type)} <span className="blx-outline-id">{node.id}</span>
       </span>
     </div>

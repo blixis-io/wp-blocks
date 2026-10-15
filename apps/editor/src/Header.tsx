@@ -9,25 +9,10 @@ import {
   ToolbarToggleGroup,
   ToolbarToggleItem,
   VisuallyHidden,
+  Icon,
+  type IconName,
 } from '@blixis/wp-editor-ui';
-import {
-  ArrowLeft,
-  Eye,
-  Keyboard,
-  Languages,
-  Monitor,
-  Moon,
-  PanelLeft,
-  PanelRight,
-  Redo2,
-  Save,
-  Smartphone,
-  SunMoon,
-  Sun,
-  Tablet,
-  Undo2,
-  Upload,
-} from 'lucide-react';
+
 import type { ReactNode } from 'react';
 import type { EditorBootstrap } from './bootstrap';
 import { CHROME_PREFERENCES, isChromePreference, type ChromePreference } from './chrome-theme';
@@ -37,17 +22,17 @@ import type { PanelState } from './panels';
 import { ShortcutsDialog } from './ShortcutsDialog';
 import { VIEWPORTS as VIEWPORT_IDS, useEditorStore, useEditorStoreApi, type Viewport } from './state';
 
-const APPEARANCE_ICONS: Record<ChromePreference, ReactNode> = {
-  system: <SunMoon aria-hidden="true" className="size-4" />,
-  light: <Sun aria-hidden="true" className="size-4" />,
-  dark: <Moon aria-hidden="true" className="size-4" />,
+const APPEARANCE_ICONS: Record<ChromePreference, IconName> = {
+  system: 'system',
+  light: 'light',
+  dark: 'dark',
 };
 
 const VIEWPORTS = [
-  { id: 'desktop', label: 'header.viewport.desktop', icon: <Monitor aria-hidden="true" className="size-4" /> },
-  { id: 'tablet', label: 'header.viewport.tablet', icon: <Tablet aria-hidden="true" className="size-4" /> },
-  { id: 'mobile', label: 'header.viewport.mobile', icon: <Smartphone aria-hidden="true" className="size-4" /> },
-] as const satisfies readonly { id: string; label: MessageKey; icon: ReactNode }[];
+  { id: 'desktop', label: 'header.viewport.desktop', icon: 'desktop' },
+  { id: 'tablet', label: 'header.viewport.tablet', icon: 'tablet' },
+  { id: 'mobile', label: 'header.viewport.mobile', icon: 'mobile' },
+] as const satisfies readonly { id: string; label: MessageKey; icon: IconName }[];
 
 interface HeaderProps {
   bootstrap: EditorBootstrap;
@@ -93,7 +78,7 @@ export function Header({
     <header role="banner" className="blx-header">
       <Toolbar aria-label={t('header.toolbar')}>
         <ToolbarLink href={bootstrap.adminUrl}>
-          <ArrowLeft aria-hidden="true" className={`${icon} rtl:-scale-x-100`} />
+          <Icon name="back" className={icon} mirrorInRtl />
           {t('header.back')}
         </ToolbarLink>
         <ToolbarSeparator />
@@ -106,7 +91,7 @@ export function Header({
             onTogglePanel('left');
           }}
         >
-          <PanelLeft aria-hidden="true" className={icon} />
+          <Icon name="panelLeft" className={icon} />
         </ToolbarButton>
         <span className="blx-title">
           <span className="blx-title-text">{title}</span>
@@ -125,7 +110,7 @@ export function Header({
               store.getState().undo();
             }}
           >
-            <Undo2 aria-hidden="true" className={icon} />
+            <Icon name="undo" className={icon} />
           </ToolbarButton>
         </Hint>
         <Hint text={t('header.redo.hint')}>
@@ -137,7 +122,7 @@ export function Header({
               store.getState().redo();
             }}
           >
-            <Redo2 aria-hidden="true" className={icon} />
+            <Icon name="refresh" className={icon} />
           </ToolbarButton>
         </Hint>
         <ToolbarSeparator />
@@ -152,7 +137,7 @@ export function Header({
           {VIEWPORTS.map((item) => (
             <Hint key={item.id} text={t('header.viewport.hint')}>
               <ToolbarToggleItem value={item.id} size="icon" aria-label={t(item.label)}>
-                {item.icon}
+                <Icon name={item.icon} />
               </ToolbarToggleItem>
             </Hint>
           ))}
@@ -161,25 +146,25 @@ export function Header({
         {bootstrap.viewUrl === null ? (
           <Hint text={t('header.preview.unavailable')}>
             <ToolbarButton variant="outline" disabled>
-              <Eye aria-hidden="true" className={icon} />
+              <Icon name="preview" className={icon} />
               {t('header.preview')}
             </ToolbarButton>
           </Hint>
         ) : (
           <ToolbarLink variant="outline" href={bootstrap.viewUrl} target="_blank" rel="noopener noreferrer">
-            <Eye aria-hidden="true" className={icon} />
+            <Icon name="preview" className={icon} />
             {t('header.preview')}
           </ToolbarLink>
         )}
         <Hint text={t('header.save.hint')}>
           <ToolbarButton variant="secondary" disabled>
-            <Save aria-hidden="true" className={icon} />
+            <Icon name="save" className={icon} />
             {t('header.save')}
           </ToolbarButton>
         </Hint>
         <Hint text={t('header.publish.hint')}>
           <ToolbarButton variant="default" disabled>
-            <Upload aria-hidden="true" className={icon} />
+            <Icon name="publish" className={icon} />
             {t('header.publish')}
           </ToolbarButton>
         </Hint>
@@ -187,7 +172,7 @@ export function Header({
         <ShortcutsDialog
           trigger={
             <ToolbarButton size="icon" aria-label={t('header.shortcuts')}>
-              <Keyboard aria-hidden="true" className={icon} />
+              <Icon name="shortcuts" className={icon} />
             </ToolbarButton>
           }
         />
@@ -206,12 +191,12 @@ export function Header({
               size="icon"
               aria-label={t(`appearance.${preference}`)}
             >
-              {APPEARANCE_ICONS[preference]}
+              <Icon name={APPEARANCE_ICONS[preference]} className={icon} />
             </ToolbarToggleItem>
           ))}
         </ToolbarToggleGroup>
         <span className="blx-chip">
-          <Languages aria-hidden="true" className="size-3.5" />
+          <Icon name="language" size={14} />
           <VisuallyHidden>{`${t('header.editorLanguage')}: `}</VisuallyHidden>
           {locale}
         </span>
@@ -224,7 +209,7 @@ export function Header({
             onTogglePanel('right');
           }}
         >
-          <PanelRight aria-hidden="true" className={icon} />
+          <Icon name="panelRight" className={icon} />
         </ToolbarButton>
       </Toolbar>
     </header>

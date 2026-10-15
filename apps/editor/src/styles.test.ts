@@ -38,6 +38,14 @@ describe.each(['light', 'dark'] as const)('%s chrome contrast', (theme) => {
     ['tooltip-fg', 'tooltip'],
     ['banner-fg', 'banner'],
     ['fg', 'selected'],
+    ['fg', 'surface'],
+    ['fg-muted', 'surface'],
+    ['fg', 'surface-raised'],
+    ['fg-muted', 'surface-raised'],
+    ['danger', 'bg'],
+    ['success', 'bg'],
+    ['warning', 'bg'],
+    ['header-fg', 'header'],
   ];
   const ui: [string, string][] = [
     ['border-strong', 'bg'],
@@ -48,6 +56,10 @@ describe.each(['light', 'dark'] as const)('%s chrome contrast', (theme) => {
     ['selected-ring', 'bg'],
     ['selected-ring', 'selected'],
     ['selected-ring', 'surface-2'],
+    ['selection-outline', 'bg'],
+    ['hover-outline', 'bg'],
+    ['selection-outline', 'selected'],
+    ['hover-outline', 'surface'],
   ];
   it('defines every token', () => {
     expect(Object.keys(t).length).toBeGreaterThanOrEqual(20);
@@ -61,10 +73,13 @@ describe.each(['light', 'dark'] as const)('%s chrome contrast', (theme) => {
 });
 
 describe('selected state indicator', () => {
-  it('draws a ring from --ed-selected-ring on selected toggles and tabs, not colour alone', () => {
+  it('draws a ring from --ed-selected-ring on selected toggles, not colour alone', () => {
     expect(source).toMatch(
-      /aria-checked='true'\],[\s\S]*aria-selected='true'\]\s*\{\s*box-shadow: inset 0 0 0 2px var\(--ed-selected-ring\)/,
+      /aria-checked='true'\],[\s\S]*aria-current='true'\]\s*\{\s*box-shadow: inset 0 0 0 2px var\(--ed-selected-ring\)/,
     );
+  });
+  it('uses the primary underline for the active inspector tab', () => {
+    expect(source).toMatch(/\[role='tab'\]\[aria-selected='true'\]::after[\s\S]*?background: var\(--ed-primary\)/);
   });
   it('keeps the narrow layout scrollable instead of clipping panels', () => {
     const narrow = /@media \(max-width: 52rem\) \{([\s\S]*?)\n {4}\}\n/.exec(source)?.[1] ?? '';
@@ -154,7 +169,7 @@ describe('editor build', () => {
       ['zod', 'MIT'],
       ['tailwind-merge', 'MIT'],
       ['class-variance-authority', 'Apache-2.0'],
-      ['lucide-react', 'ISC'],
+      ['@phosphor-icons/react', 'MIT'],
       ['@radix-ui/react-direction', 'MIT'],
     ] as const) {
       expect(notice).toMatch(new RegExp(`^${name}@\\d+\\.\\d+\\.\\d+\\nLicense: ${licence}\\n`, 'm'));

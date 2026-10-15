@@ -7,7 +7,7 @@ import {
   TabsTrigger,
   TooltipProvider,
 } from '@blixis/wp-editor-ui';
-import { Lock } from 'lucide-react';
+import { Icon } from '@blixis/wp-editor-ui';
 import type { RestClient } from './api/types';
 import { Canvas, PreviewAppearance, type CanvasTestOptions } from './canvas/Canvas';
 import { useEffect, useMemo, useState } from 'react';
@@ -90,7 +90,7 @@ function Shell({
         />
         {locked ? (
           <div role="status" className="blx-banner" data-testid="lock-banner">
-            <Lock aria-hidden="true" className="me-2 inline size-4 align-text-bottom" />
+            <Icon name="lock" className="me-2 inline size-4 align-text-bottom" />
             {t('lock.banner', { reason: bootstrap.lockReason ?? t('lock.default') })}
           </div>
         ) : null}

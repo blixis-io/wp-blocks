@@ -11,8 +11,10 @@
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --text-xs: 0.75rem;
   --text-xs--line-height: 1rem;
-  --text-sm: 0.875rem;
-  --text-sm--line-height: 1.25rem;
+  --text-sm: 0.75rem;
+  --text-sm--line-height: 1rem;
+  --text-base: 0.8125rem;
+  --text-base--line-height: 1.25rem;
   --text-lg: 1.125rem;
   --text-lg--line-height: 1.75rem;
   --font-weight-medium: 500;
@@ -21,6 +23,15 @@
   --radius-md: 0.375rem;
   --radius-lg: 0.5rem;
   --color-ed-bg: var(--ed-bg);
+  --color-ed-surface: var(--ed-surface);
+  --color-ed-surface-raised: var(--ed-surface-raised);
+  --color-ed-muted: var(--ed-muted);
+  --color-ed-danger: var(--ed-danger);
+  --color-ed-success: var(--ed-success);
+  --color-ed-warning: var(--ed-warning);
+  --color-ed-focus: var(--ed-focus-ring);
+  --color-ed-selection-outline: var(--ed-selection-outline);
+  --color-ed-hover-outline: var(--ed-hover-outline);
   --color-ed-fg: var(--ed-fg);
   --color-ed-fg-muted: var(--ed-fg-muted);
   --color-ed-surface-2: var(--ed-surface-2);
@@ -38,64 +49,116 @@
   --color-ed-overlay: var(--ed-overlay);
   --color-ed-tooltip: var(--ed-tooltip);
   --color-ed-tooltip-fg: var(--ed-tooltip-fg);
+  --z-index-overlay: var(--ed-z-overlay);
+  --z-index-floating: var(--ed-z-floating);
+  --z-index-skip: var(--ed-z-skip);
 }
 
 @layer blx-editor {
   .blx-editor {
     @tailwind utilities;
 
-    /* Chrome theme tokens. The pairs are checked for contrast in src/styles.test.ts. */
+    /* Editor chrome only; the website appearance belongs to the isolated canvas. */
     &[data-editor-theme='light'] {
       color-scheme: light;
-      --ed-bg: #ffffff;
-      --ed-fg: #1d2327;
-      --ed-fg-muted: #50575e;
-      --ed-surface-2: #f0f0f1;
-      --ed-surface-hover: #e4e6e8;
-      --ed-border: #c3c4c7;
-      --ed-border-strong: #7c828a;
-      --ed-selected: #dbe4ff;
+      --ed-bg: #f5f7fb;
+      --ed-surface: #ffffff;
+      --ed-surface-raised: #ffffff;
+      --ed-fg: #111827;
+      --ed-fg-muted: #475569;
+      --ed-muted: #64748b;
+      --ed-surface-2: #f5f7fb;
+      --ed-surface-hover: #eef2f7;
+      --ed-border: #e5e8ef;
+      --ed-border-strong: #64748b;
+      --ed-selected: #dbeafe;
       --ed-selected-fg: #1e3a8a;
-      --ed-selected-ring: #1d4ed8;
-      --ed-primary: #1d4ed8;
+      --ed-selected-ring: #2563eb;
+      --ed-selection-outline: #2563eb;
+      --ed-hover-outline: #64748b;
+      --ed-primary: #2563eb;
       --ed-primary-fg: #ffffff;
-      --ed-primary-hover: #1e40af;
-      --ed-destructive: #b42318;
+      --ed-primary-hover: #1d4ed8;
+      --ed-destructive: #b91c1c;
       --ed-destructive-fg: #ffffff;
-      --ed-destructive-hover: #912018;
+      --ed-destructive-hover: #991b1b;
+      --ed-danger: #b91c1c;
+      --ed-success: #166534;
+      --ed-warning: #854d0e;
       --ed-overlay: rgb(0 0 0 / 0.5);
-      --ed-tooltip: #1d2327;
+      --ed-tooltip: #111827;
       --ed-tooltip-fg: #ffffff;
-      --ed-focus: #1d4ed8;
-      --ed-banner: #fff4d6;
-      --ed-banner-fg: #4a3500;
+      --ed-focus: #2563eb;
+      --ed-focus-ring: #2563eb;
+      --ed-banner: #fef3c7;
+      --ed-banner-fg: #713f12;
+      --ed-header: #0f172a;
+      --ed-header-fg: #f8fafc;
+      --ed-header-border: #64748b;
+      --ed-preview-light: #ffffff;
+      --ed-preview-dark: #111111;
+      --ed-selection-contrast: #111827;
+      --ed-shadow-floating: 0 4px 16px rgb(15 23 42 / 0.12);
     }
 
     &[data-editor-theme='dark'] {
       color-scheme: dark;
-      --ed-bg: #16181d;
-      --ed-fg: #e8eaed;
-      --ed-fg-muted: #a9afb7;
-      --ed-surface-2: #22252b;
-      --ed-surface-hover: #2e323a;
-      --ed-border: #3a3f47;
-      --ed-border-strong: #7d8590;
-      --ed-selected: #2a3a66;
-      --ed-selected-fg: #dbe4ff;
-      --ed-selected-ring: #7aa2ff;
-      --ed-primary: #7aa2ff;
-      --ed-primary-fg: #0b1220;
-      --ed-primary-hover: #9bb8ff;
-      --ed-destructive: #f97066;
-      --ed-destructive-fg: #1a0b0a;
-      --ed-destructive-hover: #fda29b;
+      --ed-bg: #0f172a;
+      --ed-surface: #111827;
+      --ed-surface-raised: #1f2937;
+      --ed-fg: #f1f5f9;
+      --ed-fg-muted: #cbd5e1;
+      --ed-muted: #94a3b8;
+      --ed-surface-2: #111827;
+      --ed-surface-hover: #1f2937;
+      --ed-border: #334155;
+      --ed-border-strong: #94a3b8;
+      --ed-selected: #1e3a8a;
+      --ed-selected-fg: #eff6ff;
+      --ed-selected-ring: #93c5fd;
+      --ed-selection-outline: #93c5fd;
+      --ed-hover-outline: #cbd5e1;
+      --ed-primary: #93c5fd;
+      --ed-primary-fg: #0f172a;
+      --ed-primary-hover: #bfdbfe;
+      --ed-destructive: #fca5a5;
+      --ed-destructive-fg: #450a0a;
+      --ed-destructive-hover: #fecaca;
+      --ed-danger: #fca5a5;
+      --ed-success: #86efac;
+      --ed-warning: #fde047;
       --ed-overlay: rgb(0 0 0 / 0.65);
-      --ed-tooltip: #e8eaed;
-      --ed-tooltip-fg: #16181d;
-      --ed-focus: #7aa2ff;
-      --ed-banner: #3b2f0b;
-      --ed-banner-fg: #ffe9a8;
+      --ed-tooltip: #f1f5f9;
+      --ed-tooltip-fg: #0f172a;
+      --ed-focus: #93c5fd;
+      --ed-focus-ring: #93c5fd;
+      --ed-banner: #422006;
+      --ed-banner-fg: #fef3c7;
+      --ed-header: #0f172a;
+      --ed-header-fg: #f8fafc;
+      --ed-header-border: #64748b;
+      --ed-preview-light: #ffffff;
+      --ed-preview-dark: #111111;
+      --ed-selection-contrast: #ffffff;
+      --ed-shadow-floating: 0 4px 16px rgb(0 0 0 / 0.35);
     }
+
+    --ed-radius-control: 0.5rem;
+    --ed-radius-small: 0.375rem;
+    --ed-space-1: 0.25rem;
+    --ed-space-2: 0.5rem;
+    --ed-space-3: 0.75rem;
+    --ed-space-4: 1rem;
+    --ed-font-xs: 0.6875rem;
+    --ed-font-sm: 0.75rem;
+    --ed-font-base: 0.8125rem;
+    --ed-font-lg: 0.9375rem;
+    --ed-control-height: 1.875rem;
+    --ed-control-height-small: 1.5rem;
+    --ed-z-base: 0;
+    --ed-z-overlay: 40;
+    --ed-z-floating: 50;
+    --ed-z-skip: 60;
 
     /* Scoped, minimal reset: nothing outside .blx-editor is touched. */
     &,
@@ -121,7 +184,7 @@
         'Helvetica Neue',
         Arial,
         sans-serif;
-      font-size: 0.875rem;
+      font-size: var(--ed-font-base);
       line-height: 1.4;
       text-align: start;
     }
@@ -154,8 +217,7 @@
     /* Selected state is not conveyed by colour alone (WCAG 1.4.11): an inset 2px ring in --ed-selected-ring. */
     button[aria-checked='true'],
     button[aria-pressed='true'],
-    button[aria-current='true'],
-    [role='tab'][aria-selected='true'] {
+    button[aria-current='true'] {
       box-shadow: inset 0 0 0 2px var(--ed-selected-ring);
     }
 
@@ -170,9 +232,9 @@
       position: absolute;
       inset-block-start: 0.5rem;
       inset-inline-start: 0.5rem;
-      z-index: 60;
+      z-index: var(--ed-z-skip);
       padding: 0.5rem 0.75rem;
-      border-radius: 0.375rem;
+      border-radius: var(--ed-radius-small);
       background: var(--ed-primary);
       color: var(--ed-primary-fg);
       transform: translateY(-300%);
@@ -184,16 +246,40 @@
     .blx-header {
       display: flex;
       align-items: center;
-      min-block-size: 3rem;
+      min-block-size: 2.75rem;
       padding-inline: 0.5rem;
       border-block-end: 1px solid var(--ed-border);
-      background: var(--ed-bg);
+      background: var(--ed-header);
+      color: var(--ed-header-fg);
     }
     .blx-header [role='toolbar'] {
       flex: 1;
       flex-wrap: wrap;
       row-gap: 0.25rem;
       padding-block: 0.25rem;
+    }
+    .blx-header [role='toolbar'] button,
+    .blx-header [role='toolbar'] a {
+      color: var(--ed-header-fg);
+    }
+    .blx-header [role='toolbar'] button[aria-checked='true'],
+    .blx-header [role='toolbar'] button[aria-pressed='true'] {
+      color: var(--ed-selected-fg);
+    }
+    .blx-header .blx-chip {
+      color: var(--ed-header-fg);
+      border-color: var(--ed-header-border);
+    }
+    [role='tab'] {
+      position: relative;
+    }
+    [role='tab'][aria-selected='true']::after {
+      position: absolute;
+      inset-inline: 0.5rem;
+      inset-block-end: -5px;
+      block-size: 2px;
+      background: var(--ed-primary);
+      content: '';
     }
     .blx-title {
       display: inline-flex;
@@ -216,7 +302,7 @@
       padding: 0.125rem 0.5rem;
       border: 1px solid var(--ed-border-strong);
       border-radius: 999px;
-      font-size: 0.75rem;
+      font-size: var(--ed-font-xs);
       white-space: nowrap;
       color: var(--ed-fg-muted);
     }
@@ -251,7 +337,7 @@
       min-inline-size: 0;
       min-block-size: 0;
       overflow: hidden;
-      background: var(--ed-bg);
+      background: var(--ed-surface);
     }
     /* Explicit columns: a hidden panel leaves the grid, and auto-placement would otherwise shift the canvas into the 0-width track. */
     .blx-panel-left {
@@ -264,7 +350,7 @@
     }
     .blx-panel-title {
       padding: 0.75rem;
-      font-size: 0.875rem;
+      font-size: var(--ed-font-sm);
       font-weight: 600;
       border-block-end: 1px solid var(--ed-border);
     }
@@ -288,33 +374,33 @@
     }
     .blx-inspector-field > label,
     .blx-spacing label {
-      font-size: 0.875rem;
+      font-size: var(--ed-font-sm);
       font-weight: 500;
     }
     .blx-inspector-field input:not([type='checkbox']),
     .blx-inspector-field select,
     .blx-inspector-field textarea,
     .blx-spacing select {
-      min-block-size: 2.75rem;
+      min-block-size: var(--ed-control-height);
       inline-size: 100%;
       border: 1px solid var(--ed-border);
-      border-radius: 0.375rem;
+      border-radius: var(--ed-radius-small);
       padding: 0.5rem;
       color: var(--ed-fg);
-      background: var(--ed-bg);
+      background: var(--ed-surface);
     }
     .blx-inspector-field input[type='checkbox'] {
-      inline-size: 1.25rem;
-      block-size: 1.25rem;
+      inline-size: var(--ed-control-height-small);
+      block-size: var(--ed-control-height-small);
     }
     .blx-inspector-error {
       color: var(--ed-destructive);
-      font-size: 0.875rem;
+      font-size: var(--ed-font-sm);
     }
     .blx-inspector-hint,
     .blx-override {
       color: var(--ed-fg-muted);
-      font-size: 0.8125rem;
+      font-size: var(--ed-font-xs);
     }
     .blx-override {
       display: flex;
@@ -323,7 +409,7 @@
       gap: 0.5rem;
     }
     .blx-override button {
-      min-block-size: 2.75rem;
+      min-block-size: var(--ed-control-height);
       padding-inline: 0.5rem;
       text-decoration: underline;
     }
@@ -341,7 +427,7 @@
       margin: 0.75rem;
       padding: 0.75rem;
       border: 1px solid var(--ed-border);
-      border-radius: 0.375rem;
+      border-radius: var(--ed-radius-small);
       color: var(--ed-fg);
     }
     .blx-outline,
@@ -361,9 +447,9 @@
       align-items: baseline;
       gap: 0.5rem;
       inline-size: 100%;
-      min-block-size: 2rem;
+      min-block-size: var(--ed-control-height);
       padding: 0.25rem 0.5rem;
-      border-radius: 0.375rem;
+      border-radius: var(--ed-radius-small);
       text-align: start;
       color: var(--ed-fg);
       background: transparent;
@@ -378,16 +464,18 @@
     }
     .blx-outline-id {
       color: var(--ed-fg-muted);
-      font-size: 0.75rem;
+      font-size: var(--ed-font-xs);
       overflow-wrap: anywhere;
     }
     .blx-outline-item[aria-selected='true'] .blx-outline-id {
       color: var(--ed-selected-fg);
     }
     .blx-tree-toggle {
-      inline-size: 1rem;
+      inline-size: var(--ed-control-height-small);
+      block-size: var(--ed-control-height-small);
       flex: none;
       color: var(--ed-fg-muted);
+      text-align: center;
     }
     .blx-breadcrumb {
       display: flex;
@@ -395,7 +483,7 @@
       align-items: center;
       gap: 0.25rem;
       color: var(--ed-fg-muted);
-      font-size: 0.8125rem;
+      font-size: var(--ed-font-xs);
     }
     .blx-breadcrumb li {
       display: inline-flex;
@@ -421,7 +509,7 @@
       padding: 3rem 1.5rem;
       text-align: center;
       border: 1px dashed var(--ed-border-strong);
-      border-radius: 0.5rem;
+      border-radius: var(--ed-radius-control);
       background: var(--ed-bg);
     }
     /* The preview appearance group belongs to the WEBSITE content preview, not to the editor chrome. */
@@ -456,10 +544,10 @@
       min-block-size: 20rem;
       border: 1px solid var(--ed-border-strong);
       border-radius: 0.25rem;
-      background: #ffffff;
+      background: var(--ed-preview-light);
     }
     .blx-frame[data-preview-mode='dark'] {
-      background: #111111;
+      background: var(--ed-preview-dark);
     }
     .blx-overlay-viewport {
       position: absolute;
@@ -474,9 +562,9 @@
       box-sizing: border-box;
     }
     .blx-selection-overlay {
-      outline: 2px solid #ffffff;
+      outline: 2px solid var(--ed-selection-contrast);
       outline-offset: -2px;
-      box-shadow: inset 0 0 0 4px #111111;
+      box-shadow: inset 0 0 0 4px var(--ed-focus-ring);
     }
     .blx-error {
       display: grid;
@@ -487,7 +575,7 @@
       max-inline-size: 32rem;
       padding: 1.5rem;
       border: 1px solid var(--ed-border-strong);
-      border-radius: 0.5rem;
+      border-radius: var(--ed-radius-control);
     }
     .blx-shortcuts {
       display: grid;

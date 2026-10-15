@@ -1,3 +1,5 @@
+export { Icon, type IconProps } from './components/icon';
+export { ICONS, ELEMENT_ICONS, elementIconName, type IconName } from './icons/registry';
 export { cn } from './lib/cn';
 export { PortalContainerProvider } from './lib/portal';
 export { DirectionProvider } from '@radix-ui/react-direction';
