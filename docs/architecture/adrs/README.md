@@ -22,8 +22,9 @@ A Codex review is an input, not an approval. Disagreements and their resolution 
 | 0005 | Style resolution and CSS output | #102 | Accepted (owner decision 2026-10-14) |
 | 0006 | Locale storage and routing | #101 | Accepted |
 | 0007 | Free / Plus / Pro allocation for translation and appearance modes | #103 | Accepted (owner decision 2026-10-14) |
-| 0008 | Dependency licensing and GSAP | #8 | Accepted |
+| 0008 | Dependency licensing and GSAP | #8 | Accepted (GSAP prohibition superseded by ADR 0013) |
 | 0009 | Distribution and package boundaries | #6 | Accepted (owner decision 2026-10-14) |
 | 0010 | Monorepo layout and package boundaries | #11 | Proposed |
 | 0011 | Editor icon set | #196 (BWB-127) | Superseded by ADR 0012 |
 | 0012 | Editor icon set — Solar | epic #195 | Accepted (owner decision 2026-10-15); supersedes 0011 |
+| 0013 | Animation engine — GSAP | #87, #88, #203 | Accepted (owner decision 2026-10-15); supersedes GSAP prohibition in 0008 |

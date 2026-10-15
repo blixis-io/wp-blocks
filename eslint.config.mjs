@@ -44,8 +44,7 @@ export default tseslint.config(
     },
   },
   {
-    // Source-level boundary rule (ADR 0010): packages shared with PHP or the theme build, and the add-ons, must not
-    // import React, Zustand, dnd-kit or Tailwind; nothing may import GSAP (ADR 0008).
+    // Source-level boundary rule (ADR 0010): framework-free packages and add-ons must not import editor frameworks.
     files: [
       'packages/{core,design-tokens,capabilities,element-registry,style-engine,canvas-bridge,extension-api}/**/*.{js,mjs,cjs,ts,tsx}',
       'wordpress/{theme,plus,pro}/**/*.{js,mjs,cjs,ts,tsx}',
@@ -69,7 +68,7 @@ export default tseslint.config(
               ],
               message: 'This package must stay framework-free (ADR 0010).',
             },
-            { group: ['gsap', 'gsap/*', '@gsap/*'], message: 'GSAP is not approved (ADR 0008).' },
+            { group: ['gsap', 'gsap/*', '@gsap/*'], message: 'GSAP is restricted to ADR 0013 workspaces.' },
           ],
         },
       ],
@@ -122,13 +121,24 @@ export default tseslint.config(
   {
     files: ['**/*.{js,mjs,cjs,ts,tsx}'],
     ignores: [
+      'apps/editor/**',
+      'packages/animation-runtime/**',
       'packages/{core,design-tokens,capabilities,element-registry,style-engine,canvas-bridge,extension-api}/**',
       'wordpress/{theme,plus,pro}/**',
     ],
     rules: {
       'no-restricted-imports': [
         'error',
-        { patterns: [{ group: ['gsap', 'gsap/*', '@gsap/*'], message: 'GSAP is not approved (ADR 0008).' }] },
+        { patterns: [{ group: ['gsap', 'gsap/*', '@gsap/*'], message: 'GSAP is restricted to ADR 0013 workspaces.' }] },
+      ],
+    },
+  },
+  {
+    files: ['apps/editor/**/*.{js,mjs,cjs,ts,tsx}', 'packages/animation-runtime/**/*.{js,mjs,cjs,ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        { patterns: [{ group: ['@gsap/*'], message: 'The @gsap scope is not approved by ADR 0013.' }] },
       ],
     },
   },

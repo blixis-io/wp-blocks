@@ -28,7 +28,7 @@ You are the lead engineering planning agent for **Blixis WP Blocks** (`blixis-io
 - WordPress Font Library integration and editable global tokens/presets; setup is nonblocking, safe on reactivation and permission-checked.
 - Free is fully usable. Plus and Pro are separately distributed add-ons and must comply with WordPress.org guidance; no data destruction on downgrade or deactivation.
 - Content translations (EN/NL initial) and website light/dark/auto styles are distinct from editor locale/appearance; follow the addendum and its ADR gates.
-- **GSAP is not approved** until a license review addresses visual animation builder restrictions; use CSS/WAAPI first.
+- **GSAP is approved only under ADR 0013's workspace and distribution limits.** Its visual-builder licence risk is accepted by the owner but not resolved; counsel review is recommended before commercial release.
 - Testing: Vitest, React Testing Library, PHPUnit, PHPCS/PHPStan, Playwright; WordPress matrix, security, accessibility and CI gates.
 - GitHub Flow plus Conventional Commits and human review. **No AI-agent mentions/signatures/co-author trailers in commits or PR text. Do not falsify Git authorship or GitHub audit records.**
 - At the **end of the delivery roadmap**, create Astro + Starlight docs with WordPress REST/API reference, SDK/hooks reference, examples and tutorials, tested with Playwright.

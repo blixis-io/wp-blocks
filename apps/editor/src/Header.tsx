@@ -91,7 +91,7 @@ export function Header({
             onTogglePanel('left');
           }}
         >
-          <Icon name="panelLeft" className={icon} />
+          <Icon name="panelLeft" className={icon} mirrorInRtl />
         </ToolbarButton>
         <span className="blx-title">
           <span className="blx-title-text">{title}</span>
@@ -110,7 +110,7 @@ export function Header({
               store.getState().undo();
             }}
           >
-            <Icon name="undo" className={icon} />
+            <Icon name="undo" className={icon} mirrorInRtl />
           </ToolbarButton>
         </Hint>
         <Hint text={t('header.redo.hint')}>
@@ -122,7 +122,7 @@ export function Header({
               store.getState().redo();
             }}
           >
-            <Icon name="refresh" className={icon} />
+            <Icon name="redo" className={icon} mirrorInRtl />
           </ToolbarButton>
         </Hint>
         <ToolbarSeparator />
@@ -209,7 +209,7 @@ export function Header({
             onTogglePanel('right');
           }}
         >
-          <Icon name="panelRight" className={icon} />
+          <Icon name="panelRight" className={icon} mirrorInRtl />
         </ToolbarButton>
       </Toolbar>
     </header>

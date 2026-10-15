@@ -46,6 +46,15 @@ test('licence exceptions apply only to the exact package, version, ecosystem and
   assert.equal(classify([solar], 'dev', exceptionPolicy).length, 0);
 });
 
+test('GSAP uses a scoped custom LicenseRef exception and is never treated as GPL-compatible', () => {
+  const gsap = { ecosystem: 'npm', name: 'gsap', version: '3.13.0', license: 'LicenseRef-GSAP-Standard-No-Charge' };
+  assert.deepEqual(classify([gsap], 'distributed', policy), []);
+  assert.equal(classify([{ ...gsap, version: '3.14.0' }], 'distributed', policy).length, 1);
+  assert.equal(classify([{ ...gsap, license: 'Proprietary' }], 'distributed', policy).length, 1);
+  assert.equal(classify([{ ...gsap, name: '@gsap/react' }], 'distributed', policy).length, 1);
+  assert.equal(classify([{ ...gsap, ecosystem: 'composer' }], 'distributed', policy).length, 1);
+});
+
 test('GPL-2.0-only, AGPL, proprietary, unknown and missing licences are rejected everywhere', () => {
   for (const id of [
     'GPL-2.0-only',

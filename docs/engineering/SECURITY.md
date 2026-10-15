@@ -23,7 +23,7 @@
 - WordPress.org Free must comply with GPL-compatible distribution rules and directory policies; maintain license inventory and NOTICE.
 - Premium add-ons are independently distributed; review licensing and derivative implications with counsel.
 - `dnd-kit`, Tailwind, React, shadcn/ui and all transitive assets require license inventory.
-- GSAP adoption is **blocked pending affirmative license review** for a visual animation editor. Prefer Web Animations API/CSS for current scope.
+- GSAP is owner-approved only within ADR 0013's path-scoped workspaces. Its Standard No Charge licence is not OSI/GPL-compatible and includes a visual-builder restriction; the owner accepted that legal risk. Counsel review is recommended before commercial release. Keep it out of Free/theme/framework-free packages and retain a CSS/WAAPI path.
 - Fonts: verify redistributable/hosting terms for preset fonts; never bundle fonts by default without license validation.
 
 ## Incident planning
@@ -31,4 +31,4 @@
 Document key compromise, vulnerability reporting, emergency patch pipeline, migration rollback, backups and release revocation procedure before beta.
 # Dependency licence exceptions
 
-`tooling/licenses.json` keeps the distributed allowlist broad and conservative. A reviewed exception may be recorded only for an exact ecosystem/package, version and SPDX licence, with a reason and ADR decision reference. The exception applies only to distributed dependencies; changing package identity, version or licence fails the check. Do not add an exceptional licence to `distributed` to bypass package-specific review. Shipped attribution belongs in the generated NOTICE and must be required in distribution packaging.
+`tooling/licenses.json` keeps the distributed allowlist broad and conservative. A reviewed exception may be recorded only for an exact ecosystem/package, version and SPDX licence or `LicenseRef-*`, with a reason and ADR decision reference. Changing package identity, version or licence fails the check. Do not add an exceptional licence to `distributed` to bypass package-specific review. Shipped attribution belongs in the generated NOTICE and must be required in distribution packaging.

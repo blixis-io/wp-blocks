@@ -47,13 +47,13 @@ const GSAP_IMPORT = /(?:\bfrom\s+|\bimport\s*\(\s*|\brequire\s*\(\s*|\bimport\s+
 const GSAP_SCRIPT = /<script[^>]+src=["'][^"']*gsap[^"']*\.js/i;
 
 /** Source files that vendor GSAP (by file name) or import/load it (by content). docs/ and tooling/ may mention it. */
-export function findGsapUsage(root, dir = root) {
+export function findGsapUsage(root, dir = root, allowed = []) {
   const hits = [];
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const path = join(dir, entry.name);
     const rel = path.slice(root.length + 1);
     if (entry.isDirectory()) {
-      if (!SKIP_DIRS.has(entry.name)) hits.push(...findGsapUsage(root, path));
+      if (!SKIP_DIRS.has(entry.name)) hits.push(...findGsapUsage(root, path, allowed));
     } else if (
       /^(gsap|scrolltrigger|draggable|splittext|morphsvgplugin)([.-].*)?\.(js|mjs|cjs|ts)$/i.test(entry.name)
     ) {
@@ -62,7 +62,10 @@ export function findGsapUsage(root, dir = root) {
       SOURCE_EXT.test(entry.name) &&
       (GSAP_IMPORT.test(readFileSync(path, 'utf8')) || GSAP_SCRIPT.test(readFileSync(path, 'utf8')))
     ) {
-      hits.push(`${rel} (imports or loads GSAP)`);
+      const content = readFileSync(path, 'utf8');
+      const onlyGsap = /(?:from\s+|import\s*\(\s*|require\s*\(\s*|import\s+)['"]gsap(?:['"/])/.test(content);
+      const explicitlyAllowed = onlyGsap && allowed.some((workspace) => rel.startsWith(`${workspace}/`));
+      if (!explicitlyAllowed) hits.push(`${rel} (imports or loads GSAP)`);
     }
   }
   return hits;
@@ -112,13 +115,19 @@ export function check(root, config) {
     byShort.set(w.name.slice(config.scope.length), { path, ...w });
   }
   const denied = config.globalForbidExternal;
+  const allowedGsap = new Set(config.gsapAllowedWorkspaces ?? []);
 
-  const checkDeps = (label, all, w) => {
+  const checkDeps = (label, all, w, workspacePath) => {
     const allowedNames = new Set(w ? w.allow.map((a) => config.scope + a) : []);
     for (const [dep, value] of Object.entries(all)) {
       const target = resolveTarget(dep, value);
       for (const name of new Set([dep, target])) {
-        if (isDenied(name, denied) || (w && isDenied(name, w.forbidExternal))) {
+        const allowedGsapPackage = name === config.gsapPackage && w && allowedGsap.has(workspacePath);
+        if (
+          (isDenied(name, denied) && !(allowedGsapPackage && !name.startsWith('@gsap/'))) ||
+          (name === config.gsapPackage && !allowedGsapPackage) ||
+          (w && isDenied(name, w.forbidExternal))
+        ) {
           errors.push(
             `${label}: forbidden dependency "${name}"${name !== dep ? ` (via alias "${dep}": "${value}")` : ''}`,
           );
@@ -153,7 +162,7 @@ export function check(root, config) {
     if (pkg.name !== w.name) errors.push(`${path}: name is "${pkg.name}", expected "${w.name}"`);
     if (pkg.private !== true) errors.push(`${path}: must be "private": true (nothing is published to npm)`);
     const all = Object.assign({}, ...DEP_FIELDS.map((f) => pkg[f] ?? {}));
-    checkDeps(path, all, w);
+    checkDeps(path, all, w, path);
     // A package with TypeScript sources must be type-checked by the root `pnpm typecheck` (BWB-013).
     if (hasTypeScriptSources(join(root, path))) {
       if (!pkg.scripts?.typecheck) errors.push(`${path}: contains TypeScript sources but no "typecheck" script`);
@@ -182,9 +191,25 @@ export function check(root, config) {
       const re = new RegExp(`(^|[\\s'"/])${base}${family ? '[\\w.-]+' : ''}(@|['":\\s])`, 'm');
       if (re.test(text)) errors.push(`pnpm-lock.yaml: resolves forbidden package "${entry}"`);
     }
+    if (config.gsapPackage && new RegExp(`(^|[\\s'/])${config.gsapPackage}(@|[':\\s])`, 'm').test(text)) {
+      const hasAllowedImporter = [...allowedGsap].some((workspace) => {
+        const lines = text.split(/\r?\n/);
+        const start = lines.indexOf(`  ${workspace}:`);
+        if (start < 0) return false;
+        const block = [];
+        for (const line of lines.slice(start + 1)) {
+          if (/^\x20{2}\S/.test(line)) break;
+          block.push(line);
+        }
+        return block.some((line) => new RegExp(`^\\s+${config.gsapPackage}:\\s*$`).test(line));
+      });
+      if (!hasAllowedImporter)
+        errors.push(`pnpm-lock.yaml: resolves forbidden package "${config.gsapPackage}" outside an allowed workspace`);
+    }
   }
-  // Vendored copies and direct imports of GSAP outside the package manager (ADR 0008).
-  for (const hit of findGsapUsage(root)) errors.push(`${hit}: GSAP is not approved (ADR 0008)`);
+  // Vendored copies and direct imports outside the package manager still obey ADR 0013's workspace scope.
+  for (const hit of findGsapUsage(root, root, [...allowedGsap]))
+    errors.push(`${hit}: GSAP is not approved outside allowed workspaces (ADR 0013)`);
 
   // Workspace discovery follows pnpm-workspace.yaml and must match boundaries.json in both directions.
   const globs = readWorkspaceGlobs(root);
