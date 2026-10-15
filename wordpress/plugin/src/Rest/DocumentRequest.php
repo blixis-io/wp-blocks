@@ -13,6 +13,7 @@ use Blixis\Builder\Storage\Envelope;
 use Blixis\Builder\Storage\MetaKeys;
 use Blixis\Builder\Storage\RevisionRing;
 use Blixis\Builder\Storage\StreamStore;
+use Blixis\Builder\Preview\PreviewDocument;
 use Blixis\Builder\Theme\ThemeCompat;
 use Blixis\Builder\Theme\WordPressCompatibilityReader;
 
@@ -126,6 +127,12 @@ final class DocumentRequest {
 		}
 		if ( 1 !== \preg_match( '~^application/json(?:\s*;\s*charset\s*=\s*(?:utf-8|"utf-8"))?$~iD', $content_type ) ) {
 			return DocumentResult::error( 422, 'blixis_invalid_document', 'Invalid document.' );
+		}
+		if ( MetaKeys::LAYOUT === $key ) {
+			$layout = Envelope::decode( $body, $key );
+			if ( null !== $layout && \property_exists( $layout, 'root' ) && ! PreviewDocument::accepts( $layout ) ) {
+				return DocumentResult::error( 422, 'blixis_invalid_document', 'Invalid document.' );
+			}
 		}
 		try {
 			$result = $this->streams->write( $post_id, $key, $body, $expected );

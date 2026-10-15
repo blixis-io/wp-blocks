@@ -1095,6 +1095,149 @@ async function smoke() {
           'the fallback stylesheet is gone on the compatible theme',
         );
         command('post', 'delete', guardPost, '--force');
+        // Hardening (BWB-048): audit event, per-user publish rate limit, snapshot cap, hostile payloads.
+        const auditPost = command(
+          'post',
+          'create',
+          '--post_type=page',
+          '--post_status=draft',
+          '--post_title=Audit smoke',
+          '--porcelain',
+        );
+        const audit = JSON.parse(command('eval-file', '/fixtures/audit-smoke.php', auditPost).split('\n').pop());
+        const auditEvent = audit.events?.[0] ?? {};
+        check(
+          audit.saved === 200 && audit.status === 200 && audit.events?.length === 1,
+          'publishing fires exactly one audit event',
+        );
+        check(
+          auditEvent.kind === 'publish' &&
+            auditEvent.actor === 1 &&
+            auditEvent.post === Number(auditPost) &&
+            auditEvent.layoutSnapshot === 1 &&
+            auditEvent.pointerRevision === 1 &&
+            /^\d{4}-\d\d-\d\dT[\d:]+Z$/.test(auditEvent.time ?? ''),
+          'the audit event records actor, post, kind, snapshot, pointer revision and UTC time',
+        );
+        check(!JSON.stringify(auditEvent).includes('hed-1'), 'the audit event carries no document content');
+        command('post', 'delete', auditPost, '--force');
+
+        const limitPost = command(
+          'post',
+          'create',
+          '--post_type=page',
+          '--post_status=draft',
+          '--post_title=Limit smoke',
+          '--porcelain',
+        );
+        await api(`${limitPost}/layout`, {
+          cookie: adminCookie,
+          nonce: adminNonce,
+          method: 'PUT',
+          ifMatch: '"0"',
+          body: JSON.stringify({
+            schemaVersion: 1,
+            documentId: 'doc-lim',
+            layoutRevision: 1,
+            root: [{ id: 'hed-1', type: 'blixis/heading', props: {}, children: [] }],
+          }),
+        });
+        let firstLimited = 0;
+        let retryAfter = null;
+        for (let attempt = 1; attempt <= 33 && firstLimited === 0; attempt += 1) {
+          const response = await api(`${limitPost}/publish`, {
+            cookie: adminCookie,
+            nonce: adminNonce,
+            method: 'POST',
+            ifMatch: `"${attempt - 1}"`,
+            body: JSON.stringify({ layout: true }),
+          });
+          if (response.status === 429) {
+            firstLimited = attempt;
+            retryAfter = response.headers.get('retry-after');
+            check((await json(response)).code === 'blixis_rate_limited', 'the rate limit has a stable error code');
+          } else if (response.status !== 200) {
+            check(false, `publish attempt ${attempt} returned ${response.status}`);
+            break;
+          }
+        }
+        check(firstLimited === 31, `the 31st publish of a post within an hour is refused with 429 (${firstLimited})`);
+        check(Number(retryAfter) >= 1, 'the 429 carries a Retry-After header');
+        command('post', 'delete', limitPost, '--force');
+
+        const capPost = command(
+          'post',
+          'create',
+          '--post_type=page',
+          '--post_status=draft',
+          '--post_title=Cap smoke',
+          '--porcelain',
+        );
+        await api(`${capPost}/layout`, {
+          cookie: adminCookie,
+          nonce: adminNonce,
+          method: 'PUT',
+          ifMatch: '"0"',
+          body: JSON.stringify({
+            schemaVersion: 1,
+            documentId: 'doc-cap',
+            layoutRevision: 1,
+            root: [{ id: 'hed-1', type: 'blixis/heading', props: {}, children: [] }],
+          }),
+        });
+        command(
+          'eval',
+          `global $wpdb; $db = new Blixis\\Builder\\Storage\\WpdbDatabase( $wpdb ); for ( $i = 1; $i <= 200; $i++ ) { $db->insert( ${capPost}, Blixis\\Builder\\Storage\\MetaKeys::snap_layout( 5000 + $i ), '{"schemaVersion":1,"layoutRevision":1}' ); }`,
+        );
+        const capped = await api(`${capPost}/publish`, {
+          cookie: adminCookie,
+          nonce: adminNonce,
+          method: 'POST',
+          ifMatch: '"0"',
+          body: JSON.stringify({ layout: true }),
+        });
+        check(
+          capped.status === 409 && (await json(capped)).code === 'blixis_snapshot_limit',
+          'a post that already holds 200 snapshots cannot publish more',
+        );
+        command('post', 'delete', capPost, '--force');
+
+        const hostileBodies = [
+          ['a very deep JSON body', '['.repeat(5000) + ']'.repeat(5000)],
+          [
+            'invalid UTF-8',
+            Buffer.concat([
+              Buffer.from('{"schemaVersion":1,"layoutRevision":1,"x":"'),
+              Buffer.from([0xff, 0xfe]),
+              Buffer.from('"}'),
+            ]),
+          ],
+          ['a body of NUL bytes', '\u0000'.repeat(100)],
+        ];
+        const hostileTarget = command(
+          'post',
+          'create',
+          '--post_type=page',
+          '--post_status=draft',
+          '--post_title=Hostile smoke',
+          '--porcelain',
+        );
+        for (const [label, body] of hostileBodies) {
+          const response = await api(`${hostileTarget}/layout`, {
+            cookie: adminCookie,
+            nonce: adminNonce,
+            method: 'PUT',
+            ifMatch: '"0"',
+            body,
+          });
+          check(
+            [400, 413, 422].includes(response.status) && !/\/var\/www|Stack trace|wpdb|\.php/.test(response.text),
+            `${label} is rejected with a client error and no internals (${response.status})`,
+          );
+        }
+        const unchanged = await json(await api(`${hostileTarget}/layout`, { cookie: adminCookie, nonce: adminNonce }));
+        check(unchanged.revision === 0, 'hostile bodies never change stored data');
+        command('post', 'delete', hostileTarget, '--force');
         // Media (BWB-045): raster library images only, validated responsive attributes, alt text, picker route.
         const mediaIds = JSON.parse(command('eval-file', '/fixtures/media-smoke.php').split('\n').pop());
         const mediaApi = async (id, { cookie, nonce } = {}) =>

@@ -26,6 +26,9 @@ use Blixis\Builder\Storage\StreamStore;
  * (base layout, content snapshot) exactly as it was.
  */
 final class Publisher {
+	private const PUBLISH_SNAPSHOT_LIMIT = 200;
+	// Rollback is recovery and must remain possible after the publish cap is reached.
+	private const ROLLBACK_SNAPSHOT_LIMIT = 240;
 	/**
 	 * Create a publisher.
 	 *
@@ -133,6 +136,12 @@ final class Publisher {
 					'expectedRevision' => $o->expected_pointer_revision,
 				]
 			);
+		}
+		$needed   = (int) $layout_part + (int) ( null !== $locale );
+		$rollback = null !== $o->layout_snapshot || $rollback_content;
+		$limit    = $rollback ? self::ROLLBACK_SNAPSHOT_LIMIT : self::PUBLISH_SNAPSHOT_LIMIT;
+		if ( \count( $this->database->snapshot_keys( $post_id ) ) + $needed > $limit ) {
+			return PublishResult::error( 409, 'blixis_snapshot_limit' );
 		}
 		$pointer = null === $stored ? new \stdClass() : Envelope::decode( $stored['value'], MetaKeys::PUBLISHED );
 		if ( null === $pointer ) {

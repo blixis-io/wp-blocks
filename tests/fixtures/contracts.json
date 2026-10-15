@@ -52,10 +52,9 @@
       "paths": ["packages/style-engine/corpus/token-sets.json"],
       "ts": ["packages/style-engine/src/tokens.test.ts"],
       "php": {
-        "level": "shape",
-        "runner": "tooling/php/tests/ContractsTest.php",
-        "issue": "BWB-048",
-        "covers": ["test_token_corpus_matches_the_json_schema"]
+        "level": "full",
+        "runner": "wordpress/plugin/tests/TokenSetCorpusTest.php",
+        "covers": ["test_token_set_corpus"]
       }
     },
     {
