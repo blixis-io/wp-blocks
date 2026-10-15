@@ -1,3 +1,4 @@
+import { isWellFormed } from './well-formed.ts';
 import { DOCUMENT_LIMITS } from '../schema/limits.ts';
 
 /** Maximum container nesting accepted in documents and fixtures; the PHP implementation enforces the same limit. */
@@ -36,7 +37,7 @@ export function assertStrictJson(text: string): void {
     } catch {
       return fail('invalid string escape');
     }
-    if (typeof decoded !== 'string' || !decoded.isWellFormed()) return fail('lone surrogate in string');
+    if (typeof decoded !== 'string' || !isWellFormed(decoded)) return fail('lone surrogate in string');
     return decoded;
   };
   const number = (): void => {

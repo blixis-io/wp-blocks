@@ -290,4 +290,23 @@ $result   = $snaps->publish( $page_id, MetaKeys::snap_layout( $n ), wp_json_enco
 if ( ! $result->success ) {
 	WP_CLI::error( 'Publishing conflicted; run the script again.' );
 }
+// The working streams (what the editor loads and edits): the same document, with the fields of a complete BuilderDocument.
+$working = $layout( 1 ) + [
+	'defaultLocale'    => 'en_US',
+	'locales'          => [ 'en_US', 'nl_NL' ],
+	'classListVersion' => 0,
+	'classRefs'        => new stdClass(),
+	'metadata'         => [
+		'updatedAt'     => gmdate( 'Y-m-d\TH:i:s\Z' ),
+		'editorVersion' => '0.1.0',
+	],
+];
+$write   = static function ( string $key, string $json ) use ( $streams, $page_id ): void {
+	$current = $streams->read( $page_id, $key );
+	$streams->write( $page_id, $key, $json, $current['revision'] ?? 0 );
+};
+$write( MetaKeys::LAYOUT, wp_json_encode( $working ) );
+$write( MetaKeys::content( 'en_US' ), $content_json( 1, $en ) );
+$write( MetaKeys::content( 'nl_NL' ), $content_json( 1, $nl ) );
+
 WP_CLI::success( sprintf( 'Published revision %d of "%s": %s (site locale %s, %d CSS issues)', $n, get_the_title( $page_id ), get_permalink( $page_id ), $locale, count( $compiled->issues ) ) );

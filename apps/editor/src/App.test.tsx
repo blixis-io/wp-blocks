@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { EditorApp } from './App';
@@ -7,6 +7,7 @@ import { ErrorScreen } from './ErrorScreen';
 import { PANELS_STORAGE_KEY } from './panels';
 import { axeViolations } from './test/axe';
 import { makeBootstrap } from './test/fixtures';
+import { fakeClient, makeDocument, makeStore, ok, streamsOf } from './test/state-helpers';
 import type { EditorBootstrap } from './bootstrap';
 
 function nameOf(element: Element): string {
@@ -20,7 +21,8 @@ function descriptionOf(element: Element): string {
 
 function setup(overrides: Partial<EditorBootstrap> = {}) {
   const user = userEvent.setup();
-  const view = render(<EditorApp bootstrap={makeBootstrap(overrides)} />);
+  const { store } = makeStore({ bootstrap: overrides });
+  const view = render(<EditorApp bootstrap={makeBootstrap(overrides)} store={store} />);
   return { user, ...view, root: screen.getByTestId('editor-root') };
 }
 
@@ -101,7 +103,7 @@ describe('shell landmarks', () => {
   });
 
   it('uses the Dutch catalog and RTL direction on the editor root only', () => {
-    const { root } = setup({ editorLocale: 'nl_BE', contentLocale: 'ar' });
+    const { root } = setup({ editorLocale: 'nl_BE', contentLocale: 'ar', enabledLocales: ['en_US', 'ar'] });
     expect(root.getAttribute('lang')).toBe('nl-NL');
     expect(root.getAttribute('dir')).toBe('ltr');
     expect(screen.getByRole('button', { name: 'Opslaan' })).toBeTruthy();
@@ -112,7 +114,7 @@ describe('shell landmarks', () => {
     const { root, unmount } = setup({ editorLocale: 'ar', contentLocale: 'en_US' });
     expect(root.getAttribute('dir')).toBe('rtl');
     unmount();
-    const second = setup({ editorLocale: 'en_US', contentLocale: 'ar' });
+    const second = setup({ editorLocale: 'en_US', contentLocale: 'ar', enabledLocales: ['en_US', 'ar'] });
     expect(second.root.getAttribute('dir')).toBe('ltr');
     expect(screen.getByTestId('content-locale').textContent).toContain('Content language: ar');
   });
@@ -204,7 +206,7 @@ describe('toolbar roving tabindex', () => {
     await user.tab();
     for (let i = 0; i < 10 && document.activeElement !== undo; i++) await user.keyboard('{ArrowRight}');
     expect(document.activeElement).toBe(undo);
-    expect((await screen.findByRole('tooltip')).textContent).toContain('Undo arrives with the editing history.');
+    expect((await screen.findByRole('tooltip')).textContent).toContain('Undo the last change.');
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('tooltip')).toBeNull();
   });
@@ -338,6 +340,103 @@ describe('error screen', () => {
     const alert = screen.getByRole('alert');
     expect(alert.textContent).toContain('The editor could not start');
     expect(alert.textContent).not.toMatch(/zod|invalid_type|nonce/i);
+  });
+});
+
+describe('document load failure', () => {
+  function failingSetup(overrides: Partial<EditorBootstrap> = {}) {
+    let fail = true;
+    let release: (() => void) | undefined;
+    const streams = streamsOf(makeDocument());
+    const client = fakeClient({
+      layout: async () => {
+        if (!fail) {
+          await new Promise<void>((resolve) => {
+            release = resolve;
+          });
+          return ok(streams.layout);
+        }
+        return { ok: false, error: { kind: 'network' } } as const;
+      },
+      contents: streams.contents,
+    });
+    const user = userEvent.setup();
+    const { store } = makeStore({ bootstrap: overrides, deps: { client } });
+    const view = render(<EditorApp bootstrap={makeBootstrap(overrides)} store={store} />);
+    return {
+      user,
+      store,
+      view,
+      succeedNext: () => {
+        fail = false;
+      },
+      finish: () => {
+        release?.();
+      },
+    };
+  }
+
+  it('shows the alert with Retry in the main region even when the Structure panel is collapsed', async () => {
+    localStorage.setItem(PANELS_STORAGE_KEY, JSON.stringify({ left: false, right: false }));
+    failingSetup();
+    const alert = await screen.findByRole('alert');
+    expect(within(screen.getByRole('main')).getByRole('alert')).toBe(alert);
+    expect(alert.textContent).toContain('The document could not be loaded.');
+    expect(within(alert).getByRole('button', { name: 'Try again' })).toBeTruthy();
+    expect(document.getElementById('blx-structure')?.hasAttribute('hidden')).toBe(true);
+    // The Structure panel only points to it, with no second alert.
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
+  });
+
+  it('keeps focus on the loading status after Retry, then on the content when it loaded', async () => {
+    const { user, succeedNext, finish, store } = failingSetup();
+    const retry = await screen.findByRole('button', { name: 'Try again' });
+    succeedNext();
+    await user.click(retry);
+    const status = await screen.findByTestId('load-retrying');
+    expect(status.getAttribute('role')).toBe('status');
+    await waitFor(() => {
+      expect(document.activeElement).toBe(status);
+    });
+    expect(document.body.contains(document.activeElement)).toBe(true);
+    finish();
+    await waitFor(() => {
+      expect(store.getState().status).toBe('ready');
+    });
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.queryByTestId('load-retrying')).toBeNull();
+  });
+
+  it('moves focus back to the alert when the retry fails again', async () => {
+    const { user } = failingSetup();
+    await user.click(await screen.findByRole('button', { name: 'Try again' }));
+    await waitFor(() => {
+      expect(document.activeElement).toBe(screen.getByRole('alert'));
+    });
+  });
+
+  it('is translated and has no axe violations in English and Dutch', async () => {
+    const { unmount } = (() => {
+      const made = failingSetup();
+      return { unmount: made.view.unmount };
+    })();
+    await screen.findByRole('alert');
+    expect(await axeViolations()).toEqual([]);
+    unmount();
+    failingSetup({ editorLocale: 'nl_NL' });
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain('Het document kon niet worden geladen.');
+    expect(await axeViolations()).toEqual([]);
+  });
+});
+
+describe('inspector selection label', () => {
+  it('announces which element is selected with the translated prefix', async () => {
+    const { user } = setup();
+    await user.click(await screen.findByRole('button', { name: /el-heading-1/ }));
+    const selection = screen.getByTestId('inspector-selection');
+    expect(selection.textContent).toContain('Selected element:');
+    expect(selection.textContent).toContain('el-heading-1');
   });
 });
 

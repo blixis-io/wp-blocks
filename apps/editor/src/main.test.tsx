@@ -3,12 +3,15 @@ import { describe, expect, it } from 'vitest';
 import { BOOTSTRAP_ELEMENT_ID } from './bootstrap';
 import { mountEditor } from './main';
 import { makeBootstrap } from './test/fixtures';
+import { fakeClient, makeDocument, streamsOf } from './test/state-helpers';
+
+const createClient = () => fakeClient(streamsOf(makeDocument()));
 
 describe('mountEditor', () => {
   it('mounts with an explicit bootstrap', async () => {
     const container = document.createElement('div');
     document.body.append(container);
-    const root = mountEditor(container, makeBootstrap());
+    const root = mountEditor(container, makeBootstrap(), { createClient });
     await act(async () => {
       await Promise.resolve();
     });
@@ -33,7 +36,7 @@ describe('mountEditor', () => {
     });
     const container = document.createElement('div');
     document.body.append(container);
-    const root = mountEditor(container, makeBootstrap({ cspNonce: 'bm9uY2UtMTIzNDU2Nzg5MA==' }));
+    const root = mountEditor(container, makeBootstrap({ cspNonce: 'bm9uY2UtMTIzNDU2Nzg5MA==' }), { createClient });
     await act(async () => {
       await Promise.resolve();
     });
@@ -62,7 +65,7 @@ describe('mountEditor', () => {
     document.body.innerHTML = `<script type="application/json" id="${BOOTSTRAP_ELEMENT_ID}">${JSON.stringify(makeBootstrap())}</script>`;
     const container = document.createElement('div');
     document.body.append(container);
-    const root = mountEditor(container);
+    const root = mountEditor(container, undefined, { createClient });
     await act(async () => {
       await Promise.resolve();
     });

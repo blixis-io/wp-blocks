@@ -61,11 +61,17 @@ try {
   let seq = 0;
   const pending = new Map();
   const problems = [];
+  const apiResponses = [];
   ws.onmessage = (event) => {
     const message = JSON.parse(event.data);
     if (message.id && pending.has(message.id)) {
       pending.get(message.id)(message);
       pending.delete(message.id);
+    } else if (
+      message.method === 'Network.responseReceived' &&
+      /blixis\/v1|rest_route=\/blixis\/v1/.test(message.params.response.url)
+    ) {
+      apiResponses.push({ url: message.params.response.url, status: message.params.response.status });
     } else if (message.method === 'Runtime.exceptionThrown') {
       problems.push(`exception: ${message.params.exceptionDetails.text}`);
     } else if (message.method === 'Runtime.consoleAPICalled' && message.params.type === 'error') {
@@ -104,6 +110,7 @@ try {
   await send('Page.enable');
   await send('Runtime.enable');
   await send('Log.enable');
+  await send('Network.enable');
   await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: 'light' }] });
 
   // Sign in (development credentials only).
@@ -271,6 +278,39 @@ try {
   assert.ok(reflow.inView, `the inspector heading can be scrolled into view at 320px (${JSON.stringify(reflow)})`);
   await send('Emulation.clearDeviceMetricsOverride');
   await sleep(400);
+
+  // Real data: the editor loads the demo page's working streams through the REST API and shows them (BWB-050).
+  await nav(editorUrl, 3000);
+  const loaded = await ev(`(() => {
+    const outline = [...document.querySelectorAll('nav[aria-label="Structure"] button')].map((b) => b.textContent.trim());
+    return { outline, undo: document.querySelector('button[aria-label*="ndo" i]')?.getAttribute('aria-disabled') };
+  })()`);
+  assert.ok(
+    loaded.outline.length >= 10,
+    `the structure outline lists the loaded elements (${JSON.stringify(loaded.outline)})`,
+  );
+  assert.ok(
+    loaded.outline.some((label) => label.includes('hero-h1')) &&
+      loaded.outline.some((label) => label.includes('body-img')),
+    'the outline shows the demo elements by type and id',
+  );
+  assert.equal(loaded.undo, 'true', 'undo is disabled before any command');
+  await ev(
+    `[...document.querySelectorAll('nav[aria-label="Structure"] button')].find((b) => b.textContent.includes('hero-h1')).click()`,
+  );
+  await sleep(300);
+  const picked = await ev(
+    `({ current: document.querySelector('nav[aria-label="Structure"] [aria-current="true"]')?.textContent.trim(), inspector: document.querySelector('aside[aria-label="Inspector"]').textContent })`,
+  );
+  assert.ok(picked.current?.includes('hero-h1'), 'the clicked element is marked aria-current');
+  assert.ok(picked.inspector.includes('hero-h1'), 'the inspector header shows the selected element');
+  const contentLocale = await ev(`document.querySelector('[data-testid="content-locale"]')?.textContent`);
+  assert.ok(/en_US/.test(contentLocale ?? ''), 'the canvas shows the content locale from the settings');
+  const wrong = apiResponses.filter((entry) => entry.status !== 200);
+  assert.ok(
+    apiResponses.length >= 3 && wrong.length === 0,
+    `layout and both content streams load with 200 (${JSON.stringify(apiResponses)})`,
+  );
 
   if (SCREENSHOT) {
     const shot = await send('Page.captureScreenshot', { format: 'png' });

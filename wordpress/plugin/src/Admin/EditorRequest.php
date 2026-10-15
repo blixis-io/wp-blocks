@@ -21,8 +21,9 @@ final class EditorRequest {
 	 *
 	 * @param int    $post_id Positive post ID or zero when invalid.
 	 * @param string $content_locale Enabled locale after fallback.
+	 * @param bool   $locale_explicit Whether the link named an enabled locale itself (the editor then prefers it over its remembered one).
 	 */
-	public function __construct( public readonly int $post_id, public readonly string $content_locale ) {}
+	public function __construct( public readonly int $post_id, public readonly string $content_locale, public readonly bool $locale_explicit = false ) {}
 
 	/**
 	 * Parse query arguments; malformed locale always falls back to the configured default.
@@ -32,12 +33,13 @@ final class EditorRequest {
 	 * @return self
 	 */
 	public static function parse( array $query, LocaleConfig $locales ): self {
-		$post_id = self::positive_id( $query['post'] ?? null );
-		$locale  = $query['locale'] ?? null;
-		if ( ! \is_string( $locale ) || ! MetaKeys::is_valid_locale( $locale ) || ! \in_array( $locale, $locales->enabled, true ) ) {
+		$post_id  = self::positive_id( $query['post'] ?? null );
+		$locale   = $query['locale'] ?? null;
+		$explicit = \is_string( $locale ) && MetaKeys::is_valid_locale( $locale ) && \in_array( $locale, $locales->enabled, true );
+		if ( ! $explicit ) {
 			$locale = $locales->default_locale;
 		}
-		return new self( $post_id, $locale );
+		return new self( $post_id, (string) $locale, $explicit );
 	}
 
 	/**

@@ -1,4 +1,5 @@
 import type { Json } from '../schema/primitives.ts';
+import { isWellFormed } from './well-formed.ts';
 
 /**
  * Checks the document/fixture value rules and returns the value unchanged: `null`, booleans, safe integers, well-formed
@@ -14,7 +15,7 @@ export function assertJsonValue(value: unknown, path = '$'): Json {
     return value;
   }
   if (typeof value === 'string') {
-    if (!value.isWellFormed()) throw new Error(`${path}: strings must be well-formed Unicode (no lone surrogates)`);
+    if (!isWellFormed(value)) throw new Error(`${path}: strings must be well-formed Unicode (no lone surrogates)`);
     if (value !== value.normalize('NFC')) throw new Error(`${path}: strings must be NFC-normalised`);
     return value;
   }
@@ -35,7 +36,7 @@ export function assertJsonValue(value: unknown, path = '$'): Json {
       throw new Error(`${path}: objects with symbol or non-enumerable properties are not JSON`);
     }
     for (const [key, item] of Object.entries(value)) {
-      if (!key.isWellFormed() || key !== key.normalize('NFC'))
+      if (!isWellFormed(key) || key !== key.normalize('NFC'))
         throw new Error(`${path}: object keys must be well-formed, NFC-normalised Unicode (${key})`);
       assertJsonValue(item, `${path}.${key}`);
     }

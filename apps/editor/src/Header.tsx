@@ -28,13 +28,14 @@ import {
   Undo2,
   Upload,
 } from 'lucide-react';
-import { useState, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import type { EditorBootstrap } from './bootstrap';
 import { CHROME_PREFERENCES, isChromePreference, type ChromePreference } from './chrome-theme';
 import type { MessageKey } from './i18n';
 import { useI18n } from './i18n-react';
 import type { PanelState } from './panels';
 import { ShortcutsDialog } from './ShortcutsDialog';
+import { VIEWPORTS as VIEWPORT_IDS, useEditorStore, useEditorStoreApi, type Viewport } from './state';
 
 const APPEARANCE_ICONS: Record<ChromePreference, ReactNode> = {
   system: <SunMoon aria-hidden="true" className="size-4" />,
@@ -78,7 +79,11 @@ export function Header({
   inspectorId,
 }: HeaderProps) {
   const { t, locale } = useI18n();
-  const [viewport, setViewport] = useState<string>('desktop');
+  const store = useEditorStoreApi();
+  const viewport = useEditorStore((state) => state.viewport);
+  const contentLocale = useEditorStore((state) => state.contentLocale);
+  const canUndo = useEditorStore((state) => state.canUndo);
+  const canRedo = useEditorStore((state) => state.canRedo);
   const title = bootstrap.postTitle.trim() === '' ? t('header.untitled') : bootstrap.postTitle;
   const structureLabel = t('panel.structure.toggle');
   const inspectorLabel = t('panel.inspector.toggle');
@@ -107,17 +112,31 @@ export function Header({
           <span className="blx-title-text">{title}</span>
           <span className="blx-chip">
             <VisuallyHidden>{`${t('header.contentLocale')}: `}</VisuallyHidden>
-            {bootstrap.contentLocale}
+            {contentLocale}
           </span>
         </span>
         <span className="blx-spacer" />
         <Hint text={t('header.undo.hint')}>
-          <ToolbarButton size="icon" disabled aria-label={t('header.undo')}>
+          <ToolbarButton
+            size="icon"
+            disabled={!canUndo}
+            aria-label={t('header.undo')}
+            onClick={() => {
+              store.getState().undo();
+            }}
+          >
             <Undo2 aria-hidden="true" className={icon} />
           </ToolbarButton>
         </Hint>
         <Hint text={t('header.redo.hint')}>
-          <ToolbarButton size="icon" disabled aria-label={t('header.redo')}>
+          <ToolbarButton
+            size="icon"
+            disabled={!canRedo}
+            aria-label={t('header.redo')}
+            onClick={() => {
+              store.getState().redo();
+            }}
+          >
             <Redo2 aria-hidden="true" className={icon} />
           </ToolbarButton>
         </Hint>
@@ -126,7 +145,7 @@ export function Header({
           type="single"
           value={viewport}
           onValueChange={(value) => {
-            if (value !== '') setViewport(value);
+            if ((VIEWPORT_IDS as readonly string[]).includes(value)) store.getState().setViewport(value as Viewport);
           }}
           aria-label={t('header.viewport')}
         >
