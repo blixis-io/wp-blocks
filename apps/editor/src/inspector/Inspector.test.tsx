@@ -62,6 +62,7 @@ async function mount(
     style?: ElementNode['style'];
     reactive?: boolean;
     chromeTheme?: 'light' | 'dark';
+    preserveSectionDefaults?: boolean;
   } = {},
 ) {
   const target = el('target', type);
@@ -88,10 +89,35 @@ async function mount(
       </I18nProvider>
     </StoreProvider>,
   );
+  if (options.tab === 'style' && !options.preserveSectionDefaults) {
+    for (const id of ['style-layout', 'style-effects']) {
+      const toggle = document.querySelector<HTMLButtonElement>(`button[aria-controls="inspector-section-${id}-panel"]`);
+      if (!toggle) throw new Error(`Missing inspector section toggle: ${id}`);
+      if (toggle.getAttribute('aria-expanded') === 'false') fireEvent.click(toggle);
+    }
+  }
   return { store, ...view };
 }
 
 describe('Inspector controls', () => {
+  it('opens Typography and Color by default and collapses Layout and Border & Effects', async () => {
+    await mount('blixis/heading', { tab: 'style', preserveSectionDefaults: true });
+    for (const [name, state] of [
+      ['Typography', 'true'],
+      ['Color', 'true'],
+      ['Layout', 'false'],
+      ['Border & Effects', 'false'],
+    ] as const) {
+      expect(screen.getByRole('button', { name: `Toggle ${name}` }).getAttribute('aria-expanded')).toBe(state);
+    }
+  });
+
+  it('renders Content fields in a borderless group container instead of a native fieldset', async () => {
+    const { container } = await mount('blixis/heading', { tab: 'content' });
+    expect(container.querySelector('fieldset.blx-inspector-group')).toBeNull();
+    expect(container.querySelector('div.blx-inspector-group')).toBeTruthy();
+  });
+
   it('collapses a section with a real button, exposes its region, and remembers state for the session', async () => {
     const user = userEvent.setup();
     const first = await mount('blixis/heading');

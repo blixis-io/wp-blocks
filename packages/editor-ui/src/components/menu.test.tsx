@@ -20,6 +20,18 @@ function renderMenu(items: readonly MenuItem[] = choices, container: HTMLElement
 }
 
 describe('Menu keyboard and focus behavior', () => {
+  it('shows a Solar check on checked rows without confusing it with keyboard focus', async () => {
+    const user = userEvent.setup();
+    renderMenu([
+      { label: 'Checked', checked: true },
+      { label: 'Unchecked', checked: false },
+    ]);
+    await user.click(screen.getByRole('button', { name: 'Actions' }));
+    const checked = screen.getByRole('menuitemcheckbox', { name: 'Checked' });
+    expect(checked.querySelector('svg')).toBeTruthy();
+    expect(checked.getAttribute('aria-checked')).toBe('true');
+    expect(screen.getByRole('menuitemcheckbox', { name: 'Unchecked' }).querySelector('svg')).toBeNull();
+  });
   it('opens with Enter', async () => {
     const user = userEvent.setup();
     renderMenu();
@@ -66,6 +78,9 @@ describe('Menu keyboard and focus behavior', () => {
     const user = userEvent.setup();
     renderMenu();
     await user.click(screen.getByRole('button', { name: 'Actions' }));
+    await waitFor(() => {
+      expect(document.activeElement?.getAttribute('role')).toMatch(/^menuitem/);
+    });
     await user.keyboard('{ArrowUp}');
     expect(document.activeElement?.textContent).toContain('Gamma');
   });

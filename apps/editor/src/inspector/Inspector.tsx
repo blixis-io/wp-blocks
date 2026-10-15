@@ -209,7 +209,12 @@ export function Inspector({
               PROPERTIES.has(field.id),
           );
           return (
-            <InspectorSection key={group} id={`style-${group}`} title={t(`inspector.section.${group}` as never)}>
+            <InspectorSection
+              key={group}
+              id={`style-${group}`}
+              title={t(`inspector.section.${group}` as never)}
+              defaultCollapsed={group === 'layout' || group === 'effects'}
+            >
               {fields.map((field) => (
                 <StyleControl
                   key={field.id}
@@ -242,8 +247,7 @@ export function Inspector({
         id={`content-${element.type}`}
         title={t(`element.${element.type.replace('blixis/', '')}` as never)}
       >
-        <fieldset className="blx-inspector-group">
-          <legend>{t(`inspector.${tab}` as never)}</legend>
+        <div className="blx-inspector-group" role="group" aria-label={t(`inspector.${tab}` as never)}>
           {fields.map(([name, prop]) => (
             <PropField
               key={`${element.id}:${locale}:${name}`}
@@ -262,7 +266,7 @@ export function Inspector({
           {Object.hasOwn(definition.props, 'level') || Object.hasOwn(definition.props, 'tag') ? (
             <p className="blx-inspector-hint">{t('inspector.htmlTag.hint')}</p>
           ) : null}
-        </fieldset>
+        </div>
       </InspectorSection>
       {Object.hasOwn(definition.props, 'href') ? (
         <InspectorSection id={`link-${element.id}`} title={t('inspector.link')}>

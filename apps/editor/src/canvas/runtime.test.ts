@@ -291,13 +291,15 @@ describe('render', () => {
     expect(document.querySelector('script')).toBeNull();
   });
 
-  it('allows ordinary attributes', () => {
+  it('keeps ordinary attributes while removing native title tooltips from canvas content', () => {
     const h = begin();
     render(
       h,
       '<a href="/about" title="data: sheet" class="a" data-blx-id="el-link-1" target="_blank">on</a><img src="/a.png" alt="onion" srcset="/a.png 1x">',
     );
     expect(types(h)).toContain('rendered');
+    expect(h.root.querySelector('[title]')).toBeNull();
+    expect(h.root.querySelector('[data-blx-id="el-link-1"]')?.getAttribute('href')).toBe('/about');
   });
 
   it('refuses too many elements', () => {

@@ -202,6 +202,7 @@ export function startRuntime(env: RuntimeEnv = { document, window }): Runtime | 
         fail(checked.code);
         return;
       }
+      for (const element of checked.fragment.querySelectorAll('[title]')) element.removeAttribute('title');
       contentStyle.textContent = css;
       root.replaceChildren(checked.fragment);
       lastRevision = revision;

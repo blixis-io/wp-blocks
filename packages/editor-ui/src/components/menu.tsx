@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { usePortalContainer } from '../lib/portal';
 import { cn } from '../lib/cn';
 import { ToolbarButton } from './toolbar';
+import { Icon } from './icon';
 
 export interface MenuItem {
   label: string;
@@ -169,13 +170,19 @@ export function Menu({
             };
             return item.href ? (
               <a key={`${item.label}-${String(index)}`} {...common} href={item.href}>
-                {item.icon}
-                {item.label}
+                <span className="ed-menu-item-content">
+                  {item.icon}
+                  {item.label}
+                </span>
+                {item.checked ? <Icon name="check" size={14} /> : null}
               </a>
             ) : (
               <button key={`${item.label}-${String(index)}`} type="button" {...common} disabled={item.disabled}>
-                {item.icon}
-                {item.label}
+                <span className="ed-menu-item-content">
+                  {item.icon}
+                  {item.label}
+                </span>
+                {item.checked ? <Icon name="check" size={14} /> : null}
               </button>
             );
           })}
@@ -188,7 +195,6 @@ export function Menu({
       activeRef.current = enabled[0] ?? 0;
       setActive(activeRef.current);
       setOpen(true);
-      requestAnimationFrame(() => entries.current[enabled[0] ?? 0]?.focus());
     } else close(false);
   };
   const triggerKeyDown = (event: KeyboardEvent<HTMLElement>) => {

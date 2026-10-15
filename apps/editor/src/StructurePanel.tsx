@@ -7,6 +7,7 @@ import type { MessageKey } from './messages/en_US';
 import { elementLabel } from './element-label';
 import { useI18n } from './i18n-react';
 import { useEditorStore, useEditorStoreApi } from './state';
+import { ElementId } from './ElementId';
 
 interface Row {
   node: ElementNode;
@@ -112,7 +113,6 @@ const OutlineItem = memo(function OutlineItem({
   guideStops: rowGuideStops,
   expanded,
   tabIndex,
-  'data-on-path': dataOnPath,
   query,
   onFocus,
   onKeyDown,
@@ -126,7 +126,6 @@ const OutlineItem = memo(function OutlineItem({
   guideStops: boolean[];
   expanded: boolean;
   tabIndex: number;
-  'data-on-path'?: string;
   query: string;
   onFocus: () => void;
   onKeyDown: (event: React.KeyboardEvent<HTMLDivElement>, id: string) => void;
@@ -153,7 +152,6 @@ const OutlineItem = memo(function OutlineItem({
       data-id={node.id}
       data-parent={parent ?? undefined}
       data-last-child={position === setSize ? 'true' : 'false'}
-      data-on-path={dataOnPath}
       tabIndex={tabIndex}
       style={{ '--tree-depth': String(depth - 1), '--tree-level': String(depth) } as CSSProperties}
       className="blx-outline-item ed-focus-ring"
@@ -180,7 +178,7 @@ const OutlineItem = memo(function OutlineItem({
             setExpanded(node.id, !expanded);
           }}
         >
-          <Icon name={expanded ? 'chevronDown' : 'caretRight'} size={14} mirrorInRtl={!expanded} />
+          <Icon name="chevronRight" size={14} {...(expanded ? { className: 'is-expanded' } : {})} mirrorInRtl />
         </button>
       ) : (
         <span className="blx-tree-toggle" aria-hidden="true" />
@@ -202,9 +200,8 @@ const OutlineItem = memo(function OutlineItem({
         </span>
       ) : null}
       <Icon name={elementIconName(node.type)} size={16} className="blx-tree-icon" />
-      <span id={`blx-tree-label-${node.id}`} className="blx-outline-label" title={`${node.type} · ${node.id}`}>
-        {highlight(elementLabel(node.type, t), query)}{' '}
-        <span className="blx-outline-id">{highlight(node.id, query)}</span>
+      <span id={`blx-tree-label-${node.id}`} className="blx-outline-label">
+        {highlight(elementLabel(node.type, t), query)} <ElementId id={node.id} />
         {query && node.type.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()) ? (
           <span aria-hidden="true" className="blx-outline-type">
             {highlight(node.type, query)}
@@ -286,16 +283,6 @@ export function StructurePanel({ editingEnabled }: { editingEnabled: boolean }) 
     () => (query ? filtered.rows : flatten(root ?? [], expanded)),
     [filtered.rows, query, root, expanded],
   );
-  const selectedPathIds = useMemo(() => {
-    if (selectedId === null || root === null) return new Set<string>();
-    const path = findPath(root, selectedId);
-    return new Set(
-      path?.flatMap((_, index) => {
-        const node = nodeAt(root, path.slice(0, index + 1));
-        return node ? [node.id] : [];
-      }) ?? [],
-    );
-  }, [root, selectedId]);
   const rowsRef = useRef(rows);
   const expandedRef = useRef(expanded);
   useLayoutEffect(() => {
@@ -364,7 +351,6 @@ export function StructurePanel({ editingEnabled }: { editingEnabled: boolean }) 
           <OutlineItem
             key={row.node.id}
             {...row}
-            {...(selectedPathIds.has(row.node.id) ? { 'data-on-path': 'true' } : {})}
             expanded={query ? true : expanded.has(row.node.id)}
             query={query}
             tabIndex={(focusedId ?? rows[0]?.node.id) === row.node.id ? 0 : -1}
@@ -553,7 +539,6 @@ function PaletteCard({
       tabIndex={index === 0 ? 0 : -1}
       aria-disabled={disabled}
       onKeyDown={onGridKeyDown}
-      title={disabled ? t(!editingEnabled ? 'panel.palette.locked' : 'panel.palette.unavailable') : undefined}
       onClick={() => {
         if (!editingEnabled || document === null || placement === null) return;
         nextCreatedElementId += 1;

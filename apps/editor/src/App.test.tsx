@@ -746,6 +746,21 @@ describe('inspector selection label', () => {
     expect(selection.textContent).toContain('Selected element:');
     expect(selection.textContent).toContain('el-heading-1');
   });
+  it('keeps the Inspector heading and selection live region without a visible selected-element title row', async () => {
+    const { user } = setup();
+    await user.click(await screen.findByRole('treeitem', { name: /el-heading-1/ }));
+    const inspector = screen.getByRole('complementary', { name: 'Inspector' });
+    expect(within(inspector).getByRole('heading', { name: 'Inspector' })).toBeTruthy();
+    expect(within(inspector).getByTestId('inspector-selection').getAttribute('aria-live')).toBe('polite');
+    expect(inspector.querySelector('.blx-inspector-selection')?.classList.contains('blx-empty')).toBe(false);
+  });
+  it('does not emit title attributes for editor-owned hover hints', () => {
+    setup();
+    const titles = [...document.querySelectorAll('.blx-editor [title]')].filter(
+      (element) => element.tagName !== 'IFRAME',
+    );
+    expect(titles).toEqual([]);
+  });
 });
 
 describe('canvas breadcrumb stage bar', () => {

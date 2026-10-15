@@ -201,6 +201,11 @@ try {
     'Escape returns focus to Pages',
   );
   await clickReal('button[aria-label="More options"]');
+  await press('ArrowDown');
+  const focusedMenuRows = await ev(
+    `(() => [...document.querySelectorAll('[role="menu"] [role^="menuitem"]')].filter(item => getComputedStyle(item).outlineStyle !== 'none' && parseFloat(getComputedStyle(item).outlineWidth) > 0).length)()`,
+  );
+  assert.equal(focusedMenuRows, 1, 'only the roving keyboard-focused menu row shows a focus ring');
   assert.equal(
     await ev(
       `!![...document.querySelectorAll('[role=menuitem]')].find((item) => /keyboard shortcuts/i.test(item.textContent))`,
@@ -296,6 +301,21 @@ try {
   assert.equal(dark.stored, 'dark', 'the choice is stored under its own key');
   assert.equal(dark.site, null, 'the website appearance preference is untouched');
   const bgDark = await ev(`getComputedStyle(document.querySelector('.blx-editor')).backgroundColor`);
+  const tooltipTrigger = await ev(
+    `(() => { const el = document.querySelector('.blx-appearance-help'); const r = el?.getBoundingClientRect(); return r ? { x: r.x + r.width / 2, y: r.y + r.height / 2 } : null; })()`,
+  );
+  assert.ok(tooltipTrigger, 'appearance help tooltip trigger exists');
+  await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: tooltipTrigger.x, y: tooltipTrigger.y });
+  await sleep(650);
+  const tooltipStyle = await ev(
+    `(() => { const tip = document.querySelector('[role="tooltip"]'); if (!tip) return null; const style = getComputedStyle(tip); const page = getComputedStyle(document.querySelector('.blx-editor')); const rgb = (value) => value.match(/[\\d.]+/g)?.slice(0, 3).map(Number) ?? []; const lum = (value) => { const [r,g,b] = rgb(value).map(v => v / 255).map(v => v <= .04045 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4); return .2126*r + .7152*g + .0722*b; }; const a=lum(style.color), b=lum(style.backgroundColor); return { bg: style.backgroundColor, fg: style.color, page: page.backgroundColor, contrast: (Math.max(a,b)+.05)/(Math.min(a,b)+.05), insideFrame: !!tip.ownerDocument.defaultView?.frameElement }; })()`,
+  );
+  assert.ok(tooltipStyle, 'hover opens the editor tooltip');
+  assert.notEqual(tooltipStyle.bg, 'rgba(0, 0, 0, 0)', 'tooltip background is opaque');
+  assert.notEqual(tooltipStyle.bg, tooltipStyle.page, 'tooltip background differs from the editor page');
+  assert.ok(tooltipStyle.contrast >= 4.5, `tooltip text contrast passes (${JSON.stringify(tooltipStyle)})`);
+  assert.equal(tooltipStyle.insideFrame, false, 'tooltip is rendered in editor chrome outside the canvas iframe');
+  await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 3, y: 3 });
   await nav(editorUrl, 2000);
   assert.equal(
     await ev(`document.querySelector('.blx-editor').getAttribute('data-editor-theme')`),
@@ -404,7 +424,12 @@ try {
     `({ current: document.querySelector('nav[aria-label="Structure"] [role="treeitem"][aria-selected="true"]')?.textContent.trim(), inspector: document.querySelector('aside[aria-label="Inspector"]').textContent })`,
   );
   assert.ok(picked.current?.includes('hero-h1'), 'the clicked element is marked aria-current');
-  assert.ok(picked.inspector.includes('hero-h1'), 'the inspector header shows the selected element');
+  assert.ok(picked.inspector.includes('hero-h1'), 'the visually hidden inspector live region announces the selection');
+  assert.equal(
+    await ev(`!!document.querySelector('nav[aria-label="Structure"] [role="treeitem"][data-on-path]')`),
+    false,
+    'tree ancestors do not receive a selected-path highlight',
+  );
 
   // BWB-129 palette insert updates both the tree and live canvas; undo removes the inserted element again.
   await ev(`document.querySelector('[data-element-type="blixis/text"]')?.click()`);
@@ -444,6 +469,10 @@ try {
   );
 
   // Inspector text edits reach the live preview and undo restores the original document value.
+  await ev(
+    `(() => { const tab = [...document.querySelectorAll('aside[aria-label="Inspector"] [role=tab]')].find((item) => item.textContent.trim() === 'Content'); tab?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0, ctrlKey: false })); })()`,
+  );
+  await sleep(400);
   await ev(
     `[...document.querySelectorAll('nav[aria-label="Structure"] [role="treeitem"]')].find((b) => b.textContent.includes('hero-h1')).click()`,
   );
@@ -538,6 +567,11 @@ try {
       gradientTopDelta: Math.abs(gradientLabel.getBoundingClientRect().top - gradientToggle.getBoundingClientRect().top),
       marginWidths: marginInputs,
       segmentWidths: segments,
+      stickyTabs: getComputedStyle(document.querySelector('.blx-inspector-tabs [role="tablist"]')).position,
+      layoutExpanded: document.querySelector('button[aria-label="Toggle Layout"]')?.getAttribute('aria-expanded'),
+      effectsExpanded: document.querySelector('button[aria-label="Toggle Border & Effects"]')?.getAttribute('aria-expanded'),
+      typographyExpanded: document.querySelector('button[aria-label="Toggle Typography"]')?.getAttribute('aria-expanded'),
+      colorExpanded: document.querySelector('button[aria-label="Toggle Color"]')?.getAttribute('aria-expanded'),
     } : null;
   })()`);
   assert.ok(inspectorLayout, 'font size row layout is measurable');
@@ -556,6 +590,9 @@ try {
   assert.equal(inspectorLayout.unitTextFits, true, 'font size unit text is not clipped');
   assert.equal(inspectorLayout.rowOverflow, true, 'font size row has no horizontal overflow');
   assert.equal(inspectorLayout.value, 2.75, 'font size input retains the rem value');
+  assert.equal(inspectorLayout.stickyTabs, 'sticky', 'inspector tab bar remains sticky');
+  assert.equal(inspectorLayout.typographyExpanded, 'true', 'Typography starts open');
+  assert.equal(inspectorLayout.colorExpanded, 'true', 'Color starts open');
   assert.equal(inspectorLayout.unitValue, 'rem', 'font size unit selector is rem');
   assert.deepEqual(inspectorLayout.range, [0.5, 6], 'font size slider uses the rem range');
   assert.ok(inspectorLayout.thumbWithinTrack, 'slider thumb stays inside the track');
@@ -648,6 +685,12 @@ try {
     `document.querySelector('main iframe')?.contentDocument ? [...document.querySelector('main iframe').contentDocument.styleSheets].map((sheet) => { try { return [...sheet.cssRules].map((rule) => rule.cssText).join(''); } catch { return ''; } }).join('') : ''`,
   );
   assert.notEqual(spacingAfter, spacingBefore, 'spacing changes the compiled canvas preview CSS');
+  for (const section of ['Layout', 'Border & Effects']) {
+    await ev(
+      `(() => { const b = document.querySelector('button[aria-label=${JSON.stringify(`Toggle ${section}`)}]'); if (b && b.getAttribute('aria-expanded') === 'false') b.click(); })()`,
+    );
+    await sleep(300);
+  }
   const alignPoint = await ev(
     `(() => { const e = [...document.querySelectorAll('[role="radio"]')].find((item) => item.getAttribute('aria-label') === 'Align right'); e?.scrollIntoView({ block: 'center' }); const r = e?.getBoundingClientRect(); return r ? { x: r.x + r.width / 2, y: r.y + r.height / 2 } : null; })()`,
   );
@@ -697,6 +740,7 @@ try {
         elements: root ? root.querySelectorAll('[data-blx-id]').length : 0,
         scripts: root ? root.querySelectorAll('script, iframe, object, embed, form, style, link').length : 0,
         inlineHandlers: root ? [...root.querySelectorAll('*')].filter((el) => [...el.attributes].some((a) => a.name.startsWith('on'))).length : 0,
+        titleTooltips: root ? root.querySelectorAll('[title]').length : 0,
         mode: root?.getAttribute('data-blx-mode') ?? null,
         htmlMode: doc?.documentElement.getAttribute('data-theme') ?? null,
         colorScheme: doc?.querySelector('meta[name="color-scheme"]')?.getAttribute('content') ?? null,
@@ -732,7 +776,6 @@ try {
     const guideLine = guide ? getComputedStyle(guide, '::before') : null;
     const guideColor = guideLine?.borderInlineStartColor ?? '';
     const textColor = child ? getComputedStyle(child).color : '';
-    const colorAlpha = Number(guideColor.match(/(?:\\/|,)\\s*([\\d.]+)\\s*\\)$/)?.[1] ?? 1);
     const rowTarget = child;
     const initialRow = rowTarget?.getBoundingClientRect();
     const initialLabel = rowTarget?.querySelector('.blx-outline-label')?.getBoundingClientRect();
@@ -745,7 +788,8 @@ try {
       levels: levels.map((row) => row?.getAttribute('aria-level')), iconLefts: levels.map(iconLeft),
       parentIconCenter: parentIcon ? parentIcon.left + parentIcon.width / 2 : null, guideX: guideBox?.left,
       elbowWidth: Number.parseFloat(elbow?.width ?? '0'), elbowRight: (guideBox?.left ?? 0) + Number.parseFloat(elbow?.width ?? '0'),
-      childIcon: iconLeft(child), lineWidth: Number.parseFloat(guideLine?.borderInlineStartWidth ?? '0px'), guideColor, textColor, colorAlpha,
+      childIcon: iconLeft(child), lineWidth: Number.parseFloat(guideLine?.borderInlineStartWidth ?? '0px'), guideColor, textColor,
+      hasPathHighlight: rows.some((row) => row.hasAttribute('data-on-path')),
       rowHeight: initialRow?.height, labelTop: initialLabel?.top,
       topUnderlineBorder: activeStyle?.borderBlockEndWidth, topUnderlineContent: underline?.content,
       dockUnderlineBorder: dockActive ? getComputedStyle(dockActive).borderBlockEndWidth : null, dockUnderlineContent: dockUnderline?.content };
@@ -775,10 +819,7 @@ try {
     'child elbow reaches the child icon column',
   );
   assert.ok(initialStageLayout.lineWidth <= 1, 'guide line is at most one pixel wide');
-  assert.ok(
-    initialStageLayout.colorAlpha > 0 && initialStageLayout.colorAlpha <= 0.5,
-    'guide line has intentionally subtle alpha',
-  );
+  assert.equal(initialStageLayout.hasPathHighlight, false, 'ancestor rows stay free of selected-path highlighting');
   assert.notEqual(
     initialStageLayout.guideColor,
     initialStageLayout.textColor,
@@ -841,6 +882,7 @@ try {
   );
   assert.equal(canvas.scripts, 0, 'no script, frame, object, form, style or link element in the rendered content');
   assert.equal(canvas.inlineHandlers, 0, 'no inline event handler attributes in the rendered content');
+  assert.equal(canvas.titleTooltips, 0, 'the canvas emits no native title-based tooltips');
   const policy = await ev(
     `fetch(document.querySelector('main iframe').getAttribute('src'), { credentials: 'same-origin' }).then((r) => r.headers.get('content-security-policy'))`,
   );
@@ -1057,7 +1099,7 @@ try {
   );
   assert.ok(crumb, 'the selected element breadcrumb renders');
   const firstCrumbId = await ev(
-    `document.querySelector('[aria-label="Selected element path"] .blx-breadcrumb-item')?.getAttribute('title')`,
+    `document.querySelector('[aria-label="Selected element path"] .blx-breadcrumb-item')?.textContent.trim().split(/\\s+/).pop()`,
   );
   await ev(`document.querySelector('[aria-label="Selected element path"] .blx-breadcrumb-item')?.click()`);
   await sleep(300);

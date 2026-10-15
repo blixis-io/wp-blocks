@@ -329,7 +329,6 @@ export function StyleControl({
                   : -1
             }
             aria-label={choiceLabel(choice)}
-            title={choiceLabel(choice)}
             data-choice={choice}
             className={
               field.id === 'width' && choice === 'custom'
@@ -491,13 +490,7 @@ export function StyleControl({
   return (
     <div className={`blx-inspector-field${field.kind === 'spacing' ? ' blx-spacing-field' : ''}`}>
       <div className="blx-inspector-label">
-        {field.kind !== 'spacing' ? (
-          <label htmlFor={id} title={fieldLabel}>
-            {fieldLabel}
-          </label>
-        ) : (
-          <span>{fieldLabel}</span>
-        )}
+        {field.kind !== 'spacing' ? <label htmlFor={id}>{fieldLabel}</label> : <span>{fieldLabel}</span>}
         <button
           type="button"
           className="blx-style-viewport"
@@ -506,7 +499,6 @@ export function StyleControl({
             viewport: t(`inspector.viewport.${nextViewport}` as never),
             field: fieldLabel,
           })}
-          title={t(`inspector.viewport.${viewport}` as never)}
           onClick={() => {
             store.getState().setViewport(nextViewport);
           }}

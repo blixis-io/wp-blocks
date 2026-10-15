@@ -23,6 +23,7 @@ import { StructurePanel, ElementsPanel } from './StructurePanel';
 import { StoreProvider, useEditorStore, useEditorStoreApi, type EditorStore } from './state';
 import { Inspector } from './inspector/Inspector';
 import { readSessionStorage, writeSessionStorage } from './storage';
+import { ElementId } from './ElementId';
 
 const STRUCTURE_ID = 'blx-structure';
 const INSPECTOR_ID = 'blx-inspector';
@@ -117,14 +118,7 @@ function Shell({
           {bootstrap.canvasUrl !== undefined && bootstrap.canvasUrl !== null && client !== undefined ? (
             <>
               <div className="blx-stage-bar" data-testid="canvas-breadcrumb-bar">
-                <nav
-                  key="canvas-breadcrumb"
-                  aria-label={t('canvas.breadcrumb')}
-                  className="blx-stage-crumbs"
-                  title={
-                    breadcrumb.length ? breadcrumb.map((node) => elementLabel(node.type, t)).join(' › ') : undefined
-                  }
-                >
+                <nav key="canvas-breadcrumb" aria-label={t('canvas.breadcrumb')} className="blx-stage-crumbs">
                   <button
                     key="breadcrumb-home"
                     type="button"
@@ -143,10 +137,9 @@ function Shell({
                           type="button"
                           className="blx-breadcrumb-item ed-focus-ring"
                           aria-current={node.id === selectedId ? 'location' : undefined}
-                          title={node.id}
                           onClick={() => store.getState().select(node.id)}
                         >
-                          {elementLabel(node.type, t)} <span className="blx-outline-id">{node.id.slice(0, 12)}</span>
+                          {elementLabel(node.type, t)} <ElementId id={node.id} />
                         </button>
                       </li>
                     ))}
@@ -178,14 +171,14 @@ function Shell({
           hidden={!panels.right}
         >
           <h2 className="blx-panel-title">{t('panel.inspector')}</h2>
-          <p className="blx-empty" data-testid="inspector-selection">
+          <p className="blx-inspector-selection" data-testid="inspector-selection" aria-live="polite">
             {selected === null ? (
               t('inspector.noSelection')
             ) : (
               <>
                 <span className="sr-only">{t('inspector.selected')}: </span>
                 <span className="font-medium">{elementLabel(selected.type, t)}</span>{' '}
-                <span className="blx-outline-id">{selected.id}</span>
+                <ElementId id={selected.id} tooltip={false} />
               </>
             )}
           </p>
@@ -197,7 +190,7 @@ function Shell({
                 writeSessionStorage('blixis-inspector-tab', value);
               }
             }}
-            className="min-h-0 flex-1"
+            className="blx-inspector-tabs min-h-0 flex-1"
           >
             <TabsList aria-label={t('inspector.tabs')}>
               <TabsTrigger value="content">{t('inspector.content')}</TabsTrigger>
