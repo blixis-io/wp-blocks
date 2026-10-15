@@ -14,7 +14,7 @@ import { PROPERTIES } from '@blixis/wp-style-engine';
 
 const registry = createCoreRegistry();
 const styleSchemaCases = registry.list().flatMap((definition) =>
-  STYLE_FIELDS.filter((field) => field.id !== 'margin' && field.id !== 'padding').map((field) => ({
+  STYLE_FIELDS.filter((field) => !['margin', 'padding', 'border-width'].includes(field.id)).map((field) => ({
     type: definition.type,
     property: field.id,
     supported: definition.styleProperties.includes(field.id) && PROPERTIES.has(field.id),
@@ -405,8 +405,8 @@ describe('Inspector controls', () => {
       ).toBe(true);
     });
     expect(screen.getAllByText(/Overridden at this breakpoint/).length).toBeGreaterThan(0);
-    const spacingReset = screen.getAllByRole('button', { name: 'Reset Margin to inherited' })[0];
-    if (!spacingReset) throw new Error('Spacing reset control is missing');
+    fireEvent.focus(screen.getByRole('spinbutton', { name: 'Margin End' }));
+    const spacingReset = screen.getByRole('button', { name: 'Reset Margin End to inherited' });
     fireEvent.click(spacingReset);
     fireEvent.click(screen.getByRole('button', { name: 'Reset Size to inherited' }));
     expect(store.getState().document?.root[0]?.style).toEqual([
@@ -425,7 +425,7 @@ describe('Inspector controls', () => {
   it('links all four spacing sides and dispatches the exact current-breakpoint declaration', async () => {
     const { store } = await mount('blixis/heading', { tab: 'style' });
     fireEvent.click(screen.getByRole('button', { name: 'Link Margin sides' }));
-    const marginTop = screen.getAllByRole('spinbutton', { name: 'Top' })[0];
+    const marginTop = screen.getAllByRole('spinbutton', { name: 'Margin Top' })[0];
     if (!marginTop) throw new Error('Margin top control is missing');
     fireEvent.change(marginTop, { target: { value: '24' } });
     expect(store.getState().document?.root[0]?.style?.[0]?.declarations).toMatchObject({
@@ -458,7 +458,7 @@ describe('Inspector controls', () => {
     expect(row?.querySelector('.blx-slider-field .blx-number-unit')).toBeTruthy();
   });
 
-  it('renders compact color, gradient and four-side spacing structures', async () => {
+  it('renders compact color, gradient and box model structures', async () => {
     const { container } = await mount('blixis/heading', { tab: 'style' });
     const color = container.querySelector('.blx-color-field');
     expect(color?.querySelector('.blx-color-swatch')).toBeTruthy();
@@ -466,11 +466,7 @@ describe('Inspector controls', () => {
     const gradient = container.querySelector('.blx-gradient-field');
     expect(gradient?.querySelector('.blx-inspector-toggle-row input')).toBeTruthy();
     expect(gradient?.querySelector('.blx-inspector-hint')).toBeTruthy();
-    const margin = container.querySelector('.blx-spacing-field');
-    expect(
-      margin?.querySelector('.blx-spacing-heading .blx-spacing-link[aria-label="Link Margin sides"]'),
-    ).toBeTruthy();
-    expect(margin?.querySelectorAll('.blx-spacing-sides input[role="spinbutton"]')).toHaveLength(4);
+    expect(container.querySelectorAll('.blx-box-model-layer')).toHaveLength(3);
   });
 
   it.each(['en_US', 'nl_NL'] as const)('shows unique, unclipped style labels in %s', async (editorLocale) => {
@@ -496,7 +492,7 @@ describe('Inspector controls', () => {
 
   it('always selects a visible valid unit for default border dimensions', async () => {
     await mount('blixis/heading', { tab: 'style' });
-    for (const label of ['Border radius unit', 'Border width unit']) {
+    for (const label of ['Border radius unit']) {
       const unit = screen.getByRole<HTMLSelectElement>('combobox', { name: label });
       expect(unit.value).toBe('px');
       expect(unit.selectedIndex).toBeGreaterThanOrEqual(0);
@@ -541,9 +537,9 @@ describe('Inspector controls', () => {
 
   it('reports invalid unit values without changing the document', async () => {
     const { store } = await mount('blixis/heading', { tab: 'style' });
-    const marginTop = screen.getAllByRole('spinbutton', { name: 'Top' })[0];
-    if (!marginTop) throw new Error('Margin top control is missing');
-    fireEvent.change(marginTop, { target: { value: '-999' } });
+    const paddingTop = screen.getByRole('spinbutton', { name: 'Padding Top' });
+    fireEvent.focus(paddingTop);
+    fireEvent.change(paddingTop, { target: { value: '-1' } });
     expect(screen.getByRole('alert').textContent).toBe('This value does not meet the requirements for this field.');
     expect(store.getState().document?.root[0]?.style).toBeUndefined();
   });
@@ -748,7 +744,7 @@ describe('Inspector controls', () => {
       const { container } = await mount(type, { tab: 'style' });
       expect(screen.getByRole('button', { name: 'Toggle Typography' })).toBeTruthy();
       expect(screen.getByRole('button', { name: 'Toggle Color' })).toBeTruthy();
-      expect(screen.getByRole('button', { name: 'Toggle Spacing' })).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Toggle Box model' })).toBeTruthy();
       expect(screen.getByRole('button', { name: 'Toggle Layout' })).toBeTruthy();
       expect(screen.getByRole('button', { name: 'Toggle Border & Effects' })).toBeTruthy();
       const gradient = screen.getByRole('checkbox', { name: 'Gradient' });
@@ -758,7 +754,7 @@ describe('Inspector controls', () => {
     },
   );
 
-  it('keeps selection and field edits responsive in a 5,000 element document', async () => {
+  it('keeps selection, style slider and box model typing responsive in a 5,000 element document', async () => {
     const elements = Array.from({ length: 5000 }, (_, index) => el(`target-${String(index)}`, 'blixis/heading'));
     const started = performance.now();
     const { store } = await makeLoadedStore({
@@ -802,6 +798,10 @@ describe('Inspector controls', () => {
     fireEvent.pointerMove(slider, { pointerId: 1, clientX: 70 });
     fireEvent.pointerUp(slider, { pointerId: 1, clientX: 80 });
     expect(store.getState().document?.root.at(-1)?.style?.[0]?.declarations['font-size']).toBeTruthy();
+    const padding = screen.getByRole<HTMLInputElement>('spinbutton', { name: 'Padding Top' });
+    fireEvent.focus(padding);
+    fireEvent.change(padding, { target: { value: '14' } });
+    expect(store.getState().document?.root.at(-1)?.style?.[0]?.declarations['padding-block-start']).toBe('14px');
     expect(performance.now() - started).toBeLessThan(15000);
     view.unmount();
   }, 30_000);

@@ -549,8 +549,19 @@ try {
     const gradient = document.querySelector('.blx-gradient-field');
     const gradientLabel = gradient?.querySelector('.blx-inspector-toggle-row > span');
     const gradientToggle = gradient?.querySelector('input[type="checkbox"]');
-    const margin = [...document.querySelectorAll('.blx-spacing-field')].find((item) => item.querySelector('legend')?.textContent === 'Margin');
-    const marginInputs = [...(margin?.querySelectorAll('.blx-spacing-sides input[role="spinbutton"]') ?? [])].map((item) => item.getBoundingClientRect().width);
+    const diagram = document.querySelector('.blx-box-model-diagram');
+    const margin = diagram?.querySelector(':scope > .blx-box-model-layer-margin');
+    const border = margin?.querySelector(':scope > .blx-box-model-layer-border');
+    const padding = border?.querySelector(':scope > .blx-box-model-layer-padding');
+    const content = padding?.querySelector(':scope > .blx-box-model-content');
+    const boxRects = [margin, border, padding, content].map((item) => {
+      const rect = item?.getBoundingClientRect();
+      return rect ? { x: rect.x, y: rect.y, right: rect.right, bottom: rect.bottom } : null;
+    });
+    const sideRects = ['block-start', 'inline-end', 'block-end', 'inline-start'].map((side) => {
+      const rect = diagram?.querySelector('.blx-box-model-layer-padding .blx-box-model-' + side + ' input')?.getBoundingClientRect();
+      return rect ? { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 } : null;
+    });
     const segments = [...(document.querySelector('[role="radiogroup"][aria-label="Text align"]')?.querySelectorAll('[role="radio"]') ?? [])].map((item) => item.getBoundingClientRect().width);
     return label && slider && input && unit && track && thumbRect && color && panel && gradientLabel && gradientToggle ? {
       sliderWidth: slider.getBoundingClientRect().width,
@@ -565,7 +576,7 @@ try {
       colorRight: color.getBoundingClientRect().right,
       panelRight: panel.getBoundingClientRect().right,
       gradientTopDelta: Math.abs(gradientLabel.getBoundingClientRect().top - gradientToggle.getBoundingClientRect().top),
-      marginWidths: marginInputs,
+      boxRects, sideRects,
       segmentWidths: segments,
       stickyTabs: getComputedStyle(document.querySelector('.blx-inspector-tabs [role="tablist"]')).position,
       layoutExpanded: document.querySelector('button[aria-label="Toggle Layout"]')?.getAttribute('aria-expanded'),
@@ -602,10 +613,25 @@ try {
   );
   assert.ok(inspectorLayout.colorRight <= inspectorLayout.panelRight + 1, 'color token field stays within the panel');
   assert.ok(inspectorLayout.gradientTopDelta <= 8, 'gradient toggle and label share a row');
-  assert.equal(inspectorLayout.marginWidths.length, 4, 'margin row has four side inputs');
+  assert.equal(inspectorLayout.boxRects.length, 4, 'box model has margin, border, padding and content rectangles');
+  assert.ok(inspectorLayout.boxRects.every(Boolean), 'all box model layer rectangles are measurable');
+  for (let index = 0; index < inspectorLayout.boxRects.length - 1; index += 1) {
+    const outer = inspectorLayout.boxRects[index];
+    const inner = inspectorLayout.boxRects[index + 1];
+    assert.ok(
+      inner.x >= outer.x && inner.y >= outer.y && inner.right <= outer.right && inner.bottom <= outer.bottom,
+      `box model layer ${index + 1} is inside layer ${index}`,
+    );
+  }
+  assert.equal(inspectorLayout.sideRects.length, 4, 'padding exposes four logical side values');
+  assert.ok(inspectorLayout.sideRects.every(Boolean), 'all four side value positions are measurable');
   assert.ok(
-    Math.max(...inspectorLayout.marginWidths) - Math.min(...inspectorLayout.marginWidths) <= 1,
-    'margin inputs have equal widths',
+    inspectorLayout.sideRects[0].y < inspectorLayout.sideRects[2].y,
+    'top and bottom values straddle the content area',
+  );
+  assert.ok(
+    inspectorLayout.sideRects[3].x < inspectorLayout.sideRects[1].x,
+    'start and end values straddle the content area',
   );
   assert.ok(
     inspectorLayout.segmentWidths.length >= 4 &&
@@ -669,22 +695,50 @@ try {
   );
   assert.equal(fontUndone, fontBefore, 'one Undo restores the pre-drag font size');
 
-  // A spacing token change is sent through the responsive style command and appears in compiled preview CSS.
+  // Box model keyboard editing uses the responsive style command and participates in Undo.
   await ev(
     `(() => { const tab = [...document.querySelectorAll('[role=tab]')].find((item) => item.textContent.trim() === 'Style'); tab?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0, ctrlKey: false })); })()`,
   );
   await sleep(300);
-  const spacingBefore = await ev(
-    `document.querySelector('main iframe')?.contentDocument?.styleSheets ? [...document.querySelector('main iframe').contentDocument.styleSheets].map((sheet) => { try { return [...sheet.cssRules].map((rule) => rule.cssText).join(''); } catch { return ''; } }).join('') : ''`,
-  );
   await ev(
-    `(() => { const input = document.querySelector('input[aria-label="Top"]'); if (!input) return false; Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(input, '16'); input.dispatchEvent(new Event('input', { bubbles: true })); input.dispatchEvent(new Event('change', { bubbles: true })); return true; })()`,
+    `(() => { const toggle = document.querySelector('button[aria-label="Toggle Box model"]'); if (toggle?.getAttribute('aria-expanded') === 'false') toggle.click(); })()`,
   );
+  await sleep(250);
+  const paddingBefore = await ev(
+    `(() => { const frame = document.querySelector('main iframe'); const heading = frame?.contentDocument?.querySelector('h1'); return heading && frame?.contentWindow ? frame.contentWindow.getComputedStyle(heading).paddingTop : null; })()`,
+  );
+  const paddingInput = await ev(
+    `(() => { const input = document.querySelector('aside[aria-label="Inspector"] input[aria-label="Padding Top"]'); input?.focus(); return !!input; })()`,
+  );
+  assert.equal(paddingInput, true, 'box model padding top input receives focus');
+  await send('Input.insertText', { text: '16' });
+  await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+  await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
   await sleep(1500);
-  const spacingAfter = await ev(
-    `document.querySelector('main iframe')?.contentDocument ? [...document.querySelector('main iframe').contentDocument.styleSheets].map((sheet) => { try { return [...sheet.cssRules].map((rule) => rule.cssText).join(''); } catch { return ''; } }).join('') : ''`,
+  const paddingAfter = await ev(
+    `(() => { const frame = document.querySelector('main iframe'); const heading = frame?.contentDocument?.querySelector('h1'); return heading && frame?.contentWindow ? frame.contentWindow.getComputedStyle(heading).paddingTop : null; })()`,
   );
-  assert.notEqual(spacingAfter, spacingBefore, 'spacing changes the compiled canvas preview CSS');
+  assert.notEqual(paddingAfter, paddingBefore, 'keyboard input changes canvas padding-top');
+  await ev(`document.querySelector('button[aria-label="Undo"]')?.click()`);
+  await sleep(1500);
+  const paddingUndone = await ev(
+    `(() => { const frame = document.querySelector('main iframe'); const heading = frame?.contentDocument?.querySelector('h1'); return heading && frame?.contentWindow ? frame.contentWindow.getComputedStyle(heading).paddingTop : null; })()`,
+  );
+  assert.equal(paddingUndone, paddingBefore, 'one Undo restores the original canvas padding-top');
+
+  const narrowWidget = await ev(`(() => {
+    const panel = document.querySelector('.blx-panel-right');
+    const widget = document.querySelector('.blx-box-model-wrap');
+    if (!panel || !widget) return null;
+    panel.style.inlineSize = '320px'; panel.style.width = '320px';
+    const rect = widget.getBoundingClientRect();
+    return { width: rect.width, scrollWidth: widget.scrollWidth, clientWidth: widget.clientWidth };
+  })()`);
+  assert.ok(narrowWidget, 'box model is measurable at a 320px inspector width');
+  assert.ok(
+    narrowWidget.scrollWidth <= narrowWidget.clientWidth,
+    `box model has no horizontal overflow (${JSON.stringify(narrowWidget)})`,
+  );
   for (const section of ['Layout', 'Border & Effects']) {
     await ev(
       `(() => { const b = document.querySelector('button[aria-label=${JSON.stringify(`Toggle ${section}`)}]'); if (b && b.getAttribute('aria-expanded') === 'false') b.click(); })()`,
