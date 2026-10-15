@@ -114,52 +114,41 @@ function Shell({
           {bootstrap.canvasUrl !== undefined && bootstrap.canvasUrl !== null && client !== undefined ? (
             <>
               <div className="blx-stage-bar" data-testid="canvas-breadcrumb-bar">
-                {breadcrumb.length ? (
-                  <nav
-                    aria-label={t('canvas.breadcrumb')}
-                    className="blx-stage-crumbs"
-                    title={breadcrumb.map((node) => elementLabel(node.type, t)).join(' › ')}
+                <nav
+                  key="canvas-breadcrumb"
+                  aria-label={t('canvas.breadcrumb')}
+                  className="blx-stage-crumbs"
+                  title={
+                    breadcrumb.length ? breadcrumb.map((node) => elementLabel(node.type, t)).join(' › ') : undefined
+                  }
+                >
+                  <button
+                    key="breadcrumb-home"
+                    type="button"
+                    className="blx-breadcrumb-home ed-focus-ring"
+                    aria-label={t('canvas.selection.home')}
+                    aria-current={selectedId === null ? 'location' : undefined}
+                    onClick={() => store.getState().select(null)}
                   >
-                    <button
-                      type="button"
-                      className="blx-breadcrumb-home ed-focus-ring"
-                      aria-label={t('canvas.selection.home')}
-                      aria-current={selectedId === null ? 'location' : undefined}
-                      onClick={() => store.getState().select(null)}
-                    >
-                      <Icon name="home" size={15} />
-                    </button>
-                    <ol className="blx-breadcrumb">
-                      {breadcrumb.map((node) => (
-                        <li key={node.id}>
-                          <Icon name="caretRight" size={13} mirrorInRtl />
-                          <button
-                            type="button"
-                            className="blx-breadcrumb-item ed-focus-ring"
-                            aria-current={node.id === selectedId ? 'location' : undefined}
-                            title={node.id}
-                            onClick={() => store.getState().select(node.id)}
-                          >
-                            {elementLabel(node.type, t)} <span className="blx-outline-id">{node.id.slice(0, 12)}</span>
-                          </button>
-                        </li>
-                      ))}
-                    </ol>
-                  </nav>
-                ) : (
-                  <nav aria-label={t('canvas.breadcrumb')} className="blx-stage-crumbs">
-                    <button
-                      type="button"
-                      className="blx-breadcrumb-home ed-focus-ring"
-                      aria-label={t('canvas.selection.home')}
-                      aria-current={selectedId === null ? 'location' : undefined}
-                      onClick={() => store.getState().select(null)}
-                    >
-                      <Icon name="home" size={15} />
-                    </button>
-                    <ol className="blx-breadcrumb" />
-                  </nav>
-                )}
+                    <Icon name="home" size={15} />
+                  </button>
+                  <ol className="blx-breadcrumb">
+                    {breadcrumb.map((node) => (
+                      <li key={node.id}>
+                        <Icon name="caretRight" size={13} mirrorInRtl />
+                        <button
+                          type="button"
+                          className="blx-breadcrumb-item ed-focus-ring"
+                          aria-current={node.id === selectedId ? 'location' : undefined}
+                          title={node.id}
+                          onClick={() => store.getState().select(node.id)}
+                        >
+                          {elementLabel(node.type, t)} <span className="blx-outline-id">{node.id.slice(0, 12)}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ol>
+                </nav>
                 <PreviewAppearance />
               </div>
               <Canvas

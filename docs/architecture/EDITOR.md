@@ -203,7 +203,7 @@ Row actions currently expose Delete through core's `remove` command. The core co
 
 ## Canvas (BWB-051)
 
-The canvas stage reserves a fixed-height breadcrumb bar even when nothing is selected. Breadcrumbs occupy its inline-start side and the content Light/Dark radio control sits at inline-end. Its explanation appears as a tooltip and accessible description. This control changes website content appearance; editor chrome appearance remains independent.
+The canvas stage reserves a fixed-height breadcrumb bar even when nothing is selected. One stable breadcrumb navigation contains one always-mounted home button; selection changes only the ordered-list items. This keeps the home icon mounted while the selected path changes. Breadcrumbs occupy the inline-start side and the content Light/Dark radio control sits at inline-end. Its explanation appears as a tooltip and accessible description. This control changes website content appearance; editor chrome appearance remains independent.
 
 The canvas overlay wrapper matches the iframe content box and clips overflow. It displays one selected-element outline and eight decorative, non-interactive handles from the editor-side rectangle overlay; iframe hover styling remains canvas-side. Rectangles are document-relative, scroll-adjusted, and rendered at scale 1. The floating editor toolbar is positioned from the same rectangle, flips below when needed, and clamps to the frame. Its keyboard focus is outside the iframe; Escape returns focus to the canvas region. The toolbar dispatches core `insert` (for a translated subtree duplicate) and `remove` commands, and its parent menu selects the selected element's parent. Handles do not imply resize support.
 

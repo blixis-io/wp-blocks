@@ -543,6 +543,20 @@ try {
   assert.equal(selectedTreeRow.height, rowBox.height, 'selection preserves the tree row height');
   assert.equal(selectedTreeRow.labelTop, rowBox.labelTop, 'selection preserves the label vertical position');
   const noSelectionTop = initialStageLayout.top;
+  const assertBreadcrumbHomeIcon = async (state) => {
+    const icon = await ev(`(() => {
+      const button = document.querySelector('.blx-breadcrumb-home');
+      const svg = button?.querySelector(':scope > svg');
+      return { width: Number(svg?.getAttribute('width') ?? 0), path: svg?.querySelector('path[d]')?.getAttribute('d') ?? null };
+    })()`);
+    assert.ok(
+      icon.width >= 12 && typeof icon.path === 'string' && icon.path.length > 0,
+      `the breadcrumb home button has a visible SVG path in the ${state} state (${JSON.stringify(icon)})`,
+    );
+  };
+  await ev(`document.querySelector('.blx-breadcrumb-home')?.click()`);
+  await sleep(200);
+  await assertBreadcrumbHomeIcon('no-selection');
   assert.equal(
     canvas.sandbox,
     'allow-scripts allow-same-origin',
@@ -605,6 +619,7 @@ try {
     clickCount: 1,
   });
   await sleep(600);
+  await assertBreadcrumbHomeIcon('selected');
   assert.equal(
     await ev(`document.querySelector('main iframe').getBoundingClientRect().top`),
     noSelectionTop,
@@ -612,7 +627,7 @@ try {
   );
   const longBreadcrumbTop = await ev(`(() => {
     const crumbs = document.querySelector('.blx-stage-crumbs');
-    const label = crumbs.querySelector('button');
+    const label = crumbs.querySelector('.blx-breadcrumb-item');
     const original = label?.textContent;
     if (label) label.textContent = 'Long breadcrumb '.repeat(80);
     const top = document.querySelector('main iframe').getBoundingClientRect().top;

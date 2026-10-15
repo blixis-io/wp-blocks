@@ -565,6 +565,32 @@ describe('inspector selection label', () => {
 });
 
 describe('canvas breadcrumb stage bar', () => {
+  it('keeps the home SVG attached while selection toggles repeatedly', () => {
+    const bootstrap = makeBootstrap({ canvasUrl: 'https://example.test/canvas' });
+    const { store, client } = makeStore({ bootstrap: { canvasUrl: bootstrap.canvasUrl } });
+    render(<EditorApp bootstrap={bootstrap} store={store} client={client} />);
+
+    const expectHomeIcon = () => {
+      const button = screen.getByRole('button', { name: 'Page root' });
+      const svg = button.querySelector(':scope > svg');
+      expect(svg).toBeTruthy();
+      expect(Number(svg?.getAttribute('width'))).toBeGreaterThanOrEqual(12);
+      expect(svg?.querySelector('path[d]')).toBeTruthy();
+    };
+
+    expectHomeIcon();
+    for (let index = 0; index < 4; index += 1) {
+      act(() => {
+        store.getState().select('el-heading-1');
+      });
+      expectHomeIcon();
+      act(() => {
+        store.getState().select(null);
+      });
+      expectHomeIcon();
+    }
+  });
+
   it('keeps the appearance radio and accessible tooltip description in the fixed breadcrumb row', () => {
     const bootstrap = makeBootstrap({ canvasUrl: 'https://example.test/canvas' });
     const { store, client } = makeStore({ bootstrap: { canvasUrl: bootstrap.canvasUrl } });
