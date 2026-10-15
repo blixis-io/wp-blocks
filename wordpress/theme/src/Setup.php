@@ -78,6 +78,18 @@ final class Setup {
 		foreach ( self::styles( get_stylesheet_uri(), get_template_directory_uri(), $version ) as $handle => $style ) {
 			wp_enqueue_style( $handle, $style['url'], $style['dependencies'], $style['version'] );
 		}
+		if ( 'auto' === Appearance::site_mode() ) {
+			wp_enqueue_script(
+				'blixis-appearance',
+				get_template_directory_uri() . '/assets/js/appearance.js',
+				[],
+				$version,
+				[
+					'in_footer' => true,
+					'strategy'  => 'defer',
+				]
+			);
+		}
 		// The saved design system overrides the bundled defaults: same layer, printed after the static file.
 		$saved = DesignSystemStore::current();
 		if ( null !== $saved ) {

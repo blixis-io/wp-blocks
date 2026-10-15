@@ -55,3 +55,7 @@ To start over: `wp db reset --yes && rm -rf ~/Sites/blixis` and run the script a
 ## Builder demo page
 
 Before the editor exists (P5), `pnpm dev:demo` publishes a real builder page on the Herd site: it creates the page `/builder-demo/`, stores layout and Dutch/English content snapshots through the plugin's own storage classes, and publishes them with the publication pointer, so the public page shows the PHP renderers and the PHP CSS compiler at work (tokens from the design system, a breakpoint rule, a hover state and a library image). Run it again to publish a new revision; edit `tooling/herd/demo-page.php` to try other documents. Open https://blixis.test/builder-demo/ and try your system's dark mode. Development only.
+
+## Appearance check in a real browser
+
+`node tooling/herd/appearance-browser-check.mjs` drives headless Chrome (DevTools protocol, no extra dependencies, macOS Chrome path) against `https://blixis.test/builder-demo/`. It asserts the visitor control, stored Dark choice, reload behavior, invalid storage handling, System mode, system dark preference, and the hidden control with JavaScript off. It exits non-zero with the first failed assertion. On reload, an observer records `data-theme` when `document.body` first exists and checks that stored Dark is already set; this checks the state before body rendering, not pixel-level paint. The site appearance must be Auto (the default).

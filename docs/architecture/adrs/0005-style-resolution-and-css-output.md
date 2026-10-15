@@ -44,7 +44,7 @@ Origin outranks state and layer: an element's explicit rule is never overridden 
 - **Appearance preference lives on `<html data-theme="light|dark|auto">`.** Absent or `auto` means follow the system. **`auto` is the default for new sites** (owner decision 2026-10-14); presets therefore ship both token sets. For `auto`, mode rules are also emitted inside media queries:
   - dark: `@media (prefers-color-scheme: dark) { :where(html:not([data-theme="light"]):not([data-theme="dark"])) .blx-a1 { … } }`
   - light: `@media not all and (prefers-color-scheme: dark) { :where(html:not([data-theme="light"]):not([data-theme="dark"])) .blx-a1 { … } }`
-  Correct first paint therefore needs no JavaScript; with no JS and no stored preference the system preference applies. An optional tiny inline initialiser sets `data-theme` from a stored visitor preference (BWB-113).
+  Correct first paint therefore needs no JavaScript; with no JS and no stored preference the system preference applies. An optional tiny inline initialiser sets `data-theme` from a stored visitor preference (BWB-113). Implemented in BWB-113.
 - **Cascade layers** are declared once at the top of the generated stylesheet. The layer order is the lexicographic key above, expanded: `blx.theme` first (the Blixis theme's own CSS, so builder output always wins over it), then for each origin (`tokens`; `class`; `el`) and each state (`s0`=none, `hover`, `focus`, `focus-visible`, `active`) the four layers `base, bp, mode, modebp`:
 
 ```css

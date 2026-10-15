@@ -28,5 +28,6 @@
 		);
 		?>
 	</nav>
+	<?php \Blixis\Theme\blixis_appearance_toggle(); ?>
 </header>
 <main id="content" class="site-main site-shell" tabindex="-1">
