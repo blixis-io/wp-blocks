@@ -12,6 +12,9 @@ namespace Blixis\Builder\Tests;
 use Blixis\Builder\Canvas\TokenCss;
 use Blixis\Builder\Admin\EditorAccess;
 use Blixis\Builder\Admin\EditorAccessResult;
+use Blixis\Builder\Admin\CanvasScreen;
+use Blixis\Builder\Admin\EditorHeaders;
+use Blixis\Builder\Locale\Direction;
 use Blixis\Builder\Rest\FakePostAccess;
 use Blixis\Builder\Theme\ThemeStatus;
 use PHPUnit\Framework\TestCase;
@@ -24,6 +27,33 @@ require_once \dirname( __DIR__ ) . '/src/Autoloader.php';
 
 /** Verifies token CSS accepts only theme-safe values. */
 final class CanvasTest extends TestCase {
+	/** The standalone canvas document loads only explicit theme assets and uses content locale and website mode. */
+	public function test_canvas_document_markup_contract(): void {
+		$links = '<link rel="stylesheet" href="https://example.test/wp-content/themes/blixis/style.css"><link rel="stylesheet" href="https://example.test/wp-content/themes/blixis/assets/css/tokens.css"><link rel="stylesheet" href="https://example.test/wp-content/themes/blixis/assets/css/theme.css">'; // phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedStylesheet -- Fixture markup for the standalone canvas document.
+		$html  = CanvasScreen::document_markup(
+			$links,
+			TokenCss::from_option(
+				[
+					'color-bg' => [
+						'value' => '#fff',
+						'dark'  => '#000',
+					],
+				]
+			),
+			'AAAAAAAAAAAAAAAAAAAAAAAA',
+			'https://example.test/plugin/canvas.js',
+			'ar',
+			Direction::dir( 'ar' )
+		);
+		$this->assertStringContainsString( '<html lang="ar" dir="rtl" data-theme="light">', $html );
+		$this->assertStringContainsString( '<meta name="color-scheme" content="light">', $html );
+		$this->assertStringContainsString( 'data-blx-mode="light"', $html );
+		$this->assertStringContainsString( 'href="https://example.test/wp-content/themes/blixis/assets/css/theme.css"', $html ); // phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedStylesheet -- Assertion against standalone document markup.
+		$this->assertSame( 3, \substr_count( $html, '<link rel="stylesheet"' ) ); // phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedStylesheet -- Count stylesheet links in standalone markup.
+		$this->assertStringNotContainsString( 'data-editor-theme', $html );
+		$this->assertSame( "default-src 'none'; script-src 'nonce-AAAAAAAAAAAAAAAAAAAAAAAA'; style-src 'self' 'nonce-AAAAAAAAAAAAAAAAAAAAAAAA'; img-src 'self' data:; font-src 'self'; connect-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'; object-src 'none'", EditorHeaders::canvas_list( 'AAAAAAAAAAAAAAAAAAAAAAAA' )['Content-Security-Policy'] );
+	}
+
 	/** Canvas access shares the screen's uniform policy; a theme lock permits read-only access. */
 	public function test_canvas_access_matrix(): void {
 		$posts = new FakePostAccess();
