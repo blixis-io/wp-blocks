@@ -26,7 +26,8 @@ const PAGE =
   '<section data-blx-id="el-section-1"><h2 data-blx-id="el-heading-1">Hello</h2><a href="/x" data-blx-id="el-link-1">go</a></section>';
 
 function mountDocument(meta: string | null = META, withRoot = true): void {
-  document.head.innerHTML = meta === null ? '' : '<meta name="blixis-canvas" content="">';
+  document.head.innerHTML =
+    meta === null ? '' : '<meta name="blixis-canvas" content=""><meta name="color-scheme" content="light">';
   if (meta !== null) document.querySelector('meta[name="blixis-canvas"]')?.setAttribute('content', meta);
   document.body.innerHTML = withRoot ? '<div id="blx-canvas-root"></div>' : '';
 }
@@ -179,6 +180,8 @@ describe('meta and startup', () => {
     expect(h.root.getAttribute('lang')).toBe('nl-NL');
     expect(h.root.getAttribute('dir')).toBe('ltr');
     expect(h.root.getAttribute('data-blx-breakpoint')).toBe('base');
+    expect(document.documentElement.getAttribute('data-theme')).toBe('light');
+    expect(document.querySelector('meta[name="color-scheme"]')?.getAttribute('content')).toBe('light');
   });
   it('closes when the endpoint cannot connect', () => {
     const sent: CanvasMessage[] = [];
@@ -358,6 +361,8 @@ describe('viewport, mode, selection, hover', () => {
     h.deliver({ type: 'mode', mode: 'dark' });
     h.deliver({ type: 'viewport', width: 375, breakpoint: 'mobile' });
     expect(h.root.getAttribute('data-blx-mode')).toBe('dark');
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
+    expect(document.querySelector('meta[name="color-scheme"]')?.getAttribute('content')).toBe('dark');
     expect(h.root.getAttribute('data-blx-breakpoint')).toBe('mobile');
     expect(h.root.hasAttribute('style')).toBe(false);
     expect(document.documentElement.hasAttribute('data-blx-mode')).toBe(false);

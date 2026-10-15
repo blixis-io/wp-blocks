@@ -372,6 +372,12 @@ try {
   );
 
   // Canvas (BWB-051): a sandboxed same-origin iframe with the dedicated canvas document and its trusted runtime.
+  const normalizeColor = (value) => {
+    const hex = /^#([\da-f]{3}|[\da-f]{6})$/i.exec(value?.trim() ?? '');
+    if (!hex) return value?.trim().toLowerCase() ?? null;
+    const digits = hex[1].length === 3 ? [...hex[1]].map((part) => part + part).join('') : hex[1];
+    return `rgb(${Number.parseInt(digits.slice(0, 2), 16)}, ${Number.parseInt(digits.slice(2, 4), 16)}, ${Number.parseInt(digits.slice(4, 6), 16)})`;
+  };
   const frameInfo = () =>
     ev(`(() => {
       const frame = document.querySelector('main iframe');
@@ -388,6 +394,12 @@ try {
         scripts: root ? root.querySelectorAll('script, iframe, object, embed, form, style, link').length : 0,
         inlineHandlers: root ? [...root.querySelectorAll('*')].filter((el) => [...el.attributes].some((a) => a.name.startsWith('on'))).length : 0,
         mode: root?.getAttribute('data-blx-mode') ?? null,
+        htmlMode: doc?.documentElement.getAttribute('data-theme') ?? null,
+        colorScheme: doc?.querySelector('meta[name="color-scheme"]')?.getAttribute('content') ?? null,
+        bodyBackground: doc ? getComputedStyle(doc.body).backgroundColor : null,
+        bgToken: root ? getComputedStyle(root).getPropertyValue('--blx-color-bg').trim() : null,
+        headingFont: doc?.querySelector('h1, h2, h3, h4, h5, h6') ? getComputedStyle(doc.querySelector('h1, h2, h3, h4, h5, h6')).fontFamily.toLowerCase().replace(/\\s+/g, ' ').trim() : null,
+        headingToken: root ? getComputedStyle(root).getPropertyValue('--blx-font-heading').toLowerCase().replace(/\\s+/g, ' ').trim() : null,
         width: box ? Math.round(box.width) : 0,
         x: box ? box.x : 0,
         y: box ? box.y : 0,
@@ -408,6 +420,16 @@ try {
   assert.ok(/page=blixis-canvas/.test(canvas.src ?? ''), 'the iframe loads the dedicated canvas document');
   assert.ok(canvas.sameOrigin, 'the canvas document is same-origin (its trusted runtime needs it)');
   assert.ok(canvas.elements > 0, `the preview renders elements with data-blx-id (${JSON.stringify(canvas)})`);
+  assert.ok(
+    canvas.headingFont && canvas.headingFont !== 'serif',
+    'the canvas heading does not use the browser default serif',
+  );
+  const unquote = (value) => String(value).replaceAll('"', '').replaceAll("'", '').toLowerCase();
+  assert.equal(
+    unquote(canvas.headingFont),
+    unquote(canvas.headingToken),
+    'the canvas heading uses the theme heading font token',
+  );
   assert.equal(canvas.scripts, 0, 'no script, frame, object, form, style or link element in the rendered content');
   assert.equal(canvas.inlineHandlers, 0, 'no inline event handler attributes in the rendered content');
   const policy = await ev(
@@ -532,6 +554,13 @@ try {
   await sleep(1200);
   const previewDark = await frameInfo();
   assert.equal(previewDark.mode, 'dark', 'the canvas content switches to the dark website appearance');
+  assert.equal(previewDark.htmlMode, 'dark', 'the canvas html uses the website dark appearance attribute');
+  assert.equal(previewDark.colorScheme, 'dark', 'the native color scheme follows the dark website appearance');
+  assert.equal(
+    previewDark.bodyBackground,
+    normalizeColor(previewDark.bgToken),
+    'the dark canvas body uses the dark background token',
+  );
   assert.equal(
     await ev(`document.querySelector('.blx-editor').getAttribute('data-editor-theme')`),
     chromeBefore,
@@ -541,7 +570,25 @@ try {
     `[...document.querySelectorAll('[role=radiogroup][aria-label="Preview appearance"] [role=radio]')].find((b) => b.textContent.trim() === 'Light').click()`,
   );
   await sleep(800);
-  assert.equal((await frameInfo()).mode, 'light', 'the canvas content returns to the light website appearance');
+  const previewLight = await frameInfo();
+  assert.equal(previewLight.mode, 'light', 'the canvas content returns to the light website appearance');
+  assert.equal(previewLight.htmlMode, 'light', 'the canvas html returns to the website light appearance attribute');
+  assert.equal(previewLight.colorScheme, 'light', 'the native color scheme returns to light');
+  assert.equal(
+    previewLight.bodyBackground,
+    normalizeColor(previewLight.bgToken),
+    'the light canvas body uses the light background token',
+  );
+  const lightBackground = previewLight.bodyBackground;
+  const otherChrome = chromeBefore === 'dark' ? 'light' : 'dark';
+  await ev(`${buttonByText(otherChrome)}.click()`);
+  await sleep(100);
+  assert.equal(
+    (await frameInfo()).bodyBackground,
+    lightBackground,
+    'the editor chrome toggle does not alter the canvas website background',
+  );
+  await ev(`${buttonByText(chromeBefore)}.click()`);
   // The preview appearance and the viewport control are the same kind of single-choice group (role=radio + aria-checked).
   const choice = await ev(`(() => {
     const groups = ['Preview width', 'Preview appearance'].map((name) => document.querySelector('[role=radiogroup][aria-label="' + name + '"]'));

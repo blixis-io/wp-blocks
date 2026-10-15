@@ -32,6 +32,15 @@ Blixis-Compat: 1
     line-height: 1.6;
   }
 
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--blx-font-heading);
+  }
+
   a {
     color: var(--blx-color-link);
   }

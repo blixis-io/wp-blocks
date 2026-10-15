@@ -15,6 +15,7 @@ use Blixis\Builder\Locale\LocaleConfig;
 use Blixis\Builder\Rest\WordPressPostAccess;
 use Blixis\Builder\Theme\ThemeCompat;
 use Blixis\Builder\Theme\WordPressCompatibilityReader;
+use Blixis\Theme\Setup as ThemeSetup;
 
 \defined( 'ABSPATH' ) || exit;
 
@@ -70,26 +71,98 @@ final class CanvasScreen {
 		foreach ( EditorHeaders::canvas_list( $nonce ) as $name => $header ) {
 			\header( $name . ': ' . $header );
 		}
-		$stylesheet = \get_stylesheet_directory();
-		$theme_css  = '';
-		if ( $theme->compatible ) {
-			foreach ( [ 'tokens.css', 'theme.css' ] as $file ) {
-				if ( \is_file( $stylesheet . '/assets/css/' . $file ) ) {
-					$theme_css .= '<link rel="stylesheet" href="' . \esc_url( \get_stylesheet_directory_uri() . '/assets/css/' . $file ) . '">'; // phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedStylesheet -- Standalone document intentionally has no wp-admin enqueue lifecycle.
-				}
-			}
+		$theme_css = '';
+		if ( $theme->compatible && \class_exists( ThemeSetup::class ) ) {
+			// Register only Blixis theme styles. Running the global enqueue action here would admit plugin/admin styles.
+			ThemeSetup::enqueue();
+			$theme_css = self::theme_stylesheet_links( \wp_styles() );
 		}
 		$lang = \str_replace( '_', '-', $request->content_locale );
 		$dir  = Direction::is_rtl( $request->content_locale ) ? 'rtl' : 'ltr';
-		echo '<!doctype html><html lang="' . \esc_attr( $lang ) . '" dir="' . \esc_attr( $dir ) . '"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex,nofollow"><meta name="blixis-canvas" content="' . \esc_attr(
+		echo self::document_markup( $theme_css, $tokens, $nonce, $assets['canvas_url'], $lang, $dir ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- All dynamic document values are escaped in document_markup().
+		exit;
+	}
+
+	/**
+	 * Render only registered styles from the active Blixis theme build and its child stylesheet.
+	 *
+	 * @param \WP_Styles $styles Registered WordPress styles.
+	 * @return string Escaped stylesheet link elements.
+	 */
+	public static function theme_stylesheet_links( \WP_Styles $styles ): string {
+		$version = \wp_get_theme()->get( 'Version' );
+		if ( ! \is_string( $version ) || '' === $version ) {
+			return '';
+		}
+		$expected = ThemeSetup::styles( \get_stylesheet_uri(), \get_template_directory_uri(), $version );
+		$allowed  = [ 'blixis-style', 'blixis-parent-style', 'blixis-tokens', 'blixis-theme' ];
+		$urls     = [];
+		foreach ( $allowed as $handle ) {
+			if ( ! isset( $expected[ $handle ], $styles->registered[ $handle ] ) ) {
+				continue;
+			}
+			$source = $styles->registered[ $handle ]->src;
+			if ( ! \is_string( $source ) || '' === $source || ! self::is_theme_stylesheet( $source ) ) {
+				continue;
+			}
+			$expected_url = $expected[ $handle ]['url'];
+			$registered   = \strtok( $source, '?' );
+			if ( $registered !== $expected_url ) {
+				continue;
+			}
+			$urls[] = $source;
+		}
+		$output = '';
+		foreach ( $urls as $url ) {
+			$output .= '<link rel="stylesheet" href="' . \esc_url( $url ) . '">'; // phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedStylesheet -- Standalone document intentionally loads only registered theme styles.
+		}
+		return $output;
+	}
+
+	/**
+	 * Require a same-origin URL under the active theme or child theme directory.
+	 *
+	 * @param string $url Candidate registered stylesheet URL.
+	 * @return bool
+	 */
+	private static function is_theme_stylesheet( string $url ): bool {
+		$parts  = \wp_parse_url( $url );
+		$origin = \wp_parse_url( \home_url( '/' ) );
+		$dirs   = [ \wp_parse_url( \get_stylesheet_directory_uri() ), \wp_parse_url( \get_template_directory_uri() ) ];
+		if ( ! \is_array( $parts ) || ! \is_array( $origin ) || ! isset( $parts['scheme'], $parts['host'], $parts['path'], $origin['scheme'], $origin['host'] ) ) {
+			return false;
+		}
+		if ( \strtolower( $parts['scheme'] ) !== \strtolower( $origin['scheme'] ) || \strtolower( $parts['host'] ) !== \strtolower( $origin['host'] ) || ( $parts['port'] ?? null ) !== ( $origin['port'] ?? null ) || ! \in_array( $parts['scheme'], [ 'https', 'http' ], true ) ) {
+			return false;
+		}
+		foreach ( $dirs as $dir ) {
+			if ( \is_array( $dir ) && isset( $dir['path'] ) && ( $parts['path'] === $dir['path'] || \str_starts_with( $parts['path'], \rtrim( $dir['path'], '/' ) . '/' ) ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Build the standalone canvas document markup.
+	 *
+	 * @param string $theme_styles Escaped registered theme stylesheet links.
+	 * @param string $tokens       Validated token stylesheet.
+	 * @param string $nonce        Per-response CSP nonce.
+	 * @param string $canvas_url   Same-origin runtime URL.
+	 * @param string $lang         Content locale language tag.
+	 * @param string $dir          Content locale direction.
+	 * @return string
+	 */
+	public static function document_markup( string $theme_styles, string $tokens, string $nonce, string $canvas_url, string $lang, string $dir ): string {
+		return '<!doctype html><html lang="' . \esc_attr( $lang ) . '" dir="' . \esc_attr( $dir ) . '" data-theme="light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="light"><meta name="robots" content="noindex,nofollow"><meta name="blixis-canvas" content="' . \esc_attr(
 			self::meta_json(
 				[
 					'version'  => 1,
 					'cspNonce' => $nonce,
 				]
 			)
-		) . '">' . $theme_css . '<style nonce="' . \esc_attr( $nonce ) . '">' . $tokens . '</style></head><body class="blx-canvas-body"><div id="blx-canvas-root"></div><script src="' . \esc_url( $assets['canvas_url'] ) . '" nonce="' . \esc_attr( $nonce ) . '" defer></script></body></html>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped, WordPress.WP.EnqueuedResources.NonEnqueuedScript -- Standalone document uses escaped URLs and intentionally avoids wp-admin enqueue lifecycle.
-		exit;
+		) . '">' . $theme_styles . '<style nonce="' . \esc_attr( $nonce ) . '">' . $tokens . '</style></head><body class="blx-canvas-body"><div id="blx-canvas-root" data-blx-mode="light"></div><script src="' . \esc_url( $canvas_url ) . '" nonce="' . \esc_attr( $nonce ) . '" defer></script></body></html>'; // phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedScript -- Standalone document includes only its explicit trusted runtime.
 	}
 
 	/**

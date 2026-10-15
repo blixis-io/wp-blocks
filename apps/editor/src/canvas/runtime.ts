@@ -115,6 +115,12 @@ export function startRuntime(env: RuntimeEnv = { document, window }): Runtime | 
   const send = (message: CanvasMessage): void => {
     endpoint?.send(message);
   };
+  const setAppearance = (mode: 'light' | 'dark'): void => {
+    doc.documentElement.setAttribute('data-theme', mode);
+    const colorScheme = doc.querySelector('meta[name="color-scheme"]');
+    colorScheme?.setAttribute('content', mode);
+    root.setAttribute('data-blx-mode', mode);
+  };
   const fail = (code: CanvasErrorCode): void => {
     send({ type: 'error', code });
   };
@@ -222,7 +228,7 @@ export function startRuntime(env: RuntimeEnv = { document, window }): Runtime | 
         root.setAttribute('data-blx-breakpoint', message.breakpoint);
         break;
       case 'mode':
-        root.setAttribute('data-blx-mode', message.mode);
+        setAppearance(message.mode);
         break;
       case 'select':
         selectedId = message.id;
@@ -246,7 +252,7 @@ export function startRuntime(env: RuntimeEnv = { document, window }): Runtime | 
   };
 
   const onInit = (init: Init): void => {
-    root.setAttribute('data-blx-mode', init.mode);
+    setAppearance(init.mode);
     root.setAttribute('data-blx-breakpoint', init.viewport.breakpoint);
     root.setAttribute('lang', init.locale.replace(/_/g, '-'));
     root.setAttribute('dir', init.dir);

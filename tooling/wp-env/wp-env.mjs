@@ -1648,9 +1648,40 @@ async function smoke() {
         check(
           canvasHtml.includes('id="blx-canvas-root"') &&
             canvasHtml.includes('canvas.js') &&
+            /<html\b[^>]*lang="en-US"[^>]*dir="ltr"[^>]*data-theme="light"/.test(canvasHtml) &&
+            canvasHtml.includes('data-blx-mode="light"') &&
+            canvasHtml.includes('<meta name="color-scheme" content="light">') &&
             !/adminmenu|wp-admin\/css|admin-bar|wpadminbar|wp-includes\/js/.test(canvasHtml),
-          'the canvas is standalone and loads its runtime without wp-admin chrome',
+          'the canvas is standalone, uses the content locale and website appearance, and loads its runtime without wp-admin chrome',
         );
+        const themeLinks = [...canvasHtml.matchAll(/<link\s+rel="stylesheet"\s+href="([^"]+)"\s*\/?\s*>/gi)].map(
+          (match) => match[1],
+        );
+        check(
+          themeLinks.length >= 3,
+          'the canvas document includes the Blixis parent style, token CSS and compiled theme CSS',
+        );
+        const themeCssResponses = await Promise.all(
+          themeLinks.map(async (href) => {
+            const url = new URL(href, canvasUrl);
+            const response = await http(url.href);
+            const css = await response.text();
+            check(
+              url.origin === new URL(base).origin &&
+                response.status === 200 &&
+                /text\/css/i.test(response.headers.get('content-type') ?? ''),
+              `canvas theme stylesheet is same-origin and returns 200 text/css (${url.pathname})`,
+            );
+            for (const match of css.matchAll(/url\(\s*['"]?([^)'"\s]+)['"]?\s*\)/gi)) {
+              const fontUrl = new URL(match[1], url);
+              if (/\.(?:woff2?|ttf|otf)(?:[?#]|$)/i.test(fontUrl.href)) {
+                check(fontUrl.origin === new URL(base).origin, `canvas font URL is same-origin (${fontUrl.pathname})`);
+              }
+            }
+            return css;
+          }),
+        );
+        check(themeCssResponses.length === themeLinks.length, 'all registered theme CSS links were checked');
         const canvasJs = await http(new URL(/src="([^"]+canvas\.js[^"]*)"/.exec(canvasHtml)?.[1] ?? '/', base).href);
         check(canvasJs.status === 200 && (await canvasJs.text()).length > 0, 'the canvas runtime is served');
         command(
