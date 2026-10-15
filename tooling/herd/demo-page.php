@@ -22,6 +22,17 @@ $streams = new StreamStore( $db );
 $snaps   = new SnapshotStore( $db, $streams );
 $locale  = get_locale();
 
+// Two languages, so /builder-demo/ and /nl/builder-demo/ both exist (locale routing, BWB-111).
+update_option(
+	'blixis_locales',
+	[
+		'version'        => 1,
+		'defaultLocale'  => 'en_US',
+		'enabledLocales' => [ 'en_US', 'nl_NL' ],
+		'fallback'       => 'source',
+	]
+);
+
 // The page.
 $found   = get_posts(
 	[

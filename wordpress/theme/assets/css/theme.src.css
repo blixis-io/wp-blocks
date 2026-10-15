@@ -35,6 +35,27 @@
     border-color: var(--blx-color-line);
   }
 
+  .blx-locale-switcher ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--blx-space-3, 0.75rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .blx-locale-switcher a {
+    display: inline-block;
+    min-block-size: 44px;
+    line-height: 44px;
+    padding-inline: var(--blx-space-2, 0.5rem);
+  }
+
+  .blx-locale-switcher a[aria-current='page'] {
+    font-weight: 700;
+    text-decoration: none;
+  }
+
   .appearance-toggle [role='group'] {
     display: flex;
     flex-wrap: wrap;

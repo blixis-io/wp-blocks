@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Blixis\Builder\Frontend;
 
 use Blixis\Builder\Css\Compiler;
+use Blixis\Builder\Locale\NativeLocaleRouter;
 use Blixis\Builder\Registry\ElementRegistry;
 use Blixis\Builder\Render\CoreDocumentRenderer;
 use Blixis\Builder\Render\WordPressMediaResolver;
@@ -117,15 +118,17 @@ final class Frontend {
 		if ( null === $published ) {
 			return null;
 		}
-		$theme = \wp_get_theme();
+		$router   = NativeLocaleRouter::instance();
+		$fallback = null === $router ? 'source' : $router->fallback_policy();
+		$theme    = \wp_get_theme();
 		// The reason distinguishes changed declarations even if the stylesheet version was not bumped.
 		$reason = ( new ThemeCompat( new WordPressCompatibilityReader() ) )->status()->reason;
-		$key    = RenderCacheKey::build( $post_id, $published->locale, $published->layout_revision, $published->content_revision, Invalidation::epoch(), Compiler::COMPILER_VERSION, \Blixis\Builder\VERSION, $theme->get_stylesheet() . '@' . (string) $theme->get( 'Version' ), $reason );
+		$key    = RenderCacheKey::build( $post_id, $published->locale, $published->layout_revision, $published->content_revision, $published->default_content_revision, Invalidation::epoch(), Compiler::COMPILER_VERSION, \Blixis\Builder\VERSION, $theme->get_stylesheet() . '@' . (string) $theme->get( 'Version' ) . '|fallback=' . $fallback, $reason );
 		$cache  = new TransientRenderCache();
 		$page   = $cache->get( $key );
 		if ( null === $page ) {
 			$renderer = new PageRenderer( new CoreDocumentRenderer( ElementRegistry::from_manifest_file( \Blixis\Builder\DIR . '/data/core-elements.json' ), new WordPressMediaResolver() ) );
-			$page     = $renderer->render( $published );
+			$page     = $renderer->render( $published, $fallback );
 			if ( null === $page ) {
 				return null;
 			}

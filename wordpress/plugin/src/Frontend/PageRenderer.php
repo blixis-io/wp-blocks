@@ -31,11 +31,12 @@ final class PageRenderer {
 	 * Render a published document.
 	 *
 	 * @param PublishedDocument $published Document.
+	 * @param string            $fallback Missing-translation policy.
 	 * @return ?array{html: string, css: string} Null when the output is unsafe or too large.
 	 */
-	public function render( PublishedDocument $published ): ?array {
+	public function render( PublishedDocument $published, string $fallback = 'source' ): ?array {
 		$compiled = Compiler::compile( $published->document );
-		$html     = $this->renderer->render( $published->document, $published->locale, 'light', $compiled->class_names );
+		$html     = $this->renderer->render( $published->document, $published->locale, 'light', $compiled->class_names, $fallback );
 		if ( \strlen( $html ) > self::MAX_HTML || ! PreviewSanitizer::accepts( $html ) ) {
 			return null;
 		}

@@ -51,9 +51,10 @@ final class CoreDocumentRenderer {
 	 * @param string                       $locale Locale.
 	 * @param string                       $mode Mode.
 	 * @param array<string, array<string>> $class_names Generated class names by element ID (from the CSS compiler).
+	 * @param string                       $fallback Missing-translation policy: `source` or `blank`.
 	 * @throws \RuntimeException When limits are exceeded.
 	 */
-	public function render( \stdClass $document, string $locale, string $mode, array $class_names = [] ): string {
+	public function render( \stdClass $document, string $locale, string $mode, array $class_names = [], string $fallback = 'source' ): string {
 		// Appearance affects CSS only (compiled separately); the compiler's class names are attached to the elements.
 		unset( $mode );
 		$roots = \is_array( $document->root ?? null ) ? $document->root : [];
@@ -89,7 +90,7 @@ final class CoreDocumentRenderer {
 				$output[] = '<div data-blx-invalid>' . $child_html . '</div>';
 				continue;
 			}
-			$values   = $this->content->values( $node, $document, $locale );
+			$values   = $this->content->values( $node, $document, $locale, $fallback );
 			$output[] = $renderer->render( new ElementNode( $node->id, $node->type, $values, \is_array( $class_names[ $node->id ] ?? null ) ? $class_names[ $node->id ] : [] ), new RenderContext( $child_html ) );
 		}
 		return \implode( '', $output );

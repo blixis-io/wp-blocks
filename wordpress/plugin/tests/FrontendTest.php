@@ -222,7 +222,7 @@ final class FrontendTest extends TestCase {
 
 	/** Every input is part of the cache key; the same inputs give the same key. */
 	public function test_cache_key_covers_every_input(): void {
-		$base = [ 5, 'en_US', 2, 4, 'epoch-a', 1, '0.1.0', 'blixis@0.1.0', 'ok' ];
+		$base = [ 5, 'en_US', 2, 4, 3, 'epoch-a', 1, '0.1.0', 'blixis@0.1.0', 'ok' ];
 		$key  = static fn ( array $v ): string => RenderCacheKey::build( ...$v );
 		$this->assertSame( $key( $base ), $key( $base ) );
 		$this->assertMatchesRegularExpression( '/^blx_[0-9a-f]{64}$/D', $key( $base ) );
