@@ -139,10 +139,8 @@ describe('Menu keyboard and focus behavior', () => {
     await waitFor(() => {
       expect(document.activeElement?.getAttribute('role')).toBe('menuitem');
     });
-    await user.keyboard('g');
-    await waitFor(() => {
-      expect(document.activeElement?.textContent).toContain('Gamma');
-    });
+    fireEvent.keyDown(document.activeElement as HTMLElement, { key: 'g' });
+    expect(document.activeElement?.textContent).toContain('Gamma');
   });
   it('supports repeated typeahead text', async () => {
     const user = userEvent.setup();

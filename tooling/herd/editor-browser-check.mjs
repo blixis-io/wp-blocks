@@ -88,11 +88,11 @@ try {
       problems.push(`log: ${message.params.entry.text}`.slice(0, 200));
     }
   };
-  const send = (method, params = {}) =>
+  const send = (method, params = {}, sessionId = undefined) =>
     new Promise((resolve) => {
       const id = (seq += 1);
       pending.set(id, resolve);
-      ws.send(JSON.stringify({ id, method, params }));
+      ws.send(JSON.stringify({ id, method, params, ...(sessionId ? { sessionId } : {}) }));
     });
   const ev = async (expression) => {
     const response = await send('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true });
@@ -1080,6 +1080,184 @@ try {
     const sized = await frameInfo();
     assert.ok(Math.abs(sized.width - width) <= 2, `${name} sizes the canvas frame to ${width}px (got ${sized.width})`);
   }
+  await ev(
+    `[...document.querySelectorAll('[role=radio]')].find((b) => b.getAttribute('aria-label') === 'Desktop').click()`,
+  );
+  await sleep(400);
+
+  // Layout parity: compare the same published demo document in a separate frontend target.
+  // Earlier steps edited the local draft (alignment, spacing); reload so the canvas shows the saved working document,
+  // which `pnpm dev:demo` keeps equal to the published one.
+  await nav(editorUrl, 3000);
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    const ready = await frameInfo();
+    if (ready.found && ready.elements > 0) break;
+    await sleep(250);
+  }
+  // The frontend runs in its own tab with its own DevTools socket (Target.* commands are not available on a page socket).
+  const parityTab = await (
+    await fetch(`http://127.0.0.1:9334/json/new?${encodeURIComponent(`${SITE}/builder-demo/`)}`, { method: 'PUT' })
+  ).json();
+  const frontWs = new WebSocket(parityTab.webSocketDebuggerUrl);
+  await new Promise((resolve) => (frontWs.onopen = resolve));
+  let frontSeq = 0;
+  const frontPending = new Map();
+  frontWs.onmessage = (event) => {
+    const message = JSON.parse(event.data);
+    if (message.id && frontPending.has(message.id)) {
+      frontPending.get(message.id)(message);
+      frontPending.delete(message.id);
+    }
+  };
+  const frontSend = (method, params = {}) =>
+    new Promise((resolve) => {
+      const id = (frontSeq += 1);
+      frontPending.set(id, resolve);
+      frontWs.send(JSON.stringify({ id, method, params }));
+    });
+  await frontSend('Page.enable');
+  await frontSend('Runtime.enable');
+  await frontSend('Emulation.setDeviceMetricsOverride', {
+    width: 1200,
+    height: 900,
+    deviceScaleFactor: 1,
+    mobile: false,
+  });
+  const frontEval = async (expression) => {
+    const result = await frontSend('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true });
+    assert.ok(
+      !result.result?.exceptionDetails,
+      `frontend parity evaluation succeeded: ${JSON.stringify(result.result?.exceptionDetails)}`,
+    );
+    return result.result?.result?.value;
+  };
+  const collectParity = (doc) => {
+    const section = doc.querySelector(
+      '.blx-page [data-blx-type*="section"], .blx-page section, .blx-page [data-blx-id]',
+    );
+    const container = section?.querySelector('[data-blx-max-width], [data-blx-type*="container"]') ?? section;
+    const heading = section?.querySelector('h1, h2, h3');
+    const text = section?.querySelector('p');
+    const button = section?.querySelector('a.blx-button, button, .blx-button');
+    return [section, container, heading, text, button].map((node) => {
+      if (!node) return null;
+      const style = doc.defaultView.getComputedStyle(node);
+      const rect = node.getBoundingClientRect();
+      return {
+        width: rect.width,
+        left: rect.left,
+        fontSize: style.fontSize,
+        lineHeight: style.lineHeight,
+        margin: [style.marginTop, style.marginRight, style.marginBottom, style.marginLeft],
+        padding: [style.paddingTop, style.paddingRight, style.paddingBottom, style.paddingLeft],
+        backgroundColor: style.backgroundColor,
+        color: style.color,
+      };
+    });
+  };
+  const canvasParity = `(${collectParity.toString()})(document.querySelector('main iframe').contentDocument)`;
+  const frontendParity = `(${collectParity.toString()})(document)`;
+  for (let attempt = 0; attempt < 25; attempt += 1) {
+    try {
+      if (await frontEval(`!!document.querySelector('.blx-page[data-blx-document]')`)) break;
+    } catch {
+      await sleep(200);
+      continue;
+    }
+    await sleep(200);
+  }
+  assert.equal(
+    await frontEval(`!!document.querySelector('.blx-page[data-blx-document]')`),
+    true,
+    'the published demo page opened in the frontend target',
+  );
+  const loadedFamilies = (doc) =>
+    [...doc.fonts]
+      .filter((font) => font.status === 'loaded')
+      .map((font) => font.family.replace(/["']/g, '').trim())
+      .filter((family) => family && family.toLowerCase() !== 'dashicons');
+  const canvasFontFamilies = await ev(
+    `document.querySelector('main iframe').contentDocument.fonts.ready.then(() => (${loadedFamilies.toString()})(document.querySelector('main iframe').contentDocument))`,
+  );
+  const frontendFontFamilies = await frontEval(
+    `document.fonts.ready.then(() => (${loadedFamilies.toString()})(document))`,
+  );
+  assert.ok(
+    frontendFontFamilies.every((family) => canvasFontFamilies.includes(family)),
+    `canvas loads every frontend font family (${JSON.stringify({ canvasFontFamilies, frontendFontFamilies })})`,
+  );
+  const parity = async (label, width) => {
+    await send('Emulation.setDeviceMetricsOverride', { width, height: 900, deviceScaleFactor: 1, mobile: false });
+    await ev(
+      `[...document.querySelectorAll('[role=radio]')].find((b) => b.getAttribute('aria-label') === ${JSON.stringify(label)}).click()`,
+    );
+    await sleep(500);
+    const canvasViewport = await frameInfo();
+    await frontSend('Emulation.setDeviceMetricsOverride', {
+      width: Math.round(canvasViewport.width),
+      height: 900,
+      deviceScaleFactor: 1,
+      mobile: false,
+    });
+    await sleep(350);
+    const frameDoc = await ev(canvasParity);
+    const front = await frontEval(frontendParity);
+    assert.ok(
+      Array.isArray(frameDoc) && frameDoc.length === 5,
+      `${label} canvas exposes hero, container, heading, text and button`,
+    );
+    assert.ok(
+      Array.isArray(front) && front.length === 5,
+      `${label} frontend exposes hero, container, heading, text and button`,
+    );
+    for (let i = 0; i < 5; i += 1) {
+      assert.ok(frameDoc[i] && front[i], `${label} parity target ${i} exists in both documents`);
+      for (const key of ['width', 'left'])
+        assert.ok(
+          Math.abs(frameDoc[i][key] - front[i][key]) <= 2,
+          `${label} target ${i} ${key} is within 2px (${frameDoc[i][key]} vs ${front[i][key]})`,
+        );
+      for (const key of ['fontSize', 'lineHeight'])
+        assert.equal(frameDoc[i][key], front[i][key], `${label} target ${i} ${key} matches exactly`);
+      for (const key of ['margin', 'padding'])
+        assert.deepEqual(frameDoc[i][key], front[i][key], `${label} target ${i} ${key} matches`);
+    }
+    for (const [appearance, mode] of [
+      ['Light', 'light'],
+      ['Dark', 'dark'],
+    ]) {
+      await ev(
+        `[...document.querySelectorAll('[role=radiogroup][aria-label="Preview appearance"] [role=radio]')].find((b) => b.textContent.trim() === ${JSON.stringify(appearance)}).click()`,
+      );
+      await frontEval(`document.documentElement.setAttribute('data-theme', ${JSON.stringify(mode)}); true`);
+      await sleep(500);
+      const canvasColors = await ev(canvasParity);
+      const frontColors = await frontEval(frontendParity);
+      for (let i = 0; i < 5; i += 1) {
+        for (const key of ['backgroundColor', 'color'])
+          assert.equal(canvasColors[i][key], frontColors[i][key], `${label} ${appearance} target ${i} ${key} matches`);
+      }
+    }
+    await ev(
+      `[...document.querySelectorAll('[role=radiogroup][aria-label="Preview appearance"] [role=radio]')].find((b) => b.textContent.trim() === 'Light').click()`,
+    );
+    await frontEval(`document.documentElement.setAttribute('data-theme', 'light'); true`);
+    return { frameDoc, front };
+  };
+  for (const [label, width] of [
+    ['Desktop', 1200],
+    ['Tablet', 768],
+    ['Mobile', 375],
+  ])
+    await parity(label, width);
+  frontWs.close();
+  await fetch(`http://127.0.0.1:9334/json/close/${parityTab.id}`);
+  await send('Emulation.setDeviceMetricsOverride', {
+    width: savedMetrics.width,
+    height: savedMetrics.height,
+    deviceScaleFactor: 1,
+    mobile: false,
+  });
   await ev(
     `[...document.querySelectorAll('[role=radio]')].find((b) => b.getAttribute('aria-label') === 'Desktop').click()`,
   );

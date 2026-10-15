@@ -36,8 +36,10 @@ function add_filter( string $hook, mixed $callback, int $priority = 10, int $acc
  *
  * @param string $hook Value.
  * @param mixed  $value Value.
+ * @param mixed  ...$args Additional filter arguments.
  */
-function apply_filters( string $hook, mixed $value ): mixed { // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedFunctionFound -- WordPress test stub.
+function apply_filters( string $hook, mixed $value, mixed ...$args ): mixed { // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedFunctionFound -- WordPress test stub.
+	unset( $hook, $args );
 	return $value;
 }
 

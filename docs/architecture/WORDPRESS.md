@@ -6,6 +6,8 @@ Baseline decided in [ADR 0001](adrs/0001-supported-environments.md): WordPress 7
 
 ## Plugin/theme responsibilities
 
+For singular builder documents, the `blixis_builder_page_shell` filter is the shared markup contract between theme templates, the public renderer and the isolated canvas. The Blixis theme supplies the main layout classes and article shell; the plugin supplies a generic wrapper for non-Blixis themes. The canvas does not execute theme PHP templates or call `get_header()`: it includes layout-bearing wrappers only. See [Canvas contract](CANVAS-CONTRACT.md#page-structure-and-layout-parity-bwb-150).
+
 - Theme: PHP templates, styles, `theme.json`, optional safe presentation defaults, onboarding entry point, theme compatibility declaration.
 - Plugin: editor, post meta, revisions, renderers, dynamic data, API, capabilities, extension registry. Content survives theme changes.
 - Premium: separately distributed optional plugins; never ship restricted inactive premium functionality inside WordPress.org-hosted Free code.

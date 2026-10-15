@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Blixis\Builder\Frontend;
 
 use Blixis\Builder\Css\Compiler;
+use Blixis\Builder\Canvas\PageShell;
 use Blixis\Builder\Locale\NativeLocaleRouter;
 use Blixis\Builder\Registry\ElementRegistry;
 use Blixis\Builder\Render\CoreDocumentRenderer;
@@ -80,7 +81,7 @@ final class Frontend {
 			return $content;
 		}
 		$page = self::page_for( $post_id );
-		return null === $page ? $content : '<div class="blx-page" data-blx-document>' . $page['html'] . '</div>';
+		return null === $page ? $content : PageShell::document_wrapper( $page['html'] );
 	}
 
 	/**

@@ -18,6 +18,7 @@ use Blixis\Builder\Rest\StatusController;
 use Blixis\Builder\Theme\AdminNotice;
 use Blixis\Builder\Admin\EditorScreen;
 use Blixis\Builder\Admin\CanvasScreen;
+use Blixis\Builder\Canvas\PageShell;
 
 \defined( 'ABSPATH' ) || exit;
 
@@ -36,6 +37,7 @@ final class Plugin {
 		AdminNotice::hooks();
 		EditorScreen::hooks();
 		CanvasScreen::hooks();
+		PageShell::hooks();
 		Frontend::hooks();
 		NativeLocaleRouter::boot();
 	}

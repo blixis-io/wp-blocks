@@ -6,7 +6,6 @@
  */
 
 ?>
-<article id="post-<?php the_ID(); ?>" <?php post_class(); ?>>
 	<header class="entry-header">
 		<h1 class="entry-title"><?php echo esc_html( get_the_title() ); ?></h1>
 	</header>
@@ -16,4 +15,3 @@
 		wp_link_pages();
 		?>
 	</div>
-</article>

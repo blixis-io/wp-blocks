@@ -10,6 +10,8 @@ declare(strict_types=1);
 namespace Blixis\Builder\Admin;
 
 use Blixis\Builder\Canvas\TokenCss;
+use Blixis\Builder\Canvas\PageShell;
+use Blixis\Builder\Canvas\FontFaceCss;
 use Blixis\Builder\Locale\Direction;
 use Blixis\Builder\Locale\LocaleConfig;
 use Blixis\Builder\Rest\WordPressPostAccess;
@@ -71,15 +73,17 @@ final class CanvasScreen {
 		foreach ( EditorHeaders::canvas_list( $nonce ) as $name => $header ) {
 			\header( $name . ': ' . $header );
 		}
-		$theme_css = '';
+		$theme_css  = '';
+		$font_faces = '';
 		if ( $theme->compatible && \class_exists( ThemeSetup::class ) ) {
 			// Register only Blixis theme styles. Running the global enqueue action here would admit plugin/admin styles.
 			ThemeSetup::enqueue();
-			$theme_css = self::theme_stylesheet_links( \wp_styles() );
+			$theme_css  = self::theme_stylesheet_links( \wp_styles() );
+			$font_faces = FontFaceCss::from_wordpress();
 		}
 		$lang = \str_replace( '_', '-', $request->content_locale );
 		$dir  = Direction::is_rtl( $request->content_locale ) ? 'rtl' : 'ltr';
-		echo self::document_markup( $theme_css, $tokens, $nonce, $assets['canvas_url'], $lang, $dir ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- All dynamic document values are escaped in document_markup().
+		echo self::document_markup( $theme_css, $tokens, $nonce, $assets['canvas_url'], $lang, $dir, $post, $font_faces ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- All dynamic document values are escaped in document_markup().
 		exit;
 	}
 
@@ -146,15 +150,28 @@ final class CanvasScreen {
 	/**
 	 * Build the standalone canvas document markup.
 	 *
-	 * @param string $theme_styles Escaped registered theme stylesheet links.
-	 * @param string $tokens       Validated token stylesheet.
-	 * @param string $nonce        Per-response CSP nonce.
-	 * @param string $canvas_url   Same-origin runtime URL.
-	 * @param string $lang         Content locale language tag.
-	 * @param string $dir          Content locale direction.
+	 * @param string        $theme_styles Escaped registered theme stylesheet links.
+	 * @param string        $tokens       Validated token stylesheet.
+	 * @param string        $nonce        Per-response CSP nonce.
+	 * @param string        $canvas_url   Same-origin runtime URL.
+	 * @param string        $lang         Content locale language tag.
+	 * @param string        $dir  Content locale direction.
+	 * @param \WP_Post|null $post Current document post.
+	 * @param string        $font_faces WordPress font-face CSS, filtered again for same-origin safety.
 	 * @return string
 	 */
-	public static function document_markup( string $theme_styles, string $tokens, string $nonce, string $canvas_url, string $lang, string $dir ): string {
+	public static function document_markup( string $theme_styles, string $tokens, string $nonce, string $canvas_url, string $lang, string $dir, ?\WP_Post $post = null, string $font_faces = '' ): string {
+		$font_faces   = FontFaceCss::sanitize( $font_faces, (string) ( \function_exists( 'home_url' ) ? \home_url( '/' ) : 'https://example.test/' ) );
+		$post         = $post ?? new \WP_Post(
+			(object) [
+				'ID'          => 1,
+				'post_type'   => 'page',
+				'post_status' => 'publish',
+			]
+		);
+		$shell        = PageShell::for_post( $post );
+		$document     = PageShell::document_wrapper( '<div id="blx-canvas-root" data-blx-mode="light"></div>' );
+		$body_classes = \implode( ' ', \array_map( '\esc_attr', $shell['body_classes'] ) );
 		return '<!doctype html><html lang="' . \esc_attr( $lang ) . '" dir="' . \esc_attr( $dir ) . '" data-theme="light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="light"><meta name="robots" content="noindex,nofollow"><meta name="blixis-canvas" content="' . \esc_attr(
 			self::meta_json(
 				[
@@ -162,7 +179,7 @@ final class CanvasScreen {
 					'cspNonce' => $nonce,
 				]
 			)
-		) . '">' . $theme_styles . '<style nonce="' . \esc_attr( $nonce ) . '">' . $tokens . '</style></head><body class="blx-canvas-body"><div id="blx-canvas-root" data-blx-mode="light"></div><script src="' . \esc_url( $canvas_url ) . '" nonce="' . \esc_attr( $nonce ) . '" defer></script></body></html>'; // phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedScript -- Standalone document includes only its explicit trusted runtime.
+		) . '">' . $theme_styles . ( '' !== $font_faces ? '<style class="wp-fonts-local" nonce="' . \esc_attr( $nonce ) . '">' . $font_faces . '</style>' : '' ) . '<style nonce="' . \esc_attr( $nonce ) . '">' . $tokens . '</style></head><body class="' . $body_classes . '">' . $shell['open'] . '<div class="entry-content">' . $document . '</div>' . $shell['close'] . '<script src="' . \esc_url( $canvas_url ) . '" nonce="' . \esc_attr( $nonce ) . '" defer></script></body></html>'; // phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedScript -- Standalone document includes only its explicit trusted runtime.
 	}
 
 	/**
