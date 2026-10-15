@@ -621,29 +621,70 @@ try {
   })()`);
   assert.equal(longBreadcrumbTop, noSelectionTop, 'a long breadcrumb does not move the canvas iframe');
   const afterPick = await ev(
-    `({ inspector: document.querySelector('aside[aria-label="Inspector"]').textContent, focusInFrame: document.activeElement?.tagName === 'IFRAME', marked: document.querySelector('main iframe').contentDocument.querySelectorAll('[data-blx-selected]').length })`,
+    `({ inspector: document.querySelector('aside[aria-label="Inspector"]').textContent, focusInFrame: document.activeElement?.tagName === 'IFRAME', marked: document.querySelector('main iframe').contentDocument.querySelectorAll('[data-blx-selected]').length, outlines: document.querySelectorAll('[data-testid="selection-overlay"]').length })`,
   );
   assert.ok(afterPick.inspector.includes(target.id), 'picking an element in the canvas selects it in the editor');
-  assert.equal(afterPick.marked, 1, 'the selected element is marked in the canvas');
+  assert.equal(afterPick.marked, 0, 'selected styling is absent from the canvas document');
+  assert.equal(afterPick.outlines, 1, 'the editor renders exactly one selected outline');
   assert.equal(afterPick.focusInFrame, false, 'focus does not stay inside the iframe after a pick');
   await sleep(200);
   const overlay = await ev(`(() => {
     const frame = document.querySelector('main iframe');
-    const el = frame.contentDocument.querySelector('[data-blx-selected]');
+    const el = frame.contentDocument.querySelector('[data-blx-id="' + ${JSON.stringify(target.id)} + '"]');
     const box = el?.getBoundingClientRect();
     const fb = frame.getBoundingClientRect();
     const outline = document.querySelector('[data-testid="selection-overlay"]')?.getBoundingClientRect();
-    return box && outline ? { dx: Math.abs(outline.left - fb.left - box.left), dy: Math.abs(outline.top - fb.top - box.top), dw: Math.abs(outline.width - box.width), dh: Math.abs(outline.height - box.height) } : null;
+    const toolbar = document.querySelector('[data-testid="selection-toolbar"]')?.getBoundingClientRect();
+    const handles = [...document.querySelectorAll('[data-testid="selection-handles"] [data-handle]')].map((h) => { const r = h.getBoundingClientRect(); return { key: h.dataset.handle, x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
+    const expected = outline ? { nw:[outline.left,outline.top], n:[outline.left+outline.width/2,outline.top], ne:[outline.right,outline.top], e:[outline.right,outline.top+outline.height/2], se:[outline.right,outline.bottom], s:[outline.left+outline.width/2,outline.bottom], sw:[outline.left,outline.bottom], w:[outline.left,outline.top+outline.height/2] } : {};
+    const maxHandleDelta = Math.max(0, ...handles.map((h) => Math.max(Math.abs(h.x-expected[h.key][0]),Math.abs(h.y-expected[h.key][1]))));
+    return box && outline ? { dx: Math.abs(outline.left - fb.left - box.left), dy: Math.abs(outline.top - fb.top - box.top), dw: Math.abs(outline.width - box.width), dh: Math.abs(outline.height - box.height), maxHandleDelta, handleCount: handles.length, toolbarAbove: toolbar ? toolbar.bottom <= outline.top + 1 : false, toolbarInside: toolbar ? toolbar.left >= fb.left && toolbar.right <= fb.right : false } : null;
   })()`);
   assert.ok(
     overlay && Math.max(overlay.dx, overlay.dy, overlay.dw, overlay.dh) <= 2,
     `the editor overlay matches the canvas element within 2px (${JSON.stringify(overlay)})`,
   );
+  assert.equal(overlay.handleCount, 8, 'the selection has eight visual handles');
+  assert.ok(
+    overlay.maxHandleDelta <= 1,
+    `the handles are centred on the eight outline points (${JSON.stringify(overlay)})`,
+  );
+  assert.ok(
+    overlay.toolbarAbove && overlay.toolbarInside,
+    `the toolbar sits above selection inside frame (${JSON.stringify(overlay)})`,
+  );
+  const iframeTopBeforeDuplicate = await ev(`document.querySelector('main iframe').getBoundingClientRect().top`);
+  const countBeforeDuplicate = await ev(
+    `document.querySelector('main iframe').contentDocument.querySelectorAll('[data-blx-id]').length`,
+  );
+  await ev(`document.querySelector('[data-testid="selection-toolbar"] button[aria-label="Duplicate"]')?.click()`);
+  await sleep(500);
+  assert.equal(
+    await ev(`document.querySelector('main iframe').contentDocument.querySelectorAll('[data-blx-id]').length`),
+    countBeforeDuplicate + 1,
+    'Duplicate inserts a copy',
+  );
+  await ev(`document.querySelector('button[aria-label="Undo"]')?.click()`);
+  await sleep(500);
+  assert.equal(
+    await ev(`document.querySelector('main iframe').contentDocument.querySelectorAll('[data-blx-id]').length`),
+    countBeforeDuplicate,
+    'Undo removes the duplicate',
+  );
+  assert.equal(
+    await ev(`document.querySelector('main iframe').getBoundingClientRect().top`),
+    iframeTopBeforeDuplicate,
+    'selection actions do not move the iframe',
+  );
+  await ev(
+    `[...document.querySelectorAll('nav[aria-label="Structure"] [role="treeitem"]')].find((row) => row.dataset.id === ${JSON.stringify(target.id)})?.click()`,
+  );
+  await sleep(500);
   await ev(`document.querySelector('main iframe').contentWindow.scrollTo(0, 100)`);
   await sleep(250);
   const scrolledOverlay = await ev(`(() => {
     const frame = document.querySelector('main iframe');
-    const box = frame.contentDocument.querySelector('[data-blx-selected]')?.getBoundingClientRect();
+    const box = frame.contentDocument.querySelector('[data-blx-id="' + ${JSON.stringify(target.id)} + '"]')?.getBoundingClientRect();
     const fb = frame.getBoundingClientRect();
     const outline = document.querySelector('[data-testid="selection-overlay"]')?.getBoundingClientRect();
     return box && outline ? { dx: Math.abs(outline.left - fb.left - box.left), dy: Math.abs(outline.top - fb.top - box.top), dw: Math.abs(outline.width - box.width), dh: Math.abs(outline.height - box.height) } : null;
@@ -665,9 +706,9 @@ try {
   );
   assert.ok(crumb, 'the selected element breadcrumb renders');
   const firstCrumbId = await ev(
-    `document.querySelector('[aria-label="Selected element path"] button:first-child')?.getAttribute('title')`,
+    `document.querySelector('[aria-label="Selected element path"] button[title]')?.getAttribute('title')`,
   );
-  await ev(`document.querySelector('[aria-label="Selected element path"] button:first-child')?.click()`);
+  await ev(`document.querySelector('[aria-label="Selected element path"] button[title]')?.click()`);
   await sleep(300);
   assert.ok(
     await ev(

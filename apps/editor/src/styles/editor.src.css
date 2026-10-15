@@ -719,6 +719,7 @@
       gap: 0.25rem;
       color: var(--ed-fg-muted);
       font-size: var(--ed-font-xs);
+      min-inline-size: 0;
     }
     .blx-stage-bar {
       display: flex;
@@ -740,6 +741,25 @@
     .blx-stage-crumbs .blx-breadcrumb {
       overflow: hidden;
       white-space: nowrap;
+    }
+    .blx-breadcrumb-home {
+      display: inline-grid;
+      place-items: center;
+      flex: none;
+      color: var(--ed-fg-muted);
+    }
+    .blx-breadcrumb li {
+      min-inline-size: 0;
+    }
+    .blx-breadcrumb-item {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-inline-size: 14rem;
+    }
+    .blx-breadcrumb li > button[aria-current='location'] {
+      color: var(--ed-primary);
+      font-weight: 600;
     }
     .blx-canvas-bar {
       flex: none;
@@ -841,9 +861,123 @@
       box-sizing: border-box;
     }
     .blx-selection-overlay {
-      outline: 2px solid var(--ed-selection-contrast);
-      outline-offset: -2px;
-      box-shadow: inset 0 0 0 4px var(--ed-focus-ring);
+      outline: 2px solid var(--ed-primary);
+      outline-offset: -1px;
+    }
+    .blx-selection-handles {
+      position: absolute;
+      pointer-events: none;
+    }
+    .blx-selection-handle {
+      position: absolute;
+      inline-size: 8px;
+      block-size: 8px;
+      box-sizing: border-box;
+      border: 1.5px solid var(--ed-primary);
+      background: var(--ed-bg);
+      transform: translate(-50%, -50%);
+    }
+    .blx-selection-handle.is-nw {
+      inset-block-start: 0;
+      inset-inline-start: 0;
+    }
+    .blx-selection-handle.is-n {
+      inset-block-start: 0;
+      inset-inline-start: 50%;
+    }
+    .blx-selection-handle.is-ne {
+      inset-block-start: 0;
+      inset-inline-start: 100%;
+    }
+    .blx-selection-handle.is-e {
+      inset-block-start: 50%;
+      inset-inline-start: 100%;
+    }
+    .blx-selection-handle.is-se {
+      inset-block-start: 100%;
+      inset-inline-start: 100%;
+    }
+    .blx-selection-handle.is-s {
+      inset-block-start: 100%;
+      inset-inline-start: 50%;
+    }
+    .blx-selection-handle.is-sw {
+      inset-block-start: 100%;
+      inset-inline-start: 0;
+    }
+    .blx-selection-handle.is-w {
+      inset-block-start: 50%;
+      inset-inline-start: 0;
+    }
+    [dir='rtl'] .blx-selection-handle.is-nw,
+    [dir='rtl'] .blx-selection-handle.is-w,
+    [dir='rtl'] .blx-selection-handle.is-sw {
+      inset-inline-start: 100%;
+    }
+    [dir='rtl'] .blx-selection-handle.is-ne,
+    [dir='rtl'] .blx-selection-handle.is-e,
+    [dir='rtl'] .blx-selection-handle.is-se {
+      inset-inline-start: 0;
+    }
+    .blx-selection-toolbar {
+      position: absolute;
+      z-index: 4;
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      padding: 4px;
+      border: 1px solid var(--ed-border-strong);
+      border-radius: var(--ed-radius-control);
+      background: var(--ed-surface-1);
+      color: var(--ed-fg);
+      box-shadow: var(--ed-shadow-floating, 0 4px 12px #0003);
+    }
+    .blx-selection-toolbar button {
+      display: inline-grid;
+      place-items: center;
+      min-inline-size: 28px;
+      min-block-size: 28px;
+      border-radius: var(--ed-radius-control);
+    }
+    .blx-selection-toolbar button:hover,
+    .blx-selection-toolbar button:focus-visible {
+      background: var(--ed-selected);
+      color: var(--ed-selected-fg);
+    }
+    .blx-selection-toolbar button:disabled {
+      opacity: 0.5;
+    }
+    .blx-selection-toolbar-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding-inline: 6px;
+      font-size: var(--ed-font-xs);
+      white-space: nowrap;
+    }
+    .blx-selection-menu {
+      position: absolute;
+      inset-block-start: calc(100% + 4px);
+      inset-inline-end: 0;
+      min-inline-size: 10rem;
+      padding: 4px;
+      border: 1px solid var(--ed-border);
+      border-radius: var(--ed-radius-control);
+      background: var(--ed-surface-1);
+      box-shadow: var(--ed-shadow-floating, 0 4px 12px #0003);
+    }
+    .blx-selection-menu button {
+      display: flex;
+      inline-size: 100%;
+      justify-content: flex-start;
+      padding-inline: 8px;
+    }
+    .blx-selection-menu[hidden] {
+      display: none;
+    }
+    .blx-selection-toolbar button:focus {
+      outline: 2px solid var(--ed-primary);
+      outline-offset: 1px;
     }
     .blx-error {
       display: grid;

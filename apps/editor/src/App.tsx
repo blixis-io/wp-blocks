@@ -115,15 +115,27 @@ function Shell({
             <>
               <div className="blx-stage-bar" data-testid="canvas-breadcrumb-bar">
                 {breadcrumb.length ? (
-                  <nav aria-label={t('canvas.breadcrumb')} className="blx-stage-crumbs">
-                    <Icon name="section" size={15} />
+                  <nav
+                    aria-label={t('canvas.breadcrumb')}
+                    className="blx-stage-crumbs"
+                    title={breadcrumb.map((node) => elementLabel(node.type, t)).join(' › ')}
+                  >
+                    <button
+                      type="button"
+                      className="blx-breadcrumb-home ed-focus-ring"
+                      aria-label={t('canvas.selection.home')}
+                      aria-current={selectedId === null ? 'location' : undefined}
+                      onClick={() => store.getState().select(null)}
+                    >
+                      <Icon name="home" size={15} />
+                    </button>
                     <ol className="blx-breadcrumb">
-                      {breadcrumb.map((node, index) => (
+                      {breadcrumb.map((node) => (
                         <li key={node.id}>
-                          {index > 0 ? <span aria-hidden="true">/</span> : null}
+                          <Icon name="caretRight" size={13} mirrorInRtl />
                           <button
                             type="button"
-                            className="ed-focus-ring"
+                            className="blx-breadcrumb-item ed-focus-ring"
                             aria-current={node.id === selectedId ? 'location' : undefined}
                             title={node.id}
                             onClick={() => store.getState().select(node.id)}
@@ -136,13 +148,27 @@ function Shell({
                   </nav>
                 ) : (
                   <nav aria-label={t('canvas.breadcrumb')} className="blx-stage-crumbs">
-                    <Icon name="section" size={15} />
+                    <button
+                      type="button"
+                      className="blx-breadcrumb-home ed-focus-ring"
+                      aria-label={t('canvas.selection.home')}
+                      aria-current={selectedId === null ? 'location' : undefined}
+                      onClick={() => store.getState().select(null)}
+                    >
+                      <Icon name="home" size={15} />
+                    </button>
                     <ol className="blx-breadcrumb" />
                   </nav>
                 )}
                 <PreviewAppearance />
               </div>
-              <Canvas canvasUrl={bootstrap.canvasUrl} client={client} {...canvas} />
+              <Canvas
+                canvasUrl={bootstrap.canvasUrl}
+                client={client}
+                selected={selected}
+                editingEnabled={bootstrap.editingEnabled}
+                {...canvas}
+              />
             </>
           ) : (
             <div className="blx-canvas">

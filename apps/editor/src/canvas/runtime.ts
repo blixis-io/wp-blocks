@@ -27,9 +27,7 @@ const MAX_META_LENGTH = 1024;
 const NONCE_PATTERN = /^[A-Za-z0-9+/_=-]{16,64}$/;
 
 /** Selection and hover are drawn by this stylesheet (a nonce'd `<style>`), never by inline styles. */
-const CHROME_CSS =
-  `[${HOVER_ATTRIBUTE}]{outline:2px dashed #2563eb!important;outline-offset:-2px!important}` +
-  `[${SELECTED_ATTRIBUTE}]{outline:2px solid #2563eb!important;outline-offset:-2px!important}`;
+const CHROME_CSS = `[${HOVER_ATTRIBUTE}]{outline:2px dashed #2563ebaa!important;outline-offset:-2px!important}`;
 
 export interface CanvasMeta {
   version: 1;
@@ -101,7 +99,6 @@ export function startRuntime(env: RuntimeEnv = { document, window }): Runtime | 
 
   let endpoint: CanvasEndpoint | null = null;
   let lastRevision = -1;
-  let selectedId: string | null = null;
   let hoveredId: string | null = null;
   let closed = false;
   let observer: ResizeObserver | null = null;
@@ -208,7 +205,6 @@ export function startRuntime(env: RuntimeEnv = { document, window }): Runtime | 
       contentStyle.textContent = css;
       root.replaceChildren(checked.fragment);
       lastRevision = revision;
-      mark(SELECTED_ATTRIBUTE, selectedId);
       mark(HOVER_ATTRIBUTE, hoveredId);
       send({ type: 'rendered', revision });
       scrollWanted = true;
@@ -231,8 +227,6 @@ export function startRuntime(env: RuntimeEnv = { document, window }): Runtime | 
         setAppearance(message.mode);
         break;
       case 'select':
-        selectedId = message.id;
-        mark(SELECTED_ATTRIBUTE, selectedId);
         break;
       case 'hover':
         hoveredId = message.id;

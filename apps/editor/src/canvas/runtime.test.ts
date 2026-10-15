@@ -368,18 +368,17 @@ describe('viewport, mode, selection, hover', () => {
     expect(document.documentElement.hasAttribute('data-blx-mode')).toBe(false);
   });
 
-  it('marks the selected and hovered elements with attributes and keeps them after a re-render', () => {
+  it('leaves selection chrome to the parent overlay and keeps canvas hover after a re-render', () => {
     const h = begin();
     render(h, PAGE);
     h.deliver({ type: 'select', id: 'el-heading-1' });
     h.deliver({ type: 'hover', id: 'el-link-1' });
-    expect(h.root.querySelector('[data-blx-selected]')?.getAttribute('data-blx-id')).toBe('el-heading-1');
+    expect(h.root.querySelector('[data-blx-selected]')).toBeNull();
     expect(h.root.querySelector('[data-blx-hover]')?.getAttribute('data-blx-id')).toBe('el-link-1');
     render(h, PAGE, '', 2);
-    expect(h.root.querySelectorAll('[data-blx-selected]')).toHaveLength(1);
-    expect(h.root.querySelector('[data-blx-selected]')?.getAttribute('data-blx-id')).toBe('el-heading-1');
+    expect(h.root.querySelectorAll('[data-blx-selected]')).toHaveLength(0);
     h.deliver({ type: 'select', id: 'el-section-1' });
-    expect(h.root.querySelectorAll('[data-blx-selected]')).toHaveLength(1);
+    expect(h.root.querySelectorAll('[data-blx-selected]')).toHaveLength(0);
     h.deliver({ type: 'select', id: null });
     h.deliver({ type: 'hover', id: null });
     expect(h.root.querySelector('[data-blx-selected]')).toBeNull();
@@ -388,11 +387,11 @@ describe('viewport, mode, selection, hover', () => {
     expect(h.root.querySelector('[data-blx-selected]')).toBeNull();
   });
 
-  it('draws the outline from a nonce stylesheet, not inline styles', () => {
+  it('draws only hover from a nonce stylesheet, not inline styles', () => {
     begin();
     const chrome = document.getElementById('blx-canvas-chrome');
     expect(chrome?.getAttribute('nonce')).toBe(NONCE);
-    expect(chrome?.textContent).toContain('[data-blx-selected]');
+    expect(chrome?.textContent).not.toContain('[data-blx-selected]');
     expect(chrome?.textContent).toContain('outline');
   });
 
