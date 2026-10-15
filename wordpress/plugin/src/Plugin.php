@@ -17,6 +17,7 @@ use Blixis\Builder\Rest\MediaController;
 use Blixis\Builder\Rest\StatusController;
 use Blixis\Builder\Theme\AdminNotice;
 use Blixis\Builder\Admin\EditorScreen;
+use Blixis\Builder\Admin\CanvasScreen;
 
 \defined( 'ABSPATH' ) || exit;
 
@@ -34,6 +35,7 @@ final class Plugin {
 		\add_action( 'rest_api_init', [ StatusController::class, 'register' ] );
 		AdminNotice::hooks();
 		EditorScreen::hooks();
+		CanvasScreen::hooks();
 		Frontend::hooks();
 		NativeLocaleRouter::boot();
 	}

@@ -8,6 +8,8 @@ import {
   TooltipProvider,
 } from '@blixis/wp-editor-ui';
 import { Lock } from 'lucide-react';
+import type { RestClient } from './api/types';
+import { Canvas, PreviewAppearance, type CanvasTestOptions } from './canvas/Canvas';
 import { useEffect, useMemo, useState } from 'react';
 import type { ElementNode } from '@blixis/wp-core';
 import type { EditorBootstrap } from './bootstrap';
@@ -38,10 +40,14 @@ function findElement(root: readonly ElementNode[] | undefined, id: string): Elem
 
 function Shell({
   bootstrap,
+  client,
+  canvas,
   preference,
   onPreference,
 }: {
   bootstrap: EditorBootstrap;
+  client: RestClient | undefined;
+  canvas: CanvasTestOptions | undefined;
   preference: ChromePreference;
   onPreference: (next: ChromePreference) => void;
 }) {
@@ -94,12 +100,19 @@ function Shell({
         </nav>
         <main id={CANVAS_ID} tabIndex={-1} className="blx-main" aria-label={t('canvas.title')}>
           <LoadStatus />
-          <div className="blx-canvas">
-            <p>{t('canvas.placeholder')}</p>
-            <p className="text-ed-fg-muted" data-testid="content-locale">
-              {t('canvas.contentLocale', { locale: contentLocale })}
-            </p>
-          </div>
+          {bootstrap.canvasUrl !== undefined && bootstrap.canvasUrl !== null && client !== undefined ? (
+            <>
+              <PreviewAppearance />
+              <Canvas canvasUrl={bootstrap.canvasUrl} client={client} {...canvas} />
+            </>
+          ) : (
+            <div className="blx-canvas">
+              <p>{t('canvas.placeholder')}</p>
+              <p className="text-ed-fg-muted" data-testid="content-locale">
+                {t('canvas.contentLocale', { locale: contentLocale })}
+              </p>
+            </div>
+          )}
         </main>
         <aside
           id={INSPECTOR_ID}
@@ -145,7 +158,19 @@ function Shell({
  * The editor root. `data-editor-theme`, `lang` and `dir` live on this element only (never on `<html>`), and they come
  * from the EDITOR chrome preference and EDITOR locale; the content locale is only displayed in the canvas.
  */
-export function EditorApp({ bootstrap, store }: { bootstrap: EditorBootstrap; store: EditorStore }) {
+export function EditorApp({
+  bootstrap,
+  store,
+  client,
+  canvas,
+}: {
+  bootstrap: EditorBootstrap;
+  store: EditorStore;
+  /** The REST client of this session. Without it (or without `bootstrap.canvasUrl`) the canvas shows a placeholder. */
+  client?: RestClient;
+  /** Test seams of the canvas session. */
+  canvas?: CanvasTestOptions;
+}) {
   const [root, setRoot] = useState<HTMLDivElement | null>(null);
   const { preference, resolved, setPreference } = useChromeTheme();
   const { lang, dir } = createTranslator(bootstrap.editorLocale);
@@ -170,7 +195,13 @@ export function EditorApp({ bootstrap, store }: { bootstrap: EditorBootstrap; st
           <DirectionProvider dir={dir}>
             <PortalContainerProvider container={root}>
               <TooltipProvider>
-                <Shell bootstrap={bootstrap} preference={preference} onPreference={setPreference} />
+                <Shell
+                  bootstrap={bootstrap}
+                  client={client}
+                  canvas={canvas}
+                  preference={preference}
+                  onPreference={setPreference}
+                />
               </TooltipProvider>
             </PortalContainerProvider>
           </DirectionProvider>

@@ -51,6 +51,24 @@ export interface PublicationState {
   >;
 }
 
+/** Body of `POST /documents/{id}/preview`: all optional. `document` previews the unsaved editor state (never persisted). */
+export interface PreviewRequestBody {
+  document?: unknown;
+  locale?: string;
+  mode?: 'light' | 'dark';
+}
+
+/** What the preview route returns: a sanitized HTML fragment and compiler CSS for the canvas. Both are UNTRUSTED text. */
+export interface PreviewResult {
+  html: string;
+  css: string;
+  locale: string;
+  mode: 'light' | 'dark';
+  layoutRevision: number | null;
+  contentRevision: number | null;
+  source: 'request' | 'working';
+}
+
 /**
  * The REST client of one editor session (one post). Created with the validated bootstrap (`restRoot`, `nonce`, `postId`).
  * All methods resolve (never reject): failures are `{ ok: false }`.
@@ -75,4 +93,6 @@ export interface RestClient {
     options?: { signal?: AbortSignal },
   ): Promise<ApiResult<{ current: number; revisions: RevisionEntry[] }>>;
   readPublication(options?: { signal?: AbortSignal }): Promise<ApiResult<PublicationState>>;
+  /** `POST documents/{postId}/preview` (no If-Match). Responses are capped at 1.3 MiB of text (html 1 MiB + css 256 KiB + envelope). */
+  preview(body: PreviewRequestBody, options?: { signal?: AbortSignal }): Promise<ApiResult<PreviewResult>>;
 }

@@ -89,6 +89,7 @@ export function fakeClient(streams: {
     writeContent: unsupported,
     listRevisions: unsupported,
     readPublication: unsupported,
+    preview: unsupported,
   };
   return client;
 }

@@ -3,6 +3,8 @@ export type {
   ApiError,
   ApiResult,
   PublicationState,
+  PreviewRequestBody,
+  PreviewResult,
   RestClient,
   RevisionEntry,
   StreamRead,

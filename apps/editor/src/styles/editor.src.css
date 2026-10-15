@@ -320,11 +320,11 @@
     }
     .blx-main {
       grid-column: 2;
-      display: grid;
-      place-items: center;
+      display: flex;
+      flex-direction: column;
       min-inline-size: 0;
       overflow: auto;
-      padding: 1.5rem;
+      padding: 0.75rem 1rem 1rem;
       background: var(--ed-surface-2);
     }
     .blx-canvas {
@@ -333,11 +333,48 @@
       align-items: center;
       gap: 0.5rem;
       inline-size: min(100%, 48rem);
+      margin: auto;
       padding: 3rem 1.5rem;
       text-align: center;
       border: 1px dashed var(--ed-border-strong);
       border-radius: 0.5rem;
       background: var(--ed-bg);
+    }
+    /* The preview appearance group belongs to the WEBSITE content preview, not to the editor chrome. */
+    .blx-canvas-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.25rem 1rem;
+      padding-block-end: 0.5rem;
+    }
+    .blx-canvas-stage {
+      display: flex;
+      flex: 1 1 auto;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      min-block-size: 24rem;
+      min-inline-size: 0;
+    }
+    .blx-canvas-stage > .blx-load-error {
+      inline-size: 100%;
+      margin: 0;
+      background: var(--ed-bg);
+    }
+    .blx-canvas-note {
+      color: var(--ed-fg-muted);
+    }
+    .blx-frame {
+      flex: 1 1 auto;
+      inline-size: min(100%, var(--blx-frame-width, 100%));
+      min-block-size: 20rem;
+      border: 1px solid var(--ed-border-strong);
+      border-radius: 0.25rem;
+      background: #ffffff;
+    }
+    .blx-frame[data-preview-mode='dark'] {
+      background: #111111;
     }
     .blx-error {
       display: grid;

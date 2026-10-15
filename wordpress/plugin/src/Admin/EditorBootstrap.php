@@ -46,6 +46,7 @@ final class EditorBootstrap {
 			'editingEnabled'        => (bool) ( $values['editingEnabled'] ?? false ),
 			'lockReason'            => \is_string( $values['lockReason'] ?? null ) ? $values['lockReason'] : null,
 			'adminUrl'              => (string) ( $values['adminUrl'] ?? '' ),
+			'canvasUrl'             => \is_string( $values['canvasUrl'] ?? null ) ? $values['canvasUrl'] : null,
 			'viewUrl'               => \is_string( $values['viewUrl'] ?? null ) ? $values['viewUrl'] : null,
 			'cspNonce'              => (string) ( $values['cspNonce'] ?? '' ),
 			'contentLocaleExplicit' => true === ( $values['contentLocaleExplicit'] ?? false ),

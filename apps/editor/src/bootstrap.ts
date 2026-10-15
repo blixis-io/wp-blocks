@@ -71,6 +71,11 @@ export function createBootstrapSchema(origin: string) {
     lockReason: z.string().max(1000).nullable(),
     adminUrl: url,
     viewUrl: url.nullable(),
+    /**
+     * Same-origin URL of the dedicated canvas document (`admin.php?page=blixis-canvas&post=<id>&locale=<l>`). Absent or null
+     * means the canvas is unavailable and the editor shows a placeholder instead of the preview iframe.
+     */
+    canvasUrl: url.nullable().optional(),
     // Per-response CSP nonce: the bundled UI libraries inject <style> elements (Radix dialogs lock scrolling that way) and the
     // strict policy only allows those that carry it.
     cspNonce: z.string().regex(/^[A-Za-z0-9+/_=-]{16,64}$/),

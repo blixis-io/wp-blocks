@@ -1,9 +1,22 @@
-import type { ApiResult, PublicationState, RestClient, RevisionEntry, StreamRead, StreamWritten } from './types';
+import type {
+  ApiResult,
+  PreviewRequestBody,
+  PreviewResult,
+  PublicationState,
+  RestClient,
+  RevisionEntry,
+  StreamRead,
+  StreamWritten,
+} from './types';
 
 const LOCALE = /^[a-z]{2,3}(?:_[A-Za-z0-9]{2,8})*$/;
 const ERROR_CODE = /^[a-z0-9_]{1,64}$/;
 const DEFAULT_MAX_BYTES = 6 * 1024 * 1024;
 const DEFAULT_TIMEOUT_MS = 30_000;
+const PREVIEW_REQUEST_BYTES = 2 * 1024 * 1024;
+// WordPress JSON may escape every UTF-16 code unit as `\uXXXX`: 6 bytes per unit for
+// the 1 MiB HTML + 256 KiB CSS decoded limits, plus 4 KiB for the JSON envelope.
+const PREVIEW_RESPONSE_BYTES = 6 * (1_048_576 + 262_144) + 4_096;
 interface Options {
   restRoot: string;
   nonce: string;
@@ -92,6 +105,9 @@ function invalid<T>(): Outcome<T> {
 function validLocale(locale: unknown): locale is string {
   return typeof locale === 'string' && locale.length <= 20 && LOCALE.test(locale);
 }
+function validPreviewMode(mode: unknown): mode is 'light' | 'dark' {
+  return mode === 'light' || mode === 'dark';
+}
 function isRevisionEntry(value: unknown): value is RevisionEntry {
   if (!isObject(value) || !keysAre(value, ['revision', 'savedAt', 'author'])) return false;
   return (
@@ -163,11 +179,13 @@ export function createRestClient({
   };
   async function request<T>(
     path: string,
-    method: 'GET' | 'PUT',
+    method: 'GET' | 'PUT' | 'POST',
     body: unknown,
     expectedRevision: number | undefined,
     external?: AbortSignal,
     validate?: (parsed: unknown) => T | null,
+    responseCap = maxResponseBytes,
+    requestCap?: number,
   ): Promise<Outcome<T>> {
     if (!Number.isSafeInteger(postId) || postId <= 0) return { ok: false, error: { kind: 'network' } };
     const url = urlFor(path);
@@ -185,8 +203,19 @@ export function createRestClient({
     if (external?.aborted) controller.abort();
     try {
       const headers = new Headers({ Accept: 'application/json', 'X-WP-Nonce': nonce });
-      if (method === 'PUT') {
+      let serialized: string | undefined;
+      if (method !== 'GET') {
         headers.set('Content-Type', 'application/json');
+        try {
+          serialized = JSON.stringify(body);
+          if (typeof serialized !== 'string') return invalid<T>();
+          if (requestCap !== undefined && new TextEncoder().encode(serialized).byteLength > requestCap)
+            return { ok: false, error: { kind: 'too-large' } };
+        } catch {
+          return invalid<T>();
+        }
+      }
+      if (method === 'PUT') {
         headers.set('If-Match', `"${String(expectedRevision)}"`);
       }
       const response = await fetchImpl(url, {
@@ -194,11 +223,11 @@ export function createRestClient({
         credentials: 'same-origin',
         redirect: 'error',
         headers,
-        ...(method === 'PUT' ? { body: JSON.stringify(body) } : {}),
+        ...(method !== 'GET' && serialized !== undefined ? { body: serialized } : {}),
         signal: controller.signal,
       });
       if (response.redirected) return { ok: false, error: { kind: 'network' } };
-      const text = await readText(response, maxResponseBytes, controller);
+      const text = await readText(response, responseCap, controller);
       if (external?.aborted) return { ok: false, error: { kind: 'aborted' } };
       if (controller.signal.aborted) return { ok: false, error: { kind: 'network' } };
       let parsed: unknown;
@@ -306,6 +335,43 @@ export function createRestClient({
         options?.signal,
         (value) => publication(value),
       ),
+    preview: (body: PreviewRequestBody, options) => {
+      if (body.locale !== undefined && !validLocale(body.locale))
+        return Promise.resolve({ ok: false, error: { kind: 'http', status: 400, code: 'blixis_invalid_locale' } });
+      if (body.mode !== undefined && !validPreviewMode(body.mode))
+        return Promise.resolve({ ok: false, error: { kind: 'http', status: 400, code: 'blixis_invalid_mode' } });
+      return request<PreviewResult>(
+        `documents/${String(postId)}/preview`,
+        'POST',
+        body,
+        undefined,
+        options?.signal,
+        (value) => {
+          if (
+            !isObject(value) ||
+            !keysAre(value, ['html', 'css', 'locale', 'mode', 'layoutRevision', 'contentRevision', 'source'])
+          )
+            return null;
+          if (
+            typeof value['html'] !== 'string' ||
+            value['html'].length > 1_048_576 ||
+            typeof value['css'] !== 'string' ||
+            value['css'].length > 262_144
+          )
+            return null;
+          if (!validLocale(value['locale']) || (value['mode'] !== 'light' && value['mode'] !== 'dark')) return null;
+          if (
+            (value['layoutRevision'] !== null && !safeInteger(value['layoutRevision'])) ||
+            (value['contentRevision'] !== null && !safeInteger(value['contentRevision']))
+          )
+            return null;
+          if (value['source'] !== 'request' && value['source'] !== 'working') return null;
+          return value as unknown as PreviewResult;
+        },
+        PREVIEW_RESPONSE_BYTES,
+        PREVIEW_REQUEST_BYTES,
+      );
+    },
   };
 }
 

@@ -14,6 +14,26 @@ namespace Blixis\Builder\Admin;
 /** Pure response header contract for the editor document. */
 final class EditorHeaders {
 	/**
+	 * Canvas document headers.
+	 *
+	 * @param string $csp_nonce Per-response nonce.
+	 * @return array<string, string>
+	 * @throws \InvalidArgumentException When the nonce is malformed.
+	 */
+	public static function canvas_list( string $csp_nonce ): array {
+		if ( ! self::is_valid_nonce( $csp_nonce ) ) {
+			throw new \InvalidArgumentException( 'Invalid CSP nonce.' );
+		}
+		return [
+			'Content-Type'            => 'text/html; charset=UTF-8',
+			'Cache-Control'           => 'private, no-store',
+			'X-Content-Type-Options'  => 'nosniff',
+			'Referrer-Policy'         => 'same-origin',
+			'X-Frame-Options'         => 'SAMEORIGIN',
+			'Content-Security-Policy' => "default-src 'none'; script-src 'nonce-" . $csp_nonce . "'; style-src 'self' 'nonce-" . $csp_nonce . "'; img-src 'self' data:; font-src 'self'; connect-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'; object-src 'none'",
+		];
+	}
+	/**
 	 * Required private response headers. The nonce lets the bundled UI libraries inject their own `<style>` elements (Radix
 	 * dialogs lock scrolling that way) without `unsafe-inline`; it is generated per response.
 	 *
