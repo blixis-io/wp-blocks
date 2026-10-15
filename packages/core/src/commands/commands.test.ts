@@ -130,6 +130,24 @@ describe('every command: correct result, exact inverse, no mutation of the input
 });
 
 describe('insert / restore', () => {
+  it('inserts duplicate translations atomically and one remove inverse restores them on undo', () => {
+    const doc = baseDoc();
+    const entry = { values: { text: 'Bonjour' }, sourceHash: '12345678', status: 'translated' as const };
+    const inserted = must(doc, {
+      type: 'insert',
+      parentId: null,
+      index: 0,
+      element: el('el-copy'),
+      translations: [{ locale: 'nl_NL', elementId: 'el-copy', entry }],
+    });
+    expect(inserted.document.translations['nl_NL']?.['el-copy']).toEqual(entry);
+    const removed = must(inserted.document, inserted.inverse);
+    expect(removed.document.translations['nl_NL']?.['el-copy']?.status).toBe('orphaned');
+    const restored = must(removed.document, removed.inverse);
+    expect(restored.document.translations['nl_NL']?.['el-copy']).toEqual(entry);
+    expect(restored.document.root[0]?.id).toBe('el-copy');
+  });
+
   it('places elements at exact positions', () => {
     const doc = baseDoc();
     expect(ids(must(doc, { type: 'insert', parentId: null, index: 0, element: el('el-x') }).document.root)).toEqual([

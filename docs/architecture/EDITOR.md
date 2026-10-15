@@ -205,7 +205,7 @@ Row actions currently expose Delete through core's `remove` command. The core co
 
 The canvas stage reserves a fixed-height breadcrumb bar even when nothing is selected. Breadcrumbs occupy its inline-start side and the content Light/Dark radio control sits at inline-end. Its explanation appears as a tooltip and accessible description. This control changes website content appearance; editor chrome appearance remains independent.
 
-The canvas overlay wrapper matches the iframe content box and clips overflow. It displays selected-element rectangles only; rectangles are document-relative, scroll-adjusted, and rendered at scale 1.
+The canvas overlay wrapper matches the iframe content box and clips overflow. It displays one selected-element outline and eight decorative, non-interactive handles from the editor-side rectangle overlay; iframe hover styling remains canvas-side. Rectangles are document-relative, scroll-adjusted, and rendered at scale 1. The floating editor toolbar is positioned from the same rectangle, flips below when needed, and clamps to the frame. Its keyboard focus is outside the iframe; Escape returns focus to the canvas region. The toolbar dispatches core `insert` (for a translated subtree duplicate) and `remove` commands, and its parent menu selects the selected element's parent. Handles do not imply resize support.
 
 The full protocol, sandbox rationale, threat table and non-guarantees are in `docs/architecture/CANVAS-CONTRACT.md`. This section is the editor view of it.
 

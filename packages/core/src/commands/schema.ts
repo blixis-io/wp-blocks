@@ -23,7 +23,16 @@ const selector = z.strictObject({
 
 /** Runtime shape of every command (strict: unknown fields are errors). Commands cross trust boundaries (REST, macros, tests). */
 export const CommandSchema = z.discriminatedUnion('type', [
-  z.strictObject({ type: z.literal('insert'), parentId, index, element: ElementNodeSchema }),
+  z.strictObject({
+    type: z.literal('insert'),
+    parentId,
+    index,
+    element: ElementNodeSchema,
+    translations: z
+      .array(z.strictObject({ locale: LocaleIdSchema, elementId: IdSchema, entry: TranslationEntrySchema }))
+      .max(10_000)
+      .optional(),
+  }),
   z.strictObject({ type: z.literal('remove'), id: IdSchema }),
   z.strictObject({ type: z.literal('move'), id: IdSchema, parentId, index }),
   z.strictObject({

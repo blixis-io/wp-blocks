@@ -181,6 +181,31 @@ function insertOrRestore(
         'id-has-orphaned-translations',
         `${orphaned} still has (orphaned) translations; use a fresh id or restore it by undoing the removal`,
       );
+    const incomingSet = new Set(incoming);
+    const incomingTypes = new Map<string, string>();
+    const pending: ElementNode[] = [element];
+    while (pending.length) {
+      const item = pending.pop();
+      if (!item) continue;
+      incomingTypes.set(item.id, item.type);
+      pending.push(...item.children);
+    }
+    const seenTranslations = new Set<string>();
+    for (const item of command.translations ?? []) {
+      const key = `${item.locale}\u0000${item.elementId}`;
+      if (!incomingSet.has(item.elementId) || !doc.locales.includes(item.locale) || item.entry.status === 'orphaned')
+        return fail('invalid-argument', 'insert translations must target a new element id and an available locale');
+      if (seenTranslations.has(key)) return fail('invalid-argument', 'insert contains duplicate translation entries');
+      seenTranslations.add(key);
+      if (ctx.translationValue !== undefined) {
+        const type = incomingTypes.get(item.elementId);
+        if (type === undefined) return fail('invalid-argument', 'insert translation target has no element type');
+        for (const property of Object.keys(item.entry.values)) {
+          const checked = ctx.translationValue(type, property, item.entry.values[property] as Json);
+          if (!checked.ok) return fail(checked.code, `${property}: ${checked.message}`);
+        }
+      }
+    }
   } else {
     // A restore must match the state `remove` left behind; anything else is a stale or unrelated record.
     const incomingSet = new Set(incoming);
@@ -208,7 +233,15 @@ function insertOrRestore(
     command.type === 'insert' ? 'create' : 'relocate',
   );
   if (problem !== null) return { ok: false, error: problem };
-  const inserted = insertAt(doc, parent, command.index, element);
+  let inserted = insertAt(doc, parent, command.index, element);
+  if (command.type === 'insert' && command.translations?.length) {
+    let translations = inserted.translations;
+    for (const item of command.translations) {
+      const stream = translations[item.locale] ?? {};
+      translations = { ...translations, [item.locale]: { ...stream, [item.elementId]: item.entry } };
+    }
+    inserted = { ...inserted, translations };
+  }
   return {
     document: command.type === 'restore' ? setStatuses(inserted, command.statuses) : inserted,
     inverse: { type: 'remove', id: element.id },

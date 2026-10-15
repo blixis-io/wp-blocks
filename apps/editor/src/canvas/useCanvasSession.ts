@@ -390,5 +390,5 @@ export function useCanvasSession(options: CanvasSessionOptions): CanvasSession {
  */
 function releaseFocus(frame: HTMLIFrameElement): void {
   if (frame.ownerDocument.activeElement !== frame) return;
-  frame.closest<HTMLElement>('[tabindex="-1"]')?.focus({ preventScroll: true });
+  frame.closest<HTMLElement>('.blx-main')?.focus({ preventScroll: true });
 }

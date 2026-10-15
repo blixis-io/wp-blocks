@@ -11,6 +11,7 @@ import diskette from '@iconify-icons/solar/diskette-linear';
 import documentText from '@iconify-icons/solar/document-text-linear';
 import eye from '@iconify-icons/solar/eye-linear';
 import gallery from '@iconify-icons/solar/gallery-linear';
+import home from '@iconify-icons/solar/home-linear';
 import layers from '@iconify-icons/solar/layers-linear';
 import lock from '@iconify-icons/solar/lock-linear';
 import magnifer from '@iconify-icons/solar/magnifer-linear';
@@ -42,6 +43,7 @@ export const ICONS = {
   check,
   preview: eye,
   image: gallery,
+  home,
   search: magnifer,
   shortcuts: documentText,
   language: translation,

@@ -102,7 +102,13 @@ function previewResult(html: string, mode: 'light' | 'dark' = 'light'): ApiResul
 }
 
 function setup(
-  options: { canvasUrl?: string | null; editorLocale?: string; withClient?: boolean; neverLoad?: boolean } = {},
+  options: {
+    canvasUrl?: string | null;
+    editorLocale?: string;
+    withClient?: boolean;
+    neverLoad?: boolean;
+    editingEnabled?: boolean;
+  } = {},
 ) {
   const document_ = makeDocument();
   const base = fakeClient({
@@ -125,6 +131,7 @@ function setup(
   const bootstrap = makeBootstrap({
     ...(options.canvasUrl === null ? {} : { canvasUrl: options.canvasUrl ?? CANVAS_URL }),
     ...(options.editorLocale === undefined ? {} : { editorLocale: options.editorLocale }),
+    ...(options.editingEnabled === undefined ? {} : { editingEnabled: options.editingEnabled }),
   });
   const view = render(
     <EditorApp
@@ -387,6 +394,98 @@ describe('viewport and preview appearance', () => {
 });
 
 describe('selection and hover', () => {
+  it('renders eight decorative handles and toolbar actions from the selected rectangle', async () => {
+    const s = setup();
+    await ready(s);
+    s.pending[0]?.resolve(previewResult('<p data-blx-id="el-text-1">x</p>'));
+    await flush(0);
+    s.endpoints.last().deliver({ type: 'rendered', revision: 1 });
+    await act(() =>
+      Promise.resolve().then(() => {
+        s.store.getState().select('el-text-1');
+      }),
+    );
+    await flush(20);
+    s.endpoints
+      .last()
+      .deliver({ type: 'rects', revision: 1, items: [{ id: 'el-text-1', x: 20, y: 80, w: 120, h: 28 }] });
+    expect(screen.getAllByTestId('selection-overlay')).toHaveLength(1);
+    expect(screen.getByTestId('selection-handles').querySelectorAll('[data-handle]')).toHaveLength(8);
+    const toolbar = screen.getByRole('toolbar', { name: 'Selected element actions' });
+    expect(within(toolbar).getByRole<HTMLButtonElement>('button', { name: 'Duplicate' }).disabled).toBe(false);
+    expect(within(toolbar).getByRole<HTMLButtonElement>('button', { name: 'Delete' }).disabled).toBe(false);
+    vi.useRealTimers();
+    const editorRoot = screen.getByTestId('editor-root');
+    editorRoot.setAttribute('data-editor-theme', 'light');
+    expect(await axeViolations(editorRoot)).toEqual([]);
+    editorRoot.setAttribute('data-editor-theme', 'dark');
+    expect(await axeViolations(editorRoot)).toEqual([]);
+    vi.useFakeTimers();
+  }, 15000);
+
+  it('duplicates through one atomic insert command and Undo removes the copy; Delete removes the selected element', async () => {
+    const s = setup();
+    await ready(s);
+    await act(() =>
+      Promise.resolve().then(() => {
+        s.store.getState().select('el-text-1');
+      }),
+    );
+    await flush(20);
+    s.endpoints.last().deliver({ type: 'rects', revision: 0, items: [{ id: 'el-text-1', x: 5, y: 40, w: 60, h: 20 }] });
+    const count = (): number => {
+      const document = s.store.getState().document;
+      if (!document) return 0;
+      let total = 0;
+      const pending = [...document.root];
+      while (pending.length) {
+        const node = pending.pop();
+        if (node) {
+          total += 1;
+          pending.push(...node.children);
+        }
+      }
+      return total;
+    };
+    const before = count();
+    fireEvent.click(screen.getByRole('button', { name: 'Duplicate' }));
+    expect(count()).toBe(before + 1);
+    expect(s.store.getState().selectedId).not.toBe('el-text-1');
+    expect(s.store.getState().undo()).toMatchObject({ ok: true, changed: true });
+    expect(count()).toBe(before);
+    await act(() =>
+      Promise.resolve().then(() => {
+        s.store.getState().select('el-text-1');
+      }),
+    );
+    await flush(20);
+    s.endpoints.last().deliver({ type: 'rects', revision: 0, items: [{ id: 'el-text-1', x: 5, y: 40, w: 60, h: 20 }] });
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    expect(count()).toBe(before - 1);
+  });
+
+  it('disables mutation controls with an editor-locale reason in read-only mode', async () => {
+    const s = setup({ editingEnabled: false });
+    await ready(s);
+    s.pending[0]?.resolve(previewResult('<p data-blx-id="el-text-1">x</p>'));
+    await flush(0);
+    s.endpoints.last().deliver({ type: 'rendered', revision: 1 });
+    await act(() =>
+      Promise.resolve().then(() => {
+        s.store.getState().select('el-text-1');
+      }),
+    );
+    await flush(20);
+    s.endpoints
+      .last()
+      .deliver({ type: 'rects', revision: 1, items: [{ id: 'el-text-1', x: 20, y: 80, w: 120, h: 28 }] });
+    expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Duplicate' }).disabled).toBe(true);
+    expect(screen.getByRole('button', { name: 'Duplicate' }).getAttribute('title')).toBe(
+      'Editing is disabled for this document.',
+    );
+    expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Delete' }).disabled).toBe(true);
+  });
+
   it('forwards store selection and hover to the canvas', async () => {
     const s = setup();
     await ready(s);
@@ -476,8 +575,51 @@ describe('selection and hover', () => {
         .getByRole('button', { name: /Heading.*el-heading/ })
         .getAttribute('title'),
     ).toBe('el-heading-1');
+    expect(within(breadcrumb).getByRole('button', { name: /Heading.*el-heading/ }).className).toContain(
+      'blx-breadcrumb-item',
+    );
+    expect(breadcrumb.getAttribute('title')).toBe('Section › Container › Heading');
     fireEvent.click(within(breadcrumb).getByRole('button', { name: /Section.*el-section-1/ }));
     expect(s.store.getState().selectedId).toBe('el-section-1');
+    fireEvent.click(within(breadcrumb).getByRole('button', { name: 'Page root' }));
+    expect(s.store.getState().selectedId).toBeNull();
+  });
+
+  it('uses toolbar roving focus and returns focus to the canvas on Escape', async () => {
+    const s = setup();
+    await ready(s);
+    await act(() =>
+      Promise.resolve().then(() => {
+        s.store.getState().select('el-text-1');
+      }),
+    );
+    await flush(20);
+    s.endpoints.last().deliver({ type: 'rects', revision: 0, items: [{ id: 'el-text-1', x: 5, y: 40, w: 60, h: 20 }] });
+    const stage = screen.getByTestId('canvas-stage');
+    fireEvent.keyDown(stage, { key: 'Tab' });
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Duplicate' }));
+    fireEvent.keyDown(document.activeElement as HTMLElement, { key: 'ArrowRight' });
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Delete' }));
+    fireEvent.keyDown(document.activeElement as HTMLElement, { key: 'Escape' });
+    expect(document.activeElement).toBe(stage);
+  });
+
+  it('opens the accessible action menu, focuses its item, and returns to the trigger on Escape', async () => {
+    const s = setup();
+    await ready(s);
+    await act(() =>
+      Promise.resolve().then(() => {
+        s.store.getState().select('el-text-1');
+      }),
+    );
+    await flush(20);
+    s.endpoints.last().deliver({ type: 'rects', revision: 0, items: [{ id: 'el-text-1', x: 5, y: 40, w: 60, h: 20 }] });
+    const trigger = screen.getByRole('button', { name: 'More element actions' });
+    fireEvent.click(trigger);
+    const item = screen.getByRole('menuitem', { name: 'Select parent' });
+    expect(document.activeElement).toBe(item);
+    fireEvent.keyDown(item, { key: 'Escape' });
+    expect(document.activeElement).toBe(trigger);
   });
 
   it('does not ask for rectangle scans on hover or when no element is selected', async () => {

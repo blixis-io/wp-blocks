@@ -22,7 +22,14 @@ export interface StatusRecord {
  * command once into an inert snapshot before using it, so mutating a command object afterwards changes nothing.
  */
 export type Command =
-  | { type: 'insert'; parentId: string | null; index: number; element: ElementNode }
+  | {
+      type: 'insert';
+      parentId: string | null;
+      index: number;
+      element: ElementNode;
+      /** Optional localized entries for a newly inserted subtree; used to make duplicate one atomic undo step. */
+      translations?: { locale: string; elementId: string; entry: TranslationEntry }[];
+    }
   | { type: 'remove'; id: string }
   | { type: 'move'; id: string; parentId: string | null; index: number }
   | { type: 'update-props'; id: string; set?: Record<string, Json>; unset?: string[] }
