@@ -3,10 +3,50 @@ import type { ElementNode } from '@blixis/wp-core';
 import { validateDeclaration } from '@blixis/wp-style-engine';
 import { useEditorStoreApi } from '../../state';
 import { useI18n } from '../../i18n-react';
-import { Icon, NumberWithUnit, Slider, TEXT_ALIGN_ICONS } from '@blixis/wp-editor-ui';
-import { styleSelector, type StyleField } from '../style-mapping';
+import { Icon, NumberWithUnit, Slider } from '@blixis/wp-editor-ui';
+import { humanizeTokenName, shouldUseSelect, styleSelector, type StyleField } from '../style-mapping';
 import type { BreakpointRegistry } from '../../state/context';
 import { clampSliderDisplay, convertStyleUnit, styleSliderRange } from './style-slider';
+import type { TEXT_ALIGNMENT_ICON_MAP } from '../style-mapping';
+
+function TextAlignGlyph({ align }: { align: keyof typeof TEXT_ALIGNMENT_ICON_MAP }) {
+  const lineSet: Readonly<Record<typeof align, readonly [number, number][]>> = {
+    left: [
+      [3, 18],
+      [3, 14],
+      [3, 20],
+    ],
+    center: [
+      [5, 19],
+      [3, 21],
+      [6, 18],
+    ],
+    right: [
+      [6, 21],
+      [10, 21],
+      [4, 21],
+    ],
+    justify: [
+      [3, 21],
+      [3, 21],
+      [3, 21],
+    ],
+  };
+  return (
+    <svg
+      className="blx-text-align-glyph"
+      data-align={align}
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      width="16"
+      height="16"
+    >
+      {lineSet[align].map(([start, end], index) => (
+        <path key={index} d={`M${String(start)} ${String(6 + index * 6)}H${String(end)}`} />
+      ))}
+    </svg>
+  );
+}
 
 const STYLE_TOKENS = [
   'var(--blx-space-1)',
@@ -57,7 +97,7 @@ export function StyleControl({
   viewport: 'desktop' | 'tablet' | 'mobile';
   editable: boolean;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const store = useEditorStoreApi();
   const [error, setError] = useState('');
   const [linkedSides, setLinkedSides] = useState(false);
@@ -89,6 +129,17 @@ export function StyleControl({
   const describedBy =
     [breakpoint !== 'base' ? statusId : '', error ? errorId : ''].filter(Boolean).join(' ') || undefined;
   const fieldLabel = t(field.key);
+  const displayToken = (token: string) => {
+    const known = tokenLabels[token];
+    if (known) return t(known as never);
+    const name = token
+      .replace(/^var\(--/, '')
+      .replace(/\)$/, '')
+      .replace(/^blx-/, '');
+    const key = `inspector.token.${name.replace(/-/g, '.')}`;
+    const translated = t(key as never);
+    return translated === key ? humanizeTokenName(name, locale === 'nl_NL' ? 'nl_NL' : 'en_US') : translated;
+  };
   const selectedCustomWidth =
     customWidth || (field.id === 'width' && typeof value === 'string' && !['auto', '100%'].includes(value));
   const nextViewport = viewport === 'desktop' ? 'tablet' : viewport === 'tablet' ? 'mobile' : 'desktop';
@@ -132,6 +183,18 @@ export function StyleControl({
     'border-style': ['none', 'solid', 'dashed', 'dotted'],
     'box-shadow': ['none', 'var(--blx-shadow-card)'],
   };
+  const choiceLabel = (choice: string) => {
+    if (choice.startsWith('var(--')) {
+      return displayToken(choice);
+    }
+    if (field.id === 'text-align') return t(`inspector.choice.align.${choice}` as never);
+    const key = `inspector.choice.${choice.replace(/[^a-z0-9]+/gi, '.').replace(/^\.|\.$/g, '')}`;
+    return t(key as never);
+  };
+  const choices = selectValues[field.id] ?? [];
+  const useNativeSelect = shouldUseSelect(
+    field.id === 'text-align' ? ['Left', 'Center', 'Right', 'Justify'] : choices.map(choiceLabel),
+  );
   const sliderUnits: Readonly<Record<string, readonly string[]>> = {
     'font-size': ['px', 'rem', 'em', '%'],
     'line-height': [''],
@@ -149,8 +212,8 @@ export function StyleControl({
         ? 1.5
         : 0;
   const defaultUnit = field.id === 'line-height' ? '' : 'px';
-  const currentUnit =
-    typeof value === 'string' ? (/(-?(?:\d+\.?\d*|\.\d+))([a-z%]*)$/i.exec(value)?.[2] ?? defaultUnit) : defaultUnit;
+  const parsedUnit = typeof value === 'string' ? /(-?(?:\d+\.?\d*|\.\d+))([a-z%]*)$/i.exec(value)?.[2] : undefined;
+  const currentUnit = parsedUnit && units?.includes(parsedUnit) ? parsedUnit : defaultUnit;
   const slider = units ? styleSliderRange(field.id, currentUnit) : undefined;
   const control =
     slider !== undefined ? (
@@ -216,12 +279,34 @@ export function StyleControl({
           {(field.id === 'border-color' ? (TYPOGRAPHY_PRESETS['border-color'] ?? []) : STYLE_TOKENS.slice(6, 11)).map(
             (token) => (
               <option key={token} value={token}>
-                {tokenLabels[token] ? t(tokenLabels[token] as never) : token}
+                {displayToken(token)}
               </option>
             ),
           )}
         </select>
       </div>
+    ) : field.kind === 'select' && useNativeSelect ? (
+      <select
+        id={id}
+        aria-label={fieldLabel}
+        aria-describedby={describedBy}
+        value={field.id === 'width' && selectedCustomWidth ? 'custom' : (value ?? choices[0] ?? '')}
+        disabled={!editable}
+        onChange={(event) => {
+          const choice = event.target.value;
+          if (field.id === 'width' && choice === 'custom') setCustomWidth(true);
+          else {
+            setCustomWidth(false);
+            update(choice);
+          }
+        }}
+      >
+        {choices.map((choice) => (
+          <option key={choice} value={choice}>
+            {choiceLabel(choice)}
+          </option>
+        ))}
+      </select>
     ) : field.kind === 'select' ? (
       <div id={id} className="blx-segmented" role="radiogroup" aria-label={fieldLabel} aria-describedby={describedBy}>
         {(selectValues[field.id] ?? []).map((choice, index) => (
@@ -243,7 +328,9 @@ export function StyleControl({
                   ? 0
                   : -1
             }
-            aria-label={choice}
+            aria-label={choiceLabel(choice)}
+            title={choiceLabel(choice)}
+            data-choice={choice}
             className={
               field.id === 'width' && choice === 'custom'
                 ? selectedCustomWidth
@@ -285,17 +372,11 @@ export function StyleControl({
             ) : choice === '100%' ? (
               t('inspector.option.full')
             ) : field.id === 'text-transform' ? (
-              ({ capitalize: 'Aa', uppercase: 'AA', lowercase: 'aa', none: 'None' } as const)[
-                choice as 'capitalize' | 'uppercase' | 'lowercase' | 'none'
-              ]
+              choiceLabel(choice)
             ) : field.id === 'text-align' ? (
-              <Icon
-                name={TEXT_ALIGN_ICONS[choice as keyof typeof TEXT_ALIGN_ICONS]}
-                size={16}
-                mirrorInRtl={choice === 'left' || choice === 'right'}
-              />
+              <TextAlignGlyph align={choice as keyof typeof TEXT_ALIGNMENT_ICON_MAP} />
             ) : (
-              choice
+              choiceLabel(choice)
             )}
           </button>
         ))}
@@ -402,7 +483,7 @@ export function StyleControl({
           (field.id.includes('color') ? STYLE_TOKENS.slice(6, 11) : [])
         ).map((token) => (
           <option key={token} value={token}>
-            {tokenLabels[token] ? t(tokenLabels[token] as never) : token}
+            {displayToken(token)}
           </option>
         ))}
       </select>

@@ -9,6 +9,7 @@ Fast, predictable, visually quiet, keyboard-operable, professional. The editor m
 - Left: element library and structure tree (switchable or dockable).
 - Center: sandboxed website iframe with overlays and viewport controls.
 - Right: property inspector grouped Content, Layout, Typography, Spacing, Borders, Background, Effects, Advanced.
+- Inspector rows use a 92px label column, allow labels to wrap, and keep localized labels unique within each tab. Choice controls use translated human labels; raw CSS token syntax stays in values only.
 - Top: undo/redo, viewport presets, history, preview, save/publish status.
 - Shortcuts documented and discoverable; never shadow text-entry shortcuts.
 
