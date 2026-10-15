@@ -84,6 +84,10 @@ tooling
 - Switch to unsupported theme => editor disabled with actionable notice; preserve document JSON. Render/shortcode fallback to be defined in ADR and verified to avoid blank pages.
 - Theme settings persist across reactivation; initialize setup only once per site.
 
+## Editor application
+
+The React editor shell (layout, bootstrap contract, chrome appearance versus site appearance, style isolation, build) is described in [EDITOR.md](EDITOR.md).
+
 ## Architectural Decision Records
 
 ADRs live in `docs/architecture/adrs/` (index: `docs/architecture/adrs/README.md`); topics: theme mode, WP version floor, page persistence, PHP parity, CSS schema, fonts, plugin split, theme-switch fallback, animation engine license, and licensing/deployment. ADR template: context, options, decision, consequences, rollback.

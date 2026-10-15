@@ -1,0 +1,143 @@
+import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { contrastRatio } from '@blixis/wp-design-tokens';
+import { afterAll, describe, expect, it } from 'vitest';
+import { findScopeViolations } from './test/css-walker';
+
+// Vitest runs inside the package directory (pnpm --filter or cd).
+const appRoot = process.cwd();
+const source = readFileSync(join(appRoot, 'src/styles/editor.src.css'), 'utf8');
+
+function tokens(theme: 'light' | 'dark'): Record<string, string> {
+  const block = new RegExp(`\\[data-editor-theme='${theme}'\\]\\s*\\{([^}]*)\\}`).exec(source)?.[1] ?? '';
+  return Object.fromEntries(
+    [...block.matchAll(/--ed-([a-z0-9-]+):\s*(#[0-9a-fA-F]{3,6});/g)].map((m): [string, string] => [
+      m[1] ?? '',
+      m[2] ?? '',
+    ]),
+  );
+}
+
+describe.each(['light', 'dark'] as const)('%s chrome contrast', (theme) => {
+  const t = tokens(theme);
+  const text: [string, string][] = [
+    ['fg', 'bg'],
+    ['fg-muted', 'bg'],
+    ['fg', 'surface-2'],
+    ['fg-muted', 'surface-2'],
+    ['fg', 'surface-hover'],
+    ['fg-muted', 'surface-hover'],
+    ['selected-fg', 'selected'],
+    ['primary-fg', 'primary'],
+    ['primary-fg', 'primary-hover'],
+    ['destructive-fg', 'destructive'],
+    ['destructive-fg', 'destructive-hover'],
+    ['tooltip-fg', 'tooltip'],
+    ['banner-fg', 'banner'],
+    ['fg', 'selected'],
+  ];
+  const ui: [string, string][] = [
+    ['border-strong', 'bg'],
+    ['focus', 'bg'],
+    ['focus', 'surface-2'],
+    ['border-strong', 'surface-2'],
+    // Selected toggles and tabs: the inset ring must stand out from the page and from the selected fill (WCAG 1.4.11).
+    ['selected-ring', 'bg'],
+    ['selected-ring', 'selected'],
+    ['selected-ring', 'surface-2'],
+  ];
+  it('defines every token', () => {
+    expect(Object.keys(t).length).toBeGreaterThanOrEqual(20);
+  });
+  it.each(text)('text %s on %s has 4.5:1', (fg, bg) => {
+    expect(contrastRatio(t[fg] ?? '', t[bg] ?? '')).toBeGreaterThanOrEqual(4.5);
+  });
+  it.each(ui)('UI %s against %s has 3:1', (fg, bg) => {
+    expect(contrastRatio(t[fg] ?? '', t[bg] ?? '')).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe('selected state indicator', () => {
+  it('draws a ring from --ed-selected-ring on selected toggles and tabs, not colour alone', () => {
+    expect(source).toMatch(
+      /aria-checked='true'\],[\s\S]*aria-selected='true'\]\s*\{\s*box-shadow: inset 0 0 0 2px var\(--ed-selected-ring\)/,
+    );
+  });
+  it('keeps the narrow layout scrollable instead of clipping panels', () => {
+    const narrow = /@media \(max-width: 52rem\) \{([\s\S]*?)\n {4}\}\n/.exec(source)?.[1] ?? '';
+    expect(narrow).toMatch(/overflow: auto/);
+    expect(narrow).toMatch(/min-block-size: 14rem/);
+  });
+});
+
+describe('css walker', () => {
+  it('flags unscoped selectors and accepts scoped ones', () => {
+    const css =
+      '@layer blx-editor{.blx-editor .a,.blx-editor:where(.x,.y){color:red}@media (a){.blx-editor b{c:d}}}html{}body,.x{}*{}:root{}@layer other{.blx-editor a{}}@keyframes k{from{a:b}}';
+    expect(findScopeViolations(css).map((v) => v.selector)).toEqual([
+      'html',
+      'body',
+      '.x',
+      '*',
+      ':root',
+      '@layer other',
+    ]);
+  });
+});
+
+describe('editor build', () => {
+  const dirs: string[] = [];
+  const build = () => {
+    const out = mkdtempSync(join(tmpdir(), 'blx-editor-'));
+    dirs.push(out);
+    execFileSync(process.execPath, [join(appRoot, 'scripts/build.mjs'), '--out', out], { cwd: appRoot, stdio: 'pipe' });
+    return out;
+  };
+  afterAll(() => {
+    for (const dir of dirs) rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('scopes every CSS rule and is reproducible, with a matching manifest', { timeout: 120_000 }, () => {
+    const a = build();
+    const b = build();
+    for (const file of ['editor.js', 'editor.css', 'manifest.json', 'editor.js.LEGAL.txt', 'NOTICE.txt']) {
+      expect(readFileSync(join(a, file)).equals(readFileSync(join(b, file)))).toBe(true);
+    }
+    const css = readFileSync(join(a, 'editor.css'), 'utf8');
+    expect(css.length).toBeGreaterThan(1000);
+    expect(findScopeViolations(css)).toEqual([]);
+    const manifest = JSON.parse(readFileSync(join(a, 'manifest.json'), 'utf8')) as Record<string, unknown>;
+    const sha = (file: string) =>
+      createHash('sha256')
+        .update(readFileSync(join(a, file)))
+        .digest('hex');
+    expect(manifest).toEqual({
+      version: 1,
+      js: 'editor.js',
+      css: 'editor.css',
+      jsSha256: sha('editor.js'),
+      cssSha256: sha('editor.css'),
+    });
+    const js = readFileSync(join(a, 'editor.js'), 'utf8');
+    expect(js).not.toMatch(/sourceMappingURL/);
+    expect(js).not.toMatch(/gsap/i);
+    // Legal notices (ADR 0008 section 4): every shipped third-party package is listed with version, licence and text.
+    const notice = readFileSync(join(a, 'NOTICE.txt'), 'utf8');
+    for (const [name, licence] of [
+      ['react', 'MIT'],
+      ['react-dom', 'MIT'],
+      ['zod', 'MIT'],
+      ['tailwind-merge', 'MIT'],
+      ['class-variance-authority', 'Apache-2.0'],
+      ['lucide-react', 'ISC'],
+      ['@radix-ui/react-direction', 'MIT'],
+    ] as const) {
+      expect(notice).toMatch(new RegExp(`^${name}@\\d+\\.\\d+\\.\\d+\\nLicense: ${licence}\\n`, 'm'));
+    }
+    expect(notice).not.toMatch(/@blixis\//);
+    expect(readFileSync(join(a, 'editor.js.LEGAL.txt'), 'utf8')).toMatch(/@license React/);
+  });
+});

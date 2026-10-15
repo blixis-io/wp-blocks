@@ -1546,6 +1546,177 @@ async function smoke() {
         );
         command('option', 'delete', 'blixis_locales');
         command('post', 'delete', lsPost, '--force');
+        // Editor screen (BWB-049): isolated document, bootstrap, headers, access, read-only lock, entry points.
+        const edPost = command(
+          'post',
+          'create',
+          '--post_type=page',
+          '--post_status=publish',
+          `--post_title=Tom & Jerry's "quote" <b>x</b>`,
+          '--post_name=editor-smoke',
+          '--porcelain',
+        );
+        const editorUrl = (id, extra = '') => `${base}/wp-admin/admin.php?page=blixis-editor&post=${id}${extra}`;
+        const editorPage = (id, who, extra = '') =>
+          http(editorUrl(id, extra), { redirect: 'manual', headers: who ? { cookie: who } : {} });
+        const bootstrapOf = (html) => {
+          const match = /<script type="application\/json" id="blixis-editor-bootstrap">([\s\S]*?)<\/script>/.exec(html);
+          try {
+            return match ? JSON.parse(match[1]) : null;
+          } catch {
+            return null;
+          }
+        };
+        const edResponse = await editorPage(edPost, adminCookie);
+        const edHtml = await edResponse.text();
+        const boot = bootstrapOf(edHtml);
+        check(
+          edResponse.status === 200 &&
+            edHtml.includes('id="blixis-editor-root"') &&
+            edHtml.includes('editor.js') &&
+            edHtml.includes('editor.css'),
+          'the editor screen is served as its own document loading only the editor bundle',
+        );
+        check(
+          !/adminmenu|wp-admin\/css|admin-bar|wpadminbar|wp-includes\/js/.test(edHtml),
+          'the editor document carries no wp-admin chrome, styles or scripts',
+        );
+        check(
+          boot?.version === 1 &&
+            boot.postId === Number(edPost) &&
+            typeof boot.nonce === 'string' &&
+            boot.nonce.length >= 8 &&
+            boot.editingEnabled === true &&
+            boot.lockReason === null,
+          'the bootstrap contract v1 is valid and editing is enabled on a compatible theme',
+        );
+        check(
+          boot?.postTitle === `Tom & Jerry's "quote" x` && !/[&]#\d+;|<[^>]*>/.test(boot.postTitle),
+          'the bootstrap post title is decoded plain text with tags removed',
+        );
+        const titleElement = /<title>([^<]*)<\/title>/.exec(edHtml)?.[1] ?? '';
+        check(
+          titleElement.length > 0 &&
+            titleElement.replaceAll('&quot;', '"').replaceAll('&#039;', "'").replaceAll('&amp;', '&') ===
+              `Tom & Jerry's "quote" x — Blixis Editor`,
+          'the browser title is the same decoded plain text as the bootstrap title, escaped as text',
+        );
+        check(
+          boot?.restRoot?.startsWith(base) &&
+            boot.adminUrl?.startsWith(base) &&
+            (boot.viewUrl === null || boot.viewUrl.startsWith(base)),
+          'bootstrap URLs are same-origin',
+        );
+        const csp = edResponse.headers.get('content-security-policy') ?? '';
+        check(
+          csp.includes("script-src 'self'") &&
+            csp.includes("img-src 'self' data:") &&
+            csp.includes("frame-ancestors 'self'") &&
+            csp.includes("object-src 'none'") &&
+            !/unsafe-(inline|eval)/.test(csp),
+          'the editor document has a strict content security policy',
+        );
+        const styleNonce = /(?:^|;\s*)style-src[^;]*'nonce-([^']+)'/.exec(csp)?.[1] ?? null;
+        const secondEditorResponse = await editorPage(edPost, adminCookie);
+        const secondCsp = secondEditorResponse.headers.get('content-security-policy') ?? '';
+        const secondStyleNonce = /(?:^|;\s*)style-src[^;]*'nonce-([^']+)'/.exec(secondCsp)?.[1] ?? null;
+        check(
+          styleNonce !== null &&
+            styleNonce === boot?.cspNonce &&
+            secondStyleNonce !== null &&
+            secondStyleNonce !== styleNonce,
+          'the CSP style nonce matches bootstrap and changes between requests',
+        );
+        check(
+          (edResponse.headers.get('cache-control') ?? '').includes('no-store') &&
+            edResponse.headers.get('x-frame-options') === 'SAMEORIGIN' &&
+            edResponse.headers.get('x-content-type-options') === 'nosniff' &&
+            (edResponse.headers.get('referrer-policy') ?? '') === 'same-origin',
+          'the editor document is not cacheable, not frameable by others and not sniffed',
+        );
+        const bundleJs = await http(new URL(/src="([^"]+editor\.js[^"]*)"/.exec(edHtml)?.[1] ?? '/', base).href);
+        const bundleCss = await http(new URL(/href="([^"]+editor\.css[^"]*)"/.exec(edHtml)?.[1] ?? '/', base).href);
+        check(
+          bundleJs.status === 200 && (await bundleJs.text()).length > 100000 && bundleCss.status === 200,
+          'the editor bundle and stylesheet are served from the plugin',
+        );
+        check((await editorPage(edPost, null)).status === 302, 'an anonymous visitor is sent to the login');
+        const subscriberEditor = await editorPage(edPost, subscriberCookie);
+        const missingEditor = await editorPage('99999999', adminCookie);
+        const nonOptedId = command(
+          'post',
+          'create',
+          '--post_type=nav_menu_item',
+          '--post_status=draft',
+          '--post_title=Editor smoke excluded type',
+          '--porcelain',
+        );
+        const nonOptedEditor = await editorPage(nonOptedId, adminCookie);
+        const normalizeEditor403 = async (response) => (await response.text()).replace(/\s+/g, ' ').trim();
+        const subscriberBody = await normalizeEditor403(subscriberEditor);
+        const missingBody = await normalizeEditor403(missingEditor);
+        const nonOptedBody = await normalizeEditor403(nonOptedEditor);
+        check(
+          subscriberEditor.status === 403 &&
+            missingEditor.status === 403 &&
+            nonOptedEditor.status === 403 &&
+            command(
+              'eval',
+              "echo in_array('nav_menu_item', apply_filters('blixis_builder_post_types', ['post', 'page']), true) ? 'opted-in' : 'excluded';",
+            ) === 'excluded' &&
+            subscriberBody === missingBody &&
+            missingBody === nonOptedBody,
+          'no rights, a missing post and a non-opted-in type return the same 403 body',
+        );
+        command('post', 'delete', nonOptedId, '--force');
+        const authorEditor = await editorPage(edPost, authorCookie);
+        check(authorEditor.status === 403, 'an author cannot open the editor for another user page');
+        check(
+          (await editorPage(edPost, adminCookie, '&locale=xx_XX')).status === 200 &&
+            bootstrapOf(await (await editorPage(edPost, adminCookie, '&locale=xx_XX')).text())?.contentLocale ===
+              boot?.defaultLocale,
+          'an unknown content locale falls back to the default locale',
+        );
+        check(
+          (await editorPage('abc', adminCookie)).status === 403 &&
+            (await editorPage('0', adminCookie)).status === 403 &&
+            (await editorPage('9999999999999999999999', adminCookie)).status === 403,
+          'malformed post ids are refused',
+        );
+        const pagesList = await (
+          await http(`${base}/wp-admin/edit.php?post_type=page`, { headers: { cookie: adminCookie } })
+        ).text();
+        check(
+          pagesList.includes('Edit with Blixis') &&
+            new RegExp(`page=blixis-editor&(amp|#038);post=${edPost}`).test(pagesList),
+          'the pages list has an Edit with Blixis row action',
+        );
+        command('theme', 'activate', 'blixis-other-fixture');
+        const lockedEditor = await editorPage(edPost, adminCookie);
+        const lockedBoot = bootstrapOf(await lockedEditor.text());
+        check(
+          lockedEditor.status === 200 &&
+            lockedBoot?.editingEnabled === false &&
+            typeof lockedBoot.lockReason === 'string',
+          'on an incompatible theme the editor opens read-only with the lock reason',
+        );
+        check(
+          lockedEditor.status === 200 && lockedBoot?.editingEnabled === false,
+          'the read-only lock is present on an incompatible theme',
+        );
+        const lockedList = await (
+          await http(`${base}/wp-admin/edit.php?post_type=page`, { headers: { cookie: adminCookie } })
+        ).text();
+        check(
+          lockedList.includes('View in Blixis (read-only)') && !lockedList.includes('Edit with Blixis'),
+          'the row action says read-only on an incompatible theme',
+        );
+        command('theme', 'activate', 'blixis');
+        check(
+          bootstrapOf(await (await editorPage(edPost, adminCookie)).text())?.editingEnabled === true,
+          'switching back re-enables editing',
+        );
+        command('post', 'delete', edPost, '--force');
         // Media (BWB-045): raster library images only, validated responsive attributes, alt text, picker route.
         const mediaIds = JSON.parse(command('eval-file', '/fixtures/media-smoke.php').split('\n').pop());
         const mediaApi = async (id, { cookie, nonce } = {}) =>

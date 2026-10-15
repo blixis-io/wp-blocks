@@ -18,6 +18,7 @@
   "devOnly": {
     "MPL-2.0": "axe-core (accessibility testing). Weak copyleft, file-level; review before any distribution.",
     "Python-2.0": "argparse (transitive dev dependency of tooling).",
+    "MIT-0": "@csstools/color-helpers and @csstools/css-syntax-patches-for-csstree (transitive dependencies of jsdom, used by the editor unit tests). MIT without the attribution clause: permissive and GPL-compatible, dev-only.",
     "CC-BY-4.0": "caniuse-lite (browser data used by tooling).",
     "BlueOak-1.0.0": "minimatch (permissive licence, not on the FSF GPL-compatibility list; dev-only).",
     "LGPL-3.0-or-later": "PHP_CodeSniffer standards (WPCS, PHPCSUtils): run in development and CI, never shipped."

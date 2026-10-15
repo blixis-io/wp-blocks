@@ -37,8 +37,9 @@
     "wp:cli": "node tooling/wp-env/wp-env.mjs cli",
     "wp:logs": "node tooling/wp-env/wp-env.mjs logs",
     "wp:smoke": "node tooling/wp-env/wp-env.mjs smoke",
-    "build": "pnpm --filter @blixis/wp-theme run build:tokens && pnpm --filter @blixis/wp-theme run build:css && node tooling/build/package.mjs --allow-missing --verify-reproducible",
-    "build:packages": "pnpm --filter @blixis/wp-theme run build:tokens && pnpm --filter @blixis/wp-theme run build:css && node tooling/build/package.mjs",
+    "build": "pnpm run build:editor && pnpm --filter @blixis/wp-theme run build:tokens && pnpm --filter @blixis/wp-theme run build:css && node tooling/build/package.mjs --allow-missing --verify-reproducible",
+    "build:editor": "pnpm --filter @blixis/wp-editor run build && node tooling/build/sync-editor-assets.mjs",
+    "build:packages": "pnpm run build:editor && pnpm --filter @blixis/wp-theme run build:tokens && pnpm --filter @blixis/wp-theme run build:css && node tooling/build/package.mjs",
     "test:unit": "pnpm -r --if-present run test",
     "sync:plugin-manifest": "node tooling/build/sync-plugin-manifest.mjs",
     "check:plugin-manifest": "node tooling/build/sync-plugin-manifest.mjs --check"

@@ -11,3 +11,6 @@ onlyBuiltDependencies: []
 minimumReleaseAge: 1440
 # Record exact versions when adding dependencies.
 savePrefix: ''
+# esbuild's install script is only a startup optimisation (the platform binary arrives as an optional dependency), so it stays blocked.
+allowBuilds:
+  esbuild: false

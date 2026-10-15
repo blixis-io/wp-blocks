@@ -6,12 +6,36 @@
   "license": "GPL-2.0-or-later",
   "type": "module",
   "dependencies": {
+    "@blixis/wp-canvas-bridge": "workspace:*",
+    "@blixis/wp-capabilities": "workspace:*",
     "@blixis/wp-core": "workspace:*",
+    "@blixis/wp-design-tokens": "workspace:*",
+    "@blixis/wp-editor-ui": "workspace:*",
     "@blixis/wp-element-registry": "workspace:*",
     "@blixis/wp-style-engine": "workspace:*",
-    "@blixis/wp-design-tokens": "workspace:*",
-    "@blixis/wp-canvas-bridge": "workspace:*",
-    "@blixis/wp-editor-ui": "workspace:*",
-    "@blixis/wp-capabilities": "workspace:*"
+    "lucide-react": "1.57.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@tailwindcss/node": "4.3.3",
+    "@tailwindcss/oxide": "4.3.3",
+    "@testing-library/dom": "10.4.2",
+    "@testing-library/react": "16.3.3",
+    "@testing-library/user-event": "14.6.8",
+    "@types/node": "24.19.2",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "axe-core": "4.14.0",
+    "esbuild": "0.28.2",
+    "jsdom": "30.1.2",
+    "tailwindcss": "4.3.3"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "dev": "node scripts/build.mjs --watch",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
   }
 }
