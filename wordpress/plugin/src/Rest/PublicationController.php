@@ -87,7 +87,7 @@ final class PublicationController {
 	 * @return true|\WP_Error
 	 */
 	public function permission( \WP_REST_Request $request, bool $changes_state ): true|\WP_Error {
-		$denied = $this->requests->permission( (int) $request->get_param( 'post_id' ), $changes_state );
+		$denied = $this->requests->permission( (int) RouteParams::get( $request, 'post_id' ), $changes_state );
 		return null === $denied ? true : self::error( $denied );
 	}
 
@@ -98,7 +98,7 @@ final class PublicationController {
 	 * @return \WP_REST_Response|\WP_Error
 	 */
 	public function status( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
-		return self::response( $this->requests->status( (int) $request->get_param( 'post_id' ) ) );
+		return self::response( $this->requests->status( (int) RouteParams::get( $request, 'post_id' ) ) );
 	}
 
 	/**
@@ -109,7 +109,7 @@ final class PublicationController {
 	 */
 	public function publish( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
 		$if_match = $request->get_header( 'if-match' );
-		return $this->change( $request, 'publish', $this->requests->publish( (int) $request->get_param( 'post_id' ), '' === $if_match ? null : $if_match, $request->get_body(), \get_current_user_id() ) );
+		return $this->change( $request, 'publish', $this->requests->publish( (int) RouteParams::get( $request, 'post_id' ), '' === $if_match ? null : $if_match, $request->get_body(), \get_current_user_id() ) );
 	}
 
 	/**
@@ -120,7 +120,7 @@ final class PublicationController {
 	 */
 	public function rollback( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
 		$if_match = $request->get_header( 'if-match' );
-		return $this->change( $request, 'rollback', $this->requests->rollback( (int) $request->get_param( 'post_id' ), '' === $if_match ? null : $if_match, $request->get_body(), \get_current_user_id() ) );
+		return $this->change( $request, 'rollback', $this->requests->rollback( (int) RouteParams::get( $request, 'post_id' ), '' === $if_match ? null : $if_match, $request->get_body(), \get_current_user_id() ) );
 	}
 
 	/**
@@ -135,7 +135,7 @@ final class PublicationController {
 		if ( null === $result->code ) {
 			$body   = \json_decode( $request->get_body(), true ); // phpcs:ignore WordPress.WP.AlternativeFunctions.json_decode_json_decode -- Already validated by request policy.
 			$locale = \is_array( $body ) && \is_string( $body['locale'] ?? null ) ? $body['locale'] : null;
-			( $this->audit ?? new WordPressAuditSink() )->emit( new AuditEvent( \get_current_user_id(), (int) $request->get_param( 'post_id' ), $locale, $kind, $result->data['layoutSnapshot'] ?? null, $result->data['contentSnapshot'] ?? null, $result->data['pointerRevision'] ) );
+			( $this->audit ?? new WordPressAuditSink() )->emit( new AuditEvent( \get_current_user_id(), (int) RouteParams::get( $request, 'post_id' ), $locale, $kind, $result->data['layoutSnapshot'] ?? null, $result->data['contentSnapshot'] ?? null, $result->data['pointerRevision'] ) );
 		}
 		return self::response( $result );
 	}

@@ -35,6 +35,7 @@ final class ErrorCatalog {
 		'blixis_too_large'             => [ 413, 'Request is too large.' ],
 		'blixis_theme_incompatible'    => [ 423, 'The active theme does not support Blixis editing.' ],
 		'blixis_invalid_document'      => [ 422, 'Invalid document.' ],
+		'blixis_locale_mismatch'       => [ 422, 'The content belongs to another locale.' ],
 		'blixis_nothing_to_publish'    => [ 422, 'Nothing to publish.' ],
 		'blixis_precondition_required' => [ 428, 'If-Match is required.' ],
 		'blixis_rate_limited'          => [ 429, 'Publication rate limit reached.' ],

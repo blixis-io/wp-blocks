@@ -90,6 +90,7 @@ final class DocumentController {
 		}
 		PreviewController::register();
 		PublicationController::register();
+		TranslationController::register();
 	}
 
 	/**
@@ -121,7 +122,7 @@ final class DocumentController {
 	 * @param \WP_REST_Request $request REST request.
 	 */
 	public function permission( \WP_REST_Request $request ): true|\WP_Error {
-		$result = $this->documents->permission( (int) $request->get_param( 'post_id' ) );
+		$result = $this->documents->permission( (int) RouteParams::get( $request, 'post_id' ) );
 		return null === $result ? true : self::error( $result );
 	}
 
@@ -130,7 +131,7 @@ final class DocumentController {
 	 * @param \WP_REST_Request $request REST request.
 	 */
 	public function permission_write( \WP_REST_Request $request ): true|\WP_Error {
-		$result = $this->documents->permission( (int) $request->get_param( 'post_id' ), true );
+		$result = $this->documents->permission( (int) RouteParams::get( $request, 'post_id' ), true );
 		return null === $result ? true : self::error( $result );
 	}
 
@@ -139,7 +140,7 @@ final class DocumentController {
 	 * @param \WP_REST_Request $request REST request.
 	 */
 	public function get( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
-		return self::response( $this->documents->get( (int) $request->get_param( 'post_id' ), self::locale( $request ) ) );
+		return self::response( $this->documents->get( (int) RouteParams::get( $request, 'post_id' ), self::locale( $request ) ) );
 	}
 
 	/**
@@ -148,7 +149,7 @@ final class DocumentController {
 	 * @param \WP_REST_Request $request REST request.
 	 */
 	public function revisions( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
-		return self::response( $this->documents->revisions( (int) $request->get_param( 'post_id' ), self::locale( $request ) ) );
+		return self::response( $this->documents->revisions( (int) RouteParams::get( $request, 'post_id' ), self::locale( $request ) ) );
 	}
 
 	/**
@@ -158,7 +159,7 @@ final class DocumentController {
 	 */
 	public function restore( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
 		$if_match = $request->get_header( 'if-match' );
-		return self::response( $this->documents->restore( (int) $request->get_param( 'post_id' ), self::locale( $request ), '' === $if_match ? null : $if_match, $request->get_body() ) );
+		return self::response( $this->documents->restore( (int) RouteParams::get( $request, 'post_id' ), self::locale( $request ), '' === $if_match ? null : $if_match, $request->get_body() ) );
 	}
 
 	/** Write a working stream using the If-Match precondition.
@@ -167,7 +168,7 @@ final class DocumentController {
 	 */
 	public function put( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
 		$if_match = $request->get_header( 'if-match' );
-		return self::response( $this->documents->put( (int) $request->get_param( 'post_id' ), self::locale( $request ), '' === $if_match ? null : $if_match, $request->get_body(), (string) $request->get_header( 'content-type' ) ) );
+		return self::response( $this->documents->put( (int) RouteParams::get( $request, 'post_id' ), self::locale( $request ), '' === $if_match ? null : $if_match, $request->get_body(), (string) $request->get_header( 'content-type' ) ) );
 	}
 
 	/** Content routes carry a locale; layout routes do not.
@@ -175,7 +176,7 @@ final class DocumentController {
 	 * @param \WP_REST_Request $request REST request.
 	 */
 	private static function locale( \WP_REST_Request $request ): ?string {
-		$value = $request->get_param( 'locale' );
+		$value = RouteParams::get( $request, 'locale' );
 		return \is_string( $value ) ? $value : null;
 	}
 

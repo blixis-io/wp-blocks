@@ -59,7 +59,7 @@ final class MediaController {
 	 * @return \WP_REST_Response|\WP_Error
 	 */
 	public static function get( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
-		$id    = (int) $request->get_param( 'id' );
+		$id    = (int) RouteParams::get( $request, 'id' );
 		$media = ( new WordPressMediaResolver() )->resolve( $id );
 		if ( null === $media ) {
 			return new \WP_Error( 'blixis_media_not_found', ErrorCatalog::message( 'blixis_media_not_found' ), [ 'status' => 404 ] );

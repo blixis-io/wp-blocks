@@ -88,6 +88,7 @@ final class DocumentRestTest extends TestCase {
 		$this->assertSame(
 			[
 				'revision' => 0,
+				'locale'   => null,
 				'document' => null,
 			],
 			$empty->body

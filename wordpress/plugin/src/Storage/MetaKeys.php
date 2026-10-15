@@ -124,6 +124,16 @@ final class MetaKeys {
 	}
 
 	/**
+	 * Locale of a working content stream key, or null for any other key.
+	 *
+	 * @param string $key Value.
+	 * @return ?string
+	 */
+	public static function content_locale( string $key ): ?string {
+		return 1 === \preg_match( '/^_blixis_content_(.+)$/D', $key, $parts ) && self::is_valid_locale( $parts[1] ) ? $parts[1] : null;
+	}
+
+	/**
 	 * Whether a key names an immutable snapshot.
 	 *
 	 * @param string $key Value.
