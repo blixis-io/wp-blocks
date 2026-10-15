@@ -81,7 +81,7 @@ export function PreviewAppearance() {
               className="blx-appearance-help ed-focus-ring"
               aria-label={t('canvas.appearance.hint')}
             >
-              <Icon name="shortcuts" size={14} />
+              <Icon name="info" size={14} />
             </button>
           </TooltipTrigger>
           <TooltipContent>{t('canvas.appearance.hint')}</TooltipContent>
@@ -387,7 +387,7 @@ export function Canvas({
             aria-describedby={!editingEnabled ? 'blx-selection-disabled' : undefined}
             title={!editingEnabled ? t('canvas.selection.disabled') : undefined}
           >
-            <Icon name="add" size={14} />
+            <Icon name="copy" size={14} />
           </button>
           <button
             type="button"

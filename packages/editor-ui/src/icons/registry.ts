@@ -5,12 +5,14 @@ import altArrowRight from '@iconify-icons/solar/alt-arrow-right-linear';
 import box from '@iconify-icons/solar/box-linear';
 import check from '@iconify-icons/solar/check-linear';
 import close from '@iconify-icons/solar/close-linear';
+import copy from '@iconify-icons/solar/copy-linear';
 import cursorSquare from '@iconify-icons/solar/cursor-square-linear';
 import diskette from '@iconify-icons/solar/diskette-linear';
 import eye from '@iconify-icons/solar/eye-linear';
 import gallery from '@iconify-icons/solar/gallery-linear';
 import global from '@iconify-icons/solar/global-linear';
 import home from '@iconify-icons/solar/home-linear';
+import infoCircle from '@iconify-icons/solar/info-circle-linear';
 import keyboard from '@iconify-icons/solar/keyboard-linear';
 import lock from '@iconify-icons/solar/lock-linear';
 import magnifier from '@iconify-icons/solar/magnifer-linear';
@@ -61,6 +63,8 @@ export const ICONS = {
   panelRight,
   text,
   add,
+  copy,
+  info: infoCircle,
   section: widget,
   light: sun,
   tablet,

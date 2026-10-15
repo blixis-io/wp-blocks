@@ -48,6 +48,8 @@ describe('Icon', () => {
     preview: 'eye-linear',
     image: 'gallery-linear',
     home: 'home-linear',
+    copy: 'copy-linear',
+    info: 'info-circle-linear',
     search: 'magnifer-linear',
     shortcuts: 'keyboard-linear',
     language: 'global-linear',
