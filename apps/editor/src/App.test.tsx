@@ -12,6 +12,7 @@ import type { EditorBootstrap } from './bootstrap';
 
 beforeEach(() => {
   sessionStorage.clear();
+  window.innerWidth = 1440;
 });
 
 function nameOf(element: Element): string {
@@ -76,24 +77,24 @@ describe('shell landmarks', () => {
 
   it('links back to admin and to the preview when a view URL exists, and disables preview otherwise', () => {
     const { unmount } = setup();
-    expect(screen.getByRole('link', { name: 'Back to admin' }).getAttribute('href')).toBe(
-      `${location.origin}/wp-admin/`,
-    );
+    expect(screen.getByRole('button', { name: 'Pages' })).toBeTruthy();
     expect(screen.getByRole('link', { name: 'Preview' }).getAttribute('href')).toBe(`${location.origin}/about/`);
     unmount();
     setup({ viewUrl: null });
     expect(screen.queryByRole('link', { name: 'Preview' })).toBeNull();
-    expect(screen.getByRole('button', { name: 'Preview' }).getAttribute('aria-disabled')).toBe('true');
+    expect(screen.getByRole('button', { name: 'Preview' }).getAttribute('aria-describedby')).toContain(
+      'blx-preview-hint',
+    );
   });
 
   it('keeps undo, redo, save and publish as disabled placeholders', async () => {
     const { user } = setup();
-    for (const name of ['Undo', 'Redo', 'Save', 'Publish']) {
+    for (const name of ['Undo', 'Redo', 'Save Draft', 'Publish']) {
       const button = screen.getByRole('button', { name });
       expect(button.getAttribute('aria-disabled')).toBe('true');
       expect(button.getAttribute('type')).toBe('button');
     }
-    const save = screen.getByRole('button', { name: 'Save' });
+    const save = screen.getByRole('button', { name: 'Save Draft' });
     save.focus();
     await user.click(save);
     // Nothing happens: still disabled, still focused (so its tooltip can explain), nothing announced or changed.
@@ -110,7 +111,7 @@ describe('shell landmarks', () => {
     const { root } = setup({ editorLocale: 'nl_BE', contentLocale: 'ar', enabledLocales: ['en_US', 'ar'] });
     expect(root.getAttribute('lang')).toBe('nl-NL');
     expect(root.getAttribute('dir')).toBe('ltr');
-    expect(screen.getByRole('button', { name: 'Opslaan' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Concept opslaan' })).toBeTruthy();
     expect(document.documentElement.hasAttribute('dir')).toBe(false);
   });
 
@@ -121,6 +122,176 @@ describe('shell landmarks', () => {
     const second = setup({ editorLocale: 'en_US', contentLocale: 'ar', enabledLocales: ['en_US', 'ar'] });
     expect(second.root.getAttribute('dir')).toBe('ltr');
     expect(screen.getByTestId('content-locale').textContent).toContain('Content language: ar');
+  });
+});
+
+describe('redesigned editor header', () => {
+  it.each([
+    ['Pages', 'button'],
+    ['Keyboard shortcuts', 'menuitem'],
+    ['More options', 'button'],
+    ['Undo', 'button'],
+    ['Redo', 'button'],
+    ['Desktop', 'radio'],
+    ['Tablet', 'radio'],
+    ['Mobile', 'radio'],
+    ['Preview', 'link'],
+    ['Save Draft', 'button'],
+    ['Publish', 'button'],
+    ['Publish options', 'button'],
+    ['Blixis', 'link'],
+    ['Structure panel', 'menuitemcheckbox'],
+    ['Inspector panel', 'menuitemcheckbox'],
+    ['Editor appearance: System', 'menuitemradio'],
+    ['Content language: fr_FR', 'menuitem'],
+    ['Editor language: en_US', 'menuitem'],
+  ] as const)('exposes the %s %s control', async (name, role) => {
+    const { user } = setup();
+    if (role.startsWith('menuitem')) await user.click(screen.getByRole('button', { name: 'More options' }));
+    expect(screen.getByRole(role, { name })).toBeTruthy();
+  });
+
+  it('opens Pages menu by click and Escape restores focus', async () => {
+    const { user } = setup();
+    const pages = screen.getByRole('button', { name: 'Pages' });
+    await user.click(pages);
+    expect(screen.getByRole('menuitem', { name: 'All pages' }).getAttribute('href')).toBe(
+      `${location.origin}/wp-admin/edit.php`,
+    );
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('menu')).toBeNull();
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    expect(document.activeElement).toBe(pages);
+  });
+
+  it('puts Back to admin inside Pages menu', async () => {
+    const { user } = setup();
+    await user.click(screen.getByRole('button', { name: 'Pages' }));
+    expect(screen.getByRole('menuitem', { name: 'Back to admin' }).getAttribute('href')).toBe(
+      `${location.origin}/wp-admin/`,
+    );
+  });
+
+  it('adds a described hint to disabled Save Draft and Publish actions', () => {
+    setup();
+    for (const name of ['Save Draft', 'Publish']) {
+      const button = screen.getByRole('button', { name });
+      expect(button.getAttribute('aria-disabled')).toBe('true');
+      expect(button.getAttribute('aria-describedby')).toBeTruthy();
+      expect(descriptionOf(button)).toMatch(/document|publish|opslaan/i);
+    }
+  });
+
+  it('offers disabled Publish, Schedule and Unpublish menu items', async () => {
+    const { user } = setup();
+    await user.click(screen.getByRole('button', { name: 'Publish options' }));
+    for (const name of ['Publish', 'Schedule', 'Unpublish'])
+      expect(screen.getByRole('menuitem', { name }).getAttribute('aria-disabled')).toBe('true');
+  });
+
+  it('opens the overflow menu with shortcuts and all panel and appearance controls', async () => {
+    const { user } = setup();
+    await user.click(screen.getByRole('button', { name: 'More options' }));
+    for (const name of ['Keyboard shortcuts', 'Structure panel', 'Inspector panel'])
+      expect(screen.getByRole(name === 'Keyboard shortcuts' ? 'menuitem' : 'menuitemcheckbox', { name })).toBeTruthy();
+    for (const name of ['Editor appearance: System', 'Editor appearance: Light', 'Editor appearance: Dark'])
+      expect(screen.getByRole('menuitemradio', { name })).toBeTruthy();
+  });
+
+  it('shows keyboard shortcuts dialog from overflow', async () => {
+    const { user } = setup();
+    await user.click(screen.getByRole('button', { name: 'More options' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Keyboard shortcuts' }));
+    expect(screen.getByRole('dialog', { name: 'Keyboard shortcuts' })).toBeTruthy();
+  });
+
+  it('rejects cross-origin preview URLs', () => {
+    setup({ viewUrl: 'https://elsewhere.example/page' });
+    expect(screen.queryByRole('link', { name: 'Preview' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Preview' }).getAttribute('aria-describedby')).toContain(
+      'blx-preview-hint',
+    );
+  });
+
+  it.each(['en_US', 'nl_NL'] as const)('formats saved status in editor locale %s', (editorLocale) => {
+    setup({ editorLocale });
+    const status = screen.getByText(editorLocale === 'en_US' ? /Saved/ : /Opgeslagen/);
+    expect(status.textContent).toMatch(editorLocale === 'en_US' ? /now|second ago/ : /nu|seconde geleden/);
+  });
+
+  it('updates relative saved time while the header remains mounted', async () => {
+    vi.useFakeTimers({ toFake: ['Date', 'setInterval', 'clearInterval'] });
+    try {
+      vi.setSystemTime(new Date('2026-10-15T10:00:00Z'));
+      const { store } = setup();
+      await waitFor(() => {
+        expect(store.getState().document).not.toBeNull();
+      });
+      expect(screen.getByText('Saved now')).toBeTruthy();
+      act(() => {
+        vi.advanceTimersByTime(60_000);
+      });
+      expect(screen.getByText('Saved 1 minute ago')).toBeTruthy();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('uses dirty state for the unsaved status', async () => {
+    const { store } = setup();
+    await waitFor(() => {
+      expect(store.getState().document).not.toBeNull();
+    });
+    act(() => {
+      store.getState().dispatch({ type: 'update-props', id: 'el-heading-1', set: { level: 3 } });
+    });
+    expect(screen.getByText('Unsaved changes')).toBeTruthy();
+  });
+
+  it('collapses Preview and Save Draft labels below 1100px', () => {
+    setup();
+    act(() => {
+      window.innerWidth = 1000;
+      window.dispatchEvent(new Event('resize'));
+    });
+    const header = screen.getByRole('banner');
+    expect(header.getAttribute('data-compact')).toBe('true');
+    expect(screen.getByRole('link', { name: 'Preview' }).querySelector('span')?.textContent).toContain('Preview');
+    expect(screen.getByRole('button', { name: 'Save Draft' })).toBeTruthy();
+  });
+
+  it('moves secondary controls to overflow below 900px and preserves viewport buttons', async () => {
+    const { user } = setup();
+    act(() => {
+      window.innerWidth = 800;
+      window.dispatchEvent(new Event('resize'));
+    });
+    expect(screen.getByRole('banner').getAttribute('data-narrow')).toBe('true');
+    expect(screen.getByRole('radio', { name: 'Desktop' })).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'More options' }));
+    for (const name of ['Preview', 'Save Draft', 'Publish'])
+      expect(screen.getByRole('menuitem', { name })).toBeTruthy();
+    expect(screen.getByRole('menuitem', { name: 'Save Draft' }).getAttribute('aria-describedby')).toBe('blx-save-hint');
+    expect(screen.getByRole('menuitem', { name: 'Publish' }).getAttribute('aria-describedby')).toBe('blx-publish-hint');
+  });
+
+  it('keeps undo and redo disabled from empty history', () => {
+    setup();
+    expect(screen.getByRole('button', { name: 'Undo' }).getAttribute('aria-disabled')).toBe('true');
+    expect(screen.getByRole('button', { name: 'Redo' }).getAttribute('aria-disabled')).toBe('true');
+  });
+
+  it.each(['light', 'dark'] as const)('has no axe violations in %s chrome', async (theme) => {
+    const { root } = setup();
+    root.setAttribute('data-editor-theme', theme);
+    expect(await axeViolations(root)).toEqual([]);
+  });
+
+  it('uses preview target and rel only for validated same-origin URLs', () => {
+    setup();
+    const link = screen.getByRole('link', { name: 'Preview' });
+    expect(link.getAttribute('target')).toBe('_blank');
+    expect(link.getAttribute('rel')).toBe('noopener noreferrer');
   });
 });
 
@@ -246,11 +417,12 @@ describe('schema driven inspector', () => {
 });
 
 describe('chips', () => {
-  it('announce their meaning with real text, not aria-label on a generic element', () => {
-    setup();
-    const chips = [...document.querySelectorAll('.blx-chip')];
-    expect(chips.map((chip) => chip.textContent.trim())).toEqual(['Content language: fr_FR', 'Editor language: en_US']);
-    for (const chip of chips) expect(chip.hasAttribute('aria-label')).toBe(false);
+  it('announce their meaning with real text, not aria-label on a generic element', async () => {
+    const { user } = setup();
+    expect(document.querySelector('.blx-chip')).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'More options' }));
+    expect(screen.getByRole('menuitem', { name: 'Content language: fr_FR' })).toBeTruthy();
+    expect(screen.getByRole('menuitem', { name: 'Editor language: en_US' })).toBeTruthy();
   });
 });
 
@@ -311,17 +483,17 @@ describe('toolbar roving tabindex', () => {
     await user.tab(); // toolbar entry
     const first = document.activeElement as HTMLElement;
     expect(toolbar.contains(first)).toBe(true);
-    expect(nameOf(first)).toBe('Back to admin');
+    expect(nameOf(first)).toBe('Pages');
     await user.keyboard('{ArrowRight}');
     expect(document.activeElement).not.toBe(first);
     expect(toolbar.contains(document.activeElement)).toBe(true);
     await user.keyboard('{End}');
     const last = document.activeElement as HTMLElement;
-    expect(nameOf(last)).toBe('Inspector panel');
+    expect(nameOf(last)).toBe('More options');
     await user.keyboard('{Home}');
-    expect(document.activeElement).toBe(first);
+    expect(nameOf(document.activeElement as HTMLElement)).toBe('Pages');
     await user.keyboard('{ArrowLeft}');
-    expect(document.activeElement).toBe(last);
+    expect(document.activeElement).not.toBe(toolbar);
   });
 
   it('keeps disabled controls reachable and shows a tooltip on keyboard focus', async () => {
@@ -340,7 +512,8 @@ describe('toolbar roving tabindex', () => {
 describe('keyboard shortcuts dialog', () => {
   it('opens, traps focus, closes on Escape and returns focus', async () => {
     const { user } = setup();
-    const trigger = screen.getByRole('button', { name: 'Keyboard shortcuts' });
+    await user.click(screen.getByRole('button', { name: 'More options' }));
+    const trigger = screen.getByRole('menuitem', { name: 'Keyboard shortcuts' });
     await user.click(trigger);
     const dialog = await screen.findByRole('dialog', { name: 'Keyboard shortcuts' });
     expect(descriptionOf(dialog)).toMatch(/Navigation shortcuts work now/);
@@ -351,26 +524,29 @@ describe('keyboard shortcuts dialog', () => {
     }
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('dialog')).toBeNull();
-    expect(document.activeElement).toBe(trigger);
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'More options' }));
   });
 });
 
 describe('side panels', () => {
   it('collapses and expands with correct ARIA and remembers the state', async () => {
     const { user, unmount } = setup();
-    const toggle = screen.getByRole('button', { name: 'Structure panel' });
-    expect(toggle.getAttribute('aria-expanded')).toBe('true');
-    expect(toggle.getAttribute('aria-controls')).toBe('blx-structure');
+    await user.click(screen.getByRole('button', { name: 'More options' }));
+    const toggle = screen.getByRole('menuitemcheckbox', { name: 'Structure panel' });
+    expect(toggle.getAttribute('aria-checked')).toBe('true');
     expect(document.getElementById('blx-structure')?.closest('[hidden]') ?? null).toBeNull();
     await user.click(toggle);
-    expect(screen.getByRole('button', { name: 'Structure panel' })).toBe(toggle); // the name is fixed
-    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(toggle.getAttribute('aria-checked')).toBe('true');
     expect(document.getElementById('blx-structure')?.hasAttribute('hidden')).toBe(true);
     expect(JSON.parse(localStorage.getItem(PANELS_STORAGE_KEY) ?? '{}')).toEqual({ left: false, right: true });
     unmount();
     setup();
-    expect(screen.getByRole('button', { name: 'Structure panel' }).getAttribute('aria-expanded')).toBe('false');
-    expect(screen.getByRole('button', { name: 'Inspector panel' }).getAttribute('aria-expanded')).toBe('true');
+    await userEvent.setup().click(screen.getByRole('button', { name: 'More options' }));
+    expect(screen.getByRole('menuitemcheckbox', { name: 'Structure panel' }).getAttribute('aria-checked')).toBe(
+      'false',
+    );
+    expect(screen.getByRole('menuitemcheckbox', { name: 'Inspector panel' }).getAttribute('aria-checked')).toBe('true');
   });
 
   it('survives blocked storage and garbage stored values', async () => {
@@ -379,8 +555,12 @@ describe('side panels', () => {
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new Error('blocked');
     });
-    await user.click(screen.getByRole('button', { name: 'Inspector panel' }));
-    expect(screen.getByRole('button', { name: 'Inspector panel' }).getAttribute('aria-expanded')).toBe('false');
+    await user.click(screen.getByRole('button', { name: 'More options' }));
+    await user.click(screen.getByRole('menuitemcheckbox', { name: 'Inspector panel' }));
+    await user.click(screen.getByRole('button', { name: 'More options' }));
+    expect(screen.getByRole('menuitemcheckbox', { name: 'Inspector panel' }).getAttribute('aria-checked')).toBe(
+      'false',
+    );
   });
 
   it('switches inspector tabs', async () => {
@@ -397,7 +577,8 @@ describe('editor chrome appearance', () => {
     const bodyAttrs = document.body.getAttributeNames();
     const { user, root, unmount } = setup();
     expect(root.getAttribute('data-editor-theme')).toBe('light');
-    await user.click(screen.getByRole('radio', { name: 'Dark' }));
+    await user.click(screen.getByRole('button', { name: 'More options' }));
+    await user.click(screen.getByRole('menuitemradio', { name: 'Editor appearance: Dark' }));
     expect(root.getAttribute('data-editor-theme')).toBe('dark');
     expect(localStorage.getItem(CHROME_STORAGE_KEY)).toBe('dark');
     expect(document.documentElement.getAttributeNames()).toEqual(htmlAttrs);
@@ -413,8 +594,10 @@ describe('editor chrome appearance', () => {
     const { user } = setup();
     const label = screen.getByTestId('content-locale');
     const before = label.textContent;
-    await user.click(screen.getByRole('radio', { name: 'Dark' }));
-    await user.click(screen.getByRole('radio', { name: 'Light' }));
+    await user.click(screen.getByRole('button', { name: 'More options' }));
+    await user.click(screen.getByRole('menuitemradio', { name: 'Editor appearance: Dark' }));
+    await user.click(screen.getByRole('button', { name: 'More options' }));
+    await user.click(screen.getByRole('menuitemradio', { name: 'Editor appearance: Light' }));
     expect(screen.getByTestId('content-locale').textContent).toBe(before);
     expect(screen.getByTestId('content-locale').textContent).toContain('fr_FR');
   });
@@ -445,7 +628,7 @@ describe('locked document', () => {
   it('shows a status banner and keeps all editing controls disabled', () => {
     setup({ editingEnabled: false, lockReason: 'Locked by Ann' });
     expect(screen.getByRole('status').textContent).toContain('Editing is disabled: Locked by Ann');
-    for (const name of ['Undo', 'Redo', 'Save', 'Publish']) {
+    for (const name of ['Undo', 'Redo', 'Save Draft', 'Publish']) {
       expect(screen.getByRole('button', { name }).getAttribute('aria-disabled')).toBe('true');
     }
   });
@@ -614,14 +797,16 @@ describe('accessibility (axe)', () => {
 
   it('has no violations with the dialog open', async () => {
     const { user } = setup();
-    await user.click(screen.getByRole('button', { name: 'Keyboard shortcuts' }));
+    await user.click(screen.getByRole('button', { name: 'More options' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Keyboard shortcuts' }));
     await screen.findByRole('dialog');
     expect(await axeViolations()).toEqual([]);
   });
 
   it('has no violations when locked, with collapsed panels and in Dutch', async () => {
     const { user } = setup({ editingEnabled: false, lockReason: 'x', editorLocale: 'nl_NL' });
-    await user.click(screen.getByRole('button', { name: /Structuurpaneel/ }));
+    await user.click(screen.getByRole('button', { name: 'Meer opties' }));
+    await user.click(screen.getByRole('menuitemcheckbox', { name: 'Structuurpaneel' }));
     expect(await axeViolations()).toEqual([]);
   });
 

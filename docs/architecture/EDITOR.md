@@ -62,6 +62,14 @@ The PHP admin screen prints `<script type="application/json" id="blixis-editor-b
 - Locales are WordPress locale ids and use exactly the grammar of `MetaKeys::is_valid_locale` in the plugin (`/^[a-z]{2,3}(_[A-Za-z0-9]{2,8})*$/`, at most 20 characters; no hyphens). `postType` is a slug; strings have length limits. The schema is a `z.strictObject`: unknown top-level keys (including `__proto__`), missing fields and wrong types are refused, not stripped.
 - A failed bootstrap renders an `ErrorScreen` (`role=alert`) with a generic message. The result carries a code only, never the offending value or validator messages.
 
+## Editor header redesign (BWB-132)
+
+The editor header keeps its 44 px layout row and uses a dark chrome surface in both editor chrome themes. Its semantic `--ed-header-*` roles (background, foreground, border, muted text, hover, active action and saved-state indicator) are defined alongside the regular chrome tokens; changing the site content appearance never changes the header. The header contains the Blixis mark/name, Pages menu, page title and saved/unsaved status, centred desktop/tablet/mobile viewport group, undo/redo, Preview, Save Draft, Publish split menu and overflow menu. Layout uses logical inline properties and mirrors with the editor interface direction.
+
+Pages contains All pages (derived from the validated same-origin admin URL) and Back to admin. The publish menu exposes Publish plus disabled Schedule and Unpublish placeholders. Overflow keeps keyboard shortcuts, both panel toggles, System/Light/Dark editor chrome appearance, the current content-language and editor-language indicators, and Back to admin reachable. At widths below 1100 px Preview and Save Draft labels become icon-only; below 900 px secondary actions move to overflow while the viewport group remains visible. Menu items use the shared editor-ui menu primitive with managed focus, typeahead, RTL-aware navigation and portals scoped to `.blx-editor`.
+
+Preview opens only a validated same-origin `bootstrap.viewUrl` in a new tab with `noopener noreferrer`; absent or invalid URLs produce a disabled control with a hint. Save Draft and Publish stay disabled and explain that persistence is not wired yet. BWB-055 will wire save/publish state, error recovery and real status timestamps; BWB-057 will wire viewport behavior and locale-specific preview URLs. The visible saved-relative-time placeholder is derived from current dirty state and formatted in the editor locale, independent of website translation locale.
+
 ## Four independent settings
 
 | Setting | Where it lives | Applied to | Never derived from |

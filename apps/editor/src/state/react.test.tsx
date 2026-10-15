@@ -321,7 +321,8 @@ describe('four independent settings in the UI', () => {
     await ready();
     const root = screen.getByTestId('editor-root');
     expect(screen.getByTestId('content-locale').textContent).toContain('fr_FR');
-    await user.click(screen.getByRole('radio', { name: 'Donker' }));
+    await user.click(screen.getByRole('button', { name: 'Meer opties' }));
+    await user.click(screen.getByRole('menuitemradio', { name: 'Weergave van de editor: Donker' }));
     expect(localStorage.getItem(CHROME_STORAGE_KEY)).toBe('dark');
     expect(root.getAttribute('data-editor-theme')).toBe('dark');
     expect(store.getState()).toMatchObject({ previewMode: 'light', contentLocale: 'fr_FR' });
@@ -333,7 +334,8 @@ describe('four independent settings in the UI', () => {
     expect(root.getAttribute('data-editor-theme')).toBe('dark');
     expect(root.getAttribute('lang')).toBe('nl-NL'); // the editor language did not follow the content language
     expect(localStorage.getItem(CHROME_STORAGE_KEY)).toBe('dark');
-    await user.click(screen.getByRole('radio', { name: 'Licht' }));
+    await user.click(screen.getByRole('button', { name: 'Meer opties' }));
+    await user.click(screen.getByRole('menuitemradio', { name: 'Weergave van de editor: Licht' }));
     expect(store.getState()).toMatchObject({ previewMode: 'dark', contentLocale: 'en_US' });
     expect(document.documentElement.getAttributeNames()).toEqual(htmlBefore);
   });

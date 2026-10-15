@@ -29,3 +29,5 @@ export { VisuallyHidden } from './components/visually-hidden';
 export { Kbd } from './components/kbd';
 export { Slider, sliderFillProgress, sliderProgress, type SliderProps } from './components/slider';
 export { NumberWithUnit, type NumberWithUnitProps } from './components/number-with-unit';
+
+export { Menu, type MenuItem } from './components/menu';
