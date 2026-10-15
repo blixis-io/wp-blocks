@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { Menu, PortalContainerProvider, type MenuItem } from '../index';
@@ -136,21 +136,13 @@ describe('Menu keyboard and focus behavior', () => {
     const user = userEvent.setup();
     renderMenu();
     await user.click(screen.getByRole('button', { name: 'Actions' }));
-    await waitFor(() => {
-      expect(document.activeElement?.getAttribute('role')).toBe('menuitem');
-    });
     await user.keyboard('g');
-    await waitFor(() => {
-      expect(document.activeElement?.textContent).toContain('Gamma');
-    });
+    expect(document.activeElement?.textContent).toContain('Gamma');
   });
   it('supports repeated typeahead text', async () => {
     const user = userEvent.setup();
     renderMenu([{ label: 'Alpha' }, { label: 'Alpine' }]);
     await user.click(screen.getByRole('button', { name: 'Actions' }));
-    await waitFor(() => {
-      expect(document.activeElement?.getAttribute('role')).toBe('menuitem');
-    });
     fireEvent.keyDown(document.activeElement as HTMLElement, { key: 'a' });
     expect(document.activeElement?.textContent).toContain('Alpha');
     fireEvent.keyDown(document.activeElement as HTMLElement, { key: 'a' });

@@ -5,8 +5,12 @@
  * @package Blixis\Theme
  */
 
-?>
+if ( ! is_singular() ) :
+	?>
 <article id="post-<?php the_ID(); ?>" <?php post_class(); ?>>
+	<?php
+endif;
+?>
 	<header class="entry-header">
 		<?php if ( is_singular() ) : ?>
 			<h1 class="entry-title"><?php echo esc_html( get_the_title() ); ?></h1>
@@ -20,4 +24,6 @@
 		wp_link_pages();
 		?>
 	</div>
+<?php if ( ! is_singular() ) : ?>
 </article>
+<?php endif; ?>

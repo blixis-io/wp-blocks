@@ -6,7 +6,9 @@
  */
 
 ?>
+<?php if ( ! is_singular() ) : ?>
 </main>
+<?php endif; ?>
 <footer class="site-footer site-shell">
 	<p>
 		<?php

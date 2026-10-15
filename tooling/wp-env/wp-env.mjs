@@ -1590,6 +1590,30 @@ async function smoke() {
             boot.lockReason === null,
           'the bootstrap contract v1 is valid and editing is enabled on a compatible theme',
         );
+        // Font parity: whatever @font-face rules the front end prints (theme.json and Font Library fonts that WordPress
+        // resolves), the canvas must print the same faces, same-origin only, carrying the response style nonce.
+        const frontFontHtml = await (await http(`${base}/`)).text();
+        const fontCanvasUrl = `${base}/wp-admin/admin.php?page=blixis-canvas&post=${edPost}&locale=en_US`;
+        const fontCanvasResponse = await http(fontCanvasUrl, { headers: { cookie: adminCookie } });
+        const fontCanvasHtml = await fontCanvasResponse.text();
+        const fontCanvasNonce = /(?:^|;\s*)style-src[^;]*'nonce-([^']+)'/.exec(
+          fontCanvasResponse.headers.get('content-security-policy') ?? '',
+        )?.[1];
+        const faceBlock = (document) =>
+          /<style\b[^>]*class="wp-fonts-local"[^>]*>([\s\S]*?)<\/style>/i.exec(document)?.[1] ?? '';
+        const faceUrls = (css) =>
+          [...css.matchAll(/url\(["']?([^"')]+)["']?\)/gi)].map((match) => new URL(match[1], base).href).sort();
+        const frontFaces = faceUrls(faceBlock(frontFontHtml));
+        const canvasFaces = faceUrls(faceBlock(fontCanvasHtml));
+        const canvasFaceNonce = /<style\b[^>]*class="wp-fonts-local"[^>]*nonce="([^"]+)"/i.exec(fontCanvasHtml)?.[1];
+        check(
+          fontCanvasResponse.status === 200 &&
+            fontCanvasNonce !== undefined &&
+            frontFaces.every((url) => canvasFaces.includes(url)) &&
+            canvasFaces.every((url) => new URL(url).origin === new URL(base).origin) &&
+            (canvasFaces.length === 0 || canvasFaceNonce === fontCanvasNonce),
+          'canvas prints every front end @font-face URL, same-origin, with the response style nonce',
+        );
         check(
           boot?.postTitle === `Tom & Jerry's "quote" x` && !/[&]#\d+;|<[^>]*>/.test(boot.postTitle),
           'the bootstrap post title is decoded plain text with tags removed',
@@ -2023,7 +2047,7 @@ async function smoke() {
               '--post_type=wp_font_face',
               '--post_status=publish',
               `--post_parent=${fontPost.trim()}`,
-              '--post_content={"fontFamily":"Smoke Inter","fontWeight":"400","fontStyle":"normal","src":"https://example.test/smoke-inter.woff2"}',
+              `--post_content=${JSON.stringify({ fontFamily: 'Smoke Inter', fontWeight: '400', fontStyle: 'normal', src: `${base}/wp-includes/fonts/dashicons.woff2` })}`,
               '--porcelain',
             );
             html = await stepPage(3);

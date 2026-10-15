@@ -32,6 +32,48 @@ final class Setup {
 	}
 
 	/**
+	 * Return the shared singular article and main shell descriptor.
+	 *
+	 * @param \WP_Post|null $post Current post.
+	 * @return array{open: string, close: string, body_classes: list<string>}
+	 */
+	public static function page_shell( ?\WP_Post $post ): array {
+		$id     = null === $post ? 0 : (int) $post->ID;
+		$type   = null === $post ? 'page' : \sanitize_html_class( $post->post_type );
+		$status = null === $post ? 'publish' : \sanitize_html_class( $post->post_status );
+		$base   = [
+			'open'         => '<main id="content" class="site-main site-shell" tabindex="-1"><article id="post-' . $id . '" class="post-' . $id . ' ' . $type . ' type-' . $type . ' status-' . $status . ' hentry">',
+			'close'        => '</article></main>',
+			'body_classes' => \get_body_class(),
+		];
+		$shell  = \apply_filters(
+			'blixis_builder_page_shell',
+			$base,
+			$post ?? new \WP_Post(
+				(object) [
+					'ID'          => 0,
+					'post_type'   => 'page',
+					'post_status' => 'publish',
+				]
+			)
+		);
+		if ( ! \is_array( $shell ) || ! isset( $shell['open'], $shell['close'], $shell['body_classes'] ) || ! \is_string( $shell['open'] ) || ! \is_string( $shell['close'] ) || ! \is_array( $shell['body_classes'] ) ) {
+			return $base;
+		}
+		$classes = [];
+		foreach ( $shell['body_classes'] as $class ) {
+			if ( \is_string( $class ) ) {
+				$classes[] = $class;
+			}
+		}
+		return [
+			'open'         => $shell['open'],
+			'close'        => $shell['close'],
+			'body_classes' => $classes,
+		];
+	}
+
+	/**
 	 * Hooks everything up. Called once from functions.php.
 	 *
 	 * @return void
