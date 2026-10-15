@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
@@ -30,10 +30,13 @@ import {
   TooltipTrigger,
   VisuallyHidden,
   Icon,
+  Slider,
+  NumberWithUnit,
   type IconProps,
   ELEMENT_ICONS,
   elementIconName,
   ICONS,
+  TEXT_ALIGN_ICONS,
 } from '../index';
 import { CORE_ELEMENTS } from '@blixis/wp-element-registry';
 
@@ -44,6 +47,8 @@ describe('Icon', () => {
     caretRight: 'alt-arrow-right-linear',
     move: 'cursor-square-linear',
     chevronDown: 'alt-arrow-down-linear',
+    chevronUp: 'alt-arrow-up-linear',
+    link: 'link-linear',
     check: 'check-linear',
     preview: 'eye-linear',
     image: 'gallery-linear',
@@ -79,6 +84,10 @@ describe('Icon', () => {
     system: 'moon-stars-linear',
     moonStars: 'moon-stars-linear',
     menuDots: 'menu-dots-linear',
+    alignLeft: 'align-left-linear',
+    alignCenter: 'align-horizontal-center-linear',
+    alignRight: 'align-right-linear',
+    alignJustify: 'align-horizontal-spacing-linear',
   } as const;
 
   it('pins every semantic name to a deliberate Solar export', () => {
@@ -98,6 +107,35 @@ describe('Icon', () => {
         new RegExp(`\\b${semanticName}: ${String(variable)}\\b|\\b${semanticName},`),
       );
     }
+  });
+
+  it('maps inspector actions to explicit semantic icon names', () => {
+    const inspectorIcons = {
+      collapseSection: 'chevronDown',
+      expandSection: 'chevronUp',
+      link: 'link',
+      desktop: 'desktop',
+      tablet: 'tablet',
+      mobile: 'mobile',
+    } as const;
+    expect(inspectorIcons).toEqual({
+      collapseSection: 'chevronDown',
+      expandSection: 'chevronUp',
+      link: 'link',
+      desktop: 'desktop',
+      tablet: 'tablet',
+      mobile: 'mobile',
+    });
+    for (const name of Object.values(inspectorIcons)) expect(ICONS[name]).toBeDefined();
+  });
+
+  it('maps text alignment values to the intended Solar icons', () => {
+    expect(TEXT_ALIGN_ICONS).toEqual({
+      left: 'alignLeft',
+      center: 'alignCenter',
+      right: 'alignRight',
+      justify: 'alignJustify',
+    });
   });
 
   it('renders every registered icon with a viewBox and a non-empty SVG path', () => {
@@ -155,6 +193,10 @@ describe('Icon', () => {
     for (const name of ['home', 'light', 'dark', 'appearance', 'system'] as const) {
       const { container: nonDirectional } = render(<Icon name={name} mirrorInRtl />);
       expect(nonDirectional.querySelector('svg')?.getAttribute('class') ?? '').not.toContain('rtl:-scale-x-100');
+    }
+    for (const name of ['alignLeft', 'alignRight'] as const) {
+      const { container: directional } = render(<Icon name={name} mirrorInRtl />);
+      expect(directional.querySelector('svg')?.getAttribute('class')).toContain('rtl:-scale-x-100');
     }
   });
 
@@ -439,5 +481,150 @@ describe('Tabs', () => {
     expect(document.activeElement).toBe(screen.getByRole('tab', { name: 'Style' }));
     expect(screen.getByRole('tabpanel').textContent).toContain('Style panel');
     expect(await axeViolations()).toEqual([]);
+  });
+});
+
+describe('Slider', () => {
+  it('exposes accessible bounds and clamps keyboard values to its schema limits', () => {
+    const onValueChange = vi.fn<(value: number) => void>();
+    render(<Slider value={10} min={0} max={12} step={2} label="Font size" onValueChange={onValueChange} />);
+    const slider = screen.getByRole('slider', { name: 'Font size' });
+    expect(slider.getAttribute('aria-valuemin')).toBe('0');
+    expect(slider.getAttribute('aria-valuemax')).toBe('12');
+    expect(slider.getAttribute('aria-valuenow')).toBe('10');
+    expect(slider.getAttribute('aria-valuetext')).toBe('10');
+    fireEvent.keyDown(slider, { key: 'End' });
+    expect(onValueChange).toHaveBeenCalledWith(12);
+  });
+
+  it('captures pointer drags, clamps to the track, and commits the final pointer value once', () => {
+    const change = vi.fn();
+    const commit = vi.fn();
+    render(<Slider value={10} min={0} max={20} step={2} label="Size" onValueChange={change} onValueCommit={commit} />);
+    const slider = screen.getByRole('slider', { name: 'Size' });
+    vi.spyOn(slider, 'getBoundingClientRect').mockReturnValue({
+      x: 0,
+      y: 0,
+      left: 0,
+      right: 100,
+      top: 0,
+      bottom: 20,
+      width: 100,
+      height: 20,
+      toJSON: () => ({}),
+    });
+    const capture = vi.fn();
+    Object.defineProperty(slider, 'setPointerCapture', { configurable: true, value: capture });
+    fireEvent.pointerDown(slider, { pointerId: 7, clientX: 150 });
+    fireEvent.pointerMove(slider, { pointerId: 7, clientX: 60 });
+    fireEvent.pointerUp(slider, { pointerId: 7, clientX: 75 });
+    expect(capture).toHaveBeenCalledWith(7);
+    expect(change).toHaveBeenCalledWith(20);
+    expect(commit).toHaveBeenCalledTimes(1);
+    expect(commit).toHaveBeenCalledWith(16);
+  });
+
+  it('supports RTL-aware arrows, shifted steps, page steps and inherited keyboard commits', () => {
+    const onValueChange = vi.fn<(value: number) => void>();
+    const onValueCommit = vi.fn<(value: number) => void>();
+    function ControlledSlider() {
+      const [value, setValue] = useState(10);
+      return (
+        <div dir="rtl">
+          <Slider
+            value={value}
+            min={0}
+            max={20}
+            step={1}
+            label="Font size"
+            onValueChange={(next) => {
+              onValueChange(next);
+              setValue(next);
+            }}
+            onValueCommit={onValueCommit}
+          />
+        </div>
+      );
+    }
+    render(<ControlledSlider />);
+    const slider = screen.getByRole('slider', { name: 'Font size' });
+    fireEvent.keyDown(slider, { key: 'ArrowRight' });
+    fireEvent.keyDown(slider, { key: 'ArrowLeft', shiftKey: true });
+    fireEvent.keyDown(slider, { key: 'PageUp' });
+    expect(onValueChange).toHaveBeenNthCalledWith(1, 9);
+    expect(onValueChange).toHaveBeenNthCalledWith(2, 19);
+    expect(onValueChange).toHaveBeenNthCalledWith(3, 20);
+    expect(onValueCommit).toHaveBeenCalledTimes(3);
+  });
+
+  it('supports PageDown and Home and clamps every keyboard command', () => {
+    const change = vi.fn();
+    render(<Slider value={4} min={0} max={5} step={1} label="Size" onValueChange={change} />);
+    const press = (key: string) => fireEvent.keyDown(screen.getByRole('slider', { name: 'Size' }), { key });
+    press('PageUp');
+    press('Home');
+    press('PageDown');
+    press('ArrowLeft');
+    expect(change).toHaveBeenNthCalledWith(1, 5);
+    expect(change).toHaveBeenNthCalledWith(2, 0);
+    expect(change).toHaveBeenNthCalledWith(3, 0);
+    expect(change).toHaveBeenNthCalledWith(4, 3);
+  });
+
+  it('keeps disabled sliders unavailable to keyboard interaction', () => {
+    const onValueChange = vi.fn();
+    render(<Slider value={10} min={0} max={20} step={1} label="Font size" disabled onValueChange={onValueChange} />);
+    const slider = screen.getByRole('slider', { name: 'Font size' });
+    expect(slider.getAttribute('aria-disabled')).toBe('true');
+    expect(slider.getAttribute('tabindex')).toBe('-1');
+    fireEvent.keyDown(slider, { key: 'ArrowRight' });
+    expect(onValueChange).not.toHaveBeenCalled();
+  });
+});
+
+describe('NumberWithUnit', () => {
+  it.each([
+    ['px', 12],
+    ['rem', 1.25],
+    ['em', 2],
+  ])('accepts compiler-approved unit %s', (unit, number) => {
+    const change = vi.fn();
+    render(
+      <NumberWithUnit
+        id="size"
+        label="Size"
+        value={10}
+        unit="px"
+        units={['px', 'rem', 'em']}
+        min={0}
+        max={100}
+        onValueChange={change}
+      />,
+    );
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'Size' }), { target: { value: String(number) } });
+    expect(change).toHaveBeenCalledWith(number, 'px');
+    fireEvent.change(screen.getByRole('combobox', { name: 'Size unit' }), { target: { value: unit } });
+    expect(change).toHaveBeenLastCalledWith(10, unit);
+  });
+
+  it.each(['', '-1', '101', 'NaN'])('reports invalid numeric draft %s without dispatching', (value) => {
+    const change = vi.fn();
+    const invalid = vi.fn();
+    render(
+      <NumberWithUnit
+        id="size"
+        label="Size"
+        value={10}
+        unit="px"
+        units={['px']}
+        min={0}
+        max={100}
+        onValueChange={change}
+        onInvalid={invalid}
+      />,
+    );
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'Size' }), { target: { value } });
+    expect(change).not.toHaveBeenCalled();
+    expect(invalid).toHaveBeenCalledTimes(1);
   });
 });

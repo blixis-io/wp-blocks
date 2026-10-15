@@ -14,3 +14,20 @@ export function writeStorage(key: string, value: string): void {
     /* the preference simply is not remembered */
   }
 }
+
+/** Session preferences are isolated from persisted editor and website settings. */
+export function readSessionStorage(key: string): string | null {
+  try {
+    return globalThis.sessionStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+export function writeSessionStorage(key: string, value: string): void {
+  try {
+    globalThis.sessionStorage.setItem(key, value);
+  } catch {
+    /* the preference simply is not remembered */
+  }
+}

@@ -1,5 +1,10 @@
 import add from '@iconify-icons/solar/add-linear';
+import alignLeft from '@iconify-icons/solar/align-left-linear';
+import alignCenter from '@iconify-icons/solar/align-horizontal-center-linear';
+import alignRight from '@iconify-icons/solar/align-right-linear';
+import alignJustify from '@iconify-icons/solar/align-horizontal-spacing-linear';
 import altArrowDown from '@iconify-icons/solar/alt-arrow-down-linear';
+import altArrowUp from '@iconify-icons/solar/alt-arrow-up-linear';
 import altArrowLeft from '@iconify-icons/solar/alt-arrow-left-linear';
 import altArrowRight from '@iconify-icons/solar/alt-arrow-right-linear';
 import box from '@iconify-icons/solar/box-linear';
@@ -12,6 +17,7 @@ import eye from '@iconify-icons/solar/eye-linear';
 import gallery from '@iconify-icons/solar/gallery-linear';
 import global from '@iconify-icons/solar/global-linear';
 import home from '@iconify-icons/solar/home-linear';
+import link from '@iconify-icons/solar/link-linear';
 import infoCircle from '@iconify-icons/solar/info-circle-linear';
 import keyboard from '@iconify-icons/solar/keyboard-linear';
 import lock from '@iconify-icons/solar/lock-linear';
@@ -48,6 +54,12 @@ export const ICONS = {
   caretRight: altArrowRight,
   move: cursorSquare,
   chevronDown: altArrowDown,
+  chevronUp: altArrowUp,
+  link,
+  alignLeft,
+  alignCenter,
+  alignRight,
+  alignJustify,
   check,
   preview: eye,
   image: gallery,
@@ -86,11 +98,20 @@ export const ICONS = {
 } as const satisfies Record<string, SolarIconData>;
 
 export type IconName = keyof typeof ICONS;
+export const TEXT_ALIGN_ICONS = {
+  left: 'alignLeft',
+  center: 'alignCenter',
+  right: 'alignRight',
+  justify: 'alignJustify',
+} as const satisfies Record<'left' | 'center' | 'right' | 'justify', IconName>;
 export const DIRECTIONAL_ICONS = new Set<IconName>([
   'back',
   'forward',
   'caretRight',
   'chevronDown',
+  'chevronUp',
+  'alignLeft',
+  'alignRight',
   'panelLeft',
   'panelRight',
   'undo',

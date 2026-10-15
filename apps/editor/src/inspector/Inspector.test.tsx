@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import userEvent from '@testing-library/user-event';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createCoreRegistry } from '@blixis/wp-element-registry';
 import type { ElementNode } from '@blixis/wp-core';
 import { StoreProvider, useEditorStore } from '../state';
@@ -8,11 +9,42 @@ import { I18nProvider } from '../i18n-react';
 import { el, makeDocument, makeLoadedStore } from '../test/state-helpers';
 import { axeViolations } from '../test/axe';
 import { Inspector } from './Inspector';
+import { STYLE_FIELDS } from './style-mapping';
+import { PROPERTIES } from '@blixis/wp-style-engine';
 
 const registry = createCoreRegistry();
+const styleSchemaCases = registry.list().flatMap((definition) =>
+  STYLE_FIELDS.filter((field) => field.id !== 'margin' && field.id !== 'padding').map((field) => ({
+    type: definition.type,
+    property: field.id,
+    supported: definition.styleProperties.includes(field.id) && PROPERTIES.has(field.id),
+  })),
+);
+const styleDispatchCases = styleSchemaCases.filter(({ supported }) => supported);
+const styleLabels: Readonly<Record<string, string>> = {
+  'font-family': 'Font family',
+  'font-weight': 'Font weight',
+  'font-size': 'Font size',
+  'line-height': 'Line height',
+  'letter-spacing': 'Letter spacing',
+  'text-transform': 'Text transform',
+  color: 'Text colour',
+  'background-color': 'Background colour',
+  width: 'Width',
+  'text-align': 'Text alignment',
+  display: 'Display',
+  'border-radius': 'Border radius',
+  'border-width': 'Border width',
+  'border-style': 'Border style',
+  'border-color': 'Border colour',
+  'box-shadow': 'Box shadow',
+};
 afterEach(cleanup);
+beforeEach(() => {
+  sessionStorage.clear();
+});
 
-function ReactiveInspector({ tab, editable }: { tab: 'content' | 'style' | 'settings'; editable: boolean }) {
+function ReactiveInspector({ tab, editable }: { tab: 'content' | 'style' | 'advanced'; editable: boolean }) {
   const element = useEditorStore(
     (state) => state.document?.root.find((node) => node.id === state.selectedId) ?? state.document?.root[0] ?? null,
   );
@@ -24,10 +56,12 @@ async function mount(
   options: {
     editable?: boolean;
     locale?: string;
-    tab?: 'content' | 'style' | 'settings';
+    editorLocale?: string;
+    tab?: 'content' | 'style' | 'advanced';
     lockReason?: string;
     style?: ElementNode['style'];
     reactive?: boolean;
+    chromeTheme?: 'light' | 'dark';
   } = {},
 ) {
   const target = el('target', type);
@@ -43,12 +77,14 @@ async function mount(
   const node = store.getState().document?.root[0] ?? null;
   const view = render(
     <StoreProvider store={store}>
-      <I18nProvider editorLocale="en_US">
-        {options.reactive === false ? (
-          <Inspector element={node} tab={options.tab ?? 'content'} editingEnabled={options.editable ?? true} />
-        ) : (
-          <ReactiveInspector tab={options.tab ?? 'content'} editable={options.editable ?? true} />
-        )}
+      <I18nProvider editorLocale={options.editorLocale ?? 'en_US'}>
+        <div className="blx-editor" data-editor-theme={options.chromeTheme ?? 'light'}>
+          {options.reactive === false ? (
+            <Inspector element={node} tab={options.tab ?? 'content'} editingEnabled={options.editable ?? true} />
+          ) : (
+            <ReactiveInspector tab={options.tab ?? 'content'} editable={options.editable ?? true} />
+          )}
+        </div>
       </I18nProvider>
     </StoreProvider>,
   );
@@ -56,19 +92,73 @@ async function mount(
 }
 
 describe('Inspector controls', () => {
+  it('collapses a section with a real button, exposes its region, and remembers state for the session', async () => {
+    const user = userEvent.setup();
+    const first = await mount('blixis/heading');
+    const toggle = screen.getByRole('button', { name: 'Toggle Heading' });
+    const panelId = toggle.getAttribute('aria-controls');
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    toggle.focus();
+    await user.keyboard(' ');
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(panelId && document.getElementById(panelId)?.hasAttribute('hidden')).toBe(true);
+    first.unmount();
+    const second = await mount('blixis/heading');
+    expect(screen.getByRole('button', { name: 'Toggle Heading' }).getAttribute('aria-expanded')).toBe('false');
+    second.unmount();
+  });
+
+  it('keeps Style section collapse state across element changes while Content state stays separate', async () => {
+    const user = userEvent.setup();
+    const first = el('first', 'blixis/heading');
+    const second = el('second', 'blixis/text');
+    const { store } = await makeLoadedStore({ document: makeDocument({ root: [first, second] }) });
+    const renderInspector = (element: ElementNode, tab: 'content' | 'style') => (
+      <StoreProvider store={store}>
+        <I18nProvider editorLocale="en_US">
+          <Inspector element={element} tab={tab} editingEnabled />
+        </I18nProvider>
+      </StoreProvider>
+    );
+    const view = render(renderInspector(first, 'style'));
+    const typography = screen.getByRole('button', { name: 'Toggle Typography' });
+    expect(typography.getAttribute('aria-controls')).toBeTruthy();
+    typography.focus();
+    await user.keyboard('{Enter}');
+    expect(typography.getAttribute('aria-expanded')).toBe('false');
+    view.rerender(renderInspector(second, 'style'));
+    expect(screen.getByRole('button', { name: 'Toggle Typography' }).getAttribute('aria-expanded')).toBe('false');
+    view.unmount();
+    await mount('blixis/heading', { tab: 'content' });
+    expect(screen.getByRole('button', { name: 'Toggle Heading' }).getAttribute('aria-expanded')).toBe('true');
+  });
+
+  it('makes future-only inspector placeholders disabled and associates their hints', async () => {
+    await mount('blixis/heading');
+    for (const label of ['Static Content', 'Inline Editing', 'Translation']) {
+      const control = screen.getByRole(label === 'Static Content' ? 'combobox' : 'checkbox', { name: label });
+      expect(control.getAttribute('aria-disabled')).toBe('true');
+      expect(control.getAttribute('aria-describedby')).toBeTruthy();
+      expect(control.hasAttribute('disabled')).toBe(true);
+    }
+    expect(screen.getByText(/BWB-084/)).toBeTruthy();
+    expect(screen.getAllByText(/BWB-135/)).toHaveLength(2);
+    expect(screen.getByText(/BWB-114/)).toBeTruthy();
+  });
+
   it('renders text and textarea schema controls', async () => {
     await mount('blixis/text');
     expect(screen.getByRole('textbox', { name: 'Text' })).toBeTruthy();
     expect(screen.getByRole('textbox', { name: 'Text' }).tagName).toBe('TEXTAREA');
   });
 
-  it('renders a numeric heading level control', async () => {
-    await mount('blixis/heading', { tab: 'settings' });
-    expect(screen.getByRole('spinbutton', { name: 'Heading level' })).toBeTruthy();
+  it('renders the schema-backed heading tag control', async () => {
+    await mount('blixis/heading', { tab: 'content' });
+    expect(screen.getByRole('combobox', { name: 'Heading level' })).toBeTruthy();
   });
 
   it('renders enum and boolean controls from the element schema', async () => {
-    await mount('blixis/button', { tab: 'settings' });
+    await mount('blixis/button', { tab: 'content' });
     expect(screen.getByRole('checkbox', { name: 'Open in a new tab' })).toBeTruthy();
     expect(screen.getByRole('combobox', { name: 'Button style' })).toBeTruthy();
   });
@@ -85,7 +175,7 @@ describe('Inspector controls', () => {
   });
 
   it('updates invariant properties through update-props', async () => {
-    const { store } = await mount('blixis/image', { tab: 'settings' });
+    const { store } = await mount('blixis/image', { tab: 'content' });
     fireEvent.click(screen.getByRole('checkbox', { name: 'Decorative image' }));
     expect(store.getState().document?.root[0]?.props['decorative']).toBe(true);
   });
@@ -164,7 +254,7 @@ describe('Inspector controls', () => {
   });
 
   it('keeps invariant controls read-only with the supplied reason while editing is disabled', async () => {
-    await mount('blixis/button', { editable: false, lockReason: 'Account is view only', tab: 'settings' });
+    await mount('blixis/button', { editable: false, lockReason: 'Account is view only', tab: 'content' });
     expect(screen.getByRole('checkbox', { name: 'Open in a new tab' }).hasAttribute('disabled')).toBe(true);
   });
 
@@ -182,7 +272,7 @@ describe('Inspector controls', () => {
       const { unmount } = await mount(type);
       expect(screen.queryByRole('alert')).toBeNull();
       if (type === 'blixis/section' || type === 'blixis/container') {
-        expect(screen.getByText('This element has no content properties.')).toBeTruthy();
+        expect(screen.getByRole('region', { name: type === 'blixis/section' ? 'Section' : 'Container' })).toBeTruthy();
       } else if (type === 'blixis/image') {
         expect(screen.getByRole('textbox', { name: 'Alternative text' })).toBeTruthy();
       } else if (type === 'blixis/button') {
@@ -196,7 +286,7 @@ describe('Inspector controls', () => {
 
   it('renders the URL field and rejects unsafe URL schemes before dispatch', async () => {
     const { store } = await mount('blixis/button');
-    const url = screen.getByLabelText('Link');
+    const url = screen.getByRole('textbox', { name: 'Link' });
     fireEvent.change(url, { target: { value: 'javascript:alert(1)' } });
     fireEvent.blur(url);
     expect(screen.getByRole('alert').textContent).toContain('safe link');
@@ -244,7 +334,7 @@ describe('Inspector controls', () => {
 
   it('keeps a rejected draft visible while reporting a command error', async () => {
     await mount('blixis/button');
-    const url = screen.getByLabelText<HTMLInputElement>('Link');
+    const url = screen.getByRole<HTMLInputElement>('textbox', { name: 'Link' });
     fireEvent.change(url, { target: { value: 'javascript:bad()' } });
     fireEvent.blur(url);
     expect(url.value).toBe('javascript:bad()');
@@ -277,7 +367,7 @@ describe('Inspector controls', () => {
       store.getState().setViewport('mobile');
     });
     expect(screen.getAllByText(/Using inherited value/).length).toBeGreaterThan(0);
-    expect(screen.getByRole<HTMLSelectElement>('combobox', { name: 'Font size' }).value).toBe('');
+    expect(screen.getByRole<HTMLInputElement>('spinbutton', { name: 'Font size' }).value).toBe('16');
     act(() => {
       expect(
         store.getState().dispatch({
@@ -303,19 +393,117 @@ describe('Inspector controls', () => {
     act(() => {
       store.getState().setViewport('tablet');
     });
-    expect(screen.getByRole('heading', { name: 'Tablet styles' })).toBeTruthy();
+    expect(screen.getByText('Tablet styles')).toBeTruthy();
+  });
+
+  it('links all four spacing sides and dispatches the exact current-breakpoint declaration', async () => {
+    const { store } = await mount('blixis/heading', { tab: 'style' });
+    fireEvent.click(screen.getByRole('button', { name: 'Link Margin sides' }));
+    const marginTop = screen.getAllByRole('spinbutton', { name: 'Top' })[0];
+    if (!marginTop) throw new Error('Margin top control is missing');
+    fireEvent.change(marginTop, { target: { value: '24' } });
+    expect(store.getState().document?.root[0]?.style?.[0]?.declarations).toMatchObject({
+      'margin-block-start': '24px',
+      'margin-inline-end': '24px',
+      'margin-block-end': '24px',
+      'margin-inline-start': '24px',
+    });
+  });
+
+  it('keeps style labels and controls in the same property row and formats CSS decimals with a dot in Dutch', async () => {
+    const { container } = await mount('blixis/heading', {
+      tab: 'style',
+      editorLocale: 'nl_NL',
+      style: [{ declarations: { 'font-size': '2.75rem' } }],
+    });
+    const input = container.querySelector<HTMLInputElement>('#style-target-font-size');
+    expect(input).toBeTruthy();
+    if (!input) throw new Error('Font size numeric input is missing');
+    expect(input.value).toBe('2.75');
+    const row = input.closest('.blx-inspector-field');
+    const label = row?.querySelector(':scope > .blx-inspector-label > label');
+    const cluster = row?.querySelector(':scope > .blx-style-control-cluster');
+    expect(label).toBeTruthy();
+    expect(cluster).toBeTruthy();
+    expect(label?.parentElement).toBe(row?.querySelector(':scope > .blx-inspector-label'));
+    expect(row?.querySelector('.blx-style-viewport')?.parentElement).toBe(label?.parentElement);
+    expect(row?.querySelector('.blx-inspector-label')?.className).toContain('blx-inspector-label');
+    expect(row?.querySelector('.blx-inspector-label .blx-style-viewport')).toBeTruthy();
+    expect(row?.querySelector('.blx-slider-field .blx-number-unit')).toBeTruthy();
+  });
+
+  it('renders compact color, gradient and four-side spacing structures', async () => {
+    const { container } = await mount('blixis/heading', { tab: 'style' });
+    const color = container.querySelector('.blx-color-field');
+    expect(color?.querySelector('.blx-color-swatch')).toBeTruthy();
+    expect(color?.querySelector('select[aria-label="Text colour"]')).toBeTruthy();
+    const gradient = container.querySelector('.blx-gradient-field');
+    expect(gradient?.querySelector('.blx-inspector-toggle-row input')).toBeTruthy();
+    expect(gradient?.querySelector('.blx-inspector-hint')).toBeTruthy();
+    const margin = container.querySelector('.blx-spacing-field');
+    expect(
+      margin?.querySelector('.blx-spacing-heading .blx-spacing-link[aria-label="Link Margin sides"]'),
+    ).toBeTruthy();
+    expect(margin?.querySelectorAll('.blx-spacing-sides input[role="spinbutton"]')).toHaveLength(4);
+  });
+
+  it('converts units and preserves out-of-range values while clamping only the slider thumb', async () => {
+    const converted = await mount('blixis/heading', {
+      tab: 'style',
+      style: [{ declarations: { 'font-size': '44px' } }],
+    });
+    fireEvent.change(screen.getByRole('combobox', { name: 'Font size unit' }), { target: { value: 'rem' } });
+    expect(screen.getByRole<HTMLInputElement>('spinbutton', { name: 'Font size' }).value).toBe('2.75');
+    expect(screen.getByRole('slider', { name: 'Font size' }).getAttribute('aria-valuemin')).toBe('0.5');
+    expect(converted.store.getState().document?.root[0]?.style?.[0]?.declarations['font-size']).toBe('2.75rem');
+
+    converted.unmount();
+    const outOfRange = await mount('blixis/heading', {
+      tab: 'style',
+      style: [{ declarations: { 'font-size': '120px' } }],
+    });
+    expect(screen.getByRole<HTMLInputElement>('spinbutton', { name: 'Font size' }).value).toBe('120');
+    expect(screen.getByRole('slider', { name: 'Font size' }).getAttribute('aria-valuenow')).toBe('96');
+    expect(outOfRange.store.getState().document?.root[0]?.style?.[0]?.declarations['font-size']).toBe('120px');
+  });
+
+  it('applies an active class to the selected segmented style option', async () => {
+    await mount('blixis/heading', { tab: 'style' });
+    const alignGroup = screen.getByRole('radiogroup', { name: 'Text alignment' });
+    expect(within(alignGroup).getByRole('radio', { name: 'left' }).className).toContain('is-active');
+  });
+
+  it('reports invalid unit values without changing the document', async () => {
+    const { store } = await mount('blixis/heading', { tab: 'style' });
+    const marginTop = screen.getAllByRole('spinbutton', { name: 'Top' })[0];
+    if (!marginTop) throw new Error('Margin top control is missing');
+    fireEvent.change(marginTop, { target: { value: '-999' } });
+    expect(screen.getByRole('alert').textContent).toBe('This value does not meet the requirements for this field.');
+    expect(store.getState().document?.root[0]?.style).toBeUndefined();
   });
 
   it.each(['blixis/section', 'blixis/container', 'blixis/heading', 'blixis/text', 'blixis/image', 'blixis/button'])(
     '%s has no axe violations on all inspector tabs',
     async (type) => {
-      for (const tab of ['content', 'style', 'settings'] as const) {
+      for (const tab of ['content', 'style', 'advanced'] as const) {
         const view = await mount(type, { tab });
         expect(await axeViolations(view.container)).toEqual([]);
         view.unmount();
       }
     },
   );
+
+  it.each(
+    ['blixis/section', 'blixis/container', 'blixis/heading', 'blixis/text', 'blixis/image', 'blixis/button'].flatMap(
+      (type) =>
+        (['content', 'style', 'advanced'] as const).flatMap((tab) =>
+          (['light', 'dark'] as const).map((chromeTheme) => ({ type, tab, chromeTheme })),
+        ),
+    ),
+  )('keeps $type $tab inspector accessible in $chromeTheme chrome', async ({ type, tab, chromeTheme }) => {
+    const view = await mount(type, { tab, chromeTheme });
+    expect(await axeViolations(view.container)).toEqual([]);
+  });
 
   it('tracks inherited indicators as viewport selection changes', async () => {
     const { store } = await mount('blixis/heading', {
@@ -330,14 +518,150 @@ describe('Inspector controls', () => {
     act(() => {
       store.getState().setViewport('desktop');
     });
-    expect(screen.getByRole('heading', { name: 'Desktop styles' })).toBeTruthy();
+    expect(screen.getByText('Desktop styles')).toBeTruthy();
     act(() => {
       store.getState().setViewport('mobile');
     });
-    expect(screen.getByRole('heading', { name: 'Mobile styles' })).toBeTruthy();
+    expect(screen.getByText('Mobile styles')).toBeTruthy();
     expect(screen.getByText(/Using inherited value/)).toBeTruthy();
     expect(screen.queryByText(/Overridden at this breakpoint/)).toBeNull();
   });
+
+  it.each([
+    ['font-family', 'var(--blx-font-body)'],
+    ['font-weight', '600'],
+    ['text-transform', 'uppercase'],
+    ['text-align', 'left'],
+    ['width', '100%'],
+    ['display', 'inline-block'],
+    ['border-style', 'dashed'],
+    ['box-shadow', 'none'],
+  ])('dispatches %s as an exact style declaration', async (property, value) => {
+    const { store } = await mount('blixis/heading', { tab: 'style' });
+    if (['font-family', 'font-weight'].includes(property)) {
+      const labels: Record<string, string> = {
+        'font-family': 'Font family',
+        'font-weight': 'Font weight',
+      };
+      fireEvent.change(screen.getByLabelText(labels[property] ?? property), { target: { value } });
+    } else {
+      fireEvent.click(
+        property === 'box-shadow'
+          ? within(screen.getByRole('radiogroup', { name: 'Box shadow' })).getByRole('radio', { name: value })
+          : screen.getByRole('radio', { name: value }),
+      );
+    }
+    expect(store.getState().document?.root[0]?.style?.[0]?.declarations[property]).toBe(value);
+  });
+
+  it.each([
+    ['blixis/section', 'font-size'],
+    ['blixis/container', 'text-align'],
+    ['blixis/image', 'font-weight'],
+    ['blixis/image', 'font-family'],
+    ['blixis/heading', 'background-color'],
+    ['blixis/text', 'background-color'],
+  ])('omits unsupported style property %s / %s', async (type, property) => {
+    const { container } = await mount(type, { tab: 'style' });
+    expect(container.querySelector(`#style-target-${property}`)).toBeNull();
+  });
+
+  it.each(styleSchemaCases)(
+    '$type style row $property follows the element registry schema and compiler allowlist',
+    async ({ type, property, supported }) => {
+      const { container } = await mount(type, { tab: 'style' });
+      expect(container.querySelector(`#style-target-${property}`) !== null).toBe(supported);
+    },
+  );
+
+  it.each(styleDispatchCases)(
+    '$type style row $property dispatches its exact allowlisted property value',
+    async ({ type, property }) => {
+      const { store } = await mount(type, { tab: 'style' });
+      const label = styleLabels[property];
+      const values: Readonly<Record<string, string>> = {
+        'font-family': 'var(--blx-font-body)',
+        'font-weight': '600',
+        'font-size': '24',
+        'line-height': '1.8',
+        'letter-spacing': '2',
+        'text-transform': 'uppercase',
+        color: 'var(--blx-color-primary)',
+        'background-color': 'var(--blx-color-primary)',
+        width: '100%',
+        'text-align': 'right',
+        display: 'inline-block',
+        'border-radius': '18',
+        'border-width': '2',
+        'border-style': 'dashed',
+        'border-color': 'var(--blx-color-primary)',
+        'box-shadow': 'none',
+      };
+      const next = values[property];
+      if (next === undefined || label === undefined) throw new Error(`No inspector test value for ${property}`);
+      if (['font-family', 'font-weight'].includes(property)) {
+        fireEvent.change(screen.getByLabelText(label), { target: { value: next } });
+      } else if (['font-size', 'line-height', 'letter-spacing', 'border-radius', 'border-width'].includes(property)) {
+        fireEvent.change(screen.getByRole('spinbutton', { name: label }), { target: { value: next } });
+      } else if (['color', 'background-color', 'border-color'].includes(property)) {
+        fireEvent.change(screen.getByRole('combobox', { name: label }), { target: { value: next } });
+      } else {
+        const radioGroup = within(screen.getByRole('radiogroup', { name: label }));
+        fireEvent.click(radioGroup.getByRole('radio', { name: next }));
+      }
+      const expected =
+        property === 'font-size' ||
+        property === 'letter-spacing' ||
+        property === 'border-radius' ||
+        property === 'border-width'
+          ? `${next}px`
+          : next;
+      expect(store.getState().document?.root[0]?.style?.[0]?.declarations[property]).toBe(expected);
+    },
+  );
+
+  it('uses a roving radio tab stop and Arrow keys for segmented style controls', async () => {
+    const { store } = await mount('blixis/heading', { tab: 'style' });
+    const alignment = within(screen.getByRole('radiogroup', { name: 'Text alignment' }));
+    const left = alignment.getByRole('radio', { name: 'left' });
+    left.focus();
+    fireEvent.keyDown(left, { key: 'ArrowRight' });
+    const center = alignment.getByRole('radio', { name: 'center' });
+    expect(document.activeElement).toBe(center);
+    expect(center.getAttribute('aria-checked')).toBe('true');
+    expect(alignment.getAllByRole('radio').filter((radio) => radio.getAttribute('tabindex') === '0')).toHaveLength(1);
+    expect(store.getState().document?.root[0]?.style?.[0]?.declarations['text-align']).toBe('center');
+  });
+
+  it('selects a responsive viewport per row, indicates the override and resets it', async () => {
+    const { store } = await mount('blixis/heading', { tab: 'style' });
+    fireEvent.click(screen.getByRole('button', { name: 'Select Tablet styles for Font size' }));
+    expect(screen.getByText('Tablet styles')).toBeTruthy();
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'Font size' }), { target: { value: '24' } });
+    expect(store.getState().document?.root[0]?.style?.[0]).toMatchObject({
+      breakpoint: 'tablet',
+      declarations: { 'font-size': '24px' },
+    });
+    expect(screen.getByText(/Overridden at this breakpoint/)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Reset Font size to inherited' }));
+    expect(store.getState().document?.root[0]?.style).toBeUndefined();
+  });
+
+  it.each(['blixis/section', 'blixis/container', 'blixis/heading', 'blixis/text', 'blixis/image', 'blixis/button'])(
+    'renders all supported Style sections for %s and keeps disabled gradient placeholder',
+    async (type) => {
+      const { container } = await mount(type, { tab: 'style' });
+      expect(screen.getByRole('button', { name: 'Toggle Typography' })).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Toggle Color' })).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Toggle Spacing' })).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Toggle Layout' })).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Toggle Border & Effects' })).toBeTruthy();
+      const gradient = screen.getByRole('checkbox', { name: 'Gradient' });
+      expect(gradient.hasAttribute('disabled')).toBe(true);
+      expect(gradient.getAttribute('aria-disabled')).toBe('true');
+      expect(await axeViolations(container)).toEqual([]);
+    },
+  );
 
   it('keeps selection and field edits responsive in a 5,000 element document', async () => {
     const elements = Array.from({ length: 5000 }, (_, index) => el(`target-${String(index)}`, 'blixis/heading'));
@@ -360,16 +684,29 @@ describe('Inspector controls', () => {
     const view = render(
       <StoreProvider store={store}>
         <I18nProvider editorLocale="en_US">
-          <ReactiveInspector tab="content" editable />
+          <ReactiveInspector tab="style" editable />
         </I18nProvider>
       </StoreProvider>,
     );
     act(() => {
       expect(store.getState().select(selected.id)).toBe(true);
     });
-    const textbox = screen.getByRole<HTMLTextAreaElement>('textbox', { name: 'Text' });
-    fireEvent.change(textbox, { target: { value: 'Responsive edit' } });
-    expect(store.getState().document?.translations['en_US']?.[selected.id]?.values['text']).toBe('Responsive edit');
+    const slider = screen.getByRole('slider', { name: 'Font size' });
+    vi.spyOn(slider, 'getBoundingClientRect').mockReturnValue({
+      x: 0,
+      y: 0,
+      left: 0,
+      right: 100,
+      top: 0,
+      bottom: 20,
+      width: 100,
+      height: 20,
+      toJSON: () => ({}),
+    });
+    fireEvent.pointerDown(slider, { pointerId: 1, clientX: 20 });
+    fireEvent.pointerMove(slider, { pointerId: 1, clientX: 70 });
+    fireEvent.pointerUp(slider, { pointerId: 1, clientX: 80 });
+    expect(store.getState().document?.root.at(-1)?.style?.[0]?.declarations['font-size']).toBeTruthy();
     expect(performance.now() - started).toBeLessThan(15000);
     view.unmount();
   }, 30_000);
