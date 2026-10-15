@@ -37,8 +37,10 @@ const pruneExpanded = (root: BuilderDocument['root'], expanded: readonly string[
 export const COALESCE_WINDOW_MS = 1000;
 
 export interface DispatchOptions {
-  /** Merges rapid consecutive `update-props` / `set-translation` commands carrying the same key into one undo step. */
+  /** Merges rapid consecutive property, translation, or style edits carrying the same key into one undo step. */
   coalesceKey?: string;
+  /** Optional longer interaction window (for an active pointer drag); bounded to one minute. */
+  coalesceWindowMs?: number;
 }
 
 export type DispatchResult = { ok: true; command: Command } | { ok: false; error: BridgeError };
@@ -53,6 +55,7 @@ export interface BridgeSlice {
    * The command is untrusted input: it is never mutated and core stores its own inert copy.
    */
   dispatch: (command: unknown, options?: DispatchOptions) => DispatchResult;
+  finishCoalescing: () => void;
   undo: () => StepResult;
   redo: () => StepResult;
   /** Called after every document change with a consistent store (`command`, `undo`, `redo`, `load`). */
@@ -61,7 +64,7 @@ export interface BridgeSlice {
 
 type Entry = History['past'][number];
 
-const COALESCABLE = new Set(['update-props', 'set-translation']);
+const COALESCABLE = new Set(['update-props', 'set-translation', 'set-style-rule']);
 
 /** Element plus the property ids a command touches; two commands merge only when this is identical. */
 function signatureOf(command: Command): string | null {
@@ -81,6 +84,9 @@ function signatureOf(command: Command): string | null {
       Object.keys(command.set ?? {}).sort(),
       [...(command.unset ?? [])].sort(),
     ]);
+  }
+  if (command.type === 'set-style-rule') {
+    return JSON.stringify([command.type, command.id, command.selector, Object.keys(command.declarations ?? {}).sort()]);
   }
   return null;
 }
@@ -132,6 +138,9 @@ export const createBridgeSlice =
     };
 
     return {
+      finishCoalescing() {
+        if (get().coalesce !== null) set({ coalesce: null });
+      },
       dispatch(command, options = {}) {
         const ready = guard();
         if (!('history' in ready)) return ready;
@@ -158,7 +167,8 @@ export const createBridgeSlice =
           mark.key === key &&
           mark.signature === signature &&
           at - mark.at >= 0 &&
-          at - mark.at <= COALESCE_WINDOW_MS &&
+          at - mark.at <=
+            Math.min(60_000, Math.max(COALESCE_WINDOW_MS, options.coalesceWindowMs ?? COALESCE_WINDOW_MS)) &&
           reproduces(deps, mark.base, applied.command, applied.document) &&
           reproduces(deps, applied.document, previousEntry.inverse, mark.base)
             ? { base: mark.base, inverse: previousEntry.inverse }

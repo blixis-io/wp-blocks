@@ -53,6 +53,23 @@ final class RegistryRenderTest extends TestCase {
 		ElementRegistry::from_array( $manifest );
 	}
 
+	/** The optional style capability list accepts property ids and rejects malformed or duplicate entries. */
+	public function test_style_properties_are_bounded_property_ids(): void {
+		$manifest = \json_decode( (string) \file_get_contents( \dirname( __DIR__ ) . '/data/core-elements.json' ), true ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Fixture.
+		$this->assertContains( 'font-size', $manifest['elements'][2]['styleProperties'] );
+		$section_index = \array_search( 'blixis/section', \array_column( $manifest['elements'], 'type' ), true );
+		if ( false === $section_index ) {
+			$this->fail( 'The section definition is missing.' );
+		}
+		$manifest['elements'][ $section_index ]['styleProperties'] = [ 'border-radius' ];
+		$definition = ElementRegistry::from_array( $manifest )->get( 'blixis/section' );
+		$this->assertIsArray( $definition );
+		$this->assertSame( [ 'border-radius' ], $definition['styleProperties'] ?? null );
+		$manifest['elements'][ $section_index ]['styleProperties'] = [ 'width;position' ];
+		$this->expectException( \InvalidArgumentException::class );
+		ElementRegistry::from_array( $manifest );
+	}
+
 	/**
 	 * Apply the documented contract.
 	 */

@@ -66,8 +66,21 @@ final class ElementRegistry {
 		}
 		$definitions = [];
 		foreach ( $data['elements'] as $element ) {
-			if ( ! \is_array( $element ) || ! self::keys( $element, [ 'type', 'version', 'title', 'category', 'tier', 'requiresApi', 'props', 'allowedParents', 'allowedChildren' ], [ 'fallback' ] ) || ! \is_string( $element['type'] ) || 1 !== \preg_match( '~^[a-z][a-z0-9-]{1,31}/[a-z][a-z0-9-]{1,63}$~D', $element['type'] ) || isset( $definitions[ $element['type'] ] ) || ! \is_int( $element['version'] ) || $element['version'] < 1 || ! \is_string( $element['title'] ) || '' === $element['title'] || \strlen( $element['title'] ) > 80 || ! \in_array( $element['category'], self::CATEGORIES, true ) || ! \in_array( $element['tier'], [ 'free', 'plus', 'pro' ], true ) || ! \is_int( $element['requiresApi'] ) || $element['requiresApi'] < 1 || $element['requiresApi'] > 1 || ! \is_array( $element['props'] ) || ( \array_is_list( $element['props'] ) && [] !== $element['props'] ) ) {
+			if ( ! \is_array( $element ) || ! self::keys( $element, [ 'type', 'version', 'title', 'category', 'tier', 'requiresApi', 'props', 'allowedParents', 'allowedChildren' ], [ 'fallback', 'styleProperties' ] ) || ! \is_string( $element['type'] ) || 1 !== \preg_match( '~^[a-z][a-z0-9-]{1,31}/[a-z][a-z0-9-]{1,63}$~D', $element['type'] ) || isset( $definitions[ $element['type'] ] ) || ! \is_int( $element['version'] ) || $element['version'] < 1 || ! \is_string( $element['title'] ) || '' === $element['title'] || \strlen( $element['title'] ) > 80 || ! \in_array( $element['category'], self::CATEGORIES, true ) || ! \in_array( $element['tier'], [ 'free', 'plus', 'pro' ], true ) || ! \is_int( $element['requiresApi'] ) || $element['requiresApi'] < 1 || $element['requiresApi'] > 1 || ! \is_array( $element['props'] ) || ( \array_is_list( $element['props'] ) && [] !== $element['props'] ) ) {
 				throw new \InvalidArgumentException( 'Invalid element definition.' );
+			}
+			if ( isset( $element['styleProperties'] ) ) {
+				$style_properties = $element['styleProperties'];
+				if ( ! \is_array( $style_properties ) || ! \array_is_list( $style_properties ) || \count( $style_properties ) > 64 ) {
+					throw new \InvalidArgumentException( 'Invalid style property list.' );
+				}
+				$seen_style_properties = [];
+				foreach ( $style_properties as $style_property ) {
+					if ( ! \is_string( $style_property ) || 1 !== \preg_match( '/^[a-z][a-z0-9-]{0,63}$/D', $style_property ) || isset( $seen_style_properties[ $style_property ] ) ) {
+						throw new \InvalidArgumentException( 'Invalid style property.' );
+					}
+					$seen_style_properties[ $style_property ] = true;
+				}
 			}
 			if ( ( 'free' === $element['tier'] && isset( $element['fallback'] ) ) || ( 'free' !== $element['tier'] && ! \in_array( $element['fallback'] ?? null, [ 'static', 'retained', 'unavailable' ], true ) ) ) {
 				throw new \InvalidArgumentException( 'Invalid fallback.' );

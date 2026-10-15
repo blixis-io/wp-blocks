@@ -392,6 +392,168 @@ try {
     'undo restores the heading preview',
   );
 
+  // Style sections collapse accessibly; drag the real font-size slider and verify preview + one-step Undo.
+  const styleTabPoint = await ev(
+    `(() => { const e = [...document.querySelectorAll('[role="tab"]')].find((item) => item.textContent.trim() === 'Style'); const r = e?.getBoundingClientRect(); return r ? { x: r.x + r.width / 2, y: r.y + r.height / 2 } : null; })()`,
+  );
+  assert.ok(styleTabPoint, 'Style tab is present');
+  await send('Input.dispatchMouseEvent', {
+    type: 'mousePressed',
+    x: styleTabPoint.x,
+    y: styleTabPoint.y,
+    button: 'left',
+    clickCount: 1,
+  });
+  await send('Input.dispatchMouseEvent', {
+    type: 'mouseReleased',
+    x: styleTabPoint.x,
+    y: styleTabPoint.y,
+    button: 'left',
+    clickCount: 1,
+  });
+  await sleep(500);
+  await ev(`(() => {
+    const row = [...document.querySelectorAll('.blx-inspector-field')].find((item) => item.querySelector('input[aria-label="Font size"]'));
+    const input = row?.querySelector('input[aria-label="Font size"]');
+    const unit = row?.querySelector('select[aria-label="Font size unit"]');
+    if (!input || !unit) return false;
+    unit.value = 'rem';
+    unit.dispatchEvent(new Event('change', { bubbles: true }));
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+    setter?.call(input, '2.75');
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    return true;
+  })()`);
+  await sleep(350);
+  const inspectorLayout = await ev(`(() => {
+    const row = [...document.querySelectorAll('aside[aria-label="Inspector"] .blx-inspector-field')].find((item) => item.querySelector('input[aria-label="Font size"]'));
+    const label = row?.querySelector('.blx-inspector-label > label');
+    const slider = row?.querySelector('[role="slider"]');
+    const input = row?.querySelector('input[aria-label="Font size"]');
+    const unit = row?.querySelector('select[aria-label="Font size unit"]');
+    const thumb = slider?.querySelector('.blx-slider-thumb');
+    const track = slider?.getBoundingClientRect();
+    const thumbRect = thumb?.getBoundingClientRect();
+    const color = document.querySelector('.blx-color-field');
+    const panel = document.querySelector('aside[aria-label="Inspector"]');
+    const gradient = document.querySelector('.blx-gradient-field');
+    const gradientLabel = gradient?.querySelector('.blx-inspector-toggle-row > span');
+    const gradientToggle = gradient?.querySelector('input[type="checkbox"]');
+    const margin = [...document.querySelectorAll('.blx-spacing-field')].find((item) => item.querySelector('legend')?.textContent === 'Margin');
+    const marginInputs = [...(margin?.querySelectorAll('.blx-spacing-sides input[role="spinbutton"]') ?? [])].map((item) => item.getBoundingClientRect().width);
+    const segments = [...(document.querySelector('[role="radiogroup"][aria-label="Text alignment"]')?.querySelectorAll('[role="radio"]') ?? [])].map((item) => item.getBoundingClientRect().width);
+    return label && slider && input && unit && track && thumbRect && color && panel && gradientLabel && gradientToggle ? {
+      sliderWidth: slider.getBoundingClientRect().width,
+      unitWidth: unit.getBoundingClientRect().width,
+      inputWidth: input.getBoundingClientRect().width,
+      unitTextFits: unit.scrollWidth <= unit.clientWidth,
+      rowOverflow: row.scrollWidth <= row.clientWidth + 1,
+      value: Number(input.value), unitValue: unit.value,
+      range: [Number(slider.getAttribute('aria-valuemin')), Number(slider.getAttribute('aria-valuemax'))],
+      thumbFraction: (thumbRect.left + thumbRect.width / 2 - track.left) / track.width,
+      thumbWithinTrack: thumbRect.left >= track.left - 1 && thumbRect.right <= track.right + 1,
+      colorRight: color.getBoundingClientRect().right,
+      panelRight: panel.getBoundingClientRect().right,
+      gradientTopDelta: Math.abs(gradientLabel.getBoundingClientRect().top - gradientToggle.getBoundingClientRect().top),
+      marginWidths: marginInputs,
+      segmentWidths: segments,
+    } : null;
+  })()`);
+  assert.ok(inspectorLayout, 'font size row layout is measurable');
+  assert.ok(
+    inspectorLayout.sliderWidth >= 56,
+    `font size slider has usable width (${JSON.stringify(inspectorLayout)})`,
+  );
+  assert.ok(
+    inspectorLayout.inputWidth >= 46 && inspectorLayout.inputWidth <= 52,
+    `font size input is 48px (${JSON.stringify(inspectorLayout)})`,
+  );
+  assert.ok(
+    inspectorLayout.unitWidth >= 48 && inspectorLayout.unitWidth <= 56,
+    `font size unit select is 52px (${JSON.stringify(inspectorLayout)})`,
+  );
+  assert.equal(inspectorLayout.unitTextFits, true, 'font size unit text is not clipped');
+  assert.equal(inspectorLayout.rowOverflow, true, 'font size row has no horizontal overflow');
+  assert.equal(inspectorLayout.value, 2.75, 'font size input retains the rem value');
+  assert.equal(inspectorLayout.unitValue, 'rem', 'font size unit selector is rem');
+  assert.deepEqual(inspectorLayout.range, [0.5, 6], 'font size slider uses the rem range');
+  assert.ok(inspectorLayout.thumbWithinTrack, 'slider thumb stays inside the track');
+  assert.ok(
+    inspectorLayout.thumbFraction >= 0.25 && inspectorLayout.thumbFraction <= 0.6,
+    `rem thumb reflects 2.75 (${JSON.stringify(inspectorLayout)})`,
+  );
+  assert.ok(inspectorLayout.colorRight <= inspectorLayout.panelRight + 1, 'color token field stays within the panel');
+  assert.ok(inspectorLayout.gradientTopDelta <= 8, 'gradient toggle and label share a row');
+  assert.equal(inspectorLayout.marginWidths.length, 4, 'margin row has four side inputs');
+  assert.ok(
+    Math.max(...inspectorLayout.marginWidths) - Math.min(...inspectorLayout.marginWidths) <= 1,
+    'margin inputs have equal widths',
+  );
+  assert.ok(
+    inspectorLayout.segmentWidths.length >= 4 &&
+      Math.max(...inspectorLayout.segmentWidths) - Math.min(...inspectorLayout.segmentWidths) <= 1,
+    `segmented options have equal widths (${JSON.stringify(inspectorLayout.segmentWidths)})`,
+  );
+  const typographyToggle = `document.querySelector('button[aria-label="Toggle Typography"]')`;
+  const before = await ev(`${typographyToggle}?.getAttribute('aria-expanded')`);
+  await ev(`${typographyToggle}?.click()`);
+  await sleep(300);
+  const collapsed = await ev(`${typographyToggle}?.getAttribute('aria-expanded')`);
+  await ev(`${typographyToggle}?.click()`);
+  await sleep(300);
+  const expanded = await ev(`${typographyToggle}?.getAttribute('aria-expanded')`);
+  const sectionState = { before, collapsed, expanded };
+  assert.deepEqual(
+    sectionState,
+    { before: 'true', collapsed: 'false', expanded: 'true' },
+    'Typography section toggles with aria-expanded',
+  );
+  const fontBefore = await ev(
+    `document.querySelector('main iframe')?.contentDocument?.querySelector('h1')?.computedStyleMap?.().get('font-size')?.toString() ?? document.querySelector('main iframe')?.contentWindow?.getComputedStyle(document.querySelector('main iframe')?.contentDocument?.querySelector('h1')).fontSize`,
+  );
+  const sliderPoint = await ev(
+    `(() => { const e = document.querySelector('[role="slider"][aria-label="Font size"]'); const r = e?.getBoundingClientRect(); return r ? { x: r.x + r.width * 0.72, y: r.y + r.height / 2 } : null; })()`,
+  );
+  assert.ok(sliderPoint, 'font-size slider is present');
+  await send('Input.dispatchMouseEvent', {
+    type: 'mousePressed',
+    x: sliderPoint.x,
+    y: sliderPoint.y,
+    button: 'left',
+    buttons: 1,
+    clickCount: 1,
+  });
+  await send('Input.dispatchMouseEvent', {
+    type: 'mouseMoved',
+    x: sliderPoint.x + 12,
+    y: sliderPoint.y,
+    button: 'left',
+    buttons: 1,
+  });
+  await send('Input.dispatchMouseEvent', {
+    type: 'mouseReleased',
+    x: sliderPoint.x + 12,
+    y: sliderPoint.y,
+    button: 'left',
+    clickCount: 1,
+  });
+  await sleep(1000);
+  const fontAfter = await ev(
+    `document.querySelector('main iframe')?.contentWindow?.getComputedStyle(document.querySelector('main iframe')?.contentDocument?.querySelector('h1')).fontSize`,
+  );
+  const sizeValue = await ev(
+    `document.querySelector('aside[aria-label="Inspector"] input[aria-label="Font size"]')?.value`,
+  );
+  assert.notEqual(sizeValue, '16', 'the numeric field follows the pointer drag');
+  assert.notEqual(fontAfter, fontBefore, 'the canvas heading font size follows the slider');
+  await ev(`document.querySelector('button[aria-label="Undo"]')?.click()`);
+  await sleep(1000);
+  const fontUndone = await ev(
+    `document.querySelector('main iframe')?.contentWindow?.getComputedStyle(document.querySelector('main iframe')?.contentDocument?.querySelector('h1')).fontSize`,
+  );
+  assert.equal(fontUndone, fontBefore, 'one Undo restores the pre-drag font size');
+
   // A spacing token change is sent through the responsive style command and appears in compiled preview CSS.
   await ev(
     `(() => { const tab = [...document.querySelectorAll('[role=tab]')].find((item) => item.textContent.trim() === 'Style'); tab?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0, ctrlKey: false })); })()`,
@@ -401,13 +563,36 @@ try {
     `document.querySelector('main iframe')?.contentDocument?.styleSheets ? [...document.querySelector('main iframe').contentDocument.styleSheets].map((sheet) => { try { return [...sheet.cssRules].map((rule) => rule.cssText).join(''); } catch { return ''; } }).join('') : ''`,
   );
   await ev(
-    `(() => { const label = [...document.querySelectorAll('label')].find((item) => item.textContent.trim() === 'Top'); const select = label && document.getElementById(label.htmlFor); if (!select) return false; select.value = 'var(--blx-space-4)'; select.dispatchEvent(new Event('change', { bubbles: true })); return true; })()`,
+    `(() => { const input = document.querySelector('input[aria-label="Top"]'); if (!input) return false; Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(input, '16'); input.dispatchEvent(new Event('input', { bubbles: true })); input.dispatchEvent(new Event('change', { bubbles: true })); return true; })()`,
   );
   await sleep(1500);
   const spacingAfter = await ev(
     `document.querySelector('main iframe')?.contentDocument ? [...document.querySelector('main iframe').contentDocument.styleSheets].map((sheet) => { try { return [...sheet.cssRules].map((rule) => rule.cssText).join(''); } catch { return ''; } }).join('') : ''`,
   );
   assert.notEqual(spacingAfter, spacingBefore, 'spacing changes the compiled canvas preview CSS');
+  const alignPoint = await ev(
+    `(() => { const e = [...document.querySelectorAll('[role="radio"]')].find((item) => item.getAttribute('aria-label') === 'right'); e?.scrollIntoView({ block: 'center' }); const r = e?.getBoundingClientRect(); return r ? { x: r.x + r.width / 2, y: r.y + r.height / 2 } : null; })()`,
+  );
+  assert.ok(alignPoint, 'text alignment segmented control is present');
+  await send('Input.dispatchMouseEvent', {
+    type: 'mousePressed',
+    x: alignPoint.x,
+    y: alignPoint.y,
+    button: 'left',
+    clickCount: 1,
+  });
+  await send('Input.dispatchMouseEvent', {
+    type: 'mouseReleased',
+    x: alignPoint.x,
+    y: alignPoint.y,
+    button: 'left',
+    clickCount: 1,
+  });
+  await sleep(1000);
+  const alignmentAfter = await ev(
+    `document.querySelector('main iframe')?.contentWindow?.getComputedStyle(document.querySelector('main iframe')?.contentDocument?.querySelector('h1')).textAlign`,
+  );
+  assert.equal(alignmentAfter, 'right', 'segmented text alignment updates the canvas heading');
   await ev(
     `(() => { const tab = [...document.querySelectorAll('[role=tab]')].find((item) => item.textContent.trim() === 'Content'); tab?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0, ctrlKey: false })); })()`,
   );
@@ -717,13 +902,13 @@ try {
     'tree selection selects the element',
   );
   const crumb = await ev(
-    `document.querySelector('[aria-label="Selected element path"] button[aria-current="location"]')?.textContent.trim()`,
+    `document.querySelector('[aria-label="Selected element path"] .blx-breadcrumb-item[aria-current="location"]')?.textContent.trim()`,
   );
   assert.ok(crumb, 'the selected element breadcrumb renders');
   const firstCrumbId = await ev(
-    `document.querySelector('[aria-label="Selected element path"] button[title]')?.getAttribute('title')`,
+    `document.querySelector('[aria-label="Selected element path"] .blx-breadcrumb-item')?.getAttribute('title')`,
   );
-  await ev(`document.querySelector('[aria-label="Selected element path"] button[title]')?.click()`);
+  await ev(`document.querySelector('[aria-label="Selected element path"] .blx-breadcrumb-item')?.click()`);
   await sleep(300);
   assert.ok(
     await ev(

@@ -67,6 +67,8 @@ export const ElementDefinitionSchema = z.strictObject({
   fallback: z.enum(['static', 'retained', 'unavailable']).optional(),
   requiresApi: z.number().int().min(1),
   props: z.record(PropertyIdSchema, PropDefinitionSchema),
+  /** CSS properties this element exposes in the inspector. The style compiler remains the value authority. */
+  styleProperties: z.array(z.string().min(1).max(64)).max(64).default([]),
   allowedParents: z.array(z.string().regex(NESTING_ENTRY)).min(1).max(64),
   allowedChildren: z
     .array(

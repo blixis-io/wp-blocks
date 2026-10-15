@@ -22,6 +22,7 @@ import { I18nProvider, useI18n } from './i18n-react';
 import { StructurePanel, ElementsPanel } from './StructurePanel';
 import { StoreProvider, useEditorStore, useEditorStoreApi, type EditorStore } from './state';
 import { Inspector } from './inspector/Inspector';
+import { readSessionStorage, writeSessionStorage } from './storage';
 
 const STRUCTURE_ID = 'blx-structure';
 const INSPECTOR_ID = 'blx-inspector';
@@ -53,6 +54,10 @@ function Shell({
   onPreference: (next: ChromePreference) => void;
 }) {
   const { t } = useI18n();
+  const [inspectorTab, setInspectorTab] = useState<'content' | 'style' | 'advanced'>(() => {
+    const saved = readSessionStorage('blixis-inspector-tab');
+    return saved === 'style' || saved === 'advanced' ? saved : 'content';
+  });
   const store = useEditorStoreApi();
   const panels = useEditorStore((state) => state.panels);
   const togglePanel = useEditorStore((state) => state.togglePanel);
@@ -186,11 +191,20 @@ function Shell({
               </>
             )}
           </p>
-          <Tabs defaultValue="content" className="min-h-0 flex-1">
+          <Tabs
+            value={inspectorTab}
+            onValueChange={(value) => {
+              if (value === 'content' || value === 'style' || value === 'advanced') {
+                setInspectorTab(value);
+                writeSessionStorage('blixis-inspector-tab', value);
+              }
+            }}
+            className="min-h-0 flex-1"
+          >
             <TabsList aria-label={t('inspector.tabs')}>
               <TabsTrigger value="content">{t('inspector.content')}</TabsTrigger>
               <TabsTrigger value="style">{t('inspector.style')}</TabsTrigger>
-              <TabsTrigger value="settings">{t('inspector.settings')}</TabsTrigger>
+              <TabsTrigger value="advanced">{t('inspector.advanced')}</TabsTrigger>
             </TabsList>
             <TabsContent value="content">
               <Inspector element={selected} tab="content" editingEnabled={bootstrap.editingEnabled} />
@@ -198,8 +212,8 @@ function Shell({
             <TabsContent value="style">
               <Inspector element={selected} tab="style" editingEnabled={bootstrap.editingEnabled} />
             </TabsContent>
-            <TabsContent value="settings">
-              <Inspector element={selected} tab="settings" editingEnabled={bootstrap.editingEnabled} />
+            <TabsContent value="advanced">
+              <Inspector element={selected} tab="advanced" editingEnabled={bootstrap.editingEnabled} />
             </TabsContent>
           </Tabs>
         </aside>

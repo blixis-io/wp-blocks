@@ -1,6 +1,6 @@
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { EditorApp } from './App';
 import { CHROME_STORAGE_KEY } from './chrome-theme';
 import { ErrorScreen } from './ErrorScreen';
@@ -9,6 +9,10 @@ import { axeViolations } from './test/axe';
 import { makeBootstrap } from './test/fixtures';
 import { el, fakeClient, makeDocument, makeStore, ok, streamsOf } from './test/state-helpers';
 import type { EditorBootstrap } from './bootstrap';
+
+beforeEach(() => {
+  sessionStorage.clear();
+});
 
 function nameOf(element: Element): string {
   return element.getAttribute('aria-label') ?? element.textContent.trim();
@@ -52,7 +56,7 @@ describe('shell landmarks', () => {
     expect(screen.getByRole('complementary', { name: 'Inspector' })).toBeTruthy();
     expect(screen.getByRole('tab', { name: 'Content' }).getAttribute('aria-selected')).toBe('true');
     expect(screen.getByRole('tab', { name: 'Style' })).toBeTruthy();
-    expect(screen.getByRole('tab', { name: 'Settings' })).toBeTruthy();
+    expect(screen.getByRole('tab', { name: 'Advanced' })).toBeTruthy();
   });
 
   it('puts the skip link first in the tab order and it targets the canvas', async () => {
@@ -138,7 +142,7 @@ describe('schema driven inspector', () => {
     });
     expect(screen.getByRole('spinbutton', { name: 'Media attachment ID' })).toBeTruthy();
     expect(screen.getByText('Add alternative text, or mark this image as decorative.')).toBeTruthy();
-    for (const tab of ['Content', 'Style', 'Settings']) {
+    for (const tab of ['Content', 'Style', 'Advanced']) {
       await user.click(screen.getByRole('tab', { name: tab }));
       expect(await axeViolations(view.container)).toEqual([]);
     }
@@ -166,20 +170,20 @@ describe('schema driven inspector', () => {
     });
     for (const id of ['el-section-1', 'el-container-1', 'el-heading-1', 'el-text-1', 'el-section-2', 'el-button-1']) {
       expect(store.getState().select(id)).toBe(true);
-      const tabs = ['Content', 'Style', 'Settings'];
+      const tabs = ['Content', 'Style', 'Advanced'];
       for (const tab of tabs) {
         await user.click(screen.getByRole('tab', { name: tab }));
         expect(await axeViolations(root)).toEqual([]);
       }
     }
     expect(store.getState().select('el-heading-1')).toBe(true);
-    await user.click(screen.getByRole('tab', { name: 'Settings' }));
+    await user.click(screen.getByRole('tab', { name: 'Content' }));
     await user.click(screen.getByRole('tab', { name: 'Content' }));
     expect(screen.getByRole('textbox', { name: 'Text' })).toBeTruthy();
     expect(store.getState().select('el-text-1')).toBe(true);
     expect(screen.getByRole('textbox', { name: 'Text' })).toBeTruthy();
     expect(store.getState().select('el-button-1')).toBe(true);
-    await user.click(screen.getByRole('tab', { name: 'Settings' }));
+    await user.click(screen.getByRole('tab', { name: 'Content' }));
     expect(screen.getByRole('checkbox', { name: 'Open in a new tab' })).toBeTruthy();
   }, 30_000);
 
@@ -195,13 +199,11 @@ describe('schema driven inspector', () => {
     await user.type(text, 'Updated heading');
     expect(store.getState().document?.translations['en_US']?.['el-heading-1']?.values['text']).toBe('Updated heading');
     expect(store.getState().coalesce?.key).toContain('el-heading-1:en_US:text');
-    await user.click(screen.getByRole('tab', { name: 'Settings' }));
-    const level = screen.getByRole('spinbutton', { name: 'Heading level' });
+    await user.click(screen.getByRole('tab', { name: 'Content' }));
+    const level = screen.getByRole<HTMLSelectElement>('combobox', { name: 'Heading level' });
     expect(level).toBeTruthy();
-    await user.clear(level);
-    await user.type(level, '9');
-    expect((level as HTMLInputElement).value).toBe('9');
-    expect(screen.getByRole('alert')).toBeTruthy();
+    await user.selectOptions(level, '3');
+    expect(store.getState().document?.root[0]?.children[0]?.children[0]?.props['level']).toBe(3);
   });
 
   it('dispatches invariant properties through update-props and shows unsafe URL validation inline', async () => {
@@ -221,7 +223,7 @@ describe('schema driven inspector', () => {
     await user.tab();
     expect(screen.getByRole('alert').textContent).toContain('safe link');
     expect(store.getState().document?.translations['en_US']?.['el-button-1']?.values['href']).toBeUndefined();
-    await user.click(screen.getByRole('tab', { name: 'Settings' }));
+    await user.click(screen.getByRole('tab', { name: 'Content' }));
     await user.selectOptions(screen.getByRole('combobox', { name: 'Button style' }), 'outline');
     expect(store.getState().document?.root[1]?.children[0]?.props['variant']).toBe('outline');
   });
@@ -234,8 +236,7 @@ describe('schema driven inspector', () => {
     await user.click(screen.getByRole('treeitem', { name: /el-heading-1/ }));
     await user.click(screen.getByRole('radio', { name: 'Tablet' }));
     await user.click(screen.getByRole('tab', { name: 'Style' }));
-    const color = screen.getByRole('combobox', { name: 'Text colour' });
-    await user.selectOptions(color, 'var(--blx-color-text)');
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Text colour' }), 'var(--blx-color-text)');
     expect(store.getState().document?.root[0]?.children[0]?.children[0]?.style).toEqual([
       expect.objectContaining({ breakpoint: 'tablet', declarations: { color: 'var(--blx-color-text)' } }),
     ]);

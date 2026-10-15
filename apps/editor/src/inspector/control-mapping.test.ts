@@ -25,15 +25,15 @@ describe('schema to inspector control mapping', () => {
     expect(kinds).toEqual(new Set(['string', 'url', 'integer', 'enum', 'boolean', 'media']));
   });
 
-  it('places translatable properties in Content and invariant properties in Settings', () => {
+  it('places schema-backed text and invariant properties in Content; Advanced stays empty', () => {
     const heading = registry.get('blixis/heading');
     expect(heading).toBeDefined();
     const text = heading?.props['text'];
     const level = heading?.props['level'];
     expect(text && propertyBelongsToTab('text', text, 'content')).toBe(true);
-    expect(text && propertyBelongsToTab('text', text, 'settings')).toBe(false);
-    expect(level && propertyBelongsToTab('level', level, 'settings')).toBe(true);
-    expect(level && propertyBelongsToTab('level', level, 'content')).toBe(false);
+    expect(text && propertyBelongsToTab('text', text, 'advanced')).toBe(false);
+    expect(level && propertyBelongsToTab('level', level, 'advanced')).toBe(false);
+    expect(level && propertyBelongsToTab('level', level, 'content')).toBe(true);
   });
 
   it('keeps attachment identity in Content despite invariant classification', () => {

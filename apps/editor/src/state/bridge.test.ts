@@ -373,6 +373,22 @@ describe('coalescing', () => {
     expect(store.getState().document?.root[0]?.children[0]?.children[0]?.props).toEqual({ level: 5 });
   });
 
+  it('keeps a slow pointer drag in one undo entry and ends the burst on pointer commit', async () => {
+    const { store, clock, document: initial } = await makeLoadedStore();
+    store.getState().dispatch(level(3), { coalesceKey: 'level', coalesceWindowMs: 30_000 });
+    clock.advance(5_000);
+    store.getState().dispatch(level(4), { coalesceKey: 'level', coalesceWindowMs: 30_000 });
+    expect(store.getState().history?.past).toHaveLength(1);
+    store.getState().finishCoalescing();
+    clock.advance(10);
+    store.getState().dispatch(level(5), { coalesceKey: 'level', coalesceWindowMs: 30_000 });
+    expect(store.getState().history?.past).toHaveLength(2);
+    store.getState().undo();
+    expect(store.getState().document?.root[0]?.children[0]?.children[0]?.props).toEqual({ level: 4 });
+    store.getState().undo();
+    expect(store.getState().document).toEqual(initial);
+  });
+
   it.each([
     ['another element', () => ({ type: 'update-props', id: 'el-text-1', set: { level: 4 } })],
     ['another property set', () => ({ type: 'update-props', id: 'el-heading-1', set: { level: 4, other: 1 } })],
@@ -436,6 +452,30 @@ describe('coalescing', () => {
     store.getState().undo();
     expect(store.getState().document).toEqual(pre);
     expect(store.getState().document?.translations['fr_FR']?.['el-heading-1']?.status).toBe('translated');
+    store.getState().redo();
+    expect(store.getState().document).toEqual(post);
+  });
+
+  it('coalesces font-size style drag updates into one undo step', async () => {
+    const { store, clock, document: initial } = await makeLoadedStore();
+    const drag = (size: number) =>
+      store.getState().dispatch(
+        {
+          type: 'set-style-rule',
+          id: 'el-heading-1',
+          selector: {},
+          declarations: { 'font-size': `${String(size)}px` },
+        },
+        { coalesceKey: 'style:el-heading-1:base:font-size' },
+      );
+    for (const size of [24, 38, 56, 72]) {
+      expect(drag(size).ok).toBe(true);
+      clock.advance(80);
+    }
+    expect(store.getState().history?.past).toHaveLength(1);
+    const post = store.getState().document;
+    store.getState().undo();
+    expect(store.getState().document).toEqual(initial);
     store.getState().redo();
     expect(store.getState().document).toEqual(post);
   });
