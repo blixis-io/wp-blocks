@@ -32,22 +32,35 @@ Every route checks authentication, an existing post of a type in `MetaRegistrati
 
 Cookie-authenticated clients send `X-WP-Nonce` from WordPress REST nonce creation. Core `rest_cookie_check_errors` rejects an invalid nonce with 403 `rest_cookie_invalid_nonce`. Core treats an absent nonce as an anonymous request, so a cookie write without a nonce gets 401 `blixis_unauthenticated` and nothing is written (verified in the real-WordPress smoke). Other WordPress authentication methods follow their normal core behavior. GET performs only a repository read and never changes state. Successful reads return `{ "revision": n, "document": <decoded JSON> }`; an unwritten stream returns revision `0` and document `null`. Responses include `ETag: "<revision>"` and `Cache-Control: private, no-store`.
 
-PUT requires `Content-Type: application/json`, a JSON envelope object of at most 2 MiB, and a strong quoted integer `If-Match: "<expected revision>"`. The repository validates the envelope through its `DocumentValidator` seam, overwrites the envelope's stream revision with the next CAS revision, and preserves unknown fields. Full schema validation is BWB-043. Success returns `{ "revision": n }` and the new ETag. These routes cannot address `_blixis_published` or immutable snapshot keys; publication uses a separate future API.
+PUT requires `Content-Type: application/json`, a JSON envelope object of at most 2 MiB, and a strong quoted integer `If-Match: "<expected revision>"`. The repository validates the envelope through its `DocumentValidator` seam and rejects JSON depth over 32 or more than 50,000 JSON values. Layout trees with duplicate IDs or more than 5000 nodes are also rejected before writing. It overwrites the envelope's stream revision with the next CAS revision and preserves unknown fields. Full schema validation is BWB-043. Success returns `{ "revision": n }` and the new ETag. These routes cannot address `_blixis_published` or immutable snapshot keys; publication uses a separate API.
 
 | Status | Code | Cause |
 |---|---|---|
-| 400 | `blixis_invalid_post_id`, `blixis_invalid_locale`, `blixis_invalid_mode`, `blixis_invalid_revision` | Invalid route argument, preview locale/mode, or If-Match value; WordPress reports route arguments as `rest_invalid_param` with the `blixis_*` code under `data.details.<arg>.code` |
-| 401 | `blixis_unauthenticated` | No authenticated user |
-| 403 | `blixis_forbidden` | Post inaccessible, absent, or type excluded |
+| 400 | `blixis_invalid_post_id` | Invalid post ID. |
+| 400 | `blixis_invalid_locale` | Invalid locale. |
+| 400 | `blixis_invalid_mode` | Invalid mode. |
+| 400 | `blixis_invalid_revision` | Invalid revision. |
+| 401 | `blixis_unauthenticated` | Authentication is required. |
+| 403 | `blixis_forbidden` | Access is forbidden. |
 | 403 | `rest_cookie_invalid_nonce` | WordPress core rejects cookie nonce |
-| 409 | `blixis_conflict` | CAS mismatch; error data has `currentRevision` and `expectedRevision` |
-| 413 | `blixis_too_large` | Body exceeds 2 MiB |
-| 422 | `blixis_invalid_document` | Invalid content type, envelope/validator rejection, or preview tree limit violation |
-| 428 | `blixis_precondition_required` | If-Match absent |
-| 500 | `blixis_storage_error` | Storage failure, with no exception details disclosed or logged |
-| 500 | `blixis_preview_failed` | Preview storage, renderer, sanitizer, or output cap failure, with no internal details disclosed |
+| 404 | `blixis_revision_not_found` | Revision not found. |
+| 404 | `blixis_snapshot_not_found` | Snapshot not found. |
+| 404 | `blixis_media_not_found` | Media not found. |
+| 409 | `blixis_conflict` | Revision conflict. |
+| 409 | `blixis_snapshot_missing` | Snapshot is missing. |
+| 409 | `blixis_layout_not_published` | Layout is not published. |
+| 409 | `blixis_publish_blocked` | Publication is blocked. |
+| 409 | `blixis_snapshot_limit` | Publish would exceed 200 stored snapshots, or rollback would exceed its recovery ceiling of 240. |
+| 413 | `blixis_too_large` | Request is too large. |
+| 422 | `blixis_invalid_document` | Invalid document. |
+| 422 | `blixis_nothing_to_publish` | Nothing to publish. |
+| 423 | `blixis_theme_incompatible` | The active theme does not support Blixis editing. |
+| 428 | `blixis_precondition_required` | If-Match is required. |
+| 429 | `blixis_rate_limited` | Publication rate limit reached. |
+| 500 | `blixis_storage_error` | Storage failed. |
+| 500 | `blixis_preview_failed` | Preview failed. |
 
-Plugin errors use `WP_Error` with stable codes and `data.status`. A real-WordPress smoke test must verify nonce behavior and route registration; the isolated PHPUnit suite tests the request policy and storage mapping.
+Plugin errors use `WP_Error` with stable codes, fixed messages from `Rest\ErrorCatalog`, and `data.status`. WordPress reports invalid route arguments as `rest_invalid_param` with the `blixis_*` code under `data.details.<arg>.code`.
 
 The [canvas contract](CANVAS-CONTRACT.md) specifies the preview request and response, iframe sandbox, size limits and renderer boundary. Preview shares the permission policy above. Its request body is JSON (2 MiB maximum) with optional `locale` (site locale by default), `mode` (`light` by default) and `document` (unsaved envelope). It never reads published pointers or snapshots. Preview-specific errors are 400 `blixis_invalid_locale` / `blixis_invalid_mode`, 413 `blixis_too_large`, 422 `blixis_invalid_document`, and generic 500 `blixis_preview_failed`; authentication errors and core nonce errors are as above. Successful responses carry `Cache-Control: private, no-store`.
 
@@ -126,6 +139,10 @@ Every successful write of a working stream (layout or one locale's content) keep
 **Rollback:** `POST /documents/{id}/rollback` with `{ locale, contentSnapshot }` or `{ layoutSnapshot }` republishes an old snapshot under a new number (history is append-only). A locale rollback restores the pair (base layout, content) exactly; a layout rollback follows the same impact rules as a layout publish. Unknown snapshots are 404 `blixis_snapshot_not_found`.
 
 Snapshots carry the working revision they came from (`sourceRevision`), the layout they were made for (`baseLayout`) and the element types their entries referred to (`elementTypes`). Pruning of unreferenced snapshots stays a separate, explicit step (`SnapshotStore::collect`).
+
+**Publication abuse controls.** After authentication, per-post capability and theme checks, the publication request limits each user to 30 successful publishes or rollbacks of a post in a rolling hour. A rejected request returns 429 `blixis_rate_limited` with `Retry-After` seconds. The publisher refuses a publish that would take a post above 200 stored snapshots; rollback remains available through 240 snapshots for recovery. Both limits return 409 `blixis_snapshot_limit` before any snapshot or pointer write. The limiter uses a per-site transient; its read/update is not atomic across simultaneous requests. A site-wide aggregate cap, alerting and retention accounting remain BWB-070 work.
+
+**Audit hook.** After a successful pointer advance, the publication controller fires `do_action( 'blixis_builder_publication_event', array $event )`. The event has exactly `actor` (user ID), `post`, `locale` (or null), `kind` (`publish` or `rollback`), `layoutSnapshot` (or null), `contentSnapshot` (or null), `pointerRevision`, and `time` (UTC RFC3339). It includes no document content. Hook consumers own their retention and access policy.
 
 ## Theme compatibility guard
 

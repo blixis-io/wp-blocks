@@ -101,7 +101,7 @@ final class DocumentController {
 		if ( ( \is_int( $value ) || \is_string( $value ) ) && 1 === \preg_match( '/^[1-9][0-9]*$/D', (string) $value ) && (string) (int) $value === (string) $value ) {
 			return true;
 		}
-		return new \WP_Error( 'blixis_invalid_post_id', 'Invalid post ID.', [ 'status' => 400 ] );
+		return new \WP_Error( 'blixis_invalid_post_id', ErrorCatalog::message( 'blixis_invalid_post_id' ), [ 'status' => 400 ] );
 	}
 
 	/**
@@ -113,7 +113,7 @@ final class DocumentController {
 		if ( \is_string( $value ) && \Blixis\Builder\Storage\MetaKeys::is_valid_locale( $value ) ) {
 			return true;
 		}
-		return new \WP_Error( 'blixis_invalid_locale', 'Invalid locale.', [ 'status' => 400 ] );
+		return new \WP_Error( 'blixis_invalid_locale', ErrorCatalog::message( 'blixis_invalid_locale' ), [ 'status' => 400 ] );
 	}
 
 	/** Check authentication, post existence/type and edit_post uniformly.

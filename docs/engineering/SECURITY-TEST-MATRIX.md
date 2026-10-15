@@ -1,0 +1,40 @@
+# PHP Plugin Security Test Matrix (BWB-048)
+
+This matrix records controls present in the current PHP plugin. A test name is evidence for only the behavior its assertion covers. Smoke labels are the literal `check(..., 'text')` names in `tooling/wp-env/wp-env.mjs`; “none” means the current real-WordPress smoke does not prove that control.
+
+| Threat | PHP control | PHPUnit evidence (`file::method`) | Real-WordPress smoke check name |
+|---|---|---|---|
+| T1 | `Rest\ThemeGuard`, WordPress cookie nonce middleware, route `permission_callback` | `DocumentRestTest.php::test_permission_matrix`, `DocumentRestTest.php::test_get_is_read_only` | `a cookie write without a nonce is 401 and writes nothing (${noNonce.status})` |
+| T2 | `Rest\ThemeGuard` and `Rest\WordPressPostAccess` uniform object check; locale-specific translator capability is pending BWB-104 | `DocumentRestTest.php::test_permission_matrix`, `PublisherTest.php::test_request_policy` | `an author cannot write another user page`; `an anonymous preview is 401` |
+| T3 | `Storage\Envelope` 2 MiB, JSON depth and 50,000-value caps; `Preview\PreviewDocument` duplicate/node/depth checks on preview and layout writes | `HostilePayloadTest.php::test_document_rejection_matrix`, `HostilePayloadTest.php::test_document_tree_caps_precede_storage`, `HostilePayloadTest.php::test_deep_and_wide_json`, `PreviewTest.php::test_tree_limits` | `a body over 2 MB is 413`; `duplicate element ids are 422`; `a tree deeper than 32 is 422` |
+| T4 | `Render\ContentResolver`, `Render\Escape`, `Registry\SafeUrl`, `Preview\PreviewSanitizer` | `HostileRenderTest.php::test_every_element_and_property_kind`, `HostileRenderTest.php::test_translated_alt_and_button_fields`, `HostileRenderTest.php::test_hostile_ids_and_types_fall_back`, `RegistryRenderTest.php::test_url_rejects_obfuscation`, `PreviewTest.php::test_sanitizer` | `an unsafe button URL never reaches the output`; `an image with alt text is not flagged` |
+| T5 | `Css\Tokenizer`, `Css\DeclarationValidator`, `Css\Compiler`; token values use `Tokens\TokenSet` category grammars | `CssDeclarationValidatorTest.php::test_seeded_fuzz`, `CssCompilerTest.php::test_hostile_inputs`, `TokenSetCorpusTest.php::test_token_set_corpus` | none |
+| T6 | Not applicable yet: editor iframe protocol is BWB-051 | none | none |
+| T7 | `Rest\PreviewRequest` authorization and `PreviewController` private no-store response | `PreviewTest.php::test_sources_and_permissions`, `PreviewTest.php::test_controller_cache_header` | `an anonymous preview is 401`; `preview responses are not cacheable` |
+| T8 | `Frontend\RenderCacheKey` and `Frontend\Invalidation` | `FrontendTest.php::test_cache_key_covers_every_input` | `working (draft) streams never reach visitors` |
+| T9 | `Publication\Publisher`, `Storage\SnapshotStore`, `Storage\StreamStore`, protected meta registration | `StorageTest.php::test_interrupted_publish_and_immutable_snapshot`, `PublisherTest.php::test_pointer_conflict`, `StorageTest.php::test_orphan_collection_preserves_all_pointer_references` | `a blocked publish changes nothing`; `autosaved changes never reach visitors` |
+| T10 | Not applicable yet: locale routing and redirects are BWB-111 | none | none |
+| T11 | `Media\MediaPolicy`, `Render\WordPressMediaResolver`, `Rest\MediaController` | `MediaTest.php::test_mime_allow_list`, `MediaTest.php::test_srcset_is_rebuilt_from_validated_parts`, `MediaTest.php::test_responsive_image_output`, `HostilePayloadTest.php::test_media_permission` | `the media route needs authentication`; `media descriptions are not cacheable` |
+| T12 | Not applicable yet: Plus/Pro dynamic adapters are P8/P9 | none | none |
+| T13 | `Registry\ElementRegistry` validates manifests and unknown types fall back | `RegistryRenderTest.php::test_manifest_rejects_unknown_kind_and_fields`, `RegistryRenderTest.php::test_nesting_categories_and_unknown_relocation` | none |
+| T14 | Not applicable yet: licence and update channel are BWB-074/BWB-083 | none | none |
+| T15 | Not a PHP plugin runtime boundary: CI policy is BWB-015/BWB-016 | none | none |
+| T16 | Not applicable yet: auto-translation requires #123 | none | none |
+| T17 | `Publication\AuditEvent` and `WordPressAuditSink` fire `blixis_builder_publication_event` after a successful pointer move | `PublicationSecurityTest.php::test_audit_event_contract`, `PublicationSecurityTest.php::test_controller_emits_only_successful_events`, `PublicationSecurityTest.php::test_wordpress_audit_hook` | `publishing fires exactly one audit event`; `the audit event records actor, post, kind, snapshot, pointer revision and UTC time`; `the audit event carries no document content` |
+| T18 | `Preview\PreviewDocument`, `Preview\PreviewOutput`, `Css\CssLimits`, `Storage\Envelope` | `PreviewTest.php::test_error_codes_and_output_caps`, `HostilePayloadTest.php::test_document_tree_caps_precede_storage`, `CssDeclarationValidatorTest.php::test_forbidden_characters_and_limits` | `an oversized preview body is 413`; `hostile bodies never change stored data` |
+| T19 | `Rest\ErrorCatalog` fixes messages; `DocumentResult` and controllers suppress exception detail | `ErrorContractTest.php::test_all_plugin_error_codes_are_catalogued`, `ErrorContractTest.php::test_rest_docs_table_lists_all_errors`, `HostilePayloadTest.php::test_document_rejection_matrix` | none |
+| T20 | Not applicable to the promised 1.0 surface: multisite test is BWB-070 | none | none |
+| T21 | `Publication\SlidingRateLimiter` and `Publisher` per-post publish and rollback snapshot guards | `PublicationSecurityTest.php::test_rolling_window_with_fake_clock_and_store`, `PublicationSecurityTest.php::test_rate_limit_precedes_storage`, `PublicationSecurityTest.php::test_snapshot_limit_precedes_writes`, `PublicationSecurityTest.php::test_rollback_snapshot_recovery_ceiling` | `the 31st publish of a post within an hour is refused with 429 (${firstLimited})`; `the 429 carries a Retry-After header`; `a post that already holds 200 snapshots cannot publish more` |
+| T22 | Not applicable yet: paid import/export is #122 | none | none |
+
+## GAPS
+
+- T2: locale-specific translator capability checks remain BWB-104.
+- T3: full layout and content schema validation remains BWB-043; the current write path rejects duplicate IDs and tree limits only when `root` is present. General per-user preview rate limiting is absent.
+- T5: there is no real-WordPress CSS fuzz smoke; the PHP token-set corpus is isolated PHPUnit parity evidence.
+- T8: the smoke covers draft isolation but does not explicitly check every cache key dimension.
+- T9: direct `update_post_meta` mutation by other trusted PHP and concurrency races are outside isolated test proof.
+- T17: no built-in durable audit retention policy exists.
+- T18: PHPUnit checks bounds but no measured latency/load budget on a real WordPress installation exists.
+- T21: per-user/post transient updates and snapshot counting are soft bounds under concurrent requests (transient read-then-write and snapshot count before insert). The rate window lives in an evictable transient, so object-cache eviction resets it. No site-wide aggregate limit or operator alert exists; pruning accounting remains BWB-070 work.
+- T6, T10, T12, T14, T15, T16, T20 and T22 await their listed future issues or delivery phases.

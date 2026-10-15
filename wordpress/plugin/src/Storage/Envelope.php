@@ -13,8 +13,9 @@ namespace Blixis\Builder\Storage;
 
 /** Rejects malformed, oversized or excessively deep JSON; BWB-043 adds document validation. */
 final class Envelope {
-	public const MAX_BYTES  = 2097152;
-	private const MAX_DEPTH = 32;
+	public const MAX_BYTES   = 2097152;
+	private const MAX_DEPTH  = 32;
+	private const MAX_VALUES = 50000;
 
 	/**
 	 * Decode an envelope without discarding unknown document fields.
@@ -33,6 +34,23 @@ final class Envelope {
 		}
 		if ( ! $data instanceof \stdClass || ! isset( $data->{'schemaVersion'} ) || ! \is_int( $data->{'schemaVersion'} ) || $data->{'schemaVersion'} < 1 ) {
 			return null;
+		}
+		$stack  = [ $data ];
+		$values = 0;
+		while ( [] !== $stack ) {
+			$value = \array_pop( $stack );
+			if ( ++$values > self::MAX_VALUES ) {
+				return null;
+			}
+			if ( $value instanceof \stdClass ) {
+				foreach ( \get_object_vars( $value ) as $child ) {
+					$stack[] = $child;
+				}
+			} elseif ( \is_array( $value ) ) {
+				foreach ( $value as $child ) {
+					$stack[] = $child;
+				}
+			}
 		}
 		$field = MetaKeys::revision_field( $key );
 		if ( ! isset( $data->$field ) || ! \is_int( $data->$field ) || $data->$field < 1 ) {

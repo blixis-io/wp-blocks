@@ -44,8 +44,11 @@ final class PreviewTest extends TestCase {
 		}
 		$this->assertTrue( PreviewSanitizer::accepts( '<div data-blx-id="a">Safe &amp; sound</div>' ) );
 		$this->assertTrue( PreviewSanitizer::accepts( '<p>data: onclick= &lt;script&gt;</p>' ) );
-		foreach ( [ '<a href=javascript&colon;alert(1)>', '<img src=x onerror=alert(1)>', '<div title="data:x">', '<div title="onclick=x">', '<div title="style=x">', '<div title="&lt;script&gt;">', '<div title=`bad`>', "<div a=\"x\0y\">", '<svg onload=x>' ] as $html ) {
+		foreach ( [ '<a href=javascript&colon;alert(1)>', '<img src=x onerror=alert(1)>', '<div title=`bad`>', "<div a=\"x\0y\">", '<svg onload=x>' ] as $html ) {
 			$this->assertFalse( PreviewSanitizer::accepts( $html ), $html );
+		}
+		foreach ( [ '<div title="data:x">', '<div title="onclick=x">', '<div title="style=x">', '<div title="&lt;script&gt;">' ] as $html ) {
+			$this->assertTrue( PreviewSanitizer::accepts( $html ), $html );
 		}
 	}
 

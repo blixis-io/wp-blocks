@@ -30,7 +30,7 @@ final class SafeUrl {
 		if ( '' === $value ) {
 			return true;
 		}
-		if ( self::utf16_length( $value ) > 2048 || \str_starts_with( $value, '//' ) || \str_contains( $value, '&#' ) || 1 === \preg_match( '/&[a-zA-Z0-9]+;/', $value ) ) {
+		if ( self::utf16_length( $value ) > 2048 || \str_starts_with( $value, '//' ) || \str_contains( $value, '&#' ) || 1 === \preg_match( '/&[a-zA-Z0-9]+;/', $value ) || 1 === \preg_match( '/[<>"\x27]/', $value ) ) {
 			return false;
 		}
 		if ( 1 === \preg_match( '/[\x00-\x20\x7f-\x9f\\\\\x{00a0}\x{1680}\x{2000}-\x{200f}\x{2028}-\x{202f}\x{205f}-\x{206f}\x{3000}\x{feff}]/u', $value ) ) {

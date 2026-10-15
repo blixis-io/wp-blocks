@@ -49,6 +49,7 @@ final class DocumentResult {
 	 * @param array<string, mixed> $data Additional safe error data.
 	 */
 	public static function error( int $status, string $code, string $message, array $data = [] ): self {
-		return new self( $status, $data, $code, $message, null );
+		unset( $message );
+		return new self( $status, $data, $code, ErrorCatalog::message( $code ), null );
 	}
 }

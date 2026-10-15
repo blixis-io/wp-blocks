@@ -11,6 +11,10 @@ namespace Blixis\Builder\Rest;
 
 use Blixis\Builder\Publication\PublishResult;
 use Blixis\Builder\Publication\Publisher;
+use Blixis\Builder\Publication\AuditEvent;
+use Blixis\Builder\Publication\AuditSink;
+use Blixis\Builder\Publication\WordPressAuditSink;
+use Blixis\Builder\Publication\WordPressRateLimiter;
 use Blixis\Builder\Registry\ElementRegistry;
 use Blixis\Builder\Storage\RevisionRing;
 use Blixis\Builder\Storage\SnapshotStore;
@@ -30,8 +34,9 @@ final class PublicationController {
 	 * Create the controller.
 	 *
 	 * @param PublicationRequest $requests Request policy.
+	 * @param ?AuditSink         $audit Audit event sink.
 	 */
-	public function __construct( private readonly PublicationRequest $requests ) {}
+	public function __construct( private readonly PublicationRequest $requests, private ?AuditSink $audit = null ) {}
 
 	/** Register the routes. */
 	public static function register(): void {
@@ -39,7 +44,7 @@ final class PublicationController {
 		$database   = new WpdbDatabase( $wpdb );
 		$streams    = new StreamStore( $database, null, new RevisionRing( $database, new WordPressRevisionContext() ) );
 		$publisher  = new Publisher( $database, $streams, new SnapshotStore( $database, $streams ), ElementRegistry::from_manifest_file( \Blixis\Builder\DIR . '/data/core-elements.json' ) );
-		$controller = new self( new PublicationRequest( $publisher, new WordPressPostAccess(), new WordPressSiteLocale() ) );
+		$controller = new self( new PublicationRequest( $publisher, new WordPressPostAccess(), new WordPressSiteLocale(), null, new WordPressRateLimiter() ), new WordPressAuditSink() );
 		$args       = [
 			'post_id' => [
 				'type'              => 'integer',
@@ -104,7 +109,7 @@ final class PublicationController {
 	 */
 	public function publish( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
 		$if_match = $request->get_header( 'if-match' );
-		return self::response( $this->requests->publish( (int) $request->get_param( 'post_id' ), '' === $if_match ? null : $if_match, $request->get_body() ) );
+		return $this->change( $request, 'publish', $this->requests->publish( (int) $request->get_param( 'post_id' ), '' === $if_match ? null : $if_match, $request->get_body(), \get_current_user_id() ) );
 	}
 
 	/**
@@ -115,7 +120,24 @@ final class PublicationController {
 	 */
 	public function rollback( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
 		$if_match = $request->get_header( 'if-match' );
-		return self::response( $this->requests->rollback( (int) $request->get_param( 'post_id' ), '' === $if_match ? null : $if_match, $request->get_body() ) );
+		return $this->change( $request, 'rollback', $this->requests->rollback( (int) $request->get_param( 'post_id' ), '' === $if_match ? null : $if_match, $request->get_body(), \get_current_user_id() ) );
+	}
+
+	/**
+	 * Emit only after a successful pointer move.
+	 *
+	 * @param \WP_REST_Request $request REST request.
+	 * @param string           $kind Publish or rollback.
+	 * @param PublishResult    $result Result.
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	private function change( \WP_REST_Request $request, string $kind, PublishResult $result ): \WP_REST_Response|\WP_Error {
+		if ( null === $result->code ) {
+			$body   = \json_decode( $request->get_body(), true ); // phpcs:ignore WordPress.WP.AlternativeFunctions.json_decode_json_decode -- Already validated by request policy.
+			$locale = \is_array( $body ) && \is_string( $body['locale'] ?? null ) ? $body['locale'] : null;
+			( $this->audit ?? new WordPressAuditSink() )->emit( new AuditEvent( \get_current_user_id(), (int) $request->get_param( 'post_id' ), $locale, $kind, $result->data['layoutSnapshot'] ?? null, $result->data['contentSnapshot'] ?? null, $result->data['pointerRevision'] ) );
+		}
+		return self::response( $result );
 	}
 
 	/**
@@ -143,16 +165,10 @@ final class PublicationController {
 	 * @return \WP_Error
 	 */
 	private static function error( PublishResult $result ): \WP_Error {
-		$messages = [
-			401 => 'Authentication is required.',
-			403 => 'Publishing is forbidden.',
-			423 => 'The active theme does not support Blixis editing.',
-			404 => 'Snapshot not found.',
-			409 => 'The publication could not be applied.',
-			422 => 'The request cannot be applied.',
-			428 => 'If-Match is required.',
-			500 => 'Publication storage failed.',
-		];
-		return new \WP_Error( $result->code ?? 'blixis_storage_error', $messages[ $result->status ] ?? 'Invalid request.', \array_merge( [ 'status' => $result->status ], $result->data ) );
+		if ( 429 === $result->status ) {
+			\header( 'Retry-After: ' . (int) ( $result->data['retryAfter'] ?? 1 ) );
+		}
+		$code = $result->code ?? 'blixis_storage_error';
+		return new \WP_Error( $code, ErrorCatalog::message( $code ), \array_merge( [ 'status' => $result->status ], $result->data ) );
 	}
 }

@@ -19,7 +19,7 @@ final class Escape {
 	 * @param string $value Value.
 	 */
 	public static function html( string $value ): string {
-		return \htmlspecialchars( $value, ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8' );
+		return \htmlspecialchars( \str_replace( "\0", '', $value ), ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8' );
 	}
 	/**
 	 * Apply the documented contract.

@@ -64,8 +64,7 @@ final class PreviewSanitizer {
 	 * @param string $source Source.
 	 */
 	private static function accepts_tag( string $source ): bool {
-		$decoded = self::decode( $source );
-		if ( 1 !== \preg_match( '~^\s*(/?)\s*([a-z][a-z0-9:-]*)(.*)$~isD', $decoded, $match ) ) {
+		if ( 1 !== \preg_match( '~^\s*(/?)\s*([a-z][a-z0-9:-]*)(.*)$~isD', $source, $match ) ) {
 			return false;
 		}
 		$name = \strtolower( $match[2] );
@@ -88,14 +87,7 @@ final class PreviewSanitizer {
 			if ( \str_starts_with( $key, 'on' ) || \in_array( $key, [ 'style', 'srcdoc' ], true ) ) {
 				return false;
 			}
-			$compact = \preg_replace( '/[\x00-\x20\x7f-\x9f]+/u', '', $value );
-			if ( null === $compact ) {
-				return false;
-			}
-			if ( \in_array( $key, self::URL_ATTRIBUTES, true ) && 1 === \preg_match( '/^(?:javascript|vbscript|data):/i', $compact ) ) {
-				return false;
-			}
-			if ( 1 === \preg_match( '/(?:on[a-z0-9_-]*\s*=|style\s*=|data:|<\/?(?:script|iframe|svg)\b)/i', $compact ) ) {
+			if ( \in_array( $key, self::URL_ATTRIBUTES, true ) && ! \Blixis\Builder\Registry\SafeUrl::accepts( $value ) ) {
 				return false;
 			}
 			$rest = $attribute[5];

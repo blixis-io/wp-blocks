@@ -12,6 +12,7 @@ namespace Blixis\Builder\Rest;
 use Blixis\Builder\Publication\PublishOptions;
 use Blixis\Builder\Publication\PublishResult;
 use Blixis\Builder\Publication\Publisher;
+use Blixis\Builder\Publication\RateLimiter;
 use Blixis\Builder\Storage\MetaKeys;
 use Blixis\Builder\Theme\ThemeCompat;
 use Blixis\Builder\Theme\WordPressCompatibilityReader;
@@ -25,12 +26,13 @@ final class PublicationRequest {
 	/**
 	 * Create the policy.
 	 *
-	 * @param Publisher   $publisher Publisher.
-	 * @param PostAccess  $access Post access policy.
-	 * @param SiteLocale  $site Site locale.
-	 * @param ?ThemeGuard $guard Shared theme policy.
+	 * @param Publisher    $publisher Publisher.
+	 * @param PostAccess   $access Post access policy.
+	 * @param SiteLocale   $site Site locale.
+	 * @param ?ThemeGuard  $guard Shared theme policy.
+	 * @param ?RateLimiter $limiter Rolling publish limit.
 	 */
-	public function __construct( private readonly Publisher $publisher, private readonly PostAccess $access, private readonly SiteLocale $site, private ?ThemeGuard $guard = null ) {}
+	public function __construct( private readonly Publisher $publisher, private readonly PostAccess $access, private readonly SiteLocale $site, private ?ThemeGuard $guard = null, private ?RateLimiter $limiter = null ) {}
 
 	/**
 	 * Check access: reading the state needs edit rights, changing it needs the publish capability.
@@ -64,9 +66,10 @@ final class PublicationRequest {
 	 * @param int     $post_id Post ID.
 	 * @param ?string $if_match Pointer revision header (`"n"`).
 	 * @param string  $body JSON body.
+	 * @param int     $actor WordPress user ID.
 	 * @return PublishResult
 	 */
-	public function publish( int $post_id, ?string $if_match, string $body ): PublishResult {
+	public function publish( int $post_id, ?string $if_match, string $body, int $actor = 0 ): PublishResult {
 		$expected = $this->expected( $if_match );
 		if ( $expected instanceof PublishResult ) {
 			return $expected;
@@ -81,7 +84,7 @@ final class PublicationRequest {
 		if ( ! \is_bool( $layout ) || ( null !== $locale && ( ! \is_string( $locale ) || ! MetaKeys::is_valid_locale( $locale ) ) ) || ! \is_bool( $flags[0] ) || ! \is_bool( $flags[1] ) ) {
 			return PublishResult::error( 422, 'blixis_invalid_document' );
 		}
-		return $this->publisher->publish( $post_id, new PublishOptions( $expected, $layout, $locale, $flags[0], $flags[1], null, null, $this->site->default_locale() ) );
+		return $this->apply( $post_id, $actor, new PublishOptions( $expected, $layout, $locale, $flags[0], $flags[1], null, null, $this->site->default_locale() ) );
 	}
 
 	/**
@@ -90,9 +93,10 @@ final class PublicationRequest {
 	 * @param int     $post_id Post ID.
 	 * @param ?string $if_match Pointer revision header (`"n"`).
 	 * @param string  $body JSON body.
+	 * @param int     $actor WordPress user ID.
 	 * @return PublishResult
 	 */
-	public function rollback( int $post_id, ?string $if_match, string $body ): PublishResult {
+	public function rollback( int $post_id, ?string $if_match, string $body, int $actor = 0 ): PublishResult {
 		$expected = $this->expected( $if_match );
 		if ( $expected instanceof PublishResult ) {
 			return $expected;
@@ -111,7 +115,28 @@ final class PublicationRequest {
 		if ( ! $layout_ok || ! $content_ok || ! $locale_ok || ! \is_bool( $confirm ) || ( null === $layout_snapshot ) === ( null === $content_snapshot ) || ( null !== $content_snapshot && null === $locale ) || ( null !== $layout_snapshot && null !== $locale ) ) {
 			return PublishResult::error( 422, 'blixis_invalid_document' );
 		}
-		return $this->publisher->publish( $post_id, new PublishOptions( $expected, false, $locale, $confirm, false, $layout_snapshot, $content_snapshot, $this->site->default_locale() ) );
+		return $this->apply( $post_id, $actor, new PublishOptions( $expected, false, $locale, $confirm, false, $layout_snapshot, $content_snapshot, $this->site->default_locale() ) );
+	}
+
+	/**
+	 * Check the rolling limit before storage and count successful writes only.
+	 *
+	 * @param int            $post_id Post ID.
+	 * @param int            $actor WordPress user ID.
+	 * @param PublishOptions $options Publication options.
+	 */
+	private function apply( int $post_id, int $actor, PublishOptions $options ): PublishResult {
+		if ( null !== $this->limiter && $actor > 0 ) {
+			$retry = $this->limiter->retry_after( $actor, $post_id );
+			if ( $retry > 0 ) {
+				return PublishResult::error( 429, 'blixis_rate_limited', [ 'retryAfter' => $retry ] );
+			}
+		}
+		$result = $this->publisher->publish( $post_id, $options );
+		if ( null === $result->code && null !== $this->limiter && $actor > 0 ) {
+			$this->limiter->record( $actor, $post_id );
+		}
+		return $result;
 	}
 
 	/**

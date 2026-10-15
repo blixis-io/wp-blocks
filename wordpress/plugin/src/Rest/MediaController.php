@@ -47,9 +47,9 @@ final class MediaController {
 	 */
 	public static function permission(): true|\WP_Error {
 		if ( ! \is_user_logged_in() ) {
-			return new \WP_Error( 'blixis_unauthenticated', 'Authentication is required.', [ 'status' => 401 ] );
+			return new \WP_Error( 'blixis_unauthenticated', ErrorCatalog::message( 'blixis_unauthenticated' ), [ 'status' => 401 ] );
 		}
-		return \current_user_can( 'edit_posts' ) ? true : new \WP_Error( 'blixis_forbidden', 'Media access is forbidden.', [ 'status' => 403 ] );
+		return \current_user_can( 'edit_posts' ) ? true : new \WP_Error( 'blixis_forbidden', ErrorCatalog::message( 'blixis_forbidden' ), [ 'status' => 403 ] );
 	}
 
 	/**
@@ -62,7 +62,7 @@ final class MediaController {
 		$id    = (int) $request->get_param( 'id' );
 		$media = ( new WordPressMediaResolver() )->resolve( $id );
 		if ( null === $media ) {
-			return new \WP_Error( 'blixis_media_not_found', 'Media not found.', [ 'status' => 404 ] );
+			return new \WP_Error( 'blixis_media_not_found', ErrorCatalog::message( 'blixis_media_not_found' ), [ 'status' => 404 ] );
 		}
 		$response = new \WP_REST_Response( MediaPolicy::describe( $id, $media ), 200 );
 		$response->header( 'Cache-Control', 'private, no-store' );
