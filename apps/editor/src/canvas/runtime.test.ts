@@ -458,6 +458,152 @@ describe('pointer interaction', () => {
     expect(event.defaultPrevented).toBe(true);
   });
 
+  it.each([
+    ['link', '<a href="/next" data-blx-id="el-link-1"><span id="inside">link</span></a>'],
+    ['blank link', '<a href="/next" target="_blank" data-blx-id="el-link-1">link</a>'],
+    ['button', '<button data-blx-id="el-button-1">go</button>'],
+    ['submit button', '<button type="submit" data-blx-id="el-button-1">go</button>'],
+    ['input', '<input data-blx-id="el-input-1">'],
+    ['textarea', '<textarea data-blx-id="el-textarea-1"></textarea>'],
+    ['select', '<select data-blx-id="el-select-1"><option>x</option></select>'],
+    ['summary', '<details><summary data-blx-id="el-summary-1">more</summary></details>'],
+    ['label', '<label for="x" data-blx-id="el-label-1">name</label><input id="x">'],
+    ['video controls', '<video controls data-blx-id="el-video-1"></video>'],
+    ['audio controls', '<audio controls data-blx-id="el-audio-1"></audio>'],
+    ['iframe-like', '<div role="document" tabindex="0" data-blx-id="el-frame-1">frame</div>'],
+    ['role button', '<div role="button" data-blx-id="el-role-1">go</div>'],
+    ['tabindex', '<div tabindex="0" data-blx-id="el-tab-1">go</div>'],
+  ])('blocks click activation and emits one pick for %s', (_name, html) => {
+    const h = begin();
+    render(h, html);
+    h.sent.length = 0;
+    const target = need(h.root.querySelector('[data-blx-id]'));
+    let bubbled = false;
+    target.addEventListener('click', () => {
+      bubbled = true;
+    });
+    const href = window.location.href;
+    const open = vi.spyOn(window, 'open').mockImplementation(() => null);
+    const event = new MouseEvent('click', { bubbles: true, cancelable: true });
+    target.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(true);
+    expect(bubbled).toBe(false);
+    expect(h.sent).toEqual([{ type: 'pick', id: target.getAttribute('data-blx-id'), shift: false, alt: false }]);
+    expect(window.location.href).toBe(href);
+    expect(open).not.toHaveBeenCalled();
+  });
+
+  it.each(['Enter', ' '])('keyboard %s on a link picks without activation', (key) => {
+    const h = begin();
+    render(h, '<a href="/next" data-blx-id="el-link-1">link</a>');
+    h.sent.length = 0;
+    const link = need(h.root.querySelector('a'));
+    let bubbled = false;
+    link.addEventListener('keydown', () => {
+      bubbled = true;
+    });
+    const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
+    link.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(true);
+    expect(bubbled).toBe(false);
+    expect(h.sent).toEqual([{ type: 'pick', id: 'el-link-1', shift: false, alt: false }]);
+  });
+
+  it('keeps body scrolling keys and wheel available', () => {
+    const h = begin();
+    render(h, PAGE);
+    for (const key of [' ', 'ArrowDown', 'PageDown', 'Home', 'End']) {
+      const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
+      document.body.dispatchEvent(event);
+      expect(event.defaultPrevented, `${key} remains available for scrolling`).toBe(false);
+    }
+    const wheel = new WheelEvent('wheel', { bubbles: true, cancelable: true, deltaY: 40 });
+    document.body.dispatchEvent(wheel);
+    expect(wheel.defaultPrevented).toBe(false);
+  });
+
+  it('selects text inside links and blocks middle and right activation', () => {
+    const h = begin();
+    render(h, '<a href="/next" data-blx-id="el-link-1">text</a>');
+    const link = need(h.root.querySelector('a'));
+    h.sent.length = 0;
+    // A real pointer event whose visible hit target is the text still resolves to the containing link.
+    link.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    expect(h.sent).toEqual([{ type: 'pick', id: 'el-link-1', shift: false, alt: false }]);
+    h.sent.length = 0;
+    const middle = new MouseEvent('auxclick', { bubbles: true, cancelable: true, button: 1 });
+    link.dispatchEvent(middle);
+    expect(middle.defaultPrevented).toBe(true);
+    expect(h.sent).toEqual([{ type: 'pick', id: 'el-link-1', shift: false, alt: false }]);
+    h.sent.length = 0;
+    const right = new MouseEvent('contextmenu', { bubbles: true, cancelable: true, button: 2 });
+    link.dispatchEvent(right);
+    expect(right.defaultPrevented).toBe(true);
+    expect(h.sent).toEqual([{ type: 'pick', id: 'el-link-1', shift: false, alt: false }]);
+  });
+
+  it.each([
+    ['dblclick', '<button data-blx-id="el-button-1">button</button>', 'button'],
+    ['keyup', '<a href="/next" data-blx-id="el-link-1">link</a>', 'a'],
+    ['keypress', '<a href="/next" data-blx-id="el-link-1">link</a>', 'a'],
+    ['pointerdown', '<button data-blx-id="el-button-1">button</button>', 'button'],
+    ['mousedown', '<button data-blx-id="el-button-1">button</button>', 'button'],
+    ['dragstart', '<a href="/next" data-blx-id="el-link-1">link</a>', 'a'],
+    ['drop', '<a href="/next" data-blx-id="el-link-1">link</a>', 'a'],
+    ['touchstart', '<button data-blx-id="el-button-1">button</button>', 'button'],
+    ['change', '<input data-blx-id="el-input-1">', 'input'],
+    ['input', '<textarea data-blx-id="el-textarea-1"></textarea>', 'textarea'],
+    ['toggle', '<details data-blx-id="el-details-1"><summary>details</summary></details>', 'details'],
+    ['play', '<video controls data-blx-id="el-video-1"></video>', 'video'],
+  ])('captures %s on its interactive element', (type, html, selector) => {
+    const h = begin();
+    render(h, html);
+    const target = need(h.root.querySelector(selector));
+    let bubbled = false;
+    target.addEventListener(type, () => {
+      bubbled = true;
+    });
+    const event =
+      type === 'keyup' || type === 'keypress'
+        ? new KeyboardEvent(type, { key: 'Enter', bubbles: true, cancelable: true })
+        : new Event(type, { bubbles: true, cancelable: true });
+    target.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(type !== 'touchstart');
+    expect(bubbled).toBe(false);
+  });
+
+  it('captures reset before the form handler', () => {
+    const h = begin();
+    const form = document.createElement('form');
+    document.body.append(form);
+    let bubbled = false;
+    form.addEventListener('reset', () => {
+      bubbled = true;
+    });
+    const event = new Event('reset', { bubbles: true, cancelable: true });
+    form.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(true);
+    expect(bubbled).toBe(false);
+    form.remove();
+    h.runtime.close();
+  });
+
+  it('prevents a submit button inside a form from dispatching a submit', () => {
+    const h = begin();
+    h.root.innerHTML = '<form><button type="submit" data-blx-id="el-submit-1">send</button></form>';
+    const form = need(h.root.querySelector('form'));
+    const button = need(form.querySelector('button'));
+    let submitted = false;
+    form.addEventListener('submit', () => {
+      submitted = true;
+    });
+    const click = new MouseEvent('click', { bubbles: true, cancelable: true });
+    button.dispatchEvent(click);
+    expect(click.defaultPrevented).toBe(true);
+    expect(submitted).toBe(false);
+    expect(h.sent.at(-1)).toEqual({ type: 'pick', id: 'el-submit-1', shift: false, alt: false });
+  });
+
   it('ignores elements outside the root and ids that do not match the pattern', () => {
     const h = begin();
     document.body.insertAdjacentHTML('beforeend', '<p id="outside" data-blx-id="el-outside-1">x</p>');

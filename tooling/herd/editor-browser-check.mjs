@@ -118,7 +118,8 @@ try {
       type: 'keyDown',
       key,
       code,
-      windowsVirtualKeyCode: { Tab: 9, Escape: 27, ArrowRight: 39, ArrowLeft: 37, Home: 36, End: 35 }[key] ?? 0,
+      windowsVirtualKeyCode:
+        { Tab: 9, Escape: 27, ArrowRight: 39, ArrowLeft: 37, Home: 36, End: 35, PageDown: 34, PageUp: 33 }[key] ?? 0,
     })
       .then(() => send('Input.dispatchKeyEvent', { type: 'keyUp', key, code }))
       .then(() => sleep(250));
@@ -779,14 +780,17 @@ try {
   // A click inside the canvas selects the element (pick over the MessageChannel), and focus does not stay in the iframe.
   const target = await ev(`(() => {
     const frame = document.querySelector('main iframe');
-    const el = [...frame.contentDocument.querySelectorAll('[data-blx-id]')].find((e) => e.getAttribute('data-blx-id').includes('hero-h1'));
+    const el = [...frame.contentDocument.querySelectorAll('a[href][data-blx-id],button[data-blx-id]')][0];
     if (!el) return null;
     el.scrollIntoView({ block: 'center' });
     const r = el.getBoundingClientRect();
     const f = frame.getBoundingClientRect();
     return { id: el.getAttribute('data-blx-id'), x: f.x + r.x + Math.min(r.width / 2, 40), y: f.y + r.y + Math.min(r.height / 2, 10) };
   })()`);
-  assert.ok(target, 'the canvas contains the hero heading');
+  assert.ok(target, 'the canvas contains an interactive demo element');
+  const editorBeforeActivation = await ev('location.href');
+  const iframeBeforeActivation = await ev('document.querySelector("main iframe").contentWindow.location.href');
+  const targetsBeforeActivation = (await send('Target.getTargets')).result.targetInfos.length;
   await send('Input.dispatchMouseEvent', {
     type: 'mousePressed',
     x: target.x,
@@ -822,9 +826,60 @@ try {
     `({ inspector: document.querySelector('aside[aria-label="Inspector"]').textContent, focusInFrame: document.activeElement?.tagName === 'IFRAME', marked: document.querySelector('main iframe').contentDocument.querySelectorAll('[data-blx-selected]').length, outlines: document.querySelectorAll('[data-testid="selection-overlay"]').length })`,
   );
   assert.ok(afterPick.inspector.includes(target.id), 'picking an element in the canvas selects it in the editor');
+  assert.equal(
+    await ev('location.href'),
+    editorBeforeActivation,
+    'clicking the canvas element leaves the editor URL unchanged',
+  );
+  assert.equal(
+    await ev('document.querySelector("main iframe").contentWindow.location.href'),
+    iframeBeforeActivation,
+    'clicking the canvas element leaves the iframe URL unchanged',
+  );
+  assert.equal(
+    (await send('Target.getTargets')).result.targetInfos.length,
+    targetsBeforeActivation,
+    'clicking does not open a new target',
+  );
   assert.equal(afterPick.marked, 0, 'selected styling is absent from the canvas document');
   assert.equal(afterPick.outlines, 1, 'the editor renders exactly one selected outline');
   assert.equal(afterPick.focusInFrame, false, 'focus does not stay inside the iframe after a pick');
+  await ev(`(() => {
+    const frame = document.querySelector('main iframe');
+    const link = frame.contentDocument.createElement('a');
+    link.href = '/?blx-canvas-guard-keyboard-probe';
+    link.textContent = 'Keyboard guard probe';
+    link.setAttribute('data-blx-id', '${target.id}');
+    frame.contentDocument.querySelector('#blx-canvas-root').append(link);
+    link.focus();
+  })()`);
+  await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+  await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+  await sleep(500);
+  assert.equal(
+    await ev('location.href'),
+    editorBeforeActivation,
+    'Enter on the focused canvas link leaves the editor URL unchanged',
+  );
+  assert.equal(
+    await ev('document.querySelector("main iframe").contentWindow.location.href'),
+    iframeBeforeActivation,
+    'Enter on the focused canvas link leaves the iframe URL unchanged',
+  );
+  await ev(
+    `(() => { const frame = document.querySelector('main iframe'); frame.contentWindow.scrollTo(0, 0); frame.contentDocument.activeElement?.blur?.(); frame.focus(); frame.contentWindow.focus(); })()`,
+  );
+  await sleep(300);
+  const canvasScrollBefore = await ev('document.querySelector("main iframe").contentWindow.scrollY');
+  await press('PageDown');
+  await sleep(600);
+  const canvasScrollAfter = await ev('document.querySelector("main iframe").contentWindow.scrollY');
+  assert.ok(
+    canvasScrollAfter > canvasScrollBefore,
+    `PageDown still scrolls the canvas body (${canvasScrollBefore} -> ${canvasScrollAfter})`,
+  );
+  await ev(`document.querySelector('main iframe').contentWindow.scrollTo(0, 0)`);
+  await sleep(400);
   await ev(`${buttonByText('style')}.click()`);
   await sleep(250);
   const styleInspector = await ev(`(() => {
@@ -871,23 +926,23 @@ try {
     `the toolbar sits above selection inside frame (${JSON.stringify(overlay)})`,
   );
   const iframeTopBeforeDuplicate = await ev(`document.querySelector('main iframe').getBoundingClientRect().top`);
-  const countBeforeDuplicate = await ev(
-    `document.querySelector('main iframe').contentDocument.querySelectorAll('[data-blx-id]').length`,
-  );
+  const treeRows = `[...document.querySelectorAll('nav[aria-label="Structure"] [role="treeitem"]')].map((row) => row.dataset.id)`;
+  const treeBeforeDuplicate = await ev(treeRows);
   await ev(`document.querySelector('[data-testid="selection-toolbar"] button[aria-label="Duplicate"]')?.click()`);
-  await sleep(500);
-  assert.equal(
-    await ev(`document.querySelector('main iframe').contentDocument.querySelectorAll('[data-blx-id]').length`),
-    countBeforeDuplicate + 1,
-    'Duplicate inserts a copy',
+  await sleep(1800);
+  const treeAfterDuplicate = await ev(treeRows);
+  const copyId = treeAfterDuplicate.find((id) => !treeBeforeDuplicate.includes(id));
+  assert.equal(treeAfterDuplicate.length, treeBeforeDuplicate.length + 1, 'Duplicate inserts a copy');
+  assert.ok(copyId?.startsWith('el-copy-'), 'the duplicate has a fresh element id');
+  assert.ok(
+    await ev(
+      `!!document.querySelector('main iframe').contentDocument.querySelector('[data-blx-id="' + ${JSON.stringify(copyId)} + '"]')`,
+    ),
+    'the canvas preview shows the duplicate',
   );
   await ev(`document.querySelector('button[aria-label="Undo"]')?.click()`);
-  await sleep(500);
-  assert.equal(
-    await ev(`document.querySelector('main iframe').contentDocument.querySelectorAll('[data-blx-id]').length`),
-    countBeforeDuplicate,
-    'Undo removes the duplicate',
-  );
+  await sleep(1800);
+  assert.deepEqual(await ev(treeRows), treeBeforeDuplicate, 'Undo removes the duplicate');
   assert.equal(
     await ev(`document.querySelector('main iframe').getBoundingClientRect().top`),
     iframeTopBeforeDuplicate,

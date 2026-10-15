@@ -27,7 +27,7 @@ const MAX_META_LENGTH = 1024;
 const NONCE_PATTERN = /^[A-Za-z0-9+/_=-]{16,64}$/;
 
 /** Selection and hover are drawn by this stylesheet (a nonce'd `<style>`), never by inline styles. */
-const CHROME_CSS = `[${HOVER_ATTRIBUTE}]{outline:2px dashed #2563ebaa!important;outline-offset:-2px!important}`;
+const CHROME_CSS = `[${HOVER_ATTRIBUTE}]{outline:2px dashed #2563ebaa!important;outline-offset:-2px!important}a,area,button,input,textarea,select,summary,[role="button"],[tabindex]{cursor:default!important}`;
 
 export interface CanvasMeta {
   version: 1;
@@ -275,18 +275,55 @@ export function startRuntime(env: RuntimeEnv = { document, window }): Runtime | 
   const closestElement = (target: EventTarget | null, selector: string): Element | null =>
     target !== null && typeof (target as Element).closest === 'function' ? (target as Element).closest(selector) : null;
 
+  const INTERACTIVE =
+    'a[href],area[href],button,input,textarea,select,option,summary,label,[role="button"],[tabindex],[contenteditable="true"],audio[controls],video[controls]';
+  const ACTIVATABLE = 'a[href],area[href],button,input,summary,[role="button"],[tabindex]';
+  const stop = (event: Event, prevent = true): void => {
+    if (prevent && event.cancelable) event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+  };
   const onClick = (event: MouseEvent): void => {
-    if (closestElement(event.target, 'a, area') !== null) event.preventDefault(); // nothing navigates
-    const holder = closestElement(event.target, '[data-blx-id]');
-    const id = holder?.getAttribute('data-blx-id');
-    if (id === null || id === undefined || !isElementId(id) || !root.contains(holder)) return;
-    send({ type: 'pick', id, shift: event.shiftKey, alt: event.altKey });
+    const interactive = closestElement(event.target, INTERACTIVE);
+    if (interactive !== null) stop(event); // activation, navigation, submission and native controls are editor picks only
+    pick(event);
   };
   const onAuxClick = (event: MouseEvent): void => {
-    if (closestElement(event.target, 'a, area') !== null) event.preventDefault();
+    if (closestElement(event.target, INTERACTIVE) !== null) stop(event);
+    pick(event);
+  };
+  const pick = (event: MouseEvent): void => {
+    const holder = closestElement(event.target, '[data-blx-id]');
+    const id = holder?.getAttribute('data-blx-id');
+    if (id !== null && id !== undefined && isElementId(id) && root.contains(holder)) {
+      send({ type: 'pick', id, shift: event.shiftKey, alt: event.altKey });
+    }
+  };
+  const onContextMenu = (event: MouseEvent): void => {
+    stop(event);
+    pick(event);
   };
   const onSubmit = (event: Event): void => {
-    event.preventDefault();
+    stop(event);
+  };
+  const onKeyboard = (event: KeyboardEvent): void => {
+    const editable = closestElement(event.target, 'input,textarea,select,option,[contenteditable="true"]');
+    const activation =
+      (event.key === 'Enter' || event.key === ' ') && closestElement(event.target, ACTIVATABLE) !== null;
+    if (editable !== null || activation) {
+      stop(event);
+      if (activation && event.type === 'keydown') pick(event as unknown as MouseEvent);
+    }
+  };
+  const onPointerActivation = (event: Event): void => {
+    if (closestElement(event.target, INTERACTIVE) !== null) stop(event, event.type !== 'touchstart');
+  };
+  const onControlAction = (event: Event): void => {
+    const selector =
+      event.type === 'dblclick'
+        ? INTERACTIVE
+        : 'input,textarea,select,option,details,summary,audio,video,[contenteditable="true"]';
+    if (closestElement(event.target, selector) !== null) stop(event);
   };
 
   const flushHover = (): void => {
@@ -323,7 +360,15 @@ export function startRuntime(env: RuntimeEnv = { document, window }): Runtime | 
 
   doc.addEventListener('click', onClick, true);
   doc.addEventListener('auxclick', onAuxClick, true);
+  doc.addEventListener('contextmenu', onContextMenu, true);
   doc.addEventListener('submit', onSubmit, true);
+  doc.addEventListener('reset', onSubmit, true);
+  for (const type of ['keydown', 'keyup', 'keypress']) doc.addEventListener(type, onKeyboard as EventListener, true);
+  for (const type of ['pointerdown', 'mousedown', 'dragstart', 'drop', 'touchstart']) {
+    doc.addEventListener(type, onPointerActivation, true);
+  }
+  for (const type of ['dblclick', 'change', 'input', 'toggle', 'play'])
+    doc.addEventListener(type, onControlAction, true);
   doc.addEventListener('pointerover', onPointerOver, true);
   doc.documentElement.addEventListener('pointerleave', onPointerLeave);
   win.addEventListener('scroll', onScroll, { passive: true });
@@ -333,7 +378,16 @@ export function startRuntime(env: RuntimeEnv = { document, window }): Runtime | 
     closed = true;
     doc.removeEventListener('click', onClick, true);
     doc.removeEventListener('auxclick', onAuxClick, true);
+    doc.removeEventListener('contextmenu', onContextMenu, true);
     doc.removeEventListener('submit', onSubmit, true);
+    doc.removeEventListener('reset', onSubmit, true);
+    for (const type of ['keydown', 'keyup', 'keypress'])
+      doc.removeEventListener(type, onKeyboard as EventListener, true);
+    for (const type of ['pointerdown', 'mousedown', 'dragstart', 'drop', 'touchstart']) {
+      doc.removeEventListener(type, onPointerActivation, true);
+    }
+    for (const type of ['dblclick', 'change', 'input', 'toggle', 'play'])
+      doc.removeEventListener(type, onControlAction, true);
     doc.removeEventListener('pointerover', onPointerOver, true);
     doc.documentElement.removeEventListener('pointerleave', onPointerLeave);
     win.removeEventListener('scroll', onScroll);
