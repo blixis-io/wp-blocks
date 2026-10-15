@@ -63,7 +63,7 @@ Compromised WordPress core, server or database; malicious administrator; malicio
 3. CSS only via the allow-list compiler; no user-supplied selectors (BWB-023/024).
 4. Posting a document cannot publish it; publishing is a separate authorised action (ADR 0004).
 5. Free makes no external requests without consent (ADR 0009).
-6. Dependency and licence inventory runs in CI; GSAP denylist (ADR 0008).
+6. Dependency and licence inventory runs in CI; GSAP workspace allowlist and scoped licence exception (ADR 0013).
 7. Security review and fuzzing before Free 1.0 (BWB-070); zero known critical/high exploitable issues at release (PRD §10).
 8. Vulnerability reporting address, severity SLA and advisory process selected before public launch (owner action; SECURITY.md).
 

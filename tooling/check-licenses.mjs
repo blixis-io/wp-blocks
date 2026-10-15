@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // Licence inventory and policy check (ADR 0008, BWB-015). Reads pnpm and Composer licence data, applies
 // tooling/licenses.json and exits non-zero for any unknown, missing or disallowed licence.
-// Production (distributed) dependencies must use a 'distributed' licence; development dependencies may also use 'devOnly'.
+// Production dependencies must use a 'distributed' licence; development dependencies may also use 'devOnly'. Exact
+// package exceptions are checked in both inventories so accepted custom references remain pinned and auditable.
 import { spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -67,7 +68,6 @@ export function classify(deps, kind, policy) {
   return deps
     .filter((d) => {
       if (evaluate(d.license, accepted)) return false;
-      if (kind !== 'distributed') return true;
       const exception = (policy.exceptions ?? []).find(
         (entry) =>
           entry.package === `${d.ecosystem}:${d.name}` &&

@@ -83,7 +83,7 @@ Free users can build and publish complete simple sites. Plus/Pro install separat
 - FR-031: Optional Plus add-on: dynamic source adapters (WP fields, ACF if present) with safe allowlisting.
 - FR-032: Optional Pro add-on: query loops and conditional rendering with bounded queries.
 - FR-033: Optional Pro add-on: WooCommerce editing primitives without unsafe payment/cart handling.
-- FR-034: Optional Pro add-on: animation abstraction; no GSAP dependency before explicit clearance.
+- FR-034: Optional Plus/Pro animation add-on with an engine-neutral animation schema; GSAP use is limited by ADR 0013 and the Free plugin retains a CSS/WAAPI path.
 - FR-035: Server-validated capabilities, clear license expiry behavior, and compatibility/version checks.
 - FR-036: Planned (post-MVP): reusable global components, templates/pattern library and extensibility SDK.
 
@@ -128,7 +128,7 @@ WooCommerce builder, advanced theme templates, global components library, advanc
 | Plugin ecosystem conflicts | namespacing, isolated editor stylesheet, functional tests with representative plugins |
 | Theme lock-in | preserve stored JSON and provide documented fallback/export rules |
 | Fonts and WP version drift | WP version matrix, native Font Library adapter, no proprietary font store |
-| GSAP licensing constraints | do not ship until explicitly permitted; CSS/WAAPI default |
+| GSAP licensing constraints | owner-approved for scoped editor/add-on use by ADR 0013; not GPL-compatible, legal risk accepted, counsel review recommended before commercial release; CSS/WAAPI remains available to Free |
 | Freemium policy/licensing | separate downloadable plugins; GPL-compatible dependencies; legal review |
 
 ## 12. Release gates

@@ -93,22 +93,36 @@ test('forbidden and disallowed dependencies are caught in every dependency field
   }
 });
 
-test('rejects GSAP directly, through npm: aliases, in the root and in the lockfile (ADR 0008)', () => {
+test('allows GSAP only in ADR 0013 workspaces and bans it in WordPress distributions', () => {
+  assert.deepEqual(
+    check(fixture(realConfig, { overrides: { 'apps/editor': { dependencies: { gsap: '^3.0.0' } } } }), realConfig),
+    [],
+  );
   assert.ok(
     has(
-      check(fixture(realConfig, { overrides: { 'apps/editor': { dependencies: { gsap: '^3.0.0' } } } }), realConfig),
+      check(
+        fixture(realConfig, { overrides: { 'wordpress/plugin': { dependencies: { gsap: '^3.0.0' } } } }),
+        realConfig,
+      ),
       'forbidden dependency "gsap"',
     ),
   );
   assert.ok(
     has(
       check(
-        fixture(realConfig, { overrides: { 'apps/editor': { dependencies: { animate: 'npm:gsap@^3.12.0' } } } }),
+        fixture(realConfig, { overrides: { 'wordpress/plugin': { dependencies: { animate: 'npm:gsap@^3.12.0' } } } }),
         realConfig,
       ),
       'forbidden dependency "gsap"',
       'alias',
     ),
+  );
+  assert.deepEqual(
+    check(
+      fixture(realConfig, { overrides: { 'apps/editor': { dependencies: { animate: 'npm:gsap@^3.12.0' } } } }),
+      realConfig,
+    ),
+    [],
   );
   assert.ok(
     has(
@@ -138,6 +152,15 @@ test('rejects GSAP directly, through npm: aliases, in the root and in the lockfi
       'pnpm-lock.yaml',
       '@gsap/*',
     ),
+  );
+  assert.deepEqual(
+    check(
+      fixture(realConfig, {
+        lock: 'importers:\n  apps/editor:\n    dependencies:\n      gsap:\n        specifier: 3.13.0\npackages:\n  gsap@3.13.0:\n    resolution: {integrity: sha512-x}\n',
+      }),
+      realConfig,
+    ),
+    [],
   );
   assert.deepEqual(check(fixture(realConfig, { lock: 'packages:\n  not-gsap-related@1.0.0:\n' }), realConfig), []);
 });
@@ -287,8 +310,8 @@ test('fixtures, declaration files and node_modules do not count as TypeScript so
   assert.deepEqual(check(root, realConfig), []);
 });
 
-test('the whole @gsap scope is banned, not just @gsap/react (ADR 0008)', () => {
-  for (const pkg of ['@gsap/react', '@gsap/shockingly', 'gsap']) {
+test('the whole @gsap scope remains banned, including inside allowed workspaces (ADR 0013)', () => {
+  for (const pkg of ['@gsap/react', '@gsap/shockingly']) {
     const errors = check(
       fixture(realConfig, { overrides: { 'apps/editor': { dependencies: { [pkg]: '^1.0.0' } } } }),
       realConfig,
@@ -302,7 +325,7 @@ test('the whole @gsap scope is banned, not just @gsap/react (ADR 0008)', () => {
   assert.ok(has(lock, 'pnpm-lock.yaml', '@gsap/*'), lock.join('\n'));
 });
 
-test('vendored GSAP files and GSAP imports in source are rejected; docs and tooling may mention it', () => {
+test('vendored files and GSAP imports outside allowed workspaces are rejected; docs and tooling may mention it', () => {
   const root = fixture(realConfig);
   mkdirSync(join(root, 'wordpress', 'theme', 'assets'), { recursive: true });
   mkdirSync(join(root, 'docs'), { recursive: true });
@@ -318,7 +341,9 @@ test('vendored GSAP files and GSAP imports in source are rejected; docs and tool
   );
   const errors = check(root, realConfig);
   assert.ok(has(errors, 'gsap.min.js', 'vendored file name'), errors.join('\n'));
-  assert.ok(has(errors, 'a.ts', 'imports or loads GSAP'), errors.join('\n'));
+  assert.ok(!has(errors, 'a.ts', 'imports or loads GSAP'), errors.join('\n'));
   assert.ok(has(errors, 'b.tsx', 'imports or loads GSAP'), errors.join('\n'));
   assert.ok(has(errors, 'header.php', 'imports or loads GSAP'), errors.join('\n'));
+  writeFileSync(join(root, 'wordpress', 'plugin', 'blocked.ts'), "import { gsap } from 'gsap';\n");
+  assert.ok(has(check(root, realConfig), 'blocked.ts', 'imports or loads GSAP'));
 });

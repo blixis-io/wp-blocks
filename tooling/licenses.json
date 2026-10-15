@@ -1,5 +1,5 @@
 {
-  "$comment": "Licence policy (ADR 0008). 'distributed' lists SPDX ids acceptable for anything shipped in a Free artifact (GPL-compatible per the FSF list; Apache-2.0 is compatible with GPL-2.0-or-later and GPL-3.0). 'devOnly' lists ids acceptable only for tooling that is never distributed. Anything else, or a missing licence, fails CI until a recorded decision adds it here.",
+  "$comment": "Licence policy (ADR 0008/0013). 'distributed' lists SPDX ids acceptable for anything shipped in a Free artifact (GPL-compatible per the FSF list; Apache-2.0 is compatible with GPL-2.0-or-later and GPL-3.0). 'devOnly' lists ids acceptable only for tooling that is never distributed. Exact package/version/licence exceptions apply only as recorded below. Anything else, or a missing licence, fails CI.",
   "distributed": [
     "MIT",
     "ISC",
@@ -30,6 +30,13 @@
       "license": "CC-BY-4.0",
       "reason": "Solar icons are shipped with required attribution in editor NOTICE.txt; CC BY 4.0 permits combination under GPLv3, which can be combined with this GPL-2.0-or-later plugin. Residual interpretation risk is recorded in ADR 0012.",
       "decision": "ADR 0012"
+    },
+    {
+      "package": "npm:gsap",
+      "version": "3.13.0",
+      "license": "LicenseRef-GSAP-Standard-No-Charge",
+      "reason": "Owner-approved scoped use; this custom licence reference records accepted legal risk and is not a GPL-compatible licence. Review before commercial release and on each major version upgrade.",
+      "decision": "ADR 0013"
     }
   ]
 }

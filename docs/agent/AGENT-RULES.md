@@ -11,6 +11,6 @@
 7. Tests and docs are part of the issue Definition of Done; never disable checks to manufacture green status.
 8. Keep theme presentation separated from plugin business logic and saved content. Editors require compatible theme, storage/render fallback survives theme switches.
 9. Keep JS editor out of public frontend; validate all documents, REST calls, iframe messages and CSS values.
-10. Never install GSAP or other potentially restricted animation dependencies until licensing is explicitly approved.
+10. GSAP is approved only under ADR 0013: `apps/editor` and the separately distributed Plus/Pro animation add-on (or optional user-initiated download); never bundle it in Free, the theme, or framework-free packages. Keep its version pinned and use the scoped licence exception.
 11. Pause on ambiguous security, licensing, architectural or backward-compatibility decisions; document options as ADR/issues for owner review.
 12. After each task report issue URL, branch/PR URL when applicable, tests run, risks and remaining blockers accurately.

@@ -150,14 +150,24 @@ test('ESLint blocks React, dnd-kit and GSAP imports in framework-free packages',
   }
 });
 
-test('ESLint allows React in editor-ui and blocks GSAP everywhere', () => {
+test('ESLint allows React in editor-ui and scopes GSAP imports to ADR 0013 workspaces', () => {
   assert.ok(
     !eslintStdin('packages/editor-ui/src/a.mjs', "import x from 'react';\nexport default x;\n").includes(
       'no-restricted-imports',
     ),
   );
   assert.ok(
-    eslintStdin('apps/editor/src/a.mjs', "import x from 'gsap';\nexport default x;\n").includes(
+    !eslintStdin('apps/editor/src/a.mjs', "import x from 'gsap';\nexport default x;\n").includes(
+      'no-restricted-imports',
+    ),
+  );
+  assert.ok(
+    eslintStdin('wordpress/plugin/src/a.mjs', "import x from 'gsap';\nexport default x;\n").includes(
+      'no-restricted-imports',
+    ),
+  );
+  assert.ok(
+    eslintStdin('apps/editor/src/a.mjs', "import x from '@gsap/react';\nexport default x;\n").includes(
       'no-restricted-imports',
     ),
   );

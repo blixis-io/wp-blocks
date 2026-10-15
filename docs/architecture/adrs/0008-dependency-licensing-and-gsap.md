@@ -1,6 +1,8 @@
 # ADR 0008: Dependency licensing and GSAP
 
-- Status: Accepted (owner delegated the decision to the orchestrator, 2026-10-14)
+Historical decision: the GSAP prohibition below was superseded by owner-approved ADR 0013 on 2026-10-15. The remaining dependency licensing guidance still applies.
+
+- Status: Superseded for GSAP by ADR 0013; remaining dependency-licensing guidance remains applicable
 - Date: 2026-10-14
 - Issues: #8 (BWB-008), #87, #88 (Pro animation)
 - Deciders: owner (legal), orchestrator
@@ -13,7 +15,7 @@ Findings (2026-10-14; this is engineering diligence, not legal advice):
 - The "Standard 'No Charge' GSAP License" (Webflow, effective 2025-04-30, modified 2025-05-30; https://gsap.com/community/standard-license/) permits use on any website, web app or digital interface, including by companies competing with Webflow elsewhere, but defines **Prohibited Uses** as use "in tools that allow users to build visual animations without code" that "encourage[s], induce[s], or materially assist[s] in creating a solution that competes with Webflow's visual animation" capabilities, and forbids such use "without prior written consent". It also forbids reverse engineering to build competing products and removing branding.
 - Blixis Pro plans an "animation abstraction/controls" feature inside a visual no-code builder (FR-034). That is squarely within the plain reading of the Prohibited Uses. Generated *output* animating a page is a different question from *shipping GSAP inside the builder tool*, and the licence does not clearly resolve it.
 
-## Decision
+## Decision (historical; GSAP portion superseded by ADR 0013)
 1. **GSAP is not adopted** in any Blixis package (theme, Builder, Plus, Pro, docs examples, tooling) and must not be added as a dependency or vendored. A CI check (dependency denylist) enforces this from P1.
 2. **Default animation engine: CSS transitions/animations and the Web Animations API** (browser-native, no licence exposure). FR-034 remains "approved engine only".
 3. **Reopening** requires (a) written consent from Webflow/GSAP or a legal opinion by counsel covering our exact use, (b) an owner-approved superseding ADR. Until then the Pro animation issues (#87 engine decision, #88 controls) are scoped to CSS/WAAPI.

@@ -108,5 +108,7 @@
     }
   },
   "reserved": ["apps/docs"],
-  "globalForbidExternal": ["gsap", "@gsap/*"]
+  "globalForbidExternal": ["@gsap/*"],
+  "gsapAllowedWorkspaces": ["apps/editor", "packages/animation-runtime"],
+  "gsapPackage": "gsap"
 }

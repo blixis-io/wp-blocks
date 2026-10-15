@@ -2,6 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
 import { axeViolations } from '../test/axe';
 import { cn } from '../lib/cn';
 import { PortalContainerProvider } from '../lib/portal';
@@ -32,10 +33,110 @@ import {
   type IconProps,
   ELEMENT_ICONS,
   elementIconName,
+  ICONS,
 } from '../index';
 import { CORE_ELEMENTS } from '@blixis/wp-element-registry';
 
 describe('Icon', () => {
+  const SOLAR_EXPORTS = {
+    back: 'alt-arrow-left-linear',
+    forward: 'alt-arrow-right-linear',
+    caretRight: 'alt-arrow-right-linear',
+    move: 'cursor-square-linear',
+    chevronDown: 'alt-arrow-down-linear',
+    check: 'check-linear',
+    preview: 'eye-linear',
+    image: 'gallery-linear',
+    home: 'home-linear',
+    search: 'magnifer-linear',
+    shortcuts: 'keyboard-linear',
+    language: 'global-linear',
+    lock: 'lock-linear',
+    desktop: 'monitor-linear',
+    dark: 'moon-linear',
+    appearance: 'sun-linear',
+    panelLeft: 'panel-left-linear',
+    panelRight: 'panel-right-linear',
+    text: 'text-linear',
+    add: 'add-linear',
+    section: 'widget-3-linear',
+    light: 'sun-linear',
+    tablet: 'tablet-linear',
+    heading: 'text-field-linear',
+    delete: 'trash-bin-trash-linear',
+    undo: 'undo-left-linear',
+    redo: 'undo-right-linear',
+    publish: 'upload-linear',
+    refresh: 'refresh-linear',
+    mobile: 'smartphone-linear',
+    save: 'diskette-linear',
+    close: 'close-linear',
+    container: 'box-linear',
+    button: 'cursor-square-linear',
+    fallback: 'widget-3-linear',
+    system: 'moon-stars-linear',
+    moonStars: 'moon-stars-linear',
+    menuDots: 'menu-dots-linear',
+  } as const;
+
+  it('pins every semantic name to a deliberate Solar export', () => {
+    expect(Object.keys(ICONS).sort()).toEqual(Object.keys(SOLAR_EXPORTS).sort());
+    const source = readFileSync('src/icons/registry.ts', 'utf8');
+    const imports = new Map(
+      [...source.matchAll(/import (\w+) from '@iconify-icons\/solar\/([^']+)';/g)].map(([, identifier, solarName]) => [
+        String(identifier),
+        String(solarName),
+      ]),
+    );
+    const mappings = source.slice(source.indexOf('export const ICONS = {'), source.indexOf('} as const'));
+    for (const [semanticName, solarName] of Object.entries(SOLAR_EXPORTS)) {
+      const variable = [...imports].find(([, actual]) => actual === solarName)?.[0];
+      expect(variable, semanticName).toBeDefined();
+      expect(mappings, semanticName).toMatch(
+        new RegExp(`\\b${semanticName}: ${String(variable)}\\b|\\b${semanticName},`),
+      );
+    }
+  });
+
+  it('renders every registered icon with a viewBox and a non-empty SVG path', () => {
+    for (const name of Object.keys(ICONS) as (keyof typeof ICONS)[]) {
+      const { container, unmount } = render(<Icon name={name} />);
+      const svg = container.querySelector('svg');
+      expect(svg?.getAttribute('viewBox'), name).toMatch(/^0 0 \d+ \d+$/);
+      const pathData = [...(svg?.querySelectorAll('path') ?? [])].map((path) => path.getAttribute('d') ?? '').join('');
+      expect(pathData.trim().length, name).toBeGreaterThan(0);
+      unmount();
+    }
+  });
+
+  it('keeps distinct actions on distinct glyphs except documented equivalent names', () => {
+    const exceptions = new Set([
+      'appearance|light',
+      'button|move',
+      'caretRight|forward',
+      'fallback|section',
+      'moonStars|system',
+    ]);
+    const entries = Object.entries(ICONS);
+    for (let i = 0; i < entries.length; i++) {
+      for (let j = i + 1; j < entries.length; j++) {
+        const leftEntry = entries[i];
+        const rightEntry = entries[j];
+        if (!leftEntry || !rightEntry) continue;
+        const [leftName, left] = leftEntry;
+        const [rightName, right] = rightEntry;
+        if (left === right) {
+          const pair = [leftName, rightName].sort().join('|');
+          expect(exceptions.has(pair), `${leftName} == ${rightName}`).toBe(true);
+        }
+      }
+    }
+    expect(ICONS.undo).not.toBe(ICONS.redo);
+    expect(ICONS.undo).not.toBe(ICONS.add);
+    expect(ICONS.redo).not.toBe(ICONS.add);
+    expect(ICONS.back).not.toBe(ICONS.home);
+  });
+
   it('is decorative by default and exposes a meaningful label when provided', () => {
     const { rerender, container } = render(<Icon name="preview" />);
     expect(container.querySelector('svg')?.getAttribute('aria-hidden')).toBe('true');
@@ -49,6 +150,10 @@ describe('Icon', () => {
     expect(container.querySelector('svg')?.getAttribute('class')).toContain('rtl:-scale-x-100');
     rerender(<Icon name="back" />);
     expect(container.querySelector('svg')?.getAttribute('class') ?? '').not.toContain('rtl:-scale-x-100');
+    for (const name of ['home', 'light', 'dark', 'appearance', 'system'] as const) {
+      const { container: nonDirectional } = render(<Icon name={name} mirrorInRtl />);
+      expect(nonDirectional.querySelector('svg')?.getAttribute('class') ?? '').not.toContain('rtl:-scale-x-100');
+    }
   });
 
   it('maps every registered core element and falls back for unknown types', () => {
