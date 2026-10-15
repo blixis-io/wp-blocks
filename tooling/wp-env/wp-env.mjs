@@ -1395,6 +1395,157 @@ async function smoke() {
           'removing the languages switches routing off again (no content under /nl/)',
         );
         command('post', 'delete', locPost, '--force');
+        // Locale-aware saving (BWB-112): locale identity, content validation, conflicts and translation status.
+        const lsPost = command(
+          'post',
+          'create',
+          '--post_type=page',
+          '--post_status=draft',
+          '--post_title=Locale saving',
+          '--porcelain',
+        );
+        const lsPut = (path, body, expected) =>
+          api(`${lsPost}/${path}`, {
+            cookie: adminCookie,
+            nonce: adminNonce,
+            method: 'PUT',
+            ifMatch: `"${expected}"`,
+            body,
+          });
+        const lsGet = async (path) => json(await api(`${lsPost}/${path}`, { cookie: adminCookie, nonce: adminNonce }));
+        command(
+          'option',
+          'update',
+          'blixis_locales',
+          JSON.stringify({
+            version: 1,
+            defaultLocale: 'en_US',
+            enabledLocales: ['en_US', 'nl_NL'],
+            fallback: 'source',
+          }),
+          '--format=json',
+        );
+        const lsLayout = JSON.stringify({
+          schemaVersion: 1,
+          documentId: 'doc-ls',
+          layoutRevision: 1,
+          root: ['hed-1', 'hed-2'].map(heading),
+        });
+        check((await lsPut('layout', lsLayout, 0)).status === 200, 'the layout is saved');
+        check(
+          (await lsPut('content/en_US', contentBody({ 'hed-1': 'Hello', 'hed-2': 'Second' }), 0)).status === 200,
+          'default-locale content is saved',
+        );
+        const sourceHash = command(
+          'eval',
+          "echo Blixis\\Builder\\Locale\\SourceDigest::of( (object) array( 'text' => 'Hello' ), array( 'text' ) );",
+        );
+        const dutchBody = (extra = {}) =>
+          JSON.stringify({
+            schemaVersion: 1,
+            contentRevision: 1,
+            entries: { 'hed-1': { status: 'translated', values: { text: 'Hallo' }, sourceHash } },
+            ...extra,
+          });
+        check((await lsPut('content/nl_NL', dutchBody(), 0)).status === 200, 'Dutch content is saved');
+        const stored = await lsGet('content/nl_NL');
+        check(
+          stored.locale === 'nl_NL' && stored.document?.locale === 'nl_NL',
+          'a content stream carries the identity of its locale',
+        );
+        const mismatch = await lsPut('content/nl_NL', dutchBody({ locale: 'en_US' }), 1);
+        check(
+          mismatch.status === 422 && (await json(mismatch)).code === 'blixis_locale_mismatch',
+          'content naming another locale is refused with 422',
+        );
+        check((await lsGet('content/nl_NL')).revision === 1, 'a refused save changes nothing');
+        const conflict = await lsPut('content/nl_NL', dutchBody(), 0);
+        const conflictBody = await json(conflict);
+        check(
+          conflict.status === 409 && conflictBody.data?.locale === 'nl_NL' && conflictBody.data?.currentRevision === 1,
+          'a conflict names the locale and both revisions',
+        );
+        check(
+          (await lsGet('content/en_US')).revision === 1,
+          'the default-locale stream is independent of the Dutch conflict',
+        );
+        const otherPost = command(
+          'post',
+          'create',
+          '--post_type=page',
+          '--post_status=draft',
+          '--post_title=Other page',
+          '--porcelain',
+        );
+        const polluted = await lsPut(
+          'layout',
+          JSON.stringify({ ...JSON.parse(lsLayout), post_id: Number(otherPost), locale: 'nl_NL' }),
+          1,
+        );
+        check(
+          polluted.status === 200 &&
+            (await json(await api(`${otherPost}/layout`, { cookie: adminCookie, nonce: adminNonce }))).revision === 0 &&
+            (await lsGet('layout')).revision === 2,
+          'a post_id or locale field in the request body can never redirect a write to another post or stream',
+        );
+        command('post', 'delete', otherPost, '--force');
+        for (const [label, body] of [
+          ['entries that are not an object', JSON.stringify({ schemaVersion: 1, contentRevision: 1, entries: [1] })],
+          [
+            'an unknown entry key',
+            JSON.stringify({ schemaVersion: 1, contentRevision: 1, entries: { 'hed-1': { evil: 1 } } }),
+          ],
+          [
+            'a rich text array value',
+            JSON.stringify({
+              schemaVersion: 1,
+              contentRevision: 1,
+              entries: { 'hed-1': { values: { text: [{ type: 'p' }] } } },
+            }),
+          ],
+          [
+            'an invalid status',
+            JSON.stringify({ schemaVersion: 1, contentRevision: 1, entries: { 'hed-1': { status: 'live' } } }),
+          ],
+        ]) {
+          check((await lsPut('content/nl_NL', body, 1)).status === 422, `content with ${label} is refused`);
+        }
+        let translation = await lsGet('content/nl_NL/translation-status');
+        check(
+          translation.elements?.['hed-1']?.state === 'translated' &&
+            translation.elements?.['hed-2']?.state === 'missing' &&
+            translation.isSource === false,
+          'the translation status reports translated and missing elements',
+        );
+        await lsPut('content/en_US', contentBody({ 'hed-1': 'Hello, changed', 'hed-2': 'Second' }), 1);
+        translation = await lsGet('content/nl_NL/translation-status');
+        check(
+          translation.elements?.['hed-1']?.state === 'stale' &&
+            translation.elements?.['hed-1']?.sourceChanged === true &&
+            translation.counts?.stale === 1,
+          'changing the source text marks the translation stale and keeps the Dutch text',
+        );
+        check(
+          (await lsGet('content/nl_NL')).document?.entries?.['hed-1']?.values?.text === 'Hallo',
+          'the Dutch text is preserved',
+        );
+        check(
+          (await api(`${lsPost}/content/nl_NL/translation-status`)).status === 401 &&
+            (
+              await api(`${lsPost}/content/nl_NL/translation-status`, {
+                cookie: subscriberCookie,
+                nonce: subscriberNonce,
+              })
+            ).status === 403,
+          'the translation status needs edit rights (401, 403)',
+        );
+        check(
+          (await api(`${lsPost}/content/NL/translation-status`, { cookie: adminCookie, nonce: adminNonce })).status ===
+            400,
+          'the translation status validates the locale',
+        );
+        command('option', 'delete', 'blixis_locales');
+        command('post', 'delete', lsPost, '--force');
         // Media (BWB-045): raster library images only, validated responsive attributes, alt text, picker route.
         const mediaIds = JSON.parse(command('eval-file', '/fixtures/media-smoke.php').split('\n').pop());
         const mediaApi = async (id, { cookie, nonce } = {}) =>

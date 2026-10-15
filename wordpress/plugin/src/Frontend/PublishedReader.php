@@ -66,7 +66,8 @@ final class PublishedReader {
 			return new PublishedDocument( $layout, $selected_locale, $layout_revision, 0 );
 		}
 		$content = $this->envelope( $post_id, MetaKeys::snap_content( $selected_locale, $content_revision ) );
-		if ( null === $content ) {
+		// Locale identity: a content snapshot that names another locale is corrupt and never rendered.
+		if ( null === $content || ( \property_exists( $content, 'locale' ) && $content->locale !== $selected_locale ) ) {
 			return null;
 		}
 		$streams          = [ $selected_locale => $content ];

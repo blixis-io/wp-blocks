@@ -53,6 +53,7 @@ PUT requires `Content-Type: application/json`, a JSON envelope object of at most
 | 409 | `blixis_snapshot_limit` | Publish would exceed 200 stored snapshots, or rollback would exceed its recovery ceiling of 240. |
 | 413 | `blixis_too_large` | Request is too large. |
 | 422 | `blixis_invalid_document` | Invalid document. |
+| 422 | `blixis_locale_mismatch` | The content belongs to another locale. |
 | 422 | `blixis_nothing_to_publish` | Nothing to publish. |
 | 423 | `blixis_theme_incompatible` | The active theme does not support Blixis editing. |
 | 428 | `blixis_precondition_required` | If-Match is required. |
@@ -177,3 +178,13 @@ The warning notice appears on dashboard, themes, and plugins screens for users w
 - **Caching.** Rendered pages are cached per locale, with the default-locale content revision and the fallback policy in the key. Appearance mode is not a cache dimension.
 
 **Adapter boundary.** Everything the builder needs from routing is the `Locale\LocaleRouter` interface (`current()`, `fallback_policy()`, `is_published()`, `url_for()`, `alternates()`). Free ships only the native strategy. **No translation-plugin adapter (WPML, Polylang, TranslatePress ...) is supported or advertised**: an adapter must implement this interface and have contract tests against that plugin first. Translated slugs, per-locale domains, translated post titles and locale-aware menus are out of scope for Free 1.0 (the WordPress post title and the navigation menu are the same in every language; only the builder content is translated).
+
+## Locale-aware saving (BWB-112)
+
+**Identity.** A content stream is `{ schemaVersion, contentRevision, locale, entries }` and always carries the locale of the stream it lives in: the server stamps `locale` on save and refuses an envelope that names another one (422 `blixis_locale_mismatch`, nothing written). Content snapshots carry it too, and the public renderer refuses a snapshot whose `locale` differs from its key. Reads (`GET .../content/{locale}`), history (`.../revisions`) and conflicts (409 `data.locale`) name the locale, so autosave, restore and conflict handling never mix languages; each locale stream has its own revisions, history ring and compare-and-swap.
+
+**Route parameters.** WordPress merges the JSON body into `get_param()` and the body wins, so a `locale` or `post_id` field in a request body could redirect a write. The plugin reads identifiers only from the URL (`Rest\RouteParams`); a smoke check proves a body cannot redirect a write.
+
+**Validation (`Storage\ContentValidator`).** Shape and bounds are checked on every save: `entries` is an object of at most 5,000 entries keyed by element id; an entry has only `status` (`missing|draft|translated|reviewed|stale|orphaned`), `values` (at most 32 properties, names `[a-z][A-Za-z0-9]*`, values string up to 20,000 characters, integer, boolean or null) and `sourceHash` (16 lowercase hex characters). Rich text arrives with BWB-104 and is refused for now. Whether an entry fits the layout (element exists, same type, translatable property) is checked when publishing (ADR 0004), because the layout can change independently.
+
+**Stale detection.** `Locale\SourceDigest` is the PHP twin of `sourceDigest` (first 16 hex characters of the SHA-256 of the canonical JSON of the default-locale translatable values), verified against the shared 17-case corpus. `GET /documents/{id}/content/{locale}/translation-status` (same access as the document routes) returns per element `missing | draft | translated | reviewed | stale | orphaned` plus `sourceChanged` and counts: a translation is stale when its `sourceHash` no longer matches the digest of the current default-locale source text, text without an element is orphaned, and nothing is ever deleted, so the target text is preserved when the source changes. Only translatable properties count as source text, so a per-language link never makes a translation stale. The default locale is the configured one (`blixis_locales`).

@@ -27,7 +27,7 @@ final class StreamStore {
 	 * @param ?RevisionRing      $ring Revision history of working streams, if kept.
 	 */
 	public function __construct( private Database $database, ?DocumentValidator $validator = null, private ?RevisionRing $ring = null ) {
-		$this->validator = $validator ?? new EnvelopeValidator();
+		$this->validator = $validator ?? new StreamValidator();
 	}
 
 	/**
@@ -71,6 +71,7 @@ final class StreamStore {
 		if ( $expected_revision < 0 || ! $this->validator->accepts( $value, $key ) || null === Envelope::revision( $value, $key ) ) {
 			throw new \InvalidArgumentException( 'Invalid builder stream envelope or expected revision.' );
 		}
+		$value     = $this->stamp_locale( $key, $value );
 		$new_value = Envelope::with_revision( $value, $key, $expected_revision + 1 );
 		if ( null === $new_value ) {
 			throw new \InvalidArgumentException( 'Builder stream exceeds envelope limits.' );
@@ -127,6 +128,31 @@ final class StreamStore {
 			return WriteResult::success( $current + 1, $expected_revision );
 		}
 		return WriteResult::conflict( $this->read( $post_id, $key )['revision'] ?? 0, $expected_revision );
+	}
+
+	/**
+	 * A content stream always carries the locale of the stream it lives in: a missing `locale` is added, a different one is refused.
+	 *
+	 * @param string $key Stream key.
+	 * @param string $value Stream JSON.
+	 * @return string
+	 * @throws LocaleMismatchException When the envelope names another locale.
+	 */
+	private function stamp_locale( string $key, string $value ): string {
+		$locale = MetaKeys::content_locale( $key );
+		if ( null === $locale ) {
+			return $value;
+		}
+		$data = Envelope::decode( $value, $key );
+		if ( null === $data ) {
+			return $value;
+		}
+		if ( \property_exists( $data, 'locale' ) && $data->locale !== $locale ) {
+			throw new LocaleMismatchException( 'The content belongs to another locale.' );
+		}
+		$data->locale = $locale;
+		$encoded      = \json_encode( $data ); // phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- Pure helper used without WordPress.
+		return false === $encoded ? $value : $encoded;
 	}
 
 	/**

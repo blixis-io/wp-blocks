@@ -33,6 +33,15 @@ class WP_REST_Request {
 	}
 
 	/**
+	 * Parameters taken from the URL pattern only.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function get_url_params(): array {
+		return [ 'post_id' => $this->post_id ];
+	}
+
+	/**
 	 * Route parameter.
 	 *
 	 * @param string $key Parameter name.

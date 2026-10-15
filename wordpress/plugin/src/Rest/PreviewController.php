@@ -79,7 +79,7 @@ final class PreviewController {
 	 * @param \WP_REST_Request $request REST request.
 	 */
 	public function permission( \WP_REST_Request $request ): true|\WP_Error {
-		$result = $this->documents->permission( (int) $request->get_param( 'post_id' ) );
+		$result = $this->documents->permission( (int) RouteParams::get( $request, 'post_id' ) );
 		return null === $result ? true : new \WP_Error( $result->error_code ?? 'blixis_forbidden', $result->message ?? 'Document access is forbidden.', [ 'status' => $result->status ] );
 	}
 
@@ -88,7 +88,7 @@ final class PreviewController {
 	 * @param \WP_REST_Request $request REST request.
 	 */
 	public function post( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
-		$result = $this->preview->preview( (int) $request->get_param( 'post_id' ), $request->get_body(), (string) $request->get_header( 'content-type' ) );
+		$result = $this->preview->preview( (int) RouteParams::get( $request, 'post_id' ), $request->get_body(), (string) $request->get_header( 'content-type' ) );
 		if ( null !== $result->error_code ) {
 			return new \WP_Error( $result->error_code, $result->message ?? 'Preview failed.', [ 'status' => $result->status ] );
 		}

@@ -122,8 +122,9 @@
       "paths": ["packages/core/corpus/source-digest.json"],
       "ts": ["packages/core/src/translation/source.test.ts"],
       "php": {
-        "level": "pending",
-        "issue": "BWB-112"
+        "level": "full",
+        "runner": "wordpress/plugin/tests/LocaleSavingTest.php",
+        "covers": ["test_source_digest_corpus"]
       }
     },
     {

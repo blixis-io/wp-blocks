@@ -240,6 +240,7 @@ final class Publisher {
 				$content_key,
 				$content_number,
 				[
+					'locale'         => $locale,
 					'baseLayout'     => $content_base,
 					'sourceRevision' => $source,
 					'elementTypes'   => (object) $types,

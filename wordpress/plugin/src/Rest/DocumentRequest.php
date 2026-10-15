@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Blixis\Builder\Rest;
 
 use Blixis\Builder\Storage\Envelope;
+use Blixis\Builder\Storage\LocaleMismatchException;
 use Blixis\Builder\Storage\MetaKeys;
 use Blixis\Builder\Storage\RevisionRing;
 use Blixis\Builder\Storage\StreamStore;
@@ -80,6 +81,7 @@ final class DocumentRequest {
 				return DocumentResult::success(
 					[
 						'revision' => 0,
+						'locale'   => $locale,
 						'document' => null,
 					],
 					0
@@ -92,6 +94,7 @@ final class DocumentRequest {
 			return DocumentResult::success(
 				[
 					'revision' => $stored['revision'],
+					'locale'   => $locale,
 					'document' => $document,
 				],
 				$stored['revision']
@@ -144,10 +147,12 @@ final class DocumentRequest {
 					[
 						'currentRevision'  => $result->revision,
 						'expectedRevision' => $result->expected_revision,
-					]
+					] + ( null === $locale ? [] : [ 'locale' => $locale ] )
 				);
 			}
 			return DocumentResult::success( [ 'revision' => $result->revision ], $result->revision );
+		} catch ( LocaleMismatchException $exception ) {
+			return DocumentResult::error( 422, 'blixis_locale_mismatch', 'The content belongs to another locale.' );
 		} catch ( \InvalidArgumentException $exception ) {
 			return DocumentResult::error( 422, 'blixis_invalid_document', 'Invalid document.' );
 		} catch ( \RuntimeException $exception ) {
@@ -175,6 +180,7 @@ final class DocumentRequest {
 			return DocumentResult::success(
 				[
 					'current'   => $current['revision'] ?? 0,
+					'locale'    => $locale,
 					'revisions' => $this->ring->list( $post_id, $key ),
 				],
 				$current['revision'] ?? 0
@@ -227,10 +233,12 @@ final class DocumentRequest {
 					[
 						'currentRevision'  => $result->revision,
 						'expectedRevision' => $result->expected_revision,
-					]
+					] + ( null === $locale ? [] : [ 'locale' => $locale ] )
 				);
 			}
 			return DocumentResult::success( [ 'revision' => $result->revision ], $result->revision );
+		} catch ( LocaleMismatchException $exception ) {
+			return DocumentResult::error( 422, 'blixis_locale_mismatch', 'The content belongs to another locale.' );
 		} catch ( \InvalidArgumentException $exception ) {
 			return DocumentResult::error( 422, 'blixis_invalid_document', 'Invalid document.' );
 		} catch ( \RuntimeException $exception ) {

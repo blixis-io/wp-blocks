@@ -38,3 +38,9 @@ This matrix records controls present in the current PHP plugin. A test name is e
 - T18: PHPUnit checks bounds but no measured latency/load budget on a real WordPress installation exists.
 - T21: per-user/post transient updates and snapshot counting are soft bounds under concurrent requests (transient read-then-write and snapshot count before insert). The rate window lives in an evictable transient, so object-cache eviction resets it. No site-wide aggregate limit or operator alert exists; pruning accounting remains BWB-070 work.
 - T6, T10, T12, T14, T15, T16, T20 and T22 await their listed future issues or delivery phases.
+
+
+## Added by BWB-112
+
+- **T1/T2 (identity confusion):** request bodies cannot override route identity (`post_id`, `locale`): `Rest\RouteParams` reads only URL parameters. Evidence: smoke check 'a post_id or locale field in the request body can never redirect a write to another post or stream'. This bug was found by the locale-saving smoke checks (a `locale` field in a content envelope replaced the URL locale and overwrote another stream) and fixed in the same change.
+- **T3 (content payloads):** `ContentValidator` bounds and shapes (`LocaleSavingTest::test_content_validation`); locale identity (`LocaleSavingTest::test_locale_identity`, smoke 'content naming another locale is refused with 422').
