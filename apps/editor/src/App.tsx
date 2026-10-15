@@ -1,7 +1,6 @@
 import {
   DirectionProvider,
   PortalContainerProvider,
-  ScrollArea,
   Tabs,
   TabsContent,
   TabsList,
@@ -9,17 +8,33 @@ import {
   TooltipProvider,
 } from '@blixis/wp-editor-ui';
 import { Lock } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import type { ElementNode } from '@blixis/wp-core';
 import type { EditorBootstrap } from './bootstrap';
 import { useChromeTheme, type ChromePreference } from './chrome-theme';
+import { elementLabel } from './element-label';
 import { Header } from './Header';
+import { LoadStatus } from './LoadStatus';
 import { createTranslator } from './i18n';
 import { I18nProvider, useI18n } from './i18n-react';
-import { usePanelState } from './panels';
+import { StructurePanel } from './StructurePanel';
+import { StoreProvider, useEditorStore, type EditorStore } from './state';
 
 const STRUCTURE_ID = 'blx-structure';
 const INSPECTOR_ID = 'blx-inspector';
 export const CANVAS_ID = 'blx-canvas';
+
+/** Finds an element by id (iterative, the tree is untrusted-shaped). */
+function findElement(root: readonly ElementNode[] | undefined, id: string): ElementNode | null {
+  const stack = [...(root ?? [])];
+  while (stack.length > 0) {
+    const node = stack.pop();
+    if (node === undefined) break;
+    if (node.id === id) return node;
+    stack.push(...node.children);
+  }
+  return null;
+}
 
 function Shell({
   bootstrap,
@@ -31,7 +46,15 @@ function Shell({
   onPreference: (next: ChromePreference) => void;
 }) {
   const { t } = useI18n();
-  const { state: panels, toggle } = usePanelState();
+  const panels = useEditorStore((state) => state.panels);
+  const togglePanel = useEditorStore((state) => state.togglePanel);
+  const contentLocale = useEditorStore((state) => state.contentLocale);
+  const selectedId = useEditorStore((state) => state.selectedId);
+  const document = useEditorStore((state) => state.document);
+  const selected = useMemo(
+    () => (selectedId === null ? null : findElement(document?.root, selectedId)),
+    [selectedId, document],
+  );
   const locked = !bootstrap.editingEnabled;
   return (
     <>
@@ -42,7 +65,7 @@ function Shell({
         <Header
           bootstrap={bootstrap}
           panels={panels}
-          onTogglePanel={toggle}
+          onTogglePanel={togglePanel}
           appearance={preference}
           onAppearance={onPreference}
           structureId={STRUCTURE_ID}
@@ -67,15 +90,14 @@ function Shell({
           hidden={!panels.left}
         >
           <h2 className="blx-panel-title">{t('panel.structure')}</h2>
-          <ScrollArea label={t('panel.structure')} className="min-h-0 flex-1">
-            <p className="blx-empty">{t('panel.structure.empty')}</p>
-          </ScrollArea>
+          <StructurePanel />
         </nav>
         <main id={CANVAS_ID} tabIndex={-1} className="blx-main" aria-label={t('canvas.title')}>
+          <LoadStatus />
           <div className="blx-canvas">
             <p>{t('canvas.placeholder')}</p>
             <p className="text-ed-fg-muted" data-testid="content-locale">
-              {t('canvas.contentLocale', { locale: bootstrap.contentLocale })}
+              {t('canvas.contentLocale', { locale: contentLocale })}
             </p>
           </div>
         </main>
@@ -86,6 +108,17 @@ function Shell({
           hidden={!panels.right}
         >
           <h2 className="blx-panel-title">{t('panel.inspector')}</h2>
+          <p className="blx-empty" data-testid="inspector-selection">
+            {selected === null ? (
+              t('inspector.noSelection')
+            ) : (
+              <>
+                <span className="sr-only">{t('inspector.selected')}: </span>
+                <span className="font-medium">{elementLabel(selected.type)}</span>{' '}
+                <span className="blx-outline-id">{selected.id}</span>
+              </>
+            )}
+          </p>
           <Tabs defaultValue="content" className="min-h-0 flex-1">
             <TabsList aria-label={t('inspector.tabs')}>
               <TabsTrigger value="content">{t('inspector.content')}</TabsTrigger>
@@ -112,10 +145,17 @@ function Shell({
  * The editor root. `data-editor-theme`, `lang` and `dir` live on this element only (never on `<html>`), and they come
  * from the EDITOR chrome preference and EDITOR locale; the content locale is only displayed in the canvas.
  */
-export function EditorApp({ bootstrap }: { bootstrap: EditorBootstrap }) {
+export function EditorApp({ bootstrap, store }: { bootstrap: EditorBootstrap; store: EditorStore }) {
   const [root, setRoot] = useState<HTMLDivElement | null>(null);
   const { preference, resolved, setPreference } = useChromeTheme();
   const { lang, dir } = createTranslator(bootstrap.editorLocale);
+  useEffect(() => {
+    const controller = new AbortController();
+    void store.getState().loadDocument({ signal: controller.signal });
+    return () => {
+      controller.abort();
+    };
+  }, [store]);
   return (
     <div
       ref={setRoot}
@@ -125,15 +165,17 @@ export function EditorApp({ bootstrap }: { bootstrap: EditorBootstrap }) {
       dir={dir}
       data-testid="editor-root"
     >
-      <I18nProvider editorLocale={bootstrap.editorLocale}>
-        <DirectionProvider dir={dir}>
-          <PortalContainerProvider container={root}>
-            <TooltipProvider>
-              <Shell bootstrap={bootstrap} preference={preference} onPreference={setPreference} />
-            </TooltipProvider>
-          </PortalContainerProvider>
-        </DirectionProvider>
-      </I18nProvider>
+      <StoreProvider store={store}>
+        <I18nProvider editorLocale={bootstrap.editorLocale}>
+          <DirectionProvider dir={dir}>
+            <PortalContainerProvider container={root}>
+              <TooltipProvider>
+                <Shell bootstrap={bootstrap} preference={preference} onPreference={setPreference} />
+              </TooltipProvider>
+            </PortalContainerProvider>
+          </DirectionProvider>
+        </I18nProvider>
+      </StoreProvider>
     </div>
   );
 }

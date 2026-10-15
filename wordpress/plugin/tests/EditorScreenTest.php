@@ -109,7 +109,7 @@ final class EditorScreenTest extends TestCase {
 				'editorLocale'  => 'en_US',
 			]
 		);
-		$this->assertSame( [ 'version', 'restRoot', 'nonce', 'postId', 'postTitle', 'postType', 'contentLocale', 'defaultLocale', 'enabledLocales', 'editorLocale', 'pluginVersion', 'themeName', 'editingEnabled', 'lockReason', 'adminUrl', 'viewUrl', 'cspNonce' ], \array_keys( $bootstrap ) );
+		$this->assertSame( [ 'version', 'restRoot', 'nonce', 'postId', 'postTitle', 'postType', 'contentLocale', 'defaultLocale', 'enabledLocales', 'editorLocale', 'pluginVersion', 'themeName', 'editingEnabled', 'lockReason', 'adminUrl', 'viewUrl', 'cspNonce', 'contentLocaleExplicit' ], \array_keys( $bootstrap ) );
 		$this->assertSame( 200, \mb_strlen( $bootstrap['postTitle'] ) );
 		$this->assertSame( 'nl_NL', $bootstrap['contentLocale'] );
 		$this->assertSame( 'en_US', $bootstrap['editorLocale'] );
@@ -150,6 +150,46 @@ final class EditorScreenTest extends TestCase {
 		$this->assertTrue( EditorScreen::is_editor_admin_page( 'admin.php' ) );
 		$this->assertFalse( EditorScreen::is_editor_admin_page( 'admin-ajax.php' ) );
 		$this->assertFalse( EditorScreen::is_editor_admin_page( 'admin-post.php' ) );
+	}
+
+	/** A link that names an enabled locale is explicit; anything else falls back to the default and is not. */
+	public function test_locale_is_explicit_only_when_the_link_names_an_enabled_locale(): void {
+		$locales  = LocaleConfig::from_option(
+			[
+				'version'        => 1,
+				'defaultLocale'  => 'en_US',
+				'enabledLocales' => [ 'en_US', 'nl_NL' ],
+			],
+			'en_US'
+		);
+		$explicit = EditorRequest::parse(
+			[
+				'post'   => '5',
+				'locale' => 'nl_NL',
+			],
+			$locales
+		);
+		$this->assertSame( [ 'nl_NL', true ], [ $explicit->content_locale, $explicit->locale_explicit ] );
+		foreach ( [
+			[ 'post' => '5' ],
+			[
+				'post'   => '5',
+				'locale' => 'fr_FR',
+			],
+			[
+				'post'   => '5',
+				'locale' => '../x',
+			],
+			[
+				'post'   => '5',
+				'locale' => [ 'nl_NL' ],
+			],
+		] as $query ) {
+			$fallback = EditorRequest::parse( $query, $locales );
+			$this->assertSame( [ 'en_US', false ], [ $fallback->content_locale, $fallback->locale_explicit ] );
+		}
+		$this->assertFalse( EditorBootstrap::build( [ 'contentLocaleExplicit' => 'yes' ] )['contentLocaleExplicit'], 'only a real boolean true counts' );
+		$this->assertTrue( EditorBootstrap::build( [ 'contentLocaleExplicit' => true ] )['contentLocaleExplicit'] );
 	}
 
 	/** Headers use the exact restrictive policy; only a per-response nonce (no inline allowance) opens style injection. */

@@ -103,6 +103,13 @@ describe('parseBootstrap', () => {
     },
   );
 
+  it('accepts the optional contentLocaleExplicit flag and refuses other types', () => {
+    expect(parseBootstrap(makeBootstrap({ contentLocaleExplicit: true }), ORIGIN).ok).toBe(true);
+    expect(parseBootstrap(makeBootstrap({ contentLocaleExplicit: false }), ORIGIN).ok).toBe(true);
+    expect(parseBootstrap(makeBootstrap(), ORIGIN).ok).toBe(true);
+    expect(parseBootstrap({ ...makeBootstrap(), contentLocaleExplicit: 'yes' }, ORIGIN).ok).toBe(false);
+  });
+
   it('never echoes input in the failure', () => {
     const result = parseBootstrap(makeBootstrap({ restRoot: 'javascript:SECRET' }), ORIGIN);
     expect(JSON.stringify(result)).not.toContain('SECRET');

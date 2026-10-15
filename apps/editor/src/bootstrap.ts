@@ -60,6 +60,8 @@ export function createBootstrapSchema(origin: string) {
     postTitle: z.string().max(2000),
     postType: z.string().regex(/^[a-z0-9_-]{1,20}$/),
     contentLocale: LOCALE,
+    /** `true` when the link asked for `contentLocale` explicitly (then it beats the remembered locale). Defaults to false. */
+    contentLocaleExplicit: z.boolean().optional(),
     defaultLocale: LOCALE,
     enabledLocales: z.array(LOCALE).min(1).max(100),
     editorLocale: LOCALE,

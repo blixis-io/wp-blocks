@@ -39,6 +39,7 @@ Bootstrap contract v1 (the editor validates this shape):
 | `pluginVersion`, `themeName` | Running plugin and active theme display versions/names. |
 | `editingEnabled`, `lockReason` | Edit capability and theme-lock explanation; reason is null when unlocked. |
 | `adminUrl`, `viewUrl` | Post edit/list destination and permalink (null when unavailable). |
+| `contentLocaleExplicit` | True only when the editor link itself named an enabled content locale; generic links (row actions, admin bar) omit `locale`, so the editor may restore the user's remembered locale. |
 | `cspNonce` | Per-response nonce (base64 of 18 random bytes) that the response's `Content-Security-Policy` allows for `<style>` elements. |
 
 **Why a style nonce.** The policy is `style-src 'self' 'nonce-<random>'` with no `unsafe-inline`: the bundled Radix dialogs lock page scrolling by injecting a `<style>` element, which a real browser blocks otherwise (found by the real-browser check; jsdom does not enforce CSP). The editor hands the nonce to those libraries through `__webpack_nonce__` before the first render; a malformed nonce can never reach the header (`EditorHeaders::is_valid_nonce`).

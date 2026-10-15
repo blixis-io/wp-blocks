@@ -83,7 +83,7 @@ final class EditorScreen {
 		}
 		$theme             = ( new ThemeCompat( new WordPressCompatibilityReader() ) )->status();
 		$label             = self::row_action_label( $theme->compatible, \__( 'Edit with Blixis', 'blixis-builder' ), \__( 'View in Blixis (read-only)', 'blixis-builder' ) );
-		$url               = EditorUrl::for_post( $post->ID, self::default_locale() );
+		$url               = EditorUrl::for_post( $post->ID );
 		$actions['blixis'] = self::row_action_markup( $url, $label );
 		return $actions;
 	}
@@ -128,7 +128,7 @@ final class EditorScreen {
 			[
 				'id'    => 'blixis-editor',
 				'title' => \esc_html( self::row_action_label( $theme->compatible, \__( 'Edit with Blixis', 'blixis-builder' ), \__( 'View in Blixis (read-only)', 'blixis-builder' ) ) ),
-				'href'  => \esc_url( EditorUrl::for_post( $post->ID, self::default_locale() ) ),
+				'href'  => \esc_url( EditorUrl::for_post( $post->ID ) ),
 			]
 		);
 	}
@@ -172,22 +172,23 @@ final class EditorScreen {
 		$csp_nonce = EditorHeaders::new_nonce();
 		$bootstrap = EditorBootstrap::build(
 			[
-				'cspNonce'       => $csp_nonce,
-				'restRoot'       => \rest_url( 'blixis/v1' ),
-				'nonce'          => \wp_create_nonce( 'wp_rest' ),
-				'postId'         => $request->post_id,
-				'postTitle'      => $post->post_title,
-				'postType'       => $post->post_type,
-				'contentLocale'  => $request->content_locale,
-				'defaultLocale'  => $locales->default_locale,
-				'enabledLocales' => $locales->enabled,
-				'editorLocale'   => $editor_loc,
-				'pluginVersion'  => \Blixis\Builder\VERSION,
-				'themeName'      => $theme->theme,
-				'editingEnabled' => EditorAccessResult::ALLOWED === $access->state,
-				'lockReason'     => EditorAccessResult::THEME_LOCKED === $access->state ? $access->lock_reason : null,
-				'adminUrl'       => $admin_url,
-				'viewUrl'        => \is_string( $view_url ) && '' !== $view_url ? $view_url : null,
+				'cspNonce'              => $csp_nonce,
+				'restRoot'              => \rest_url( 'blixis/v1' ),
+				'nonce'                 => \wp_create_nonce( 'wp_rest' ),
+				'postId'                => $request->post_id,
+				'postTitle'             => $post->post_title,
+				'postType'              => $post->post_type,
+				'contentLocale'         => $request->content_locale,
+				'contentLocaleExplicit' => $request->locale_explicit,
+				'defaultLocale'         => $locales->default_locale,
+				'enabledLocales'        => $locales->enabled,
+				'editorLocale'          => $editor_loc,
+				'pluginVersion'         => \Blixis\Builder\VERSION,
+				'themeName'             => $theme->theme,
+				'editingEnabled'        => EditorAccessResult::ALLOWED === $access->state,
+				'lockReason'            => EditorAccessResult::THEME_LOCKED === $access->state ? $access->lock_reason : null,
+				'adminUrl'              => $admin_url,
+				'viewUrl'               => \is_string( $view_url ) && '' !== $view_url ? $view_url : null,
 			]
 		);
 		foreach ( EditorHeaders::list( $csp_nonce ) as $name => $value ) {
@@ -212,14 +213,5 @@ final class EditorScreen {
 		}
 		echo '<!doctype html><html lang="' . \esc_attr( \str_replace( '_', '-', (string) \get_user_locale() ) ) . '"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>' . \esc_html__( 'Blixis Editor', 'blixis-builder' ) . '</title></head><body class="blx-editor-page"><main role="alert">' . \esc_html( $notice ) . '</main></body></html>';
 		exit;
-	}
-
-	/**
-	 * Resolve the configured default locale.
-	 *
-	 * @return string
-	 */
-	private static function default_locale(): string {
-		return LocaleConfig::from_option( \get_option( LocaleConfig::OPTION, false ), \get_locale() )->default_locale;
 	}
 }
