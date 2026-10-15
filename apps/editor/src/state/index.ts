@@ -47,3 +47,4 @@ export { StoreProvider, useEditorStore, useEditorStoreApi } from './react';
 export { hasElement, repairSelection, type SelectionSlice } from './selection-slice';
 export { VIEW_STORAGE_PREFIX, readPersistedView, viewStorageKey, type SettingsSlice } from './settings-slice';
 export { createEditorStore, type EditorState, type EditorStore } from './store';
+export type { StructureSlice } from './structure-slice';

@@ -303,7 +303,7 @@ try {
   // Real data: the editor loads the demo page's working streams through the REST API and shows them (BWB-050).
   await nav(editorUrl, 3000);
   const loaded = await ev(`(() => {
-    const outline = [...document.querySelectorAll('nav[aria-label="Structure"] button')].map((b) => b.textContent.trim());
+    const outline = [...document.querySelectorAll('nav[aria-label="Structure"] [role="treeitem"]')].map((b) => b.textContent.trim());
     return { outline, undo: document.querySelector('button[aria-label*="ndo" i]')?.getAttribute('aria-disabled') };
   })()`);
   assert.ok(
@@ -317,11 +317,11 @@ try {
   );
   assert.equal(loaded.undo, 'true', 'undo is disabled before any command');
   await ev(
-    `[...document.querySelectorAll('nav[aria-label="Structure"] button')].find((b) => b.textContent.includes('hero-h1')).click()`,
+    `[...document.querySelectorAll('nav[aria-label="Structure"] [role="treeitem"]')].find((b) => b.textContent.includes('hero-h1')).click()`,
   );
   await sleep(300);
   const picked = await ev(
-    `({ current: document.querySelector('nav[aria-label="Structure"] [aria-current="true"]')?.textContent.trim(), inspector: document.querySelector('aside[aria-label="Inspector"]').textContent })`,
+    `({ current: document.querySelector('nav[aria-label="Structure"] [role="treeitem"][aria-selected="true"]')?.textContent.trim(), inspector: document.querySelector('aside[aria-label="Inspector"]').textContent })`,
   );
   assert.ok(picked.current?.includes('hero-h1'), 'the clicked element is marked aria-current');
   assert.ok(picked.inspector.includes('hero-h1'), 'the inspector header shows the selected element');
@@ -412,6 +412,55 @@ try {
   assert.ok(afterPick.inspector.includes(target.id), 'picking an element in the canvas selects it in the editor');
   assert.equal(afterPick.marked, 1, 'the selected element is marked in the canvas');
   assert.equal(afterPick.focusInFrame, false, 'focus does not stay inside the iframe after a pick');
+  await sleep(200);
+  const overlay = await ev(`(() => {
+    const frame = document.querySelector('main iframe');
+    const el = frame.contentDocument.querySelector('[data-blx-selected]');
+    const box = el?.getBoundingClientRect();
+    const fb = frame.getBoundingClientRect();
+    const outline = document.querySelector('[data-testid="selection-overlay"]')?.getBoundingClientRect();
+    return box && outline ? { dx: Math.abs(outline.left - fb.left - box.left), dy: Math.abs(outline.top - fb.top - box.top), dw: Math.abs(outline.width - box.width), dh: Math.abs(outline.height - box.height) } : null;
+  })()`);
+  assert.ok(
+    overlay && Math.max(overlay.dx, overlay.dy, overlay.dw, overlay.dh) <= 2,
+    `the editor overlay matches the canvas element within 2px (${JSON.stringify(overlay)})`,
+  );
+  await ev(`document.querySelector('main iframe').contentWindow.scrollTo(0, 100)`);
+  await sleep(250);
+  const scrolledOverlay = await ev(`(() => {
+    const frame = document.querySelector('main iframe');
+    const box = frame.contentDocument.querySelector('[data-blx-selected]')?.getBoundingClientRect();
+    const fb = frame.getBoundingClientRect();
+    const outline = document.querySelector('[data-testid="selection-overlay"]')?.getBoundingClientRect();
+    return box && outline ? { dx: Math.abs(outline.left - fb.left - box.left), dy: Math.abs(outline.top - fb.top - box.top), dw: Math.abs(outline.width - box.width), dh: Math.abs(outline.height - box.height) } : null;
+  })()`);
+  assert.ok(
+    scrolledOverlay && Math.max(scrolledOverlay.dx, scrolledOverlay.dy, scrolledOverlay.dw, scrolledOverlay.dh) <= 2,
+    `the editor overlay stays aligned after canvas scrolling (${JSON.stringify(scrolledOverlay)})`,
+  );
+  await ev(`document.querySelector('[role="treeitem"][data-id=${JSON.stringify(target.id)}]')?.click()`);
+  await sleep(300);
+  assert.ok(
+    await ev(
+      `document.querySelector('aside[aria-label="Inspector"]').textContent.includes(${JSON.stringify(target.id)})`,
+    ),
+    'tree selection selects the element',
+  );
+  const crumb = await ev(
+    `document.querySelector('[aria-label="Selected element path"] button[aria-current="location"]')?.textContent.trim()`,
+  );
+  assert.ok(crumb, 'the selected element breadcrumb renders');
+  const firstCrumbId = await ev(
+    `document.querySelector('[aria-label="Selected element path"] button:first-child')?.getAttribute('title')`,
+  );
+  await ev(`document.querySelector('[aria-label="Selected element path"] button:first-child')?.click()`);
+  await sleep(300);
+  assert.ok(
+    await ev(
+      `document.querySelector('aside[aria-label="Inspector"]').textContent.includes(${JSON.stringify(firstCrumbId)})`,
+    ),
+    'breadcrumb selection is interactive',
+  );
 
   // Viewport buttons size the frame; the content is not scaled.
   for (const [name, width] of [

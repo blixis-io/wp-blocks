@@ -81,7 +81,7 @@ Parent to canvas:
 | `mode` | `mode` `light` or `dark` (website content appearance) |
 | `select`, `hover` | `id` element id or `null` |
 | `scroll-to` | `id` element id |
-| `request-rects` | `revision` non-negative safe integer; asks for ONE `rects` answer (the editor does not send it yet; BWB-052 will) |
+| `request-rects` | `revision` non-negative safe integer; asks for ONE `rects` answer |
 | `ping` | `n` non-negative safe integer |
 
 Canvas to parent:
@@ -91,6 +91,7 @@ Canvas to parent:
 | `ready` | none |
 | `rendered` | `revision` |
 | `size` | `width`, `height` positive integers at most 100,000 |
+| `scroll` | `x`, `y` finite coordinates within +-1,000,000; emitted once after ready/render and rAF-throttled on scrolling |
 | `pick` | `id` element id; `shift`, `alt` booleans |
 | `hover` | `id` element id or `null` |
 | `rects` | Only as the answer to `request-rects`. `revision` is the render revision the rectangles were measured on (the canvas' last applied one, 0 before the first render), so the requester can drop an answer for another render; `items` at most 5,000 of `{ id, x, y, w, h }`, finite numbers within +-1,000,000, `w` and `h` not negative |
@@ -105,7 +106,7 @@ Element ids use the pattern of core's `ID_PATTERN` (the drift test is in `packag
 * `render`: the HTML is parsed in an inert `<template>`. The whole fragment is refused (`unsafe-html`, `too-large` above 50,000 elements) if it contains `script`, `iframe`, `frame`, `frameset`, `object`, `embed`, `applet`, `form`, `link`, `meta`, `base`, `style`, `noscript`, `template`, SVG `use`/`foreignObject`/animation elements or `math`, an attribute starting with `on`, `srcdoc`, a URL attribute (`href`, `src`, `srcset`, `action`, `formaction`, `poster`, ...) whose value, after removing whitespace and control characters, starts with `javascript:`, `data:`, `vbscript:`, `blob:` or `file:`, or a `style` attribute that fails the CSS guard. Nothing is repaired; on refusal the previous content stays.
 * CSS goes into ONE managed `<style nonce>` element (its text is replaced). The CSS is refused (`unsafe-css`) if it contains `</style`, `<!--`, `@import`, `@charset`, `url(`, `image-set(`, `src(`, `expression(`, `-moz-binding`, `behavior:` or `javascript:`, after comments are removed and CSS escapes (`\75 rl(`) are decoded, or non-printable, bidi-control or zero-width characters, or exceeds the cap. A separate fixed nonce `<style>` draws the selection and hover outline from `data-blx-selected` and `data-blx-hover` attributes (no inline styles).
 * `viewport` and `mode` set `data-blx-breakpoint` and `data-blx-mode` on the root; the parent sizes the frame. `select` and `hover` mark elements and survive re-renders. `scroll-to` scrolls an element into view.
-* Click: reports `pick` for the closest `[data-blx-id]` inside the root; clicks on links and area elements, middle clicks and every form submit are `preventDefault`ed so nothing navigates. Hover is reported on `pointerover` with a 50 ms throttle (the last value wins) and `null` when the pointer leaves. Layout is measured in at most ONE `requestAnimationFrame` pass per frame: a render and any number of `ResizeObserver` notifications only schedule that pass, which reports `size` (only when it changed). The expensive part, one `getBoundingClientRect` per element (up to 5,000, a message of about 250 KB), runs only for a `request-rects` message: requests in the same frame are answered by a single `rects` message with coordinates relative to the document. Nothing sends `rects` unrequested.
+* Click: reports `pick` for the closest `[data-blx-id]` inside the root; clicks on links and area elements, middle clicks and every form submit are `preventDefault`ed so nothing navigates. Hover is reported on `pointerover` with a 50 ms throttle (the last value wins) and `null` when the pointer leaves. Layout is measured in at most ONE `requestAnimationFrame` pass per frame: a render and any number of `ResizeObserver` notifications only schedule that pass, which reports `size` (only when it changed) and document scroll coordinates after ready/render and on scroll. The expensive part, one `getBoundingClientRect` per element (up to 5,000, a message of about 250 KB), runs only for a `request-rects` message: requests in the same frame are answered by a single `rects` message with coordinates relative to the document. Nothing sends `rects` unrequested.
 * It never calls `eval` or `Function`, never reads cookies or storage and never navigates; a test greps the source and the built bundle for these.
 
 ### Editor side
@@ -113,14 +114,14 @@ Element ids use the pattern of core's `ID_PATTERN` (the drift test is in `packag
 * `Canvas.tsx` renders `<iframe title sandbox="allow-scripts allow-same-origin">`; `bootstrap.canvasUrl` (optional, same-origin, validated like the other URLs) is the base, and the editor adds `locale=<content locale>`. Without `canvasUrl` (or without a REST client) the old placeholder is shown.
 * Previews use only `RestClient.preview({ document, locale: contentLocale, mode: previewMode })`: debounced by 150 ms, the previous request is aborted by every new change, answers are tagged by a request counter and stale ones are ignored, and nothing is requested while the document is not ready or the canvas has not sent `ready`. The counter is the `render` revision, and `rendered { revision }` clears the error state.
 * Errors are shown from the catalogs only (never server text): a `role="alert"` with a retry button for a failed preview, and a separate alert with a reload button for a timeout or a protocol violation; `role="status"` while connecting.
-* A change of the content language creates a new frame (the locale is part of the canvas URL and of the init), so the content direction and `lang` of the preview always match the language being edited.
+* A change of the content language creates a new frame (the locale is part of the canvas URL and of the init), so the content direction and `lang` of the preview always match the language being edited. The session requests rectangles after ready, rendered, size and selection changes, with one rAF-coalesced request; it filters replies to the selected id and the canvas last-rendered revision, retaining those rectangles when a later preview request fails. Scroll updates only reposition the clipped overlay and never request another full rectangle scan.
 * Frame widths: desktop fills the area; tablet is 768 px and mobile 375 px, centred and never larger than the area. The content is not scaled; the width is reported with `viewport`. The `breakpoint` is the settings slice's `breakpointId`. The desktop width is measured again whenever the area resizes (the window, the panels): a `ResizeObserver` on the canvas container, throttled to one measurement per animation frame, sends `viewport` only when the width changed and only while the desktop viewport is selected.
 * Both choice controls are single-choice groups with the same pattern: the viewport control in the toolbar and "Preview appearance" in the canvas bar are `radiogroup`s of `role=radio` items with `aria-checked` (the same Radix toggle group), with roving focus. The iframe title uses the display name of the content language in the editor language (`Intl.DisplayNames`, for example "Page preview (French (France))"), and the locale id only as the fallback; no names are hard-coded.
 
 ### How the protocol is tested
 
 * `packages/canvas-bridge/src/*.test.ts`: schemas and limits (`messages.test.ts`), handshake with fake windows and ports (`endpoints.test.ts`, including the load/hello race orders) and `real-channel.test.ts`, which runs the REAL parent and canvas endpoints over Node's real `MessageChannel`/`MessagePort` (transfer with the init, started ports, close, posting after close, a flood of invalid messages); only the two windows are simulated.
-* `apps/editor/src/canvas/*.test.ts(x)`: the runtime in jsdom (hostile fragments, frame batching, `request-rects`) and the session hook with a fake endpoint (reload recovery, width measurement).
+* `apps/editor/src/canvas/*.test.ts(x)`: the runtime in jsdom (hostile fragments, frame batching, `request-rects`, scroll) and the session hook with a fake endpoint (reload recovery, width measurement, request coalescing and rectangle filtering).
 * `tooling/herd/editor-browser-check.mjs`: a real browser against the Herd site: header and sandbox, real click, a forged handshake from a second frame, a frame reload, and a CSP enforcement probe.
 * `apps/editor/src/styles.test.ts`: the built `canvas.js` contains no React, `eval`, `new Function`, cookie, `localStorage`, `sessionStorage`, `indexedDB`, `location.assign`, `location.replace` or `window.open`.
 
@@ -148,4 +149,4 @@ Element ids use the pattern of core's `ID_PATTERN` (the drift test is in `packag
 * The canvas is not an isolation boundary against the admin user: a user who can edit a document can already do everything the editor does.
 * Resource use inside the frame (very large but valid HTML, expensive CSS selectors) is bounded by size limits only, not by time.
 * Older browsers without `MessageChannel`, `ResizeObserver` or `<template>` are unsupported; the canvas then reports a timeout.
-* `rects` are for the future overlay and drag and drop (BWB-052/059); the message is validated, but the editor does not request it yet.
+* `rects` feed the selected-element outline and future drag and drop. The editor requests them on ready, render, size and selection changes, coalesced to one request per animation frame; hover never triggers a rectangle scan.

@@ -41,6 +41,7 @@ export const en_US = {
   'panel.structure.emptyDocument': 'This page has no elements yet.',
   'panel.structure.loadFailed': 'The document could not be loaded. See the message in the main area.',
   'panel.structure.list': 'Page elements',
+  'canvas.breadcrumb': 'Selected element path',
   'load.error.title': 'The document could not be loaded.',
   'load.error.unauthenticated': 'Your session has expired. Reload the page and sign in again.',
   'load.error.forbidden': 'You are not allowed to edit this page.',

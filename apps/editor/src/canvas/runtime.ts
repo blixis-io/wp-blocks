@@ -166,12 +166,20 @@ export function startRuntime(env: RuntimeEnv = { document, window }): Runtime | 
     });
   let frameHandle: number | null = null;
   let rectsWanted = false;
+  let scrollWanted = false;
   const scheduleLayout = (): void => {
     if (closed || frameHandle !== null) return;
     frameHandle = requestFrame(() => {
       frameHandle = null;
       if (closed) return;
       reportSize();
+      if (scrollWanted) {
+        scrollWanted = false;
+        const limit = LIMITS.coordinateMax;
+        const x = Math.max(-limit, Math.min(limit, Number.isFinite(win.scrollX) ? win.scrollX : 0));
+        const y = Math.max(-limit, Math.min(limit, Number.isFinite(win.scrollY) ? win.scrollY : 0));
+        send({ type: 'scroll', x, y });
+      }
       if (rectsWanted) {
         rectsWanted = false;
         reportRects();
@@ -197,6 +205,7 @@ export function startRuntime(env: RuntimeEnv = { document, window }): Runtime | 
       mark(SELECTED_ATTRIBUTE, selectedId);
       mark(HOVER_ATTRIBUTE, hoveredId);
       send({ type: 'rendered', revision });
+      scrollWanted = true;
       scheduleLayout();
     } catch {
       fail('render-failed');
@@ -250,6 +259,8 @@ export function startRuntime(env: RuntimeEnv = { document, window }): Runtime | 
       observer.observe(root);
     }
     send({ type: 'ready' });
+    scrollWanted = true;
+    scheduleLayout();
   };
 
   endpoint = (env.createEndpoint ?? defaultEndpoint(win))({
@@ -305,12 +316,17 @@ export function startRuntime(env: RuntimeEnv = { document, window }): Runtime | 
   const onPointerLeave = (): void => {
     queueHover(null);
   };
+  const onScroll = (): void => {
+    scrollWanted = true;
+    scheduleLayout();
+  };
 
   doc.addEventListener('click', onClick, true);
   doc.addEventListener('auxclick', onAuxClick, true);
   doc.addEventListener('submit', onSubmit, true);
   doc.addEventListener('pointerover', onPointerOver, true);
   doc.documentElement.addEventListener('pointerleave', onPointerLeave);
+  win.addEventListener('scroll', onScroll, { passive: true });
 
   function close(): void {
     if (closed) return;
@@ -320,6 +336,7 @@ export function startRuntime(env: RuntimeEnv = { document, window }): Runtime | 
     doc.removeEventListener('submit', onSubmit, true);
     doc.removeEventListener('pointerover', onPointerOver, true);
     doc.documentElement.removeEventListener('pointerleave', onPointerLeave);
+    win.removeEventListener('scroll', onScroll);
     if (hoverTimer !== null) clearTimeout(hoverTimer);
     if (frameHandle !== null) cancelFrame(frameHandle);
     frameHandle = null;

@@ -64,40 +64,115 @@ describe('Structure panel and inspector header', () => {
     render(<EditorApp bootstrap={makeBootstrap()} store={store} />);
     expect(screen.getByText('Loading the document...')).toBeTruthy();
     await ready();
-    const list = screen.getByRole('list', { name: 'Page elements' });
-    expect(within(list).getAllByRole('listitem')).toHaveLength(6);
-    const nested = within(
-      screen.getByRole('button', { name: /^Heading\s+el-heading-1$/ }).closest('ul') as HTMLElement,
-    );
-    expect(nested.getAllByRole('button').map((b) => b.textContent)).toEqual(['Heading el-heading-1', 'Text el-text-1']);
-    expect(screen.getByRole('button', { name: /^Section\s+el-section-1$/ })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /^Section\s+el-section-2$/ })).toBeTruthy();
+    const tree = screen.getByRole('tree', { name: 'Page elements' });
+    expect(within(tree).getAllByRole('treeitem')).toHaveLength(6);
+    expect(screen.getByRole('treeitem', { name: /^Heading\s+el-heading-1$/ }).getAttribute('aria-level')).toBe('3');
+    expect(screen.getByRole('treeitem', { name: /^Section\s+el-section-1$/ })).toBeTruthy();
+    expect(screen.getByRole('treeitem', { name: /^Section\s+el-section-2$/ })).toBeTruthy();
   });
 
   it('selects on click, marks aria-current and shows type and id in the inspector', async () => {
     const { user, store } = mount();
     await ready();
     expect(screen.getByTestId('inspector-selection').textContent).toBe('No element selected.');
-    const heading = screen.getByRole('button', { name: /el-heading-1/ });
-    expect(heading.getAttribute('aria-current')).toBeNull();
+    const heading = screen.getByRole('treeitem', { name: /el-heading-1/ });
+    expect(heading.getAttribute('aria-selected')).toBe('false');
     await user.click(heading);
     expect(store.getState().selectedId).toBe('el-heading-1');
-    expect(heading.getAttribute('aria-current')).toBe('true');
+    expect(heading.getAttribute('aria-selected')).toBe('true');
     expect(screen.getByTestId('inspector-selection').textContent).toBe('Selected element: Heading el-heading-1');
-    await user.click(screen.getByRole('button', { name: /el-text-1/ }));
-    expect(heading.getAttribute('aria-current')).toBeNull();
-    expect(screen.getAllByRole('button', { current: true })).toHaveLength(1);
+    await user.click(screen.getByRole('treeitem', { name: /el-text-1/ }));
+    expect(heading.getAttribute('aria-selected')).toBe('false');
+    expect(screen.getAllByRole('treeitem', { selected: true })).toHaveLength(1);
   });
 
   it('selects with the keyboard (Enter and Space)', async () => {
     const { user, store } = mount();
     await ready();
-    screen.getByRole('button', { name: /el-button-1/ }).focus();
+    screen.getByRole('treeitem', { name: /el-button-1/ }).focus();
     await user.keyboard('{Enter}');
     expect(store.getState().selectedId).toBe('el-button-1');
-    screen.getByRole('button', { name: /el-text-1/ }).focus();
+    screen.getByRole('treeitem', { name: /el-text-1/ }).focus();
     await user.keyboard(' ');
     expect(store.getState().selectedId).toBe('el-text-1');
+  });
+
+  it('supports tree navigation, focus independent of selection, and sibling position semantics', async () => {
+    const { user, store } = mount();
+    await ready();
+    const section = screen.getByRole('treeitem', { name: /el-section-1/ });
+    const container = screen.getByRole('treeitem', { name: /el-container-1/ });
+    expect(section.getAttribute('aria-posinset')).toBe('1');
+    expect(section.getAttribute('aria-setsize')).toBe('2');
+    expect(container.getAttribute('aria-posinset')).toBe('1');
+    expect(container.getAttribute('aria-setsize')).toBe('1');
+    section.focus();
+    await user.keyboard('{ArrowDown}');
+    expect(document.activeElement).toBe(container);
+    act(() => {
+      store.getState().select('el-button-1');
+    });
+    expect(container.getAttribute('tabindex')).toBe('0');
+    expect(screen.getByRole('treeitem', { name: /el-button-1/ }).getAttribute('tabindex')).toBe('-1');
+    await user.keyboard('{Home}');
+    expect(document.activeElement).toBe(section);
+    await user.keyboard('{End}');
+    expect(document.activeElement).toBe(screen.getByRole('treeitem', { name: /el-button-1/ }));
+    await user.keyboard('{ArrowUp}');
+    expect(document.activeElement).toBe(screen.getByRole('treeitem', { name: /el-section-2/ }));
+  });
+
+  it('Right enters the first child after expansion and Left collapses without losing focus', async () => {
+    const { user, store } = mount();
+    await ready();
+    const sectionTwo = screen.getByRole('treeitem', { name: /el-section-2/ });
+    act(() => {
+      store.getState().setExpanded('el-section-2', false);
+    });
+    sectionTwo.focus();
+    await user.keyboard('{ArrowRight}');
+    expect(document.activeElement).toBe(sectionTwo);
+    await user.keyboard('{ArrowRight}');
+    expect(document.activeElement).toBe(screen.getByRole('treeitem', { name: /el-button-1/ }));
+    await user.keyboard('{ArrowLeft}');
+    expect(document.activeElement).toBe(sectionTwo);
+    await user.keyboard('{ArrowLeft}');
+    expect(document.activeElement).toBe(sectionTwo);
+    expect(screen.queryByRole('treeitem', { name: /el-button-1/ })).toBeNull();
+  });
+
+  it('swaps tree expand and collapse keys with the editor chrome direction in RTL', async () => {
+    const { user, store } = mount({ bootstrap: { editorLocale: 'ar' } });
+    await ready();
+    const sectionTwo = screen.getByRole('treeitem', { name: /el-section-2/ });
+    act(() => {
+      store.getState().setExpanded('el-section-2', false);
+    });
+    sectionTwo.focus();
+    await user.keyboard('{ArrowLeft}');
+    expect(document.activeElement).toBe(sectionTwo);
+    expect(screen.getByRole('treeitem', { name: /el-button-1/ })).toBeTruthy();
+    await user.keyboard('{ArrowLeft}');
+    expect(document.activeElement).toBe(screen.getByRole('treeitem', { name: /el-button-1/ }));
+    await user.keyboard('{ArrowRight}');
+    expect(document.activeElement).toBe(sectionTwo);
+    await user.keyboard('{ArrowRight}');
+    expect(screen.queryByRole('treeitem', { name: /el-button-1/ })).toBeNull();
+    expect(document.activeElement).toBe(sectionTwo);
+  });
+
+  it('expands the selected element ancestors together when selection comes from the canvas', async () => {
+    const { store } = mount();
+    await ready();
+    act(() => {
+      store.getState().setExpanded('el-container-1', false);
+    });
+    expect(screen.queryByRole('treeitem', { name: /el-heading-1/ })).toBeNull();
+    act(() => {
+      store.getState().select('el-heading-1');
+    });
+    expect(screen.getByRole('treeitem', { name: /el-heading-1/ })).toBeTruthy();
+    expect(store.getState().expandedIds).toContain('el-container-1');
   });
 
   it('follows selection repair: removing the selected element moves the highlight to its parent', async () => {
@@ -109,9 +184,9 @@ describe('Structure panel and inspector header', () => {
     act(() => {
       store.getState().dispatch({ type: 'remove', id: 'el-text-1' });
     });
-    expect(screen.getByRole('button', { current: true }).textContent).toContain('el-container-1');
+    expect(screen.getByRole('treeitem', { selected: true }).textContent).toContain('el-container-1');
     expect(screen.getByTestId('inspector-selection').textContent).toBe('Selected element: Container el-container-1');
-    expect(screen.queryByRole('button', { name: /el-text-1/ })).toBeNull();
+    expect(screen.queryByRole('treeitem', { name: /el-text-1/ })).toBeNull();
   });
 
   it('shows an empty state for a document without elements', async () => {
@@ -171,7 +246,7 @@ describe('Structure panel and inspector header', () => {
     await user.click(screen.getByRole('button', { name: 'Opnieuw proberen' }));
     await ready();
     expect(screen.queryByRole('alert')).toBeNull();
-    expect(screen.getByRole('list', { name: 'Pagina-elementen' })).toBeTruthy();
+    expect(screen.getByRole('tree', { name: 'Pagina-elementen' })).toBeTruthy();
   });
 
   it('has no axe violations while loading, with an outline and a selection, and in the error state', async () => {
