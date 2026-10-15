@@ -797,7 +797,39 @@
       "neg": true,
       "pct": true
     },
+    "margin-block-end": {
+      "extra": [
+        "auto"
+      ],
+      "k": "length",
+      "neg": true,
+      "pct": true
+    },
+    "margin-block-start": {
+      "extra": [
+        "auto"
+      ],
+      "k": "length",
+      "neg": true,
+      "pct": true
+    },
     "margin-bottom": {
+      "extra": [
+        "auto"
+      ],
+      "k": "length",
+      "neg": true,
+      "pct": true
+    },
+    "margin-inline-end": {
+      "extra": [
+        "auto"
+      ],
+      "k": "length",
+      "neg": true,
+      "pct": true
+    },
+    "margin-inline-start": {
       "extra": [
         "auto"
       ],
@@ -935,7 +967,23 @@
       "k": "box",
       "pct": true
     },
+    "padding-block-end": {
+      "k": "length",
+      "pct": true
+    },
+    "padding-block-start": {
+      "k": "length",
+      "pct": true
+    },
     "padding-bottom": {
+      "k": "length",
+      "pct": true
+    },
+    "padding-inline-end": {
+      "k": "length",
+      "pct": true
+    },
+    "padding-inline-start": {
       "k": "length",
       "pct": true
     },

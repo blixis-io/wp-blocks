@@ -54,6 +54,8 @@ A hand-written linear scanner (`src/tokenize.ts`), not regular expressions on th
 
 ## Known limits
 
+The allow-list includes the four logical `margin-*` and `padding-*` sides (`block-start`, `inline-end`, `block-end`, `inline-start`) so inspector spacing follows writing direction. Physical sides remain available to documents and extensions.
+
 - Math functions are checked for syntax, not sign or unit compatibility: `padding: calc(-1px)` validates and the browser discards it.
 - Some accepted values are still invalid CSS in corner cases (for example a grid line name that the template does not define). They are harmless: the browser ignores the declaration.
 - Named grid lines in square brackets, `transition` and `animation` shorthands, `filter`, `content`, `float` and `url()` backgrounds are not available yet; media backgrounds arrive through attachment ids in a later issue.

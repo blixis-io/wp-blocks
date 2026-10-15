@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { EditorApp } from './App';
@@ -7,7 +7,7 @@ import { ErrorScreen } from './ErrorScreen';
 import { PANELS_STORAGE_KEY } from './panels';
 import { axeViolations } from './test/axe';
 import { makeBootstrap } from './test/fixtures';
-import { fakeClient, makeDocument, makeStore, ok, streamsOf } from './test/state-helpers';
+import { el, fakeClient, makeDocument, makeStore, ok, streamsOf } from './test/state-helpers';
 import type { EditorBootstrap } from './bootstrap';
 
 function nameOf(element: Element): string {
@@ -23,7 +23,7 @@ function setup(overrides: Partial<EditorBootstrap> = {}) {
   const user = userEvent.setup();
   const { store } = makeStore({ bootstrap: overrides });
   const view = render(<EditorApp bootstrap={makeBootstrap(overrides)} store={store} />);
-  return { user, ...view, root: screen.getByTestId('editor-root') };
+  return { user, ...view, store, root: screen.getByTestId('editor-root') };
 }
 
 function mockSystemDark(dark: boolean) {
@@ -117,6 +117,130 @@ describe('shell landmarks', () => {
     const second = setup({ editorLocale: 'en_US', contentLocale: 'ar', enabledLocales: ['en_US', 'ar'] });
     expect(second.root.getAttribute('dir')).toBe('ltr');
     expect(screen.getByTestId('content-locale').textContent).toContain('Content language: ar');
+  });
+});
+
+describe('schema driven inspector', () => {
+  it('provides media library guidance and alt editor, a missing-alt warning, and accessible tabs', async () => {
+    const imageDocument = makeDocument();
+    const section = imageDocument.root[0];
+    const container = section?.children[0];
+    if (container === undefined) throw new Error('image fixture container is missing');
+    container.children.push(el('image-1', 'blixis/image'));
+    const user = userEvent.setup();
+    const { store } = makeStore({ document: imageDocument });
+    const view = render(<EditorApp bootstrap={makeBootstrap()} store={store} />);
+    await waitFor(() => {
+      expect(store.getState().document).not.toBeNull();
+    });
+    act(() => {
+      store.getState().select('image-1');
+    });
+    expect(screen.getByRole('spinbutton', { name: 'Media attachment ID' })).toBeTruthy();
+    expect(screen.getByText('Add alternative text, or mark this image as decorative.')).toBeTruthy();
+    for (const tab of ['Content', 'Style', 'Settings']) {
+      await user.click(screen.getByRole('tab', { name: tab }));
+      expect(await axeViolations(view.container)).toEqual([]);
+    }
+  });
+
+  it('keeps locked controls readable and disabled and applies RTL to inspector layout', async () => {
+    const { user, store, root } = setup({ editingEnabled: false, lockReason: 'Theme lock', editorLocale: 'ar' });
+    await waitFor(() => {
+      expect(store.getState().document).not.toBeNull();
+    });
+    act(() => {
+      store.getState().select('el-heading-1');
+    });
+    expect(root.getAttribute('dir')).toBe('rtl');
+    expect(screen.getByRole('textbox', { name: 'Text' }).hasAttribute('disabled')).toBe(true);
+    expect(screen.getAllByText('Editing is disabled: Theme lock').length).toBeGreaterThan(0);
+    await user.click(screen.getByRole('tab', { name: 'Style' }));
+    expect(await axeViolations(root)).toEqual([]);
+  });
+
+  it('exposes all six registered element editors and keeps each inspector tab accessible', async () => {
+    const { user, store, root } = setup();
+    await waitFor(() => {
+      expect(store.getState().document).not.toBeNull();
+    });
+    for (const id of ['el-section-1', 'el-container-1', 'el-heading-1', 'el-text-1', 'el-section-2', 'el-button-1']) {
+      expect(store.getState().select(id)).toBe(true);
+      const tabs = ['Content', 'Style', 'Settings'];
+      for (const tab of tabs) {
+        await user.click(screen.getByRole('tab', { name: tab }));
+        expect(await axeViolations(root)).toEqual([]);
+      }
+    }
+    expect(store.getState().select('el-heading-1')).toBe(true);
+    await user.click(screen.getByRole('tab', { name: 'Settings' }));
+    await user.click(screen.getByRole('tab', { name: 'Content' }));
+    expect(screen.getByRole('textbox', { name: 'Text' })).toBeTruthy();
+    expect(store.getState().select('el-text-1')).toBe(true);
+    expect(screen.getByRole('textbox', { name: 'Text' })).toBeTruthy();
+    expect(store.getState().select('el-button-1')).toBe(true);
+    await user.click(screen.getByRole('tab', { name: 'Settings' }));
+    expect(screen.getByRole('checkbox', { name: 'Open in a new tab' })).toBeTruthy();
+  }, 30_000);
+
+  it('maps registry fields to accessible controls and edits translated text in the active locale', async () => {
+    const { user, store } = setup();
+    await waitFor(() => {
+      expect(store.getState().document).not.toBeNull();
+    });
+    store.getState().setContentLocale('en_US');
+    await user.click(screen.getByRole('treeitem', { name: /el-heading-1/ }));
+    const text = screen.getByRole('textbox', { name: 'Text' });
+    await user.clear(text);
+    await user.type(text, 'Updated heading');
+    expect(store.getState().document?.translations['en_US']?.['el-heading-1']?.values['text']).toBe('Updated heading');
+    expect(store.getState().coalesce?.key).toContain('el-heading-1:en_US:text');
+    await user.click(screen.getByRole('tab', { name: 'Settings' }));
+    const level = screen.getByRole('spinbutton', { name: 'Heading level' });
+    expect(level).toBeTruthy();
+    await user.clear(level);
+    await user.type(level, '9');
+    expect((level as HTMLInputElement).value).toBe('9');
+    expect(screen.getByRole('alert')).toBeTruthy();
+  });
+
+  it('dispatches invariant properties through update-props and shows unsafe URL validation inline', async () => {
+    const { user, store } = setup();
+    await waitFor(() => {
+      expect(store.getState().document).not.toBeNull();
+    });
+    store.getState().setContentLocale('en_US');
+    await user.click(screen.getByRole('treeitem', { name: /el-button-1/ }));
+    await user.click(screen.getByRole('tab', { name: 'Content' }));
+    await user.clear(screen.getByRole('textbox', { name: 'Label' }));
+    await user.type(screen.getByRole('textbox', { name: 'Label' }), 'Save');
+    expect(store.getState().document?.translations['en_US']?.['el-button-1']?.values['label']).toBe('Save');
+    const link = screen.getByRole('textbox', { name: 'Link' });
+    await user.clear(link);
+    await user.type(link, 'javascript:alert(1)');
+    await user.tab();
+    expect(screen.getByRole('alert').textContent).toContain('safe link');
+    expect(store.getState().document?.translations['en_US']?.['el-button-1']?.values['href']).toBeUndefined();
+    await user.click(screen.getByRole('tab', { name: 'Settings' }));
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Button style' }), 'outline');
+    expect(store.getState().document?.root[1]?.children[0]?.props['variant']).toBe('outline');
+  });
+
+  it('edits breakpoint styles and can return to inherited values', async () => {
+    const { user, store } = setup();
+    await waitFor(() => {
+      expect(store.getState().document).not.toBeNull();
+    });
+    await user.click(screen.getByRole('treeitem', { name: /el-heading-1/ }));
+    await user.click(screen.getByRole('radio', { name: 'Tablet' }));
+    await user.click(screen.getByRole('tab', { name: 'Style' }));
+    const color = screen.getByRole('combobox', { name: 'Text colour' });
+    await user.selectOptions(color, 'var(--blx-color-text)');
+    expect(store.getState().document?.root[0]?.children[0]?.children[0]?.style).toEqual([
+      expect.objectContaining({ breakpoint: 'tablet', declarations: { color: 'var(--blx-color-text)' } }),
+    ]);
+    await user.click(screen.getByRole('button', { name: 'Reset Text colour to inherited' }));
+    expect(store.getState().document?.root[0]?.children[0]?.children[0]?.style).toBeUndefined();
   });
 });
 

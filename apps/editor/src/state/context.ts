@@ -60,6 +60,7 @@ export interface ResolvedDeps {
   breakpoints: BreakpointRegistry;
   historyLimit: number;
   editingEnabled: boolean;
+  registry: ElementRegistry;
 }
 
 export const DEFAULT_HISTORY_LIMIT = 200;
@@ -79,6 +80,7 @@ export function resolveDeps(deps: EditorStoreDeps): ResolvedDeps {
     breakpoints: deps.breakpoints ?? DEFAULT_BREAKPOINTS,
     historyLimit: deps.historyLimit ?? DEFAULT_HISTORY_LIMIT,
     editingEnabled: deps.bootstrap.editingEnabled ?? true,
+    registry,
   };
 }
 

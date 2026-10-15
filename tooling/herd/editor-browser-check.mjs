@@ -326,6 +326,51 @@ try {
   assert.ok(picked.current?.includes('hero-h1'), 'the clicked element is marked aria-current');
   assert.ok(picked.inspector.includes('hero-h1'), 'the inspector header shows the selected element');
 
+  // Inspector text edits reach the live preview and undo restores the original document value.
+  await ev(
+    `(() => { const label = [...document.querySelectorAll('aside[aria-label="Inspector"] label')].find((item) => item.textContent.trim() === 'Text'); document.getElementById(label?.htmlFor)?.focus(); })()`,
+  );
+  await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Control', code: 'ControlLeft' });
+  await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'a', code: 'KeyA', modifiers: 2 });
+  await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'a', code: 'KeyA', modifiers: 2 });
+  await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Control', code: 'ControlLeft' });
+  await send('Input.insertText', { text: 'Inspector smoke heading' });
+  await sleep(1500);
+  assert.ok(
+    await ev(
+      `document.querySelector('main iframe')?.contentDocument?.body.textContent.includes('Inspector smoke heading')`,
+    ),
+    'the heading edit updates the canvas preview',
+  );
+  await ev(`document.querySelector('button[aria-label="Undo"]')?.click()`);
+  await sleep(1500);
+  assert.ok(
+    await ev(
+      `!document.querySelector('main iframe')?.contentDocument?.body.textContent.includes('Inspector smoke heading')`,
+    ),
+    'undo restores the heading preview',
+  );
+
+  // A spacing token change is sent through the responsive style command and appears in compiled preview CSS.
+  await ev(
+    `(() => { const tab = [...document.querySelectorAll('[role=tab]')].find((item) => item.textContent.trim() === 'Style'); tab?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0, ctrlKey: false })); })()`,
+  );
+  await sleep(300);
+  const spacingBefore = await ev(
+    `document.querySelector('main iframe')?.contentDocument?.styleSheets ? [...document.querySelector('main iframe').contentDocument.styleSheets].map((sheet) => { try { return [...sheet.cssRules].map((rule) => rule.cssText).join(''); } catch { return ''; } }).join('') : ''`,
+  );
+  await ev(
+    `(() => { const label = [...document.querySelectorAll('label')].find((item) => item.textContent.trim() === 'Top'); const select = label && document.getElementById(label.htmlFor); if (!select) return false; select.value = 'var(--blx-space-4)'; select.dispatchEvent(new Event('change', { bubbles: true })); return true; })()`,
+  );
+  await sleep(1500);
+  const spacingAfter = await ev(
+    `document.querySelector('main iframe')?.contentDocument ? [...document.querySelector('main iframe').contentDocument.styleSheets].map((sheet) => { try { return [...sheet.cssRules].map((rule) => rule.cssText).join(''); } catch { return ''; } }).join('') : ''`,
+  );
+  assert.notEqual(spacingAfter, spacingBefore, 'spacing changes the compiled canvas preview CSS');
+  await ev(
+    `([...document.querySelectorAll('[role=tab]')].find((tab) => tab.textContent.trim() === 'Content'))?.click()`,
+  );
+
   // Canvas (BWB-051): a sandboxed same-origin iframe with the dedicated canvas document and its trusted runtime.
   const frameInfo = () =>
     ev(`(() => {

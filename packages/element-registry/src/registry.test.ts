@@ -64,6 +64,11 @@ describe('the core registry', () => {
     });
   });
 
+  it('keeps image sources attachment-only', () => {
+    expect(registry.get('blixis/image')?.props['attachmentId']?.kind).toBe('media');
+    expect(registry.get('blixis/image')?.props['src']).toBeUndefined();
+  });
+
   describe('canNest', () => {
     // rows: parent (null = page root); columns: child
     const expected: Record<string, string[]> = {

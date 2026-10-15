@@ -526,6 +526,9 @@ describe('performance sanity', () => {
     expect(allIds(doc.root)).toHaveLength(5000);
     const { store, clock } = await makeLoadedStore({ document: doc });
     store.getState().select('el-t-39-48');
+    const selectionStarted = performance.now();
+    for (let i = 0; i < 100; i += 1) store.getState().select(`el-t-${String(i % 50)}-${String(i % 99)}`);
+    expect(performance.now() - selectionStarted).toBeLessThan(2_000);
     const started = performance.now();
     for (let i = 0; i < 1000; i += 1) {
       const result = store

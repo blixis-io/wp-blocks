@@ -177,8 +177,16 @@ const entries: [string, Kind][] = [
   // Spacing
   ['margin', { k: 'box', neg: true, pct: true, extra: ['auto'] }],
   ...SIDES.map((s): [string, Kind] => [`margin-${s}`, { k: 'length', neg: true, pct: true, extra: ['auto'] }]),
+  ...(['block-start', 'inline-end', 'block-end', 'inline-start'] as const).map((s): [string, Kind] => [
+    `margin-${s}`,
+    { k: 'length', neg: true, pct: true, extra: ['auto'] },
+  ]),
   ['padding', { k: 'box', pct: true }],
   ...SIDES.map((s): [string, Kind] => [`padding-${s}`, { k: 'length', pct: true }]),
+  ...(['block-start', 'inline-end', 'block-end', 'inline-start'] as const).map((s): [string, Kind] => [
+    `padding-${s}`,
+    { k: 'length', pct: true },
+  ]),
   ['gap', { k: 'box', pct: true }],
   ['row-gap', { k: 'length', pct: true, extra: ['normal'] }],
   ['column-gap', { k: 'length', pct: true, extra: ['normal'] }],

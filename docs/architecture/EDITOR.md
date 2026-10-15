@@ -125,14 +125,33 @@ Selection is validated against the document. After every command, undo, redo and
 
 `main.tsx` creates the store with `createRestClient` (injectable in tests through `mountEditor`'s options) and `EditorApp` calls `loadDocument` on mount (aborted on unmount). The toolbar Undo and Redo buttons follow `canUndo`/`canRedo` (`aria-disabled`) and work by click and keyboard; Mod+Z and Mod+Shift+Z are BWB-056 and are NOT bound. The Structure panel shows a virtual WAI-ARIA tree with keyboard selection, loading, error (`role="alert"`, generic catalog text for 401, 403, 409, 423, network and invalid documents, never server text) and empty states; tree drag and drop is BWB-059. The Inspector header shows the selected element's type and id. The canvas placeholder (shown when the bootstrap has no `canvasUrl`) shows the content locale from the settings slice.
 
+### Schema-driven inspector (BWB-053 / BWB-054)
+
+`src/inspector/Inspector.tsx` reads the selected type from the injected `ElementRegistry` and renders its registered properties in the existing Content and Settings tabs. Invariant values are stored through `update-props`; translated and locale-specific values are stored through `set-translation` using `settings.contentLocale`. The editor interface locale only chooses message catalogs. Unknown element types have no editable controls. The document-level `editingEnabled` flag disables controls and displays one lock message; the bridge also refuses all writes when `editingEnabled` is false.
+
+The framework-free `src/inspector/control-mapping.ts` maps element property schemas to control families and inspector tabs; its tests exercise every core property kind and the special content placement for media identity fields. Presentation components live under `src/inspector/controls/`, split into text, numeric, choice, media and style families. The prop control mapping follows the registry union: strings become text inputs or a multiline textarea for long text, integers become bounded number inputs, enums become selects, booleans become checkboxes, and URL drafts are checked before dispatch on blur or Enter. Images resolve only through WordPress media attachment ids; the inspector explains that media library selection is coming. Failed dispatches remain beside the field as translated alerts with `aria-describedby`; command failures keep the local draft. Image alternative text is localized and a warning appears only when it is absent and the image is not decorative.
+
+The Style tab uses named Blixis tokens for spacing, colour and font size, plus fixed safe presets for weight, line height and alignment, all checked by the style engine. The shared design-token schema does not yet model font weight or line height as token categories; the preset choices avoid arbitrary input until the theme token adapter can supply them. Spacing uses logical block/inline sides. The active editor viewport selects its breakpoint from the injected breakpoint registry; sparse style rules inherit from wider breakpoints while mode and state rules are excluded from this indicator. The panel marks a local override and offers reset by deleting declarations for the active breakpoint while preserving wider breakpoint values. Every write is a discrete `set-style-rule` undo step. No command runs during render.
+
+Typography presets use finite weight and line-height choices. This keeps values inside the CSS declaration allow-list and avoids free-form parsing in these controls; expand the presets or add validated numeric controls in a follow-up.
+
+Inspector tests cover spacing and typography resets, actual controls across the six core element types, read-only reasons, command errors, selection and locale draft resets, undo/redo synchronization, viewport-specific inherited indicators, and a selection plus field edit on a 5,000-element document with a 30-second test timeout.
+
+The inspector is editor chrome and does not affect website content appearance or editor locale. Field layout uses logical CSS properties for RTL. Tabs retain their existing Radix keyboard semantics; fields use native labels, fieldsets and controls with touch-size inputs.
+
+### Current scope boundary
+
+The core registry defines the initial six elements and their persisted property contracts. Images resolve only through `attachmentId`; the inspector exposes the attachment id, localized alternative text and decorative toggle, with media library selection coming in a later issue. The style controls expose core spacing, colour and font-size tokens plus finite weight and line-height presets. Site-specific token choices and first-class weight/line-height token categories remain open work for the future theme settings adapter.
+
+
 ### What plugs in later
 
 | Issue | Plugs into |
 |---|---|
 | BWB-051 canvas bridge | Done: see "Canvas (BWB-051)". Uses `subscribe` (events carry the document) and `viewport`, `breakpointId`, `previewMode`, `contentLocale`, `selectedId`, `hoveredId` from the store |
-| BWB-052 structure tree | `select`, `expandedIds`, keyboard focus and selection breadcrumb |
+| BWB-052 structure tree | Done: `select`, `expandedIds`, keyboard focus and selection breadcrumb |
 | BWB-059 drag and drop | `dispatch({ type: 'move' ... })` and canvas rectangles |
-| BWB-053 inspector | `selectedId`, `dispatch` with `coalesceKey` for text fields |
+| BWB-053/054 inspector | Done: injected registry, `selectedId`, translated/invariant fields and discrete style history |
 | BWB-055 save and autosave | `subscribe` for change events, `dirty`, `revisions` (`If-Match`), `splitDocument` for the bodies, `markSaved` with the document that was sent |
 | BWB-056 shortcuts | `undo`, `redo` |
 
@@ -188,6 +207,7 @@ Landmarks are unique and named; disabled placeholders use `aria-disabled` and st
 | BWB-050 | Done: document store, command bridge, Undo/Redo, dirty state (see "State and command bridge"). |
 | BWB-051 | Done: canvas iframe, `@blixis/wp-canvas-bridge`, the canvas runtime, real viewport and preview appearance controls (see "Canvas (BWB-051)"). |
 | BWB-052 | Structure tree, selection breadcrumb and clipped canvas selection overlay using `request-rects`. |
-| BWB-053, BWB-059 | Inspector tabs and drag and drop. |
+| BWB-053/054 | Done: schema-driven inspector, property/style editing, locale-aware fields and accessible controls. |
+| BWB-059 | Inspector tabs and drag and drop. |
 | BWB-055 | Save/Publish through `restRoot` + `nonce`; lock handling. |
 | BWB-056..058 | Shortcuts, content-locale switcher, translation status. |
