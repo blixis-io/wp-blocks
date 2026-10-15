@@ -24,10 +24,11 @@ final class RenderCacheKey {
 	 * @param int    $compiler_version CSS compiler version.
 	 * @param string $plugin_version Plugin version.
 	 * @param string $theme Active stylesheet and version.
+	 * @param string $compat_reason Effective compatibility reason.
 	 * @return string Key of 64 hex characters prefixed for readability.
 	 */
-	public static function build( int $post_id, string $locale, int $layout_revision, int $content_revision, string $epoch, int $compiler_version, string $plugin_version, string $theme ): string {
-		$parts = [ $post_id, $locale, $layout_revision, $content_revision, $epoch, $compiler_version, $plugin_version, $theme ];
+	public static function build( int $post_id, string $locale, int $layout_revision, int $content_revision, string $epoch, int $compiler_version, string $plugin_version, string $theme, string $compat_reason ): string {
+		$parts = [ $post_id, $locale, $layout_revision, $content_revision, $epoch, $compiler_version, $plugin_version, $theme, $compat_reason ];
 		return 'blx_' . \hash( 'sha256', \implode( "\0", \array_map( 'strval', $parts ) ) );
 	}
 }

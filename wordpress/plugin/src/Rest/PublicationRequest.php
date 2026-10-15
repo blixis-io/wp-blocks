@@ -13,6 +13,8 @@ use Blixis\Builder\Publication\PublishOptions;
 use Blixis\Builder\Publication\PublishResult;
 use Blixis\Builder\Publication\Publisher;
 use Blixis\Builder\Storage\MetaKeys;
+use Blixis\Builder\Theme\ThemeCompat;
+use Blixis\Builder\Theme\WordPressCompatibilityReader;
 
 \defined( 'ABSPATH' ) || exit;
 
@@ -23,11 +25,12 @@ final class PublicationRequest {
 	/**
 	 * Create the policy.
 	 *
-	 * @param Publisher  $publisher Publisher.
-	 * @param PostAccess $access Post access policy.
-	 * @param SiteLocale $site Site locale.
+	 * @param Publisher   $publisher Publisher.
+	 * @param PostAccess  $access Post access policy.
+	 * @param SiteLocale  $site Site locale.
+	 * @param ?ThemeGuard $guard Shared theme policy.
 	 */
-	public function __construct( private readonly Publisher $publisher, private readonly PostAccess $access, private readonly SiteLocale $site ) {}
+	public function __construct( private readonly Publisher $publisher, private readonly PostAccess $access, private readonly SiteLocale $site, private ?ThemeGuard $guard = null ) {}
 
 	/**
 	 * Check access: reading the state needs edit rights, changing it needs the publish capability.
@@ -37,13 +40,8 @@ final class PublicationRequest {
 	 * @return ?PublishResult Null when allowed.
 	 */
 	public function permission( int $post_id, bool $changes_state ): ?PublishResult {
-		if ( ! $this->access->is_authenticated() ) {
-			return PublishResult::error( 401, 'blixis_unauthenticated' );
-		}
-		if ( $post_id < 1 || ! $this->access->exists( $post_id ) || ! $this->access->is_opted_in( $post_id ) || ! $this->access->can_edit( $post_id ) || ( $changes_state && ! $this->access->can_publish( $post_id ) ) ) {
-			return PublishResult::error( 403, 'blixis_forbidden' );
-		}
-		return null;
+		$denied = ( $this->guard ?? new ThemeGuard( $this->access, new ThemeCompat( new WordPressCompatibilityReader() ) ) )->permission( $post_id, $changes_state, $changes_state );
+		return null === $denied ? null : PublishResult::error( $denied->status, $denied->error_code ?? 'blixis_forbidden', $denied->body );
 	}
 
 	/**

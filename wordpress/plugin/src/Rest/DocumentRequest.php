@@ -13,6 +13,8 @@ use Blixis\Builder\Storage\Envelope;
 use Blixis\Builder\Storage\MetaKeys;
 use Blixis\Builder\Storage\RevisionRing;
 use Blixis\Builder\Storage\StreamStore;
+use Blixis\Builder\Theme\ThemeCompat;
+use Blixis\Builder\Theme\WordPressCompatibilityReader;
 
 \defined( 'ABSPATH' ) || exit;
 
@@ -24,21 +26,17 @@ final class DocumentRequest {
 	 * @param StreamStore   $streams Working stream repository.
 	 * @param PostAccess    $access Post access policy.
 	 * @param ?RevisionRing $ring Revision history, if kept.
+	 * @param ?ThemeGuard   $guard Shared theme policy.
 	 */
-	public function __construct( private StreamStore $streams, private PostAccess $access, private ?RevisionRing $ring = null ) {}
+	public function __construct( private StreamStore $streams, private PostAccess $access, private ?RevisionRing $ring = null, private ?ThemeGuard $guard = null ) {}
 
 	/** Check access without revealing whether a forbidden post exists.
 	 *
-	 * @param int $post_id Post ID.
+	 * @param int  $post_id Post ID.
+	 * @param bool $changes_state Whether this operation writes.
 	 */
-	public function permission( int $post_id ): ?DocumentResult {
-		if ( ! $this->access->is_authenticated() ) {
-			return DocumentResult::error( 401, 'blixis_unauthenticated', 'Authentication is required.' );
-		}
-		if ( $post_id < 1 || ! $this->access->exists( $post_id ) || ! $this->access->is_opted_in( $post_id ) || ! $this->access->can_edit( $post_id ) ) {
-			return DocumentResult::error( 403, 'blixis_forbidden', 'Document access is forbidden.' );
-		}
-		return null;
+	public function permission( int $post_id, bool $changes_state = false ): ?DocumentResult {
+		return ( $this->guard ?? new ThemeGuard( $this->access, new ThemeCompat( new WordPressCompatibilityReader() ) ) )->permission( $post_id, $changes_state );
 	}
 
 	/** Parse only canonical quoted decimal ETags.

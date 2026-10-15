@@ -939,6 +939,162 @@ async function smoke() {
         );
         command('post', 'delete', pubPost, '--force');
         command('post', 'delete', draftOfContributor, '--force');
+        // Theme compatibility guard (BWB-047): lock editing on unsupported themes, keep data and public output, restore on switch back.
+        const guardPost = command(
+          'post',
+          'create',
+          '--post_type=page',
+          '--post_status=publish',
+          '--post_title=Guard smoke',
+          '--post_content=PLAIN GUARD',
+          '--porcelain',
+        );
+        const guardLayout = JSON.stringify({
+          schemaVersion: 1,
+          documentId: 'doc-grd',
+          layoutRevision: 1,
+          root: [{ id: 'hed-1', type: 'blixis/heading', props: {}, children: [] }],
+        });
+        const guardContent = JSON.stringify({
+          schemaVersion: 1,
+          contentRevision: 1,
+          entries: { 'hed-1': { status: 'translated', values: { text: 'Guard live text' } } },
+        });
+        const guardPut = (path, body, expected) =>
+          api(`${guardPost}/${path}`, {
+            cookie: adminCookie,
+            nonce: adminNonce,
+            method: 'PUT',
+            ifMatch: `"${expected}"`,
+            body,
+          });
+        const guardPost2 = (action, payload, expected, who = { cookie: adminCookie, nonce: adminNonce }) =>
+          api(`${guardPost}/${action}`, {
+            ...who,
+            method: 'POST',
+            ifMatch: `"${expected}"`,
+            body: JSON.stringify(payload),
+          });
+        const statusOf = async () =>
+          json(
+            await wrap(
+              await http(`${base}/?rest_route=/blixis/v1/status`, {
+                headers: { cookie: adminCookie, 'x-wp-nonce': adminNonce },
+              }),
+            ),
+          );
+        const guardPage = async () => (await get(`/?page_id=${guardPost}`)).text;
+        check(
+          (await guardPut('layout', guardLayout, 0)).status === 200 &&
+            (await guardPut('content/en_US', guardContent, 0)).status === 200,
+          'working data is saved on the compatible theme',
+        );
+        check(
+          (await guardPost2('publish', { layout: true, locale: 'en_US' }, 0)).status === 200,
+          'a page is published on the compatible theme',
+        );
+        let status = await statusOf();
+        check(
+          status.theme?.compatible === true && status.editing?.enabled === true && status.theme?.reason === 'ok',
+          'the status route reports a compatible theme with editing enabled',
+        );
+        check(
+          !(await guardPage()).includes('blixis-builder-fallback'),
+          'a compatible theme gets no fallback stylesheet',
+        );
+        command('theme', 'activate', 'blixis-other-fixture');
+        status = await statusOf();
+        check(
+          status.theme?.compatible === false &&
+            status.theme?.reason === 'not-declared' &&
+            status.editing?.enabled === false &&
+            status.theme?.name === 'Blixis Other Fixture',
+          'an unrelated theme is reported as not compatible and editing is disabled',
+        );
+        const locked = await guardPut('layout', guardLayout, 1);
+        const lockedBody = await json(locked);
+        check(
+          locked.status === 423 &&
+            lockedBody.code === 'blixis_theme_incompatible' &&
+            lockedBody.data?.reason === 'not-declared' &&
+            lockedBody.data?.supportedMin === 1,
+          'saving is locked with 423 and the reason',
+        );
+        check((await guardPut('content/en_US', guardContent, 1)).status === 423, 'saving content is locked');
+        check((await guardPost2('publish', { layout: true }, 1)).status === 423, 'publishing is locked');
+        check((await guardPost2('rollback', { layoutSnapshot: 1 }, 1)).status === 423, 'rollback is locked');
+        check((await guardPost2('layout/restore', { revision: 1 }, 1)).status === 423, 'restore is locked');
+        check(
+          (await guardPost2('content/en_US/restore', { revision: 1 }, 1)).status === 423,
+          'restoring content is locked',
+        );
+        check(
+          (await api(`${guardPost}/publish`, { method: 'POST', ifMatch: '"1"', body: '{}' })).status === 401 &&
+            (await guardPost2('publish', { layout: true }, 1, { cookie: subscriberCookie, nonce: subscriberNonce }))
+              .status === 403,
+          'access checks come before the lock for publishing too: anonymous 401, no rights 403',
+        );
+        check(
+          (await guardPut('layout', guardLayout, 1)).status === 423 &&
+            (
+              await api(`${guardPost}/layout`, {
+                cookie: subscriberCookie,
+                nonce: subscriberNonce,
+                method: 'PUT',
+                ifMatch: '"1"',
+                body: guardLayout,
+              })
+            ).status === 403,
+          'access checks come first: a subscriber still gets 403, not 423',
+        );
+        const keptLayout = await json(await api(`${guardPost}/layout`, { cookie: adminCookie, nonce: adminNonce }));
+        check(
+          keptLayout.revision === 1 && keptLayout.document?.root?.[0]?.id === 'hed-1',
+          'the saved data is untouched and readable',
+        );
+        check(
+          (await api(`${guardPost}/layout/revisions`, { cookie: adminCookie, nonce: adminNonce })).status === 200 &&
+            (await api(`${guardPost}/published`, { cookie: adminCookie, nonce: adminNonce })).status === 200,
+          'history and publication state stay readable',
+        );
+        check(
+          (await preview(guardPost, { cookie: adminCookie, nonce: adminNonce, body: '{}' })).status === 200,
+          'preview stays available',
+        );
+        const lockedPage = await guardPage();
+        check(
+          lockedPage.includes('Guard live text') &&
+            lockedPage.includes('blixis-builder-fallback') &&
+            !lockedPage.includes('PLAIN GUARD'),
+          'the published page still renders and gets the fallback stylesheet',
+        );
+        const dashboard = await http(`${base}/wp-admin/index.php`, { headers: { cookie: adminCookie } });
+        check(
+          (await dashboard.text()).includes('Blixis Other Fixture'),
+          'the admin shows a notice naming the incompatible theme',
+        );
+        command('theme', 'activate', 'blixis-child-invalid-fixture');
+        check(
+          (await statusOf()).theme?.reason === 'invalid-declaration',
+          'an invalid declaration in a child theme is incompatible and does not fall through to the parent',
+        );
+        command('theme', 'activate', 'blixis-child-fixture');
+        check(
+          (await statusOf()).theme?.compatible === true,
+          'a child of the Blixis theme is compatible through its parent',
+        );
+        command('theme', 'activate', 'blixis');
+        status = await statusOf();
+        check(status.editing?.enabled === true, 'switching back to a compatible theme re-enables editing');
+        check(
+          (await guardPut('layout', guardLayout, 1)).status === 200,
+          'saving works again straight after switching back',
+        );
+        check(
+          !(await guardPage()).includes('blixis-builder-fallback'),
+          'the fallback stylesheet is gone on the compatible theme',
+        );
+        command('post', 'delete', guardPost, '--force');
         // Media (BWB-045): raster library images only, validated responsive attributes, alt text, picker route.
         const mediaIds = JSON.parse(command('eval-file', '/fixtures/media-smoke.php').split('\n').pop());
         const mediaApi = async (id, { cookie, nonce } = {}) =>

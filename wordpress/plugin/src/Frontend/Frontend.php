@@ -15,6 +15,8 @@ use Blixis\Builder\Render\CoreDocumentRenderer;
 use Blixis\Builder\Render\WordPressMediaResolver;
 use Blixis\Builder\Storage\MetaRegistration;
 use Blixis\Builder\Storage\WpdbDatabase;
+use Blixis\Builder\Theme\ThemeCompat;
+use Blixis\Builder\Theme\WordPressCompatibilityReader;
 
 \defined( 'ABSPATH' ) || exit;
 
@@ -47,12 +49,19 @@ final class Frontend {
 	 */
 	public static function enqueue_style(): void {
 		$page = self::page_for( (int) \get_queried_object_id() );
-		if ( null === $page || '' === $page['css'] ) {
+		if ( null === $page ) {
 			return;
 		}
-		\wp_register_style( self::STYLE_HANDLE, false, [], \Blixis\Builder\VERSION );
-		\wp_enqueue_style( self::STYLE_HANDLE );
-		\wp_add_inline_style( self::STYLE_HANDLE, $page['css'] );
+		if ( '' !== $page['css'] ) {
+			\wp_register_style( self::STYLE_HANDLE, false, [], \Blixis\Builder\VERSION );
+			\wp_enqueue_style( self::STYLE_HANDLE );
+			\wp_add_inline_style( self::STYLE_HANDLE, $page['css'] );
+		}
+		if ( ! ( new ThemeCompat( new WordPressCompatibilityReader() ) )->status()->compatible ) {
+			\wp_register_style( 'blixis-builder-fallback', false, [], \Blixis\Builder\VERSION );
+			\wp_enqueue_style( 'blixis-builder-fallback' );
+			\wp_add_inline_style( 'blixis-builder-fallback', FallbackCss::css() );
+		}
 	}
 
 	/**
@@ -109,9 +118,11 @@ final class Frontend {
 			return null;
 		}
 		$theme = \wp_get_theme();
-		$key   = RenderCacheKey::build( $post_id, $published->locale, $published->layout_revision, $published->content_revision, Invalidation::epoch(), Compiler::COMPILER_VERSION, \Blixis\Builder\VERSION, $theme->get_stylesheet() . '@' . (string) $theme->get( 'Version' ) );
-		$cache = new TransientRenderCache();
-		$page  = $cache->get( $key );
+		// The reason distinguishes changed declarations even if the stylesheet version was not bumped.
+		$reason = ( new ThemeCompat( new WordPressCompatibilityReader() ) )->status()->reason;
+		$key    = RenderCacheKey::build( $post_id, $published->locale, $published->layout_revision, $published->content_revision, Invalidation::epoch(), Compiler::COMPILER_VERSION, \Blixis\Builder\VERSION, $theme->get_stylesheet() . '@' . (string) $theme->get( 'Version' ), $reason );
+		$cache  = new TransientRenderCache();
+		$page   = $cache->get( $key );
 		if ( null === $page ) {
 			$renderer = new PageRenderer( new CoreDocumentRenderer( ElementRegistry::from_manifest_file( \Blixis\Builder\DIR . '/data/core-elements.json' ), new WordPressMediaResolver() ) );
 			$page     = $renderer->render( $published );

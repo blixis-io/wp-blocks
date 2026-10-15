@@ -65,7 +65,7 @@ final class DocumentController {
 				[
 					'methods'             => 'POST',
 					'callback'            => [ $controller, 'restore' ],
-					'permission_callback' => [ $controller, 'permission' ],
+					'permission_callback' => [ $controller, 'permission_write' ],
 					'args'                => $args,
 				]
 			);
@@ -82,7 +82,7 @@ final class DocumentController {
 					[
 						'methods'             => 'PUT',
 						'callback'            => [ $controller, 'put' ],
-						'permission_callback' => [ $controller, 'permission' ],
+						'permission_callback' => [ $controller, 'permission_write' ],
 						'args'                => $args,
 					],
 				]
@@ -122,6 +122,15 @@ final class DocumentController {
 	 */
 	public function permission( \WP_REST_Request $request ): true|\WP_Error {
 		$result = $this->documents->permission( (int) $request->get_param( 'post_id' ) );
+		return null === $result ? true : self::error( $result );
+	}
+
+	/** Authorize a write after post access checks.
+	 *
+	 * @param \WP_REST_Request $request REST request.
+	 */
+	public function permission_write( \WP_REST_Request $request ): true|\WP_Error {
+		$result = $this->documents->permission( (int) $request->get_param( 'post_id' ), true );
 		return null === $result ? true : self::error( $result );
 	}
 

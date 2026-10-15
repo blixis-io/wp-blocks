@@ -14,6 +14,8 @@ use Blixis\Builder\Storage\Envelope;
 use Blixis\Builder\Storage\FakeDatabase;
 use Blixis\Builder\Storage\MetaKeys;
 use Blixis\Builder\Storage\StreamStore;
+use Blixis\Builder\Theme\CompatibilityReader;
+use Blixis\Builder\Theme\ThemeCompat;
 use PHPUnit\Framework\TestCase;
 
 if ( ! \defined( 'ABSPATH' ) ) {
@@ -137,6 +139,48 @@ final class DocumentRestTest extends TestCase {
 		$controller = new DocumentController( $this->documents );
 		$this->assertTrue( $controller->permission( new \WP_REST_Request( 'GET', 5 ) ) );
 		$this->documents->get( 5, null );
+		$this->assertSame( [], $this->database->rows( 5, MetaKeys::LAYOUT ) );
+	}
+
+	/** Write permission locks before any storage operation while GET remains available. */
+	public function test_controller_theme_lock(): void {
+		ThemeCompat::reset_for_tests();
+		$reader     = new class() implements CompatibilityReader {
+			/** Fixture context. */
+			public function context_key(): string {
+				return 'document-rest';
+			}
+			/** No version. */
+			public function declared(): ?int {
+				return null;
+			}
+			/** No declaration. */
+			public function invalid_declaration(): bool {
+				return false;
+			}
+			/** Display name. */
+			public function active_theme_name(): string {
+				return 'Other';
+			}
+		};
+		$guard      = new ThemeGuard( $this->access, new ThemeCompat( $reader ) );
+		$controller = new DocumentController( new DocumentRequest( new StreamStore( $this->database ), $this->access, null, $guard ) );
+		$request    = new \WP_REST_Request( 'PUT', 5 );
+		$this->assertTrue( $controller->permission( $request ) );
+		$denied = $controller->permission_write( $request );
+		$this->assertInstanceOf( \WP_Error::class, $denied );
+		$this->assertSame( 'blixis_theme_incompatible', $denied->code );
+		$this->assertSame(
+			[
+				'status'       => 423,
+				'reason'       => 'not-declared',
+				'theme'        => 'Other',
+				'declared'     => null,
+				'supportedMin' => 1,
+				'supportedMax' => 1,
+			],
+			$denied->data
+		);
 		$this->assertSame( [], $this->database->rows( 5, MetaKeys::LAYOUT ) );
 	}
 
