@@ -1,6 +1,6 @@
 # ADR 0011: Editor icon set
 
-- Status: Accepted (owner decision in BWB-127)
+- Status: Superseded by ADR 0012
 - Date: 2026-10-15
 - Issues: #196 (BWB-127), epic #195
 - Deciders: owner

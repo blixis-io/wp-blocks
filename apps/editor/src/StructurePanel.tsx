@@ -15,6 +15,7 @@ interface Row {
   hasChildren: boolean;
   position: number;
   setSize: number;
+  guideStops: boolean[];
 }
 const PALETTE_CATEGORIES = ['layout', 'content', 'media', 'interactive'] as const;
 let nextCreatedElementId = 0;
@@ -28,6 +29,7 @@ function flatten(root: readonly ElementNode[], expanded: ReadonlySet<string>): R
       parent: null as string | null,
       position: index + 1,
       setSize: root.length,
+      guideStops: [] as boolean[],
     }))
     .reverse();
   while (stack.length) {
@@ -44,6 +46,7 @@ function flatten(root: readonly ElementNode[], expanded: ReadonlySet<string>): R
             parent: item.node.id,
             position: i + 1,
             setSize: item.node.children.length,
+            guideStops: [...item.guideStops, i === item.node.children.length - 1],
           });
       }
   }
@@ -106,8 +109,10 @@ const OutlineItem = memo(function OutlineItem({
   hasChildren,
   position,
   setSize,
+  guideStops: rowGuideStops,
   expanded,
   tabIndex,
+  'data-on-path': dataOnPath,
   query,
   onFocus,
   onKeyDown,
@@ -118,8 +123,10 @@ const OutlineItem = memo(function OutlineItem({
   hasChildren: boolean;
   position: number;
   setSize: number;
+  guideStops: boolean[];
   expanded: boolean;
   tabIndex: number;
+  'data-on-path'?: string;
   query: string;
   onFocus: () => void;
   onKeyDown: (event: React.KeyboardEvent<HTMLDivElement>, id: string) => void;
@@ -145,8 +152,10 @@ const OutlineItem = memo(function OutlineItem({
       aria-setsize={setSize}
       data-id={node.id}
       data-parent={parent ?? undefined}
+      data-last-child={position === setSize ? 'true' : 'false'}
+      data-on-path={dataOnPath}
       tabIndex={tabIndex}
-      style={{ '--tree-depth': String(depth - 1) } as CSSProperties}
+      style={{ '--tree-depth': String(depth - 1), '--tree-level': String(depth) } as CSSProperties}
       className="blx-outline-item ed-focus-ring"
       onFocus={onFocus}
       onKeyDown={(event) => {
@@ -176,6 +185,22 @@ const OutlineItem = memo(function OutlineItem({
       ) : (
         <span className="blx-tree-toggle" aria-hidden="true" />
       )}
+      {depth > 1 ? (
+        <span className="blx-tree-guides" aria-hidden="true">
+          {Array.from({ length: depth - 1 }, (_, index) => (
+            <span
+              key={index}
+              className="blx-tree-guide"
+              style={{ '--guide-depth': String(index) } as CSSProperties}
+              data-guide-stop={
+                rowGuideStops.slice(index).every(Boolean) && (node.children.length === 0 || !expanded)
+                  ? 'true'
+                  : 'false'
+              }
+            />
+          ))}
+        </span>
+      ) : null}
       <Icon name={elementIconName(node.type)} size={16} className="blx-tree-icon" />
       <span id={`blx-tree-label-${node.id}`} className="blx-outline-label" title={`${node.type} · ${node.id}`}>
         {highlight(elementLabel(node.type, t), query)}{' '}
@@ -261,6 +286,16 @@ export function StructurePanel({ editingEnabled }: { editingEnabled: boolean }) 
     () => (query ? filtered.rows : flatten(root ?? [], expanded)),
     [filtered.rows, query, root, expanded],
   );
+  const selectedPathIds = useMemo(() => {
+    if (selectedId === null || root === null) return new Set<string>();
+    const path = findPath(root, selectedId);
+    return new Set(
+      path?.flatMap((_, index) => {
+        const node = nodeAt(root, path.slice(0, index + 1));
+        return node ? [node.id] : [];
+      }) ?? [],
+    );
+  }, [root, selectedId]);
   const rowsRef = useRef(rows);
   const expandedRef = useRef(expanded);
   useLayoutEffect(() => {
@@ -329,6 +364,7 @@ export function StructurePanel({ editingEnabled }: { editingEnabled: boolean }) 
           <OutlineItem
             key={row.node.id}
             {...row}
+            {...(selectedPathIds.has(row.node.id) ? { 'data-on-path': 'true' } : {})}
             expanded={query ? true : expanded.has(row.node.id)}
             query={query}
             tabIndex={(focusedId ?? rows[0]?.node.id) === row.node.id ? 0 : -1}

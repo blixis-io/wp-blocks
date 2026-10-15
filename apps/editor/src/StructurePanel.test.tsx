@@ -26,6 +26,28 @@ function renderEditor(
 }
 
 describe('left panel and element palette', () => {
+  it('indents tree rows from aria-level and renders decorative RTL-safe guide marks', async () => {
+    renderEditor();
+    const rows = await screen.findAllByRole('treeitem');
+    const parent = rows.find((row) => row.getAttribute('aria-level') === '1');
+    const child = rows.find((row) => row.getAttribute('aria-level') === '2');
+    expect(parent).toBeTruthy();
+    expect(child).toBeTruthy();
+    const parentRow = required(parent);
+    const childRow = required(child);
+    expect(parentRow.style.getPropertyValue('--tree-depth')).toBe('0');
+    expect(childRow.style.getPropertyValue('--tree-depth')).toBe('1');
+    expect(childRow.style.getPropertyValue('--tree-level')).toBe('2');
+    expect(child?.querySelector('.blx-tree-guides')?.getAttribute('aria-hidden')).toBe('true');
+    const guides = child?.querySelectorAll('.blx-tree-guide');
+    expect(guides).toHaveLength(1);
+    expect(guides?.[0]?.getAttribute('data-guide-stop')).toBe('false');
+    expect(guides?.[0]?.getAttribute('style')).toContain('--guide-depth: 0');
+    const grandchild = rows.find((row) => row.getAttribute('aria-level') === '3');
+    expect(grandchild?.querySelectorAll('.blx-tree-guide')).toHaveLength(2);
+    expect(parentRow.querySelector('.blx-tree-guides')).toBeNull();
+  });
+
   it('renders both tab groups and registered element cards only', async () => {
     renderEditor();
     await waitFor(() => {

@@ -25,4 +25,5 @@ A Codex review is an input, not an approval. Disagreements and their resolution 
 | 0008 | Dependency licensing and GSAP | #8 | Accepted |
 | 0009 | Distribution and package boundaries | #6 | Accepted (owner decision 2026-10-14) |
 | 0010 | Monorepo layout and package boundaries | #11 | Proposed |
-| 0011 | Editor icon set | #196 (BWB-127) | Accepted (owner decision 2026-10-15) |
+| 0011 | Editor icon set | #196 (BWB-127) | Superseded by ADR 0012 |
+| 0012 | Editor icon set — Solar | epic #195 | Accepted (owner decision 2026-10-15); supersedes 0011 |

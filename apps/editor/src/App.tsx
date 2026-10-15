@@ -113,27 +113,35 @@ function Shell({
           <LoadStatus />
           {bootstrap.canvasUrl !== undefined && bootstrap.canvasUrl !== null && client !== undefined ? (
             <>
-              {breadcrumb.length ? (
-                <nav aria-label={t('canvas.breadcrumb')}>
-                  <ol className="blx-breadcrumb">
-                    {breadcrumb.map((node, index) => (
-                      <li key={node.id}>
-                        {index > 0 ? <span aria-hidden="true">/</span> : null}
-                        <button
-                          type="button"
-                          className="ed-focus-ring"
-                          aria-current={node.id === selectedId ? 'location' : undefined}
-                          title={node.id}
-                          onClick={() => store.getState().select(node.id)}
-                        >
-                          {elementLabel(node.type, t)} <span className="blx-outline-id">{node.id.slice(0, 12)}</span>
-                        </button>
-                      </li>
-                    ))}
-                  </ol>
-                </nav>
-              ) : null}
-              <PreviewAppearance />
+              <div className="blx-stage-bar" data-testid="canvas-breadcrumb-bar">
+                {breadcrumb.length ? (
+                  <nav aria-label={t('canvas.breadcrumb')} className="blx-stage-crumbs">
+                    <Icon name="section" size={15} />
+                    <ol className="blx-breadcrumb">
+                      {breadcrumb.map((node, index) => (
+                        <li key={node.id}>
+                          {index > 0 ? <span aria-hidden="true">/</span> : null}
+                          <button
+                            type="button"
+                            className="ed-focus-ring"
+                            aria-current={node.id === selectedId ? 'location' : undefined}
+                            title={node.id}
+                            onClick={() => store.getState().select(node.id)}
+                          >
+                            {elementLabel(node.type, t)} <span className="blx-outline-id">{node.id.slice(0, 12)}</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ol>
+                  </nav>
+                ) : (
+                  <nav aria-label={t('canvas.breadcrumb')} className="blx-stage-crumbs">
+                    <Icon name="section" size={15} />
+                    <ol className="blx-breadcrumb" />
+                  </nav>
+                )}
+                <PreviewAppearance />
+              </div>
               <Canvas canvasUrl={bootstrap.canvasUrl} client={client} {...canvas} />
             </>
           ) : (

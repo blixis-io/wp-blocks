@@ -21,6 +21,31 @@ test('dev-only licences are rejected for distributed dependencies but accepted f
   }
 });
 
+test('licence exceptions apply only to the exact package, version, ecosystem and SPDX licence', () => {
+  const exceptionPolicy = {
+    ...policy,
+    exceptions: [
+      {
+        package: 'npm:@iconify-icons/solar',
+        version: '2.0.4',
+        license: 'CC-BY-4.0',
+        reason: 'attributed',
+        decision: 'ADR 0012',
+      },
+    ],
+  };
+  const solar = { ecosystem: 'npm', name: '@iconify-icons/solar', version: '2.0.4', license: 'CC-BY-4.0' };
+  assert.deepEqual(classify([solar], 'distributed', exceptionPolicy), []);
+  for (const changed of [
+    { ...solar, version: '2.0.5' },
+    { ...solar, license: 'CC-BY-SA-4.0' },
+    { ...solar, name: '@iconify-icons/other' },
+    { ...solar, ecosystem: 'composer' },
+  ])
+    assert.equal(classify([changed], 'distributed', exceptionPolicy).length, 1);
+  assert.equal(classify([solar], 'dev', exceptionPolicy).length, 0);
+});
+
 test('GPL-2.0-only, AGPL, proprietary, unknown and missing licences are rejected everywhere', () => {
   for (const id of [
     'GPL-2.0-only',

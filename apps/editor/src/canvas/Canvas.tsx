@@ -4,7 +4,15 @@ import type { RestClient } from '../api/types';
 import type { MessageKey } from '../i18n';
 import { useI18n } from '../i18n-react';
 import { useEditorStore, useEditorStoreApi, type PreviewMode } from '../state';
-import { Toolbar, ToolbarToggleGroup, ToolbarToggleItem } from '@blixis/wp-editor-ui';
+import {
+  Toolbar,
+  ToolbarToggleGroup,
+  ToolbarToggleItem,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@blixis/wp-editor-ui';
 import { languageName } from './language-name';
 import { FRAME_WIDTHS, useCanvasSession, type CanvasSessionOptions, type PreviewProblem } from './useCanvasSession';
 
@@ -40,29 +48,44 @@ export function PreviewAppearance() {
   const store = useEditorStoreApi();
   const previewMode = useEditorStore((state) => state.previewMode);
   return (
-    <div className="blx-canvas-bar">
-      <Toolbar aria-label={t('canvas.appearance')} aria-describedby="blx-appearance-hint">
-        {/* The same single-choice pattern as the viewport control in the header: role=radio with aria-checked. */}
-        <ToolbarToggleGroup
-          type="single"
-          value={previewMode}
-          aria-label={t('canvas.appearance')}
-          onValueChange={(value) => {
-            if (value === 'light' || value === 'dark') store.getState().setPreviewMode(value);
-          }}
-        >
-          {PREVIEW_MODES.map((mode) => (
-            <ToolbarToggleItem key={mode.id} value={mode.id}>
-              {mode.icon}
-              {t(mode.label)}
-            </ToolbarToggleItem>
-          ))}
-        </ToolbarToggleGroup>
-      </Toolbar>
-      <span id="blx-appearance-hint" className="text-ed-fg-muted text-xs">
-        {t('canvas.appearance.hint')}
-      </span>
-    </div>
+    <TooltipProvider>
+      <div className="blx-canvas-bar">
+        <Toolbar aria-label={t('canvas.appearance')}>
+          {/* The same single-choice pattern as the viewport control in the header: role=radio with aria-checked. */}
+          <ToolbarToggleGroup
+            type="single"
+            value={previewMode}
+            aria-label={t('canvas.appearance')}
+            aria-describedby="blx-appearance-hint"
+            onValueChange={(value) => {
+              if (value === 'light' || value === 'dark') store.getState().setPreviewMode(value);
+            }}
+          >
+            {PREVIEW_MODES.map((mode) => (
+              <ToolbarToggleItem key={mode.id} value={mode.id}>
+                {mode.icon}
+                {t(mode.label)}
+              </ToolbarToggleItem>
+            ))}
+          </ToolbarToggleGroup>
+        </Toolbar>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              className="blx-appearance-help ed-focus-ring"
+              aria-label={t('canvas.appearance.hint')}
+            >
+              <Icon name="shortcuts" size={14} />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>{t('canvas.appearance.hint')}</TooltipContent>
+        </Tooltip>
+        <span id="blx-appearance-hint" className="sr-only">
+          {t('canvas.appearance.hint')}
+        </span>
+      </div>
+    </TooltipProvider>
   );
 }
 

@@ -65,7 +65,21 @@ export function classify(deps, kind, policy) {
   const accepted = new Set(policy.distributed);
   if (kind === 'dev') for (const id of Object.keys(policy.devOnly)) accepted.add(id);
   return deps
-    .filter((d) => !evaluate(d.license, accepted))
+    .filter((d) => {
+      if (evaluate(d.license, accepted)) return false;
+      if (kind !== 'distributed') return true;
+      const exception = (policy.exceptions ?? []).find(
+        (entry) =>
+          entry.package === `${d.ecosystem}:${d.name}` &&
+          entry.version === d.version &&
+          entry.license === d.license &&
+          typeof entry.reason === 'string' &&
+          entry.reason.trim() &&
+          typeof entry.decision === 'string' &&
+          entry.decision.trim(),
+      );
+      return exception === undefined;
+    })
     .map(
       (d) =>
         `${d.ecosystem}:${d.name}@${d.version}: licence "${d.license || 'missing'}" is not allowed for ${kind} dependencies`,

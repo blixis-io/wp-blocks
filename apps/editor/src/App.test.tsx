@@ -564,6 +564,20 @@ describe('inspector selection label', () => {
   });
 });
 
+describe('canvas breadcrumb stage bar', () => {
+  it('keeps the appearance radio and accessible tooltip description in the fixed breadcrumb row', () => {
+    const bootstrap = makeBootstrap({ canvasUrl: 'https://example.test/canvas' });
+    const { store, client } = makeStore({ bootstrap: { canvasUrl: bootstrap.canvasUrl } });
+    render(<EditorApp bootstrap={bootstrap} store={store} client={client} />);
+    const bar = screen.getByTestId('canvas-breadcrumb-bar');
+    const radioGroup = within(bar).getByRole('radiogroup', { name: 'Preview appearance' });
+    expect(bar.querySelector('.blx-breadcrumb')).toBeTruthy();
+    expect(bar.contains(radioGroup)).toBe(true);
+    expect(radioGroup.getAttribute('aria-describedby')).toBe('blx-appearance-hint');
+    expect(screen.getByLabelText('Changes how the website content is previewed, not the editor.')).toBeTruthy();
+  });
+});
+
 describe('accessibility (axe)', () => {
   it.each(['light', 'dark'] as const)('has no violations in the default %s chrome theme', async (theme) => {
     const { root } = setup();

@@ -22,5 +22,14 @@
     "CC-BY-4.0": "caniuse-lite (browser data used by tooling).",
     "BlueOak-1.0.0": "minimatch (permissive licence, not on the FSF GPL-compatibility list; dev-only).",
     "LGPL-3.0-or-later": "PHP_CodeSniffer standards (WPCS, PHPCSUtils): run in development and CI, never shipped."
-  }
+  },
+  "exceptions": [
+    {
+      "package": "npm:@iconify-icons/solar",
+      "version": "2.0.4",
+      "license": "CC-BY-4.0",
+      "reason": "Solar icons are shipped with required attribution in editor NOTICE.txt; CC BY 4.0 permits combination under GPLv3, which can be combined with this GPL-2.0-or-later plugin. Residual interpretation risk is recorded in ADR 0012.",
+      "decision": "ADR 0012"
+    }
+  ]
 }
