@@ -24,19 +24,19 @@ const styleDispatchCases = styleSchemaCases.filter(({ supported }) => supported)
 const styleLabels: Readonly<Record<string, string>> = {
   'font-family': 'Font family',
   'font-weight': 'Font weight',
-  'font-size': 'Font size',
+  'font-size': 'Size',
   'line-height': 'Line height',
   'letter-spacing': 'Letter spacing',
   'text-transform': 'Text transform',
-  color: 'Text colour',
-  'background-color': 'Background colour',
+  color: 'Color',
+  'background-color': 'Background color',
   width: 'Width',
-  'text-align': 'Text alignment',
+  'text-align': 'Text align',
   display: 'Display',
   'border-radius': 'Border radius',
   'border-width': 'Border width',
   'border-style': 'Border style',
-  'border-color': 'Border colour',
+  'border-color': 'Border color',
   'box-shadow': 'Box shadow',
 };
 afterEach(cleanup);
@@ -367,7 +367,7 @@ describe('Inspector controls', () => {
       store.getState().setViewport('mobile');
     });
     expect(screen.getAllByText(/Using inherited value/).length).toBeGreaterThan(0);
-    expect(screen.getByRole<HTMLInputElement>('spinbutton', { name: 'Font size' }).value).toBe('16');
+    expect(screen.getByRole<HTMLInputElement>('spinbutton', { name: 'Size' }).value).toBe('16');
     act(() => {
       expect(
         store.getState().dispatch({
@@ -382,7 +382,7 @@ describe('Inspector controls', () => {
     const spacingReset = screen.getAllByRole('button', { name: 'Reset Margin to inherited' })[0];
     if (!spacingReset) throw new Error('Spacing reset control is missing');
     fireEvent.click(spacingReset);
-    fireEvent.click(screen.getByRole('button', { name: 'Reset Font size to inherited' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Reset Size to inherited' }));
     expect(store.getState().document?.root[0]?.style).toEqual([
       { declarations: { margin: 'var(--blx-space-2)', 'font-size': 'var(--blx-text-lg)' } },
       {
@@ -418,7 +418,7 @@ describe('Inspector controls', () => {
     });
     const input = container.querySelector<HTMLInputElement>('#style-target-font-size');
     expect(input).toBeTruthy();
-    if (!input) throw new Error('Font size numeric input is missing');
+    if (!input) throw new Error('Size numeric input is missing');
     expect(input.value).toBe('2.75');
     const row = input.closest('.blx-inspector-field');
     const label = row?.querySelector(':scope > .blx-inspector-label > label');
@@ -436,7 +436,7 @@ describe('Inspector controls', () => {
     const { container } = await mount('blixis/heading', { tab: 'style' });
     const color = container.querySelector('.blx-color-field');
     expect(color?.querySelector('.blx-color-swatch')).toBeTruthy();
-    expect(color?.querySelector('select[aria-label="Text colour"]')).toBeTruthy();
+    expect(color?.querySelector('select[aria-label="Color"]')).toBeTruthy();
     const gradient = container.querySelector('.blx-gradient-field');
     expect(gradient?.querySelector('.blx-inspector-toggle-row input')).toBeTruthy();
     expect(gradient?.querySelector('.blx-inspector-hint')).toBeTruthy();
@@ -447,14 +447,54 @@ describe('Inspector controls', () => {
     expect(margin?.querySelectorAll('.blx-spacing-sides input[role="spinbutton"]')).toHaveLength(4);
   });
 
+  it.each(['en_US', 'nl_NL'] as const)('shows unique, unclipped style labels in %s', async (editorLocale) => {
+    const { container } = await mount('blixis/heading', { tab: 'style', editorLocale });
+    const labels = [
+      ...container.querySelectorAll<HTMLElement>('.blx-inspector-label > label, .blx-inspector-label > span'),
+    ];
+    const texts = labels.map((label) => label.textContent.trim());
+    expect(new Set(texts).size).toBe(texts.length);
+    expect(texts.every((text) => text.length > 0 && !text.endsWith('…'))).toBe(true);
+    expect(labels.every((label) => label.scrollWidth <= label.clientWidth)).toBe(true);
+    expect(container.textContent).not.toMatch(/var\(--/);
+  });
+
+  it.each(['content', 'style', 'advanced'] as const)(
+    'keeps visible inspector labels unique on the %s tab',
+    async (tab) => {
+      const { container } = await mount('blixis/heading', { tab });
+      const labels = [...container.querySelectorAll('label')].map((label) => label.textContent.trim());
+      expect(new Set(labels).size).toBe(labels.length);
+    },
+  );
+
+  it('always selects a visible valid unit for default border dimensions', async () => {
+    await mount('blixis/heading', { tab: 'style' });
+    for (const label of ['Border radius unit', 'Border width unit']) {
+      const unit = screen.getByRole<HTMLSelectElement>('combobox', { name: label });
+      expect(unit.value).toBe('px');
+      expect(unit.selectedIndex).toBeGreaterThanOrEqual(0);
+      expect(unit.options[unit.selectedIndex]?.textContent).toBe('px');
+    }
+  });
+
+  it('never renders raw CSS custom property tokens in the Style DOM', async () => {
+    const { container } = await mount('blixis/heading', { tab: 'style' });
+    const visibleText = [...container.querySelectorAll<HTMLElement>('*')]
+      .filter((node) => node.childElementCount === 0)
+      .map((node) => node.textContent)
+      .join(' ');
+    expect(visibleText).not.toMatch(/var\(--/);
+  });
+
   it('converts units and preserves out-of-range values while clamping only the slider thumb', async () => {
     const converted = await mount('blixis/heading', {
       tab: 'style',
       style: [{ declarations: { 'font-size': '44px' } }],
     });
-    fireEvent.change(screen.getByRole('combobox', { name: 'Font size unit' }), { target: { value: 'rem' } });
-    expect(screen.getByRole<HTMLInputElement>('spinbutton', { name: 'Font size' }).value).toBe('2.75');
-    expect(screen.getByRole('slider', { name: 'Font size' }).getAttribute('aria-valuemin')).toBe('0.5');
+    fireEvent.change(screen.getByRole('combobox', { name: 'Size unit' }), { target: { value: 'rem' } });
+    expect(screen.getByRole<HTMLInputElement>('spinbutton', { name: 'Size' }).value).toBe('2.75');
+    expect(screen.getByRole('slider', { name: 'Size' }).getAttribute('aria-valuemin')).toBe('0.5');
     expect(converted.store.getState().document?.root[0]?.style?.[0]?.declarations['font-size']).toBe('2.75rem');
 
     converted.unmount();
@@ -462,15 +502,15 @@ describe('Inspector controls', () => {
       tab: 'style',
       style: [{ declarations: { 'font-size': '120px' } }],
     });
-    expect(screen.getByRole<HTMLInputElement>('spinbutton', { name: 'Font size' }).value).toBe('120');
-    expect(screen.getByRole('slider', { name: 'Font size' }).getAttribute('aria-valuenow')).toBe('96');
+    expect(screen.getByRole<HTMLInputElement>('spinbutton', { name: 'Size' }).value).toBe('120');
+    expect(screen.getByRole('slider', { name: 'Size' }).getAttribute('aria-valuenow')).toBe('96');
     expect(outOfRange.store.getState().document?.root[0]?.style?.[0]?.declarations['font-size']).toBe('120px');
   });
 
   it('applies an active class to the selected segmented style option', async () => {
     await mount('blixis/heading', { tab: 'style' });
-    const alignGroup = screen.getByRole('radiogroup', { name: 'Text alignment' });
-    expect(within(alignGroup).getByRole('radio', { name: 'left' }).className).toContain('is-active');
+    const alignGroup = screen.getByRole('radiogroup', { name: 'Text align' });
+    expect(within(alignGroup).getByRole('radio', { name: 'Align left' }).className).toContain('is-active');
   });
 
   it('reports invalid unit values without changing the document', async () => {
@@ -544,11 +584,26 @@ describe('Inspector controls', () => {
         'font-weight': 'Font weight',
       };
       fireEvent.change(screen.getByLabelText(labels[property] ?? property), { target: { value } });
+    } else if (['text-transform', 'width', 'display'].includes(property)) {
+      fireEvent.change(screen.getByRole('combobox', { name: styleLabels[property] ?? property }), {
+        target: { value },
+      });
     } else {
       fireEvent.click(
         property === 'box-shadow'
-          ? within(screen.getByRole('radiogroup', { name: 'Box shadow' })).getByRole('radio', { name: value })
-          : screen.getByRole('radio', { name: value }),
+          ? within(screen.getByRole('radiogroup', { name: 'Box shadow' })).getByRole('radio', {
+              name: value === 'none' ? 'None' : value === 'var(--blx-shadow-card)' ? 'Card' : value,
+            })
+          : screen.getByRole('radio', {
+              name:
+                property === 'text-align'
+                  ? `Align ${value}`
+                  : property === 'border-style'
+                    ? value === 'dashed'
+                      ? 'Dashed'
+                      : value
+                    : value,
+            }),
       );
     }
     expect(store.getState().document?.root[0]?.style?.[0]?.declarations[property]).toBe(value);
@@ -603,11 +658,25 @@ describe('Inspector controls', () => {
         fireEvent.change(screen.getByLabelText(label), { target: { value: next } });
       } else if (['font-size', 'line-height', 'letter-spacing', 'border-radius', 'border-width'].includes(property)) {
         fireEvent.change(screen.getByRole('spinbutton', { name: label }), { target: { value: next } });
-      } else if (['color', 'background-color', 'border-color'].includes(property)) {
+      } else if (
+        ['color', 'background-color', 'border-color', 'text-transform', 'width', 'display'].includes(property)
+      ) {
         fireEvent.change(screen.getByRole('combobox', { name: label }), { target: { value: next } });
       } else {
         const radioGroup = within(screen.getByRole('radiogroup', { name: label }));
-        fireEvent.click(radioGroup.getByRole('radio', { name: next }));
+        const accessibleName =
+          property === 'text-align'
+            ? `Align ${next}`
+            : property === 'border-style'
+              ? next === 'dashed'
+                ? 'Dashed'
+                : next
+              : property === 'box-shadow'
+                ? next === 'none'
+                  ? 'None'
+                  : 'Card'
+                : next;
+        fireEvent.click(radioGroup.getByRole('radio', { name: accessibleName }));
       }
       const expected =
         property === 'font-size' ||
@@ -622,11 +691,11 @@ describe('Inspector controls', () => {
 
   it('uses a roving radio tab stop and Arrow keys for segmented style controls', async () => {
     const { store } = await mount('blixis/heading', { tab: 'style' });
-    const alignment = within(screen.getByRole('radiogroup', { name: 'Text alignment' }));
-    const left = alignment.getByRole('radio', { name: 'left' });
+    const alignment = within(screen.getByRole('radiogroup', { name: 'Text align' }));
+    const left = alignment.getByRole('radio', { name: 'Align left' });
     left.focus();
     fireEvent.keyDown(left, { key: 'ArrowRight' });
-    const center = alignment.getByRole('radio', { name: 'center' });
+    const center = alignment.getByRole('radio', { name: 'Align center' });
     expect(document.activeElement).toBe(center);
     expect(center.getAttribute('aria-checked')).toBe('true');
     expect(alignment.getAllByRole('radio').filter((radio) => radio.getAttribute('tabindex') === '0')).toHaveLength(1);
@@ -635,15 +704,15 @@ describe('Inspector controls', () => {
 
   it('selects a responsive viewport per row, indicates the override and resets it', async () => {
     const { store } = await mount('blixis/heading', { tab: 'style' });
-    fireEvent.click(screen.getByRole('button', { name: 'Select Tablet styles for Font size' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Select Tablet styles for Size' }));
     expect(screen.getByText('Tablet styles')).toBeTruthy();
-    fireEvent.change(screen.getByRole('spinbutton', { name: 'Font size' }), { target: { value: '24' } });
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'Size' }), { target: { value: '24' } });
     expect(store.getState().document?.root[0]?.style?.[0]).toMatchObject({
       breakpoint: 'tablet',
       declarations: { 'font-size': '24px' },
     });
     expect(screen.getByText(/Overridden at this breakpoint/)).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Reset Font size to inherited' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Reset Size to inherited' }));
     expect(store.getState().document?.root[0]?.style).toBeUndefined();
   });
 
@@ -691,7 +760,7 @@ describe('Inspector controls', () => {
     act(() => {
       expect(store.getState().select(selected.id)).toBe(true);
     });
-    const slider = screen.getByRole('slider', { name: 'Font size' });
+    const slider = screen.getByRole('slider', { name: 'Size' });
     vi.spyOn(slider, 'getBoundingClientRect').mockReturnValue({
       x: 0,
       y: 0,

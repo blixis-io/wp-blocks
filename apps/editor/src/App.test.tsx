@@ -236,11 +236,11 @@ describe('schema driven inspector', () => {
     await user.click(screen.getByRole('treeitem', { name: /el-heading-1/ }));
     await user.click(screen.getByRole('radio', { name: 'Tablet' }));
     await user.click(screen.getByRole('tab', { name: 'Style' }));
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Text colour' }), 'var(--blx-color-text)');
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Color' }), 'var(--blx-color-text)');
     expect(store.getState().document?.root[0]?.children[0]?.children[0]?.style).toEqual([
       expect.objectContaining({ breakpoint: 'tablet', declarations: { color: 'var(--blx-color-text)' } }),
     ]);
-    await user.click(screen.getByRole('button', { name: 'Reset Text colour to inherited' }));
+    await user.click(screen.getByRole('button', { name: 'Reset Color to inherited' }));
     expect(store.getState().document?.root[0]?.children[0]?.children[0]?.style).toBeUndefined();
   });
 });

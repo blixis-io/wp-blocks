@@ -544,7 +544,7 @@
     }
     .blx-inspector-field {
       display: grid;
-      grid-template-columns: 76px minmax(0, 1fr);
+      grid-template-columns: 92px minmax(0, 1fr);
       align-items: center;
       column-gap: 0.5rem;
       row-gap: 0.25rem;
@@ -555,13 +555,12 @@
       grid-column: 1;
       grid-row: 1;
       align-self: center;
-      overflow: hidden;
       color: var(--ed-fg-muted);
       font-size: 12px;
       font-weight: 500;
-      line-height: 1.25;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      line-height: 1.2;
+      white-space: normal;
+      overflow-wrap: anywhere;
     }
     .blx-inspector-label {
       display: flex;
@@ -575,12 +574,12 @@
     .blx-inspector-label > span {
       flex: 1 1 auto;
       min-inline-size: 0;
-      overflow: hidden;
       color: var(--ed-fg-muted);
       font-size: 12px;
       font-weight: 500;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      line-height: 1.2;
+      white-space: normal;
+      overflow-wrap: anywhere;
     }
     .blx-style-control-cluster {
       display: flex;
@@ -631,6 +630,8 @@
       box-sizing: border-box;
       inline-size: 52px;
       min-inline-size: 52px;
+      padding-block: 0;
+      padding-inline: 6px 2px;
     }
     .blx-slider-field > .blx-slider {
       flex: 1 1 56px;
@@ -646,6 +647,16 @@
       border-radius: var(--ed-radius-small);
       padding: 2px;
       overflow: hidden;
+    }
+    .blx-text-align-glyph {
+      fill: none;
+      stroke: currentColor;
+      stroke-linecap: round;
+      stroke-width: 1.5;
+    }
+    [dir='rtl'] .blx-text-align-glyph[data-align='left'],
+    [dir='rtl'] .blx-text-align-glyph[data-align='right'] {
+      transform: scaleX(-1);
     }
     .blx-segmented button {
       min-inline-size: 0;

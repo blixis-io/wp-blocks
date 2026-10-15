@@ -413,9 +413,9 @@ try {
   });
   await sleep(500);
   await ev(`(() => {
-    const row = [...document.querySelectorAll('.blx-inspector-field')].find((item) => item.querySelector('input[aria-label="Font size"]'));
-    const input = row?.querySelector('input[aria-label="Font size"]');
-    const unit = row?.querySelector('select[aria-label="Font size unit"]');
+    const row = [...document.querySelectorAll('.blx-inspector-field')].find((item) => item.querySelector('input[aria-label="Size"]'));
+    const input = row?.querySelector('input[aria-label="Size"]');
+    const unit = row?.querySelector('select[aria-label="Size unit"]');
     if (!input || !unit) return false;
     unit.value = 'rem';
     unit.dispatchEvent(new Event('change', { bubbles: true }));
@@ -427,11 +427,11 @@ try {
   })()`);
   await sleep(350);
   const inspectorLayout = await ev(`(() => {
-    const row = [...document.querySelectorAll('aside[aria-label="Inspector"] .blx-inspector-field')].find((item) => item.querySelector('input[aria-label="Font size"]'));
+    const row = [...document.querySelectorAll('aside[aria-label="Inspector"] .blx-inspector-field')].find((item) => item.querySelector('input[aria-label="Size"]'));
     const label = row?.querySelector('.blx-inspector-label > label');
     const slider = row?.querySelector('[role="slider"]');
-    const input = row?.querySelector('input[aria-label="Font size"]');
-    const unit = row?.querySelector('select[aria-label="Font size unit"]');
+    const input = row?.querySelector('input[aria-label="Size"]');
+    const unit = row?.querySelector('select[aria-label="Size unit"]');
     const thumb = slider?.querySelector('.blx-slider-thumb');
     const track = slider?.getBoundingClientRect();
     const thumbRect = thumb?.getBoundingClientRect();
@@ -442,7 +442,7 @@ try {
     const gradientToggle = gradient?.querySelector('input[type="checkbox"]');
     const margin = [...document.querySelectorAll('.blx-spacing-field')].find((item) => item.querySelector('legend')?.textContent === 'Margin');
     const marginInputs = [...(margin?.querySelectorAll('.blx-spacing-sides input[role="spinbutton"]') ?? [])].map((item) => item.getBoundingClientRect().width);
-    const segments = [...(document.querySelector('[role="radiogroup"][aria-label="Text alignment"]')?.querySelectorAll('[role="radio"]') ?? [])].map((item) => item.getBoundingClientRect().width);
+    const segments = [...(document.querySelector('[role="radiogroup"][aria-label="Text align"]')?.querySelectorAll('[role="radio"]') ?? [])].map((item) => item.getBoundingClientRect().width);
     return label && slider && input && unit && track && thumbRect && color && panel && gradientLabel && gradientToggle ? {
       sliderWidth: slider.getBoundingClientRect().width,
       unitWidth: unit.getBoundingClientRect().width,
@@ -513,7 +513,7 @@ try {
     `document.querySelector('main iframe')?.contentDocument?.querySelector('h1')?.computedStyleMap?.().get('font-size')?.toString() ?? document.querySelector('main iframe')?.contentWindow?.getComputedStyle(document.querySelector('main iframe')?.contentDocument?.querySelector('h1')).fontSize`,
   );
   const sliderPoint = await ev(
-    `(() => { const e = document.querySelector('[role="slider"][aria-label="Font size"]'); const r = e?.getBoundingClientRect(); return r ? { x: r.x + r.width * 0.72, y: r.y + r.height / 2 } : null; })()`,
+    `(() => { const e = document.querySelector('[role="slider"][aria-label="Size"]'); const r = e?.getBoundingClientRect(); return r ? { x: r.x + r.width * 0.72, y: r.y + r.height / 2 } : null; })()`,
   );
   assert.ok(sliderPoint, 'font-size slider is present');
   await send('Input.dispatchMouseEvent', {
@@ -542,9 +542,7 @@ try {
   const fontAfter = await ev(
     `document.querySelector('main iframe')?.contentWindow?.getComputedStyle(document.querySelector('main iframe')?.contentDocument?.querySelector('h1')).fontSize`,
   );
-  const sizeValue = await ev(
-    `document.querySelector('aside[aria-label="Inspector"] input[aria-label="Font size"]')?.value`,
-  );
+  const sizeValue = await ev(`document.querySelector('aside[aria-label="Inspector"] input[aria-label="Size"]')?.value`);
   assert.notEqual(sizeValue, '16', 'the numeric field follows the pointer drag');
   assert.notEqual(fontAfter, fontBefore, 'the canvas heading font size follows the slider');
   await ev(`document.querySelector('button[aria-label="Undo"]')?.click()`);
@@ -571,7 +569,7 @@ try {
   );
   assert.notEqual(spacingAfter, spacingBefore, 'spacing changes the compiled canvas preview CSS');
   const alignPoint = await ev(
-    `(() => { const e = [...document.querySelectorAll('[role="radio"]')].find((item) => item.getAttribute('aria-label') === 'right'); e?.scrollIntoView({ block: 'center' }); const r = e?.getBoundingClientRect(); return r ? { x: r.x + r.width / 2, y: r.y + r.height / 2 } : null; })()`,
+    `(() => { const e = [...document.querySelectorAll('[role="radio"]')].find((item) => item.getAttribute('aria-label') === 'Align right'); e?.scrollIntoView({ block: 'center' }); const r = e?.getBoundingClientRect(); return r ? { x: r.x + r.width / 2, y: r.y + r.height / 2 } : null; })()`,
   );
   assert.ok(alignPoint, 'text alignment segmented control is present');
   await send('Input.dispatchMouseEvent', {
@@ -827,6 +825,25 @@ try {
   assert.equal(afterPick.marked, 0, 'selected styling is absent from the canvas document');
   assert.equal(afterPick.outlines, 1, 'the editor renders exactly one selected outline');
   assert.equal(afterPick.focusInFrame, false, 'focus does not stay inside the iframe after a pick');
+  await ev(`${buttonByText('style')}.click()`);
+  await sleep(250);
+  const styleInspector = await ev(`(() => {
+    const panel = document.querySelector('aside[aria-label="Inspector"]');
+    const labels = [...panel.querySelectorAll('.blx-inspector-label > label, .blx-inspector-label > span')].map((label) => ({
+      text: label.textContent.trim(), clipped: label.scrollWidth > label.clientWidth,
+    }));
+    return { text: panel.innerText, labels };
+  })()`);
+  assert.ok(!/var\(--/i.test(styleInspector.text), 'the Style tab never displays raw CSS token syntax');
+  assert.ok(
+    styleInspector.labels.every(({ text, clipped }) => text.length > 0 && !text.endsWith('…') && !clipped),
+    `Style labels are readable and unclipped (${JSON.stringify(styleInspector.labels)})`,
+  );
+  assert.equal(
+    new Set(styleInspector.labels.map(({ text }) => text)).size,
+    styleInspector.labels.length,
+    `Style labels are unique (${JSON.stringify(styleInspector.labels.map(({ text }) => text))})`,
+  );
   await sleep(200);
   const overlay = await ev(`(() => {
     const frame = document.querySelector('main iframe');
