@@ -546,7 +546,7 @@ describe('performance sanity', () => {
     expect(store.getState().history?.past.at(-1)?.command).toMatchObject({ set: { typed: 299 } }); // one merged burst
     // Generous bound (CI machines vary) that still catches accidental O(n) clones or whole-tree walks per keystroke.
     expect(elapsed).toBeLessThan(10_000);
-  });
+  }, 30_000);
 });
 
 describe('coalescing only when the merged result is exactly reproducible', () => {
