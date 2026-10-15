@@ -283,9 +283,9 @@ describe('RTL mirroring', () => {
     ['en_US', 'ltr', '{ArrowRight}', '{ArrowLeft}'],
   ] as const)('tablist in %s carries dir=%s; %s moves forward, %s back', async (locale, dir, forward, back) => {
     const { user } = setup({ editorLocale: locale });
-    const list = screen.getByRole('tablist');
+    const list = screen.getByRole('tablist', { name: 'Inspector sections' });
     expect(list.parentElement?.getAttribute('dir')).toBe(dir); // the Tabs root, which Radix sets from the provider
-    const tabs = screen.getAllByRole('tab');
+    const tabs = within(list).getAllByRole('tab');
     tabs[0]?.focus();
     await user.keyboard(forward);
     expect(document.activeElement).toBe(tabs[1]);
