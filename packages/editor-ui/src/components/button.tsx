@@ -15,8 +15,8 @@ export const buttonVariants = cva(
         destructive: 'bg-ed-destructive text-ed-destructive-fg hover:bg-ed-destructive-hover',
       },
       size: {
-        default: 'h-8 min-w-8 px-3',
-        icon: 'size-8',
+        default: 'h-[var(--ed-control-height)] min-w-[var(--ed-control-height)] px-3',
+        icon: 'size-[var(--ed-control-height)]',
         /** 44 px targets for touch-first use (WCAG 2.5.5 enhanced target size). */
         touch: 'h-11 min-w-11 px-4',
         'icon-touch': 'size-11',

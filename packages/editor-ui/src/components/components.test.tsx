@@ -28,7 +28,40 @@ import {
   TooltipProvider,
   TooltipTrigger,
   VisuallyHidden,
+  Icon,
+  type IconProps,
+  ELEMENT_ICONS,
+  elementIconName,
 } from '../index';
+import { CORE_ELEMENTS } from '@blixis/wp-element-registry';
+
+describe('Icon', () => {
+  it('is decorative by default and exposes a meaningful label when provided', () => {
+    const { rerender, container } = render(<Icon name="preview" />);
+    expect(container.querySelector('svg')?.getAttribute('aria-hidden')).toBe('true');
+    expect(container.querySelector('svg')?.hasAttribute('aria-label')).toBe(false);
+    rerender(<Icon name="preview" label="Preview page" />);
+    expect(screen.getByRole('img', { name: 'Preview page' }).getAttribute('aria-label')).toBe('Preview page');
+  });
+
+  it('adds an RTL mirror utility only for directional icons when requested', () => {
+    const { container, rerender } = render(<Icon name="back" mirrorInRtl />);
+    expect(container.querySelector('svg')?.getAttribute('class')).toContain('rtl:-scale-x-100');
+    rerender(<Icon name="back" />);
+    expect(container.querySelector('svg')?.getAttribute('class') ?? '').not.toContain('rtl:-scale-x-100');
+  });
+
+  it('maps every registered core element and falls back for unknown types', () => {
+    expect(Object.keys(ELEMENT_ICONS).sort()).toEqual(CORE_ELEMENTS.map((element) => element.type).sort());
+    for (const element of CORE_ELEMENTS) expect(elementIconName(element.type)).not.toBe('fallback');
+    expect(elementIconName('third-party/unknown')).toBe('fallback');
+    const validName: IconProps['name'] = 'fallback';
+    expect(validName).toBe('fallback');
+    // @ts-expect-error unknown semantic icon names are rejected at compile time
+    const invalidName: IconProps['name'] = 'not-an-icon';
+    expect(invalidName).toBe('not-an-icon');
+  });
+});
 
 describe('cn', () => {
   it('merges conflicting utilities and drops falsy values', () => {
@@ -53,11 +86,11 @@ describe('Button', () => {
   it('keeps a 32px minimum and offers every variant', () => {
     for (const variant of ['default', 'secondary', 'ghost', 'outline', 'destructive'] as const) {
       const { unmount } = render(<Button variant={variant}>{variant}</Button>);
-      expect(screen.getByRole('button').className).toContain('h-8');
+      expect(screen.getByRole('button').className).toContain('h-[var(--ed-control-height)]');
       unmount();
     }
     render(<Button size="icon" aria-label="Icon" />);
-    expect(screen.getByRole('button', { name: 'Icon' }).className).toContain('size-8');
+    expect(screen.getByRole('button', { name: 'Icon' }).className).toContain('size-[var(--ed-control-height)]');
   });
 
   it('supports asChild without adding a type attribute to the child', () => {

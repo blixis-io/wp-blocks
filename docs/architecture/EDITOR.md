@@ -2,6 +2,31 @@
 
 `apps/editor` (`@blixis/wp-editor`) is the React 19 editor shell. It is loaded only on the Builder admin screen, never on public pages. UI primitives live in `packages/editor-ui` (`@blixis/wp-editor-ui`, shadcn/ui-style components written by hand on Radix). Pure packages (core, style-engine, canvas-bridge, ...) never import React (ADR 0010).
 
+
+## Editor design tokens (BWB-127)
+
+Editor chrome styling lives on `.blx-editor` and is independent of both website appearance in the canvas and the content locale. The scoped token sets are in `apps/editor/src/styles/editor.src.css`; components consume semantic `ed-*` utilities or these variables rather than embedding palette values.
+
+| Role | Tokens |
+|---|---|
+| Page and panels | `--ed-bg`, `--ed-surface`, `--ed-surface-raised`, `--ed-surface-2`, `--ed-surface-hover` |
+| Text and states | `--ed-fg`, `--ed-fg-muted`, `--ed-muted`, `--ed-danger`, `--ed-destructive`, `--ed-success`, `--ed-warning` |
+| Actions and feedback | `--ed-primary`, `--ed-primary-fg`, `--ed-primary-hover`, `--ed-selected`, `--ed-selected-fg`, `--ed-selection-outline`, `--ed-hover-outline`, `--ed-focus-ring` |
+| Borders and overlays | `--ed-border`, `--ed-border-strong`, `--ed-overlay`, `--ed-tooltip`, `--ed-tooltip-fg`, `--ed-banner`, `--ed-banner-fg` |
+| Header and preview frame | `--ed-header`, `--ed-header-fg`, `--ed-header-border`, `--ed-preview-light`, `--ed-preview-dark`, `--ed-selection-contrast` |
+| Shape and layout | `--ed-radius-control` (8 px), `--ed-radius-small` (6 px), `--ed-space-1`..`--ed-space-4` (4/8/12/16 px), `--ed-control-height` (30 px), `--ed-control-height-small` (24 px) |
+| Type, elevation and stacking | `--ed-font-xs` (11 px), `--ed-font-sm` (12 px), `--ed-font-base` (13 px), `--ed-font-lg` (15 px), `--ed-shadow-floating`, `--ed-z-base`, `--ed-z-overlay`, `--ed-z-floating`, `--ed-z-skip` |
+
+Light chrome uses a `#f5f7fb` page, white panels, `#e5e8ef` borders and `#2563eb` primary blue. Dark chrome has its own surface, text, border, action and state values. Both palettes are scoped to the editor root. Floating shadow and z-index tokens are reserved for overlays and menus; normal layout stays flat.
+
+Contrast tests parse the actual token values and check these text pairs at 4.5:1: foreground on page, secondary foreground on page, foreground/secondary foreground on surface and raised surface, selected foreground on selection, primary foreground on primary and hover, destructive foreground on destructive and hover, tooltip foreground on tooltip, banner foreground on banner, foreground on selection, danger/success/warning on page, and header foreground on header. UI pairs (3:1) are strong border, focus ring, selected outline and hover outline against page and surface backgrounds. The token test is the source of truth when changing either palette. Controls stay at or above 24 px; normal inspector inputs use 30 px, while the existing 32 px minimum on buttons remains intact.
+
+The baseline measured by `pnpm build:editor` before BWB-127 was **971,854 bytes** for `apps/editor/dist/editor.js` and **18,508 bytes** for `apps/editor/dist/editor.css`. After BWB-127, the same build measures **1,034,323 bytes** of JavaScript (+62,469 bytes, +6.4%) and **21,068 bytes** of CSS (+2,560 bytes, +13.8%). These raw minified artifact sizes include the shared UI and the expanded token styling.
+
+### Icon API
+
+`@blixis/wp-editor-ui` exports `Icon`, `ICONS`, `ELEMENT_ICONS` and `elementIconName`. The `Icon` component accepts a typed semantic name, Phosphor weight (`regular` by default; `thin`, `light`, `bold`, `fill` or `duotone` are available), numeric size, optional accessible `label`, and opt-in `mirrorInRtl` for directional glyphs. Icons are hidden from assistive technology unless a label is provided. The central registry imports named Phosphor components individually so unused icons can be removed from the bundle. Core element types are all mapped; unrecognized types use `fallback`.
+
 ## Shell layout and landmarks
 
 The editor fills the viewport (`position: fixed; inset: 0`, CSS grid, no page scroll).

@@ -565,10 +565,9 @@ describe('inspector selection label', () => {
 });
 
 describe('accessibility (axe)', () => {
-  // jsdom applies no stylesheet, so a "dark theme" axe run would test the same DOM as the light one. Colour contrast
-  // in both themes is verified from the design tokens in styles.test.ts instead.
-  it('has no violations in the default state', async () => {
-    setup();
+  it.each(['light', 'dark'] as const)('has no violations in the default %s chrome theme', async (theme) => {
+    const { root } = setup();
+    root.setAttribute('data-editor-theme', theme);
     expect(await axeViolations()).toEqual([]);
   });
 

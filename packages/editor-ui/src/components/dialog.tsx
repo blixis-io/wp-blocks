@@ -1,5 +1,5 @@
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { X } from 'lucide-react';
+import { Icon } from './icon';
 import type { ComponentProps, ReactNode } from 'react';
 import { cn } from '../lib/cn';
 import { usePortalContainer } from '../lib/portal';
@@ -27,10 +27,10 @@ export function DialogContent({ className, title, description, closeLabel, child
   const container = usePortalContainer();
   return (
     <DialogPrimitive.Portal container={container}>
-      <DialogPrimitive.Overlay className="fixed inset-0 z-40 bg-ed-overlay" />
+      <DialogPrimitive.Overlay className="fixed inset-0 z-overlay bg-ed-overlay" />
       <DialogPrimitive.Content
         className={cn(
-          'fixed inset-0 z-50 m-auto flex h-fit max-h-[85vh] w-[min(90vw,32rem)] flex-col gap-4 overflow-auto rounded-lg border border-ed-border-strong bg-ed-bg p-6 text-ed-fg',
+          'fixed inset-0 z-floating m-auto flex h-fit max-h-[85vh] w-[min(90vw,32rem)] flex-col gap-4 overflow-auto rounded-lg border border-ed-border-strong bg-ed-surface-raised p-6 text-ed-fg shadow-[var(--ed-shadow-floating)]',
           className,
         )}
         {...props}
@@ -42,7 +42,7 @@ export function DialogContent({ className, title, description, closeLabel, child
         {children}
         <DialogPrimitive.Close asChild>
           <Button variant="ghost" size="icon" className="absolute end-3 top-3" aria-label={closeLabel}>
-            <X aria-hidden="true" className="size-4" />
+            <Icon name="close" />
           </Button>
         </DialogPrimitive.Close>
       </DialogPrimitive.Content>

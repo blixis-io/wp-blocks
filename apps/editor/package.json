@@ -13,7 +13,6 @@
     "@blixis/wp-editor-ui": "workspace:*",
     "@blixis/wp-element-registry": "workspace:*",
     "@blixis/wp-style-engine": "workspace:*",
-    "lucide-react": "1.57.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "zod": "4.6.7",

@@ -1,4 +1,4 @@
-import { Moon, Sun } from 'lucide-react';
+import { Icon } from '@blixis/wp-editor-ui';
 import { useLayoutEffect, useState, type CSSProperties } from 'react';
 import type { RestClient } from '../api/types';
 import type { MessageKey } from '../i18n';
@@ -9,8 +9,8 @@ import { languageName } from './language-name';
 import { FRAME_WIDTHS, useCanvasSession, type CanvasSessionOptions, type PreviewProblem } from './useCanvasSession';
 
 const PREVIEW_MODES = [
-  { id: 'light', label: 'canvas.appearance.light', icon: <Sun aria-hidden="true" className="size-4" /> },
-  { id: 'dark', label: 'canvas.appearance.dark', icon: <Moon aria-hidden="true" className="size-4" /> },
+  { id: 'light', label: 'canvas.appearance.light', icon: <Icon name="light" /> },
+  { id: 'dark', label: 'canvas.appearance.dark', icon: <Icon name="dark" /> },
 ] as const satisfies readonly { id: PreviewMode; label: MessageKey; icon: unknown }[];
 
 const PROBLEM_KEYS: Record<PreviewProblem, MessageKey> = {
