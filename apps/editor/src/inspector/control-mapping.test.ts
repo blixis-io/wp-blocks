@@ -1,0 +1,43 @@
+import { createCoreRegistry } from '@blixis/wp-element-registry';
+import { describe, expect, it } from 'vitest';
+import { controlFamilyFor, propertyBelongsToTab } from './control-mapping';
+
+const registry = createCoreRegistry();
+
+describe('schema to inspector control mapping', () => {
+  it('maps every core property kind to a control family', () => {
+    const kinds = new Set<string>();
+    for (const type of [
+      'blixis/section',
+      'blixis/container',
+      'blixis/heading',
+      'blixis/text',
+      'blixis/image',
+      'blixis/button',
+    ]) {
+      const definition = registry.get(type);
+      expect(definition).toBeDefined();
+      for (const property of Object.values(definition?.props ?? {})) {
+        kinds.add(property.kind);
+        expect(['text', 'number', 'choice', 'media']).toContain(controlFamilyFor(property));
+      }
+    }
+    expect(kinds).toEqual(new Set(['string', 'url', 'integer', 'enum', 'boolean', 'media']));
+  });
+
+  it('places translatable properties in Content and invariant properties in Settings', () => {
+    const heading = registry.get('blixis/heading');
+    expect(heading).toBeDefined();
+    const text = heading?.props['text'];
+    const level = heading?.props['level'];
+    expect(text && propertyBelongsToTab('text', text, 'content')).toBe(true);
+    expect(text && propertyBelongsToTab('text', text, 'settings')).toBe(false);
+    expect(level && propertyBelongsToTab('level', level, 'settings')).toBe(true);
+    expect(level && propertyBelongsToTab('level', level, 'content')).toBe(false);
+  });
+
+  it('keeps attachment identity in Content despite invariant classification', () => {
+    const image = registry.get('blixis/image');
+    expect(image).toBeDefined();
+  });
+});

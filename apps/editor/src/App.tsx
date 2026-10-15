@@ -21,6 +21,7 @@ import { createTranslator } from './i18n';
 import { I18nProvider, useI18n } from './i18n-react';
 import { StructurePanel } from './StructurePanel';
 import { StoreProvider, useEditorStore, useEditorStoreApi, type EditorStore } from './state';
+import { Inspector } from './inspector/Inspector';
 
 const STRUCTURE_ID = 'blx-structure';
 const INSPECTOR_ID = 'blx-inspector';
@@ -169,13 +170,13 @@ function Shell({
               <TabsTrigger value="settings">{t('inspector.settings')}</TabsTrigger>
             </TabsList>
             <TabsContent value="content">
-              <p className="blx-empty">{t('inspector.content.empty')}</p>
+              <Inspector element={selected} tab="content" editingEnabled={bootstrap.editingEnabled} />
             </TabsContent>
             <TabsContent value="style">
-              <p className="blx-empty">{t('inspector.style.empty')}</p>
+              <Inspector element={selected} tab="style" editingEnabled={bootstrap.editingEnabled} />
             </TabsContent>
             <TabsContent value="settings">
-              <p className="blx-empty">{t('inspector.settings.empty')}</p>
+              <Inspector element={selected} tab="settings" editingEnabled={bootstrap.editingEnabled} />
             </TabsContent>
           </Tabs>
         </aside>
