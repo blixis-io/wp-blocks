@@ -18,6 +18,7 @@ import { elementIconName } from '@blixis/wp-editor-ui';
 import { HANDLE_POSITIONS, placeSelectionToolbar } from './selection-chrome';
 import { findPath, nodeAt, type ElementNode } from '@blixis/wp-core';
 import { elementLabel } from '../element-label';
+import { ElementId } from '../ElementId';
 import { FRAME_WIDTHS, useCanvasSession, type CanvasSessionOptions, type PreviewProblem } from './useCanvasSession';
 
 const PREVIEW_MODES = [
@@ -372,6 +373,7 @@ export function Canvas({
           <span className="blx-selection-toolbar-label">
             <Icon name={elementIconName(selected.type)} size={14} />
             {elementLabel(selected.type, t)}
+            <ElementId id={selected.id} />
           </span>
           {!editingEnabled ? (
             <span id="blx-selection-disabled" className="sr-only">
@@ -385,7 +387,6 @@ export function Canvas({
             disabled={!editingEnabled}
             aria-label={t('canvas.selection.duplicate')}
             aria-describedby={!editingEnabled ? 'blx-selection-disabled' : undefined}
-            title={!editingEnabled ? t('canvas.selection.disabled') : undefined}
           >
             <Icon name="copy" size={14} />
           </button>
@@ -398,7 +399,6 @@ export function Canvas({
             disabled={!editingEnabled}
             aria-label={t('canvas.selection.delete')}
             aria-describedby={!editingEnabled ? 'blx-selection-disabled' : undefined}
-            title={!editingEnabled ? t('canvas.selection.disabled') : undefined}
           >
             <Icon name="delete" size={14} />
           </button>

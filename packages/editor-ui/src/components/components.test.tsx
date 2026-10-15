@@ -45,11 +45,13 @@ describe('Icon', () => {
     back: 'alt-arrow-left-linear',
     forward: 'alt-arrow-right-linear',
     caretRight: 'alt-arrow-right-linear',
+    chevronRight: 'alt-arrow-right-linear',
     move: 'cursor-square-linear',
     chevronDown: 'alt-arrow-down-linear',
     chevronUp: 'alt-arrow-up-linear',
     link: 'link-linear',
     check: 'check-linear',
+    checkLinear: 'check-linear',
     preview: 'eye-linear',
     image: 'gallery-linear',
     home: 'home-linear',
@@ -156,6 +158,15 @@ describe('Icon', () => {
     for (const name of Object.values(inspectorIcons)) expect(ICONS[name]).toBeDefined();
   });
 
+  it.each([
+    ['tree disclosure', 'chevronRight', 14],
+    ['checked menu row', 'check', 14],
+    ['tree element icon', 'heading', 16],
+  ] as const)('maps %s to Solar Linear %s at %ipx', (_use, name, size) => {
+    const { container } = render(<Icon name={name} size={size} />);
+    expect(container.querySelector('svg')?.getAttribute('width')).toBe(String(size));
+  });
+
   it('maps text alignment values to the intended Solar icons', () => {
     expect(TEXT_ALIGN_ICONS).toEqual({
       left: 'alignLeft',
@@ -185,6 +196,9 @@ describe('Icon', () => {
       'menuDots|more',
       'button|move',
       'caretRight|forward',
+      'chevronRight|forward',
+      'caretRight|chevronRight',
+      'check|checkLinear',
       'fallback|section',
       'moonStars|system',
     ]);

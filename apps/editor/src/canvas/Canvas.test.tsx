@@ -480,7 +480,8 @@ describe('selection and hover', () => {
       .last()
       .deliver({ type: 'rects', revision: 1, items: [{ id: 'el-text-1', x: 20, y: 80, w: 120, h: 28 }] });
     expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Duplicate' }).disabled).toBe(true);
-    expect(screen.getByRole('button', { name: 'Duplicate' }).getAttribute('title')).toBe(
+    const duplicate = screen.getByRole('button', { name: 'Duplicate' });
+    expect(document.getElementById(duplicate.getAttribute('aria-describedby') ?? '')?.textContent).toBe(
       'Editing is disabled for this document.',
     );
     expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Delete' }).disabled).toBe(true);
@@ -573,12 +574,13 @@ describe('selection and hover', () => {
     expect(
       within(breadcrumb)
         .getByRole('button', { name: /Heading.*el-heading/ })
-        .getAttribute('title'),
-    ).toBe('el-heading-1');
+        .hasAttribute('title'),
+    ).toBe(false);
+    expect(within(breadcrumb).getByLabelText('el-heading-1').textContent).toBe('el-heading-1');
     expect(within(breadcrumb).getByRole('button', { name: /Heading.*el-heading/ }).className).toContain(
       'blx-breadcrumb-item',
     );
-    expect(breadcrumb.getAttribute('title')).toBe('Section › Container › Heading');
+    expect(breadcrumb.hasAttribute('title')).toBe(false);
     fireEvent.click(within(breadcrumb).getByRole('button', { name: /Section.*el-section-1/ }));
     expect(s.store.getState().selectedId).toBe('el-section-1');
     fireEvent.click(within(breadcrumb).getByRole('button', { name: 'Page root' }));

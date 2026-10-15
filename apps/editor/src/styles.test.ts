@@ -35,7 +35,8 @@ describe.each(['light', 'dark'] as const)('%s chrome contrast', (theme) => {
     ['primary-fg', 'primary-hover'],
     ['destructive-fg', 'destructive'],
     ['destructive-fg', 'destructive-hover'],
-    ['tooltip-fg', 'tooltip'],
+    ['tooltip-fg', 'tooltip-bg'],
+    ['tooltip-border', 'tooltip-bg'],
     ['banner-fg', 'banner'],
     ['fg', 'selected'],
     ['fg', 'surface'],
@@ -75,8 +76,11 @@ describe.each(['light', 'dark'] as const)('%s chrome contrast', (theme) => {
 describe('selected state indicator', () => {
   it('draws a ring from --ed-selected-ring on selected toggles, not colour alone', () => {
     expect(source).toMatch(
-      /aria-checked='true'\],[\s\S]*aria-current='true'\]\s*\{\s*box-shadow: inset 0 0 0 2px var\(--ed-selected-ring\)/,
+      /aria-checked='true'\]:not\(\.ed-menu-item\),[\s\S]*aria-current='true'\]\s*\{\s*box-shadow: inset 0 0 0 2px var\(--ed-selected-ring\)/,
     );
+  });
+  it('shows checked menu rows with a check mark, never the selected-toggle ring', () => {
+    expect(source).toMatch(/aria-checked='true'\]:not\(\.ed-menu-item\)/);
   });
   it('uses the primary underline for the active inspector tab', () => {
     expect(source).toMatch(/\[role='tab'\]\[aria-selected='true'\]::after[\s\S]*?background: var\(--ed-primary\)/);
@@ -99,7 +103,7 @@ describe('structure tree layout contract', () => {
     expect(source).toMatch(
       /border-inline-start:\s*1px solid color-mix\(in srgb, var\(--ed-border\) 35%, transparent\)/,
     );
-    expect(source).toMatch(/color-mix\(in srgb, var\(--ed-primary\) 45%, transparent\)/);
+    expect(source).not.toMatch(/data-on-path|color-mix\(in srgb, var\(--ed-primary\) 45%, transparent\)/);
   });
   it('keeps row geometry fixed and changes hover/selection appearance only', () => {
     expect(source).toMatch(
@@ -115,6 +119,68 @@ describe('structure tree layout contract', () => {
       /\.blx-outline-item\[aria-selected='true'\]\s*\{[^}]*\b(?:padding|margin|border|font-weight|height|line-height)\s*:/,
     );
     expect(source).toMatch(/\.blx-left-tabs \[role='tab'\]\[aria-selected='true'\]::after\s*\{\s*content:\s*none;/);
+  });
+});
+
+describe('editor polish CSS contracts', () => {
+  it('keeps tooltip background, foreground, and border on explicit tokens', () => {
+    expect(source).toMatch(/--ed-tooltip-bg:\s*#[0-9a-f]{6}/i);
+    expect(source).toMatch(/--ed-tooltip-fg:\s*#[0-9a-f]{6}/i);
+    expect(source).toMatch(/--ed-tooltip-border:\s*#[0-9a-f]{6}/i);
+    expect(source).not.toMatch(/bg-ed-tooltip|text-ed-tooltip-fg/);
+  });
+  it('uses the Solar check icon only as the checked item affordance', () => {
+    expect(source).not.toMatch(/\.ed-menu-item\[aria-checked='true'\][^{]*\{[^}]*outline/);
+    expect(source).toMatch(/\.ed-menu-item:focus-visible\s*\{[^}]*outline:/);
+  });
+  it('keeps the inspector tabs sticky with a single scrolling tab panel', () => {
+    expect(source).toMatch(/\.blx-inspector-tabs \[role='tablist'\][^{]*\{[^}]*position: sticky/);
+    expect(source).toMatch(/\.blx-inspector-tabs \[role='tabpanel'\][^{]*\{[^}]*overflow: auto/);
+  });
+  it('resets the Content fieldset frame and uses shared section borders', () => {
+    expect(source).toMatch(
+      /\.blx-inspector-group\s*\{[^}]*min-inline-size: 0;[^}]*border: 0;[^}]*padding: 0;[^}]*margin: 0;/,
+    );
+    expect(source).toMatch(/\.blx-inspector-section\s*\{[^}]*border-block-end: 1px solid var\(--ed-border\)/);
+  });
+  it('draws CSS handles as rounded white squares', () => {
+    expect(source).toMatch(
+      /\.blx-selection-handle\s*\{[^}]*inline-size: 8px;[^}]*block-size: 8px;[^}]*border: 1\.5px solid var\(--ed-primary\);[^}]*border-radius: 2px;[^}]*background: #fff;/,
+    );
+  });
+  it.each(['light', 'dark'])('%s tooltip border and text tokens are present', (theme) => {
+    const block = new RegExp(`\\[data-editor-theme='${theme}'\\]\\s*\\{([^}]*)\\}`).exec(source)?.[1] ?? '';
+    expect(block).toMatch(/--ed-tooltip-bg:/);
+    expect(block).toMatch(/--ed-tooltip-fg:/);
+    expect(block).toMatch(/--ed-tooltip-border:/);
+  });
+  it.each([
+    '.blx-inspector-selection',
+    '.blx-inspector-tabs',
+    "[role='tabpanel']",
+    '.blx-inspector-section',
+    '.blx-inspector-group',
+    '.blx-outline-id',
+    ".blx-outline-item[aria-selected='true']",
+    '.blx-tree-guides',
+    '.blx-tree-guide::before',
+    '.blx-tree-guide:last-child::after',
+    '.blx-tree-toggle',
+    '.blx-tree-icon',
+    '.blx-breadcrumb-item',
+    '.blx-selection-overlay',
+    '.blx-selection-handles',
+    '.blx-selection-handle.is-nw',
+    '.blx-selection-handle.is-n',
+    '.blx-selection-handle.is-ne',
+    '.blx-selection-handle.is-e',
+    '.blx-selection-handle.is-se',
+    '.blx-selection-handle.is-s',
+    '.blx-selection-handle.is-sw',
+    '.blx-selection-handle.is-w',
+    '.ed-menu-item:focus-visible',
+  ])('retains the scoped %s polish selector', (selector) => {
+    expect(source).toContain(selector);
   });
 });
 

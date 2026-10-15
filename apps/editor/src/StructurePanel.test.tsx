@@ -26,6 +26,19 @@ function renderEditor(
 }
 
 describe('left panel and element palette', () => {
+  it('highlights only the selected tree row and never paints the ancestor guide path', async () => {
+    renderEditor();
+    await waitFor(() => {
+      expect(screen.getByRole('tree')).toBeTruthy();
+    });
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('treeitem', { name: /el-heading-1/ }));
+    const rows = screen.getAllByRole('treeitem');
+    const selected = rows.find((row) => row.getAttribute('aria-selected') === 'true');
+    expect(selected?.getAttribute('data-id')).toBe('el-heading-1');
+    expect(rows.every((row) => !row.hasAttribute('data-on-path'))).toBe(true);
+  });
+
   it('indents tree rows from aria-level and renders decorative RTL-safe guide marks', async () => {
     renderEditor();
     const rows = await screen.findAllByRole('treeitem');

@@ -4,19 +4,31 @@ import { readSessionStorage, writeSessionStorage } from '../storage';
 import { useI18n } from '../i18n-react';
 
 const KEY = 'blixis-inspector-sections';
-function readCollapsed(id: string): boolean {
+function readCollapsed(id: string, defaultCollapsed: boolean): boolean {
   try {
     const raw = readSessionStorage(KEY);
     const value: unknown = raw ? JSON.parse(raw) : {};
-    return typeof value === 'object' && value !== null && (value as Record<string, unknown>)[id] === true;
+    return typeof value === 'object' && value !== null && Object.hasOwn(value, id)
+      ? (value as Record<string, unknown>)[id] === true
+      : defaultCollapsed;
   } catch {
-    return false;
+    return defaultCollapsed;
   }
 }
 
-export function InspectorSection({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
+export function InspectorSection({
+  id,
+  title,
+  children,
+  defaultCollapsed = false,
+}: {
+  id: string;
+  title: string;
+  children: React.ReactNode;
+  defaultCollapsed?: boolean;
+}) {
   const { t } = useI18n();
-  const [collapsed, setCollapsed] = useState(() => readCollapsed(id));
+  const [collapsed, setCollapsed] = useState(() => readCollapsed(id, defaultCollapsed));
   const headingId = `inspector-section-${id}-heading`;
   const panelId = `inspector-section-${id}-panel`;
   const toggle = () => {
