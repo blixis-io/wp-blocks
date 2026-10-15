@@ -49,7 +49,26 @@ Appearance → Blixis setup has six server-rendered steps: preset or Custom, col
 
 The site's default website appearance is the autoloaded `blixis_appearance` option: `auto` (the default when absent or invalid), `light`, or `dark`. The preview step saves this choice in the bounded draft and still shows both token modes. Apply saves the option with the design system. Design-system history and rollback restore tokens only; they do not change website appearance.
 
-The theme adds `data-theme="light"` or `data-theme="dark"` to `<html>` through `language_attributes` for a forced site mode, unless another filter already supplied the attribute. Auto leaves the attribute absent so the compiler's system-preference selectors apply on the first paint without JavaScript. A `color-scheme` meta tag and matching theme CSS keep browser controls in the chosen mode. This setting is independent of editor chrome appearance and website translation locale. BWB-113 can later set a visitor preference on `<html>` with an initial-paint script; this issue adds neither visitor storage nor a toggle.
+The theme adds `data-theme="light"` or `data-theme="dark"` to `<html>` through `language_attributes` for a forced site mode, unless another filter already supplied the attribute. Auto leaves the attribute absent so the compiler's system-preference selectors apply on the first paint without JavaScript. A `color-scheme` meta tag and matching theme CSS keep browser controls in the chosen mode. This setting is independent of editor chrome appearance and website translation locale. BWB-113 adds an auto-only visitor preference on `<html>` with a small initial-paint script and progressive enhancement.
+
+## Visitor appearance preference (BWB-113)
+
+When the site appearance is `auto`, a visitor can choose System, Light, or Dark in the header. The control starts hidden and is revealed by `assets/js/appearance.js` in the footer. It has visible button labels, a named group, `aria-pressed` states, 44px targets, visible focus, a polite change announcement, and forced-colors styling. The choice is independent of editor chrome appearance, editor UI locale, and website translation locale.
+
+The browser key is `localStorage['blixis-appearance']`. Light and dark are the only stored values; System removes the key. A tiny script in `wp_head` immediately after the color-scheme meta applies an exact stored light/dark value to `<html data-theme>` and the meta before CSS paints. `Appearance::INITIALIZER` is checked against `assets/js/appearance-init.js`. WordPress's `wp_get_inline_script_tag()` emits it so CSP nonce and attribute filters can apply. The footer script also handles clicks and cross-tab `storage` events. Storage exceptions leave the page control usable for the current view.
+
+The server never reads visitor storage, cookies, or visitor request headers and does not vary the HTML. Thus shared page caches can serve the same document to every visitor. A forced site setting (`light` or `dark`) emits neither the visitor control nor either script.
+
+### Content Security Policy
+
+On sites with a strict CSP, allow the early inline initializer in `script-src` by adding a nonce through WordPress core's `wp_inline_script_attributes` filter or by allow-listing the value returned by `Appearance::init_script_csp_hash()` (`sha256-<base64>` for the exact inline script text). Without either allowance, the page still works: the footer script applies a stored choice after first paint, so visitors may briefly see the system mode first.
+
+| Site setting | JavaScript | Result |
+|---|---|---|
+| Auto | On, stored Light/Dark | Stored choice applies before first paint. |
+| Auto | On, no valid stored choice | System preference applies. |
+| Auto | Off, including when a choice is stored | System preference applies; the hidden control stays hidden. |
+| Forced Light/Dark | On or off | The site owner's mode applies. |
 
 ## Fonts (BWB-036)
 

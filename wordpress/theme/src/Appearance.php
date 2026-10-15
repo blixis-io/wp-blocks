@@ -15,6 +15,14 @@ namespace Blixis\Theme;
 final class Appearance {
 	public const OPTION = 'blixis_appearance';
 
+	/** Minified source: assets/js/appearance-init.js. */
+	public const INITIALIZER = '(function(){try{const value=localStorage.getItem(\'blixis-appearance\');if(value===\'light\'||value===\'dark\'){document.documentElement.setAttribute(\'data-theme\',value);document.querySelector(\'meta[name="color-scheme"]\').setAttribute(\'content\',value);}}catch{}})();';
+
+	/** CSP script-src hash for the exact inline initializer text. */
+	public static function init_script_csp_hash(): string {
+		return 'sha256-' . \base64_encode( \hash( 'sha256', self::INITIALIZER, true ) ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- CSP requires a base64 digest.
+	}
+
 	/**
 	 * Normalize absent or invalid option data to the system-following default.
 	 *
@@ -67,6 +75,10 @@ final class Appearance {
 
 	/** WordPress wp_head action. */
 	public static function print_meta(): void {
-		echo '<meta name="color-scheme" content="' . esc_attr( self::meta_content( self::site_mode() ) ) . "\">\n"; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- The dynamic attribute is escaped.
+		$mode = self::site_mode();
+		echo '<meta name="color-scheme" content="' . esc_attr( self::meta_content( $mode ) ) . "\">\n"; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- The dynamic attribute is escaped.
+		if ( 'auto' === $mode ) {
+			echo wp_get_inline_script_tag( self::INITIALIZER ) . "\n"; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Core applies script attribute filters.
+		}
 	}
 }

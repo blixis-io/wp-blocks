@@ -5,7 +5,7 @@
 //   BLX_WP_PORT                                host port on 127.0.0.1 (default 8888)
 //   BLX_EXPECT_WP, BLX_EXPECT_PHP              smoke test expectations (version prefixes)
 import { spawn, spawnSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { auditHtml } from '../a11y/audit-html.mjs';
@@ -181,6 +181,15 @@ async function smoke() {
       page.includes(`<meta name="color-scheme" content="${expectedMeta}">`),
       `${value} site appearance has the expected color-scheme meta tag`,
     );
+    // BWB-113: the visitor control and the tiny initialiser exist only when the site appearance is auto; the page is identical for everyone.
+    const auto = expectedAttribute === null;
+    check(
+      auto
+        ? /<div class="appearance-toggle"[^>]*\bhidden\b/.test(page) &&
+            (page.match(/blixis-appearance/g) ?? []).length >= 2
+        : !page.includes('appearance-toggle') && !page.includes('blixis-appearance'),
+      `${value} site appearance ${auto ? 'prints the hidden visitor control and the initialiser' : 'prints no visitor control and no initialiser'}`,
+    );
     for (const finding of auditHtml(page)) check(false, `${value} appearance: ${finding.rule}: ${finding.message}`);
   };
   try {
@@ -192,11 +201,6 @@ async function smoke() {
     }
     wpOut('option', 'update', 'blixis_appearance', 'invalid');
     await checkAppearance('invalid', null, 'light dark');
-    check(
-      !/<script\b/i.test(readFileSync(join(root, 'wordpress', 'theme', 'src', 'Appearance.php'), 'utf8')) &&
-        !/<script\b/i.test(readFileSync(join(root, 'wordpress', 'theme', 'header.php'), 'utf8')),
-      'theme appearance output and header add no inline script',
-    );
   } finally {
     if (appearanceBefore.status === 0) {
       wpOut('option', 'update', 'blixis_appearance', String(appearanceBefore.stdout).trim());
