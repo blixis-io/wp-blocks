@@ -20,6 +20,7 @@ final class RenderCacheKey {
 	 * @param string $locale Selected locale.
 	 * @param int    $layout_revision Published layout snapshot.
 	 * @param int    $content_revision Published content snapshot (0 when none).
+	 * @param int    $default_content_revision Default-locale content snapshot used as the fallback source (0 when none).
 	 * @param string $epoch Site-wide epoch (design system, theme, media, classes).
 	 * @param int    $compiler_version CSS compiler version.
 	 * @param string $plugin_version Plugin version.
@@ -27,8 +28,8 @@ final class RenderCacheKey {
 	 * @param string $compat_reason Effective compatibility reason.
 	 * @return string Key of 64 hex characters prefixed for readability.
 	 */
-	public static function build( int $post_id, string $locale, int $layout_revision, int $content_revision, string $epoch, int $compiler_version, string $plugin_version, string $theme, string $compat_reason ): string {
-		$parts = [ $post_id, $locale, $layout_revision, $content_revision, $epoch, $compiler_version, $plugin_version, $theme, $compat_reason ];
+	public static function build( int $post_id, string $locale, int $layout_revision, int $content_revision, int $default_content_revision, string $epoch, int $compiler_version, string $plugin_version, string $theme, string $compat_reason ): string {
+		$parts = [ $post_id, $locale, $layout_revision, $content_revision, $default_content_revision, $epoch, $compiler_version, $plugin_version, $theme, $compat_reason ];
 		return 'blx_' . \hash( 'sha256', \implode( "\0", \array_map( 'strval', $parts ) ) );
 	}
 }

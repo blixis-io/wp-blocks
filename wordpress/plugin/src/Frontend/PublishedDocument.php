@@ -20,11 +20,13 @@ final class PublishedDocument {
 	 * @param string    $locale Locale whose content was selected.
 	 * @param int       $layout_revision Published layout snapshot number.
 	 * @param int       $content_revision Content snapshot number, or 0 when none applies.
+	 * @param int       $default_content_revision Default-locale content snapshot used as the fallback source, or 0.
 	 */
 	public function __construct(
 		public readonly \stdClass $document,
 		public readonly string $locale,
 		public readonly int $layout_revision,
-		public readonly int $content_revision
+		public readonly int $content_revision,
+		public readonly int $default_content_revision = 0
 	) {}
 }

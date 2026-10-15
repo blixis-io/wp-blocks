@@ -28,6 +28,12 @@
 		);
 		?>
 	</nav>
+	<?php
+	// Language links of the Builder plugin (translated pages only); nothing is printed without the plugin or translations.
+	if ( function_exists( 'blixis_builder_locale_switcher' ) ) {
+		blixis_builder_locale_switcher();
+	}
+	?>
 	<?php \Blixis\Theme\blixis_appearance_toggle(); ?>
 </header>
 <main id="content" class="site-main site-shell" tabindex="-1">

@@ -44,4 +44,5 @@ Autoloader::register();
 
 \register_activation_hook( FILE, [ Activation::class, 'activate' ] );
 \register_deactivation_hook( FILE, [ Deactivation::class, 'deactivate' ] );
+require_once DIR . '/src/functions.php';
 Plugin::register();

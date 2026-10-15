@@ -69,8 +69,45 @@ final class PublishedReader {
 		if ( null === $content ) {
 			return null;
 		}
-		$merged = RenderDocument::from_streams( $layout, [ $selected_locale => $content ] );
-		return new PublishedDocument( $merged, $selected_locale, $layout_revision, $content_revision );
+		$streams          = [ $selected_locale => $content ];
+		$default_locale   = $pointer->{'defaultLocale'} ?? null;
+		$default_revision = 0;
+		// The default locale's content is the fallback source for missing translations (policy `source`).
+		if ( \is_string( $default_locale ) && $default_locale !== $selected_locale && MetaKeys::is_valid_locale( $default_locale ) ) {
+			$default_entry = ( $pointer->locales ?? null ) instanceof \stdClass ? ( $pointer->locales->$default_locale ?? null ) : null;
+			$number        = $default_entry instanceof \stdClass ? ( $default_entry->{'contentSnapshot'} ?? null ) : null;
+			$source        = \is_int( $number ) && $number > 0 ? $this->envelope( $post_id, MetaKeys::snap_content( $default_locale, $number ) ) : null;
+			if ( null !== $source ) {
+				$streams[ $default_locale ] = $source;
+				$default_revision           = (int) $number;
+			}
+		}
+		$merged = RenderDocument::from_streams( $layout, $streams );
+		if ( \is_string( $default_locale ) ) {
+			$merged->{'defaultLocale'} = $default_locale;
+		}
+		return new PublishedDocument( $merged, $selected_locale, $layout_revision, $content_revision, $default_revision );
+	}
+
+	/**
+	 * Locales that currently have published content for a post (their content snapshot exists).
+	 *
+	 * @param int $post_id Post ID.
+	 * @return list<string>
+	 */
+	public function published_locales( int $post_id ): array {
+		$pointer = $post_id < 1 ? null : $this->envelope( $post_id, MetaKeys::PUBLISHED );
+		if ( null === $pointer || ! ( $pointer->locales ?? null ) instanceof \stdClass ) {
+			return [];
+		}
+		$out = [];
+		foreach ( \get_object_vars( $pointer->locales ) as $locale => $entry ) {
+			$locale = (string) $locale;
+			if ( MetaKeys::is_valid_locale( $locale ) && $entry instanceof \stdClass && \is_int( $entry->{'contentSnapshot'} ?? null ) && $entry->{'contentSnapshot'} > 0 && null !== $this->envelope( $post_id, MetaKeys::snap_content( $locale, $entry->{'contentSnapshot'} ) ) ) {
+				$out[] = $locale;
+			}
+		}
+		return $out;
 	}
 
 	/**

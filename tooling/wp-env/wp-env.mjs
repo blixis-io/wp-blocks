@@ -1242,6 +1242,159 @@ async function smoke() {
         const unchanged = await json(await api(`${hostileTarget}/layout`, { cookie: adminCookie, nonce: adminNonce }));
         check(unchanged.revision === 0, 'hostile bodies never change stored data');
         command('post', 'delete', hostileTarget, '--force');
+        // Locale routing (BWB-111): prefix routes, published-only locales, hreflang, lang and dir, fallback policy, route safety.
+        const setLocales = (value) =>
+          command('option', 'update', 'blixis_locales', JSON.stringify(value), '--format=json');
+        const locPost = command(
+          'post',
+          'create',
+          '--post_type=page',
+          '--post_status=publish',
+          '--post_title=Locale smoke',
+          '--post_name=locale-smoke',
+          '--post_content=PLAIN LOCALE',
+          '--porcelain',
+        );
+        const twoHeadings = JSON.stringify({
+          schemaVersion: 1,
+          documentId: 'doc-enPage',
+          layoutRevision: 1,
+          root: ['hed-1', 'hed-2'].map(heading),
+        });
+        await putStream(locPost, 'layout', twoHeadings, 0);
+        await putStream(
+          locPost,
+          'content/en_US',
+          contentBody({ 'hed-1': 'English hello', 'hed-2': 'English second' }),
+          0,
+        );
+        await putStream(locPost, 'content/nl_NL', contentBody({ 'hed-1': 'Nederlandse hallo' }), 0);
+        await putStream(locPost, 'content/ar', contentBody({ 'hed-1': 'مرحبا' }), 0);
+        check(
+          (await postAction(locPost, 'publish', { layout: true, locale: 'en_US' }, 0)).status === 200,
+          'the page is published in the default locale',
+        );
+        const localePage = async (path) => get(path);
+        let enPage = await localePage('/locale-smoke/');
+        check(
+          enPage.status === 200 && enPage.text.includes('English hello') && !enPage.text.includes('hreflang'),
+          'on a single-language site the page renders as before and has no alternates',
+        );
+        setLocales({
+          version: 1,
+          defaultLocale: 'en_US',
+          enabledLocales: ['en_US', 'nl_NL', 'ar'],
+          fallback: 'source',
+        });
+        enPage = await localePage('/locale-smoke/');
+        check(
+          enPage.status === 200 && enPage.text.includes('English hello'),
+          'the default locale stays at the canonical URL',
+        );
+        check(
+          (await localePage('/nl/locale-smoke/')).status === 404,
+          'a locale that is not published for the page is a 404',
+        );
+        check(!enPage.text.includes('hreflang="nl-NL"'), 'an unpublished locale is not in the alternates');
+        check(
+          (await postAction(locPost, 'publish', { locale: 'nl_NL' }, 1)).status === 200 &&
+            (await postAction(locPost, 'publish', { locale: 'ar' }, 2)).status === 200,
+          'Dutch and Arabic are published',
+        );
+        enPage = await localePage('/locale-smoke/');
+        check(
+          enPage.text.includes('hreflang="nl-NL"') &&
+            enPage.text.includes('hreflang="en-US"') &&
+            enPage.text.includes('hreflang="x-default"') &&
+            enPage.text.includes('/nl/locale-smoke/'),
+          'published locales appear as hreflang alternates with x-default',
+        );
+        check(
+          enPage.text.includes('class="blx-locale-switcher"') && enPage.text.includes('aria-label="Language"'),
+          'the language switcher lists the published translations',
+        );
+        check(
+          /<html[^>]*lang="en-US"/.test(enPage.text) && !/<html[^>]*dir="rtl"/.test(enPage.text),
+          'the default locale page has lang en-US and no rtl direction',
+        );
+        let nlPage = await localePage('/nl/locale-smoke/');
+        check(
+          nlPage.status === 200 && nlPage.text.includes('Nederlandse hallo') && !nlPage.text.includes('English hello'),
+          'the Dutch URL serves the Dutch content',
+        );
+        check(/<html[^>]*lang="nl-NL"/.test(nlPage.text), 'the Dutch page declares lang nl-NL');
+        check(nlPage.text.includes('English second'), 'a missing translation falls back to the source text by default');
+        check(
+          /<link rel="canonical" href="[^"]*\/nl\/locale-smoke\/"/.test(nlPage.text),
+          'the canonical link of the Dutch page is its own URL',
+        );
+        check(
+          /<a href="[^"]*\/nl\/"[^>]*rel="home"/.test(nlPage.text),
+          'site links on a localized page stay inside the language',
+        );
+        check(
+          !/<a[^>]*href="[^"]*\/wp-content\/[^"]*\/nl\//.test(nlPage.text) &&
+            !nlPage.text.includes('/nl/wp-json') &&
+            !nlPage.text.includes('/nl/wp-content'),
+          'assets and API URLs never get a locale prefix',
+        );
+        const arPage = await localePage('/ar/locale-smoke/');
+        check(
+          arPage.status === 200 && /<html[^>]*lang="ar"/.test(arPage.text) && /<html[^>]*dir="rtl"/.test(arPage.text),
+          'an Arabic page declares lang ar and dir rtl',
+        );
+        setLocales({ version: 1, defaultLocale: 'en_US', enabledLocales: ['en_US', 'nl_NL', 'ar'], fallback: 'blank' });
+        nlPage = await localePage('/nl/locale-smoke/');
+        check(
+          nlPage.text.includes('Nederlandse hallo') && !nlPage.text.includes('English second'),
+          'with the blank policy a missing translation shows nothing',
+        );
+        check(
+          (await localePage('/nl/about/')).status === 404,
+          'a regular page without a Dutch version is a 404 under the Dutch prefix',
+        );
+        const notEnabled = await http(`${base}/de/locale-smoke/`, { redirect: 'manual' });
+        check(
+          [301, 404].includes(notEnabled.status) &&
+            !(notEnabled.status === 301 && /\/de\//.test(notEnabled.headers.get('location') ?? '')),
+          'a locale that is not enabled serves nothing under its prefix (404, or WordPress guesses the canonical page)',
+        );
+        check(
+          (await localePage('/nl')).status !== 500 && (await localePage('/nl/')).status === 404,
+          'the Dutch home is a 404 until the front page is published in Dutch',
+        );
+        check(
+          (await localePage('/wp-json/blixis/v1/status')).status === 401,
+          'API routes are not touched by locale routing',
+        );
+        setLocales({ version: 1, defaultLocale: 'en_US', enabledLocales: ['en_US', 'nl_NL'], fallback: 'source' });
+        const collisionSlug = command(
+          'post',
+          'create',
+          '--post_type=page',
+          '--post_status=publish',
+          '--post_title=nl',
+          '--post_name=nl',
+          '--porcelain',
+        );
+        const collisionReport = JSON.parse(
+          command(
+            'eval',
+            "echo wp_json_encode( Blixis\\Builder\\Locale\\Collisions::report( Blixis\\Builder\\Locale\\LocaleConfig::from_option( get_option( 'blixis_locales' ), get_locale() ), get_posts( array( 'post_type' => 'any', 'name' => 'nl', 'numberposts' => 1, 'fields' => 'ids' ) ) ? array( 'nl' ) : array() ) );",
+          ),
+        );
+        check(
+          collisionReport[0]?.reason === 'existing-slug' && collisionReport[0]?.prefix === 'nl',
+          'a prefix that collides with an existing page slug is reported',
+        );
+        command('post', 'delete', collisionSlug, '--force');
+        command('option', 'delete', 'blixis_locales');
+        const routingOff = await http(`${base}/nl/locale-smoke/`, { redirect: 'manual' });
+        check(
+          [301, 404].includes(routingOff.status) && routingOff.status !== 200,
+          'removing the languages switches routing off again (no content under /nl/)',
+        );
+        command('post', 'delete', locPost, '--force');
         // Media (BWB-045): raster library images only, validated responsive attributes, alt text, picker route.
         const mediaIds = JSON.parse(command('eval-file', '/fixtures/media-smoke.php').split('\n').pop());
         const mediaApi = async (id, { cookie, nonce } = {}) =>

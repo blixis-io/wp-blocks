@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Blixis\Builder;
 
 use Blixis\Builder\Frontend\Frontend;
+use Blixis\Builder\Locale\NativeLocaleRouter;
 use Blixis\Builder\Storage\MetaRegistration;
 use Blixis\Builder\Rest\DocumentController;
 use Blixis\Builder\Rest\MediaController;
@@ -32,6 +33,7 @@ final class Plugin {
 		\add_action( 'rest_api_init', [ StatusController::class, 'register' ] );
 		AdminNotice::hooks();
 		Frontend::hooks();
+		NativeLocaleRouter::boot();
 	}
 
 	/** Load translations after WordPress has initialized. */
