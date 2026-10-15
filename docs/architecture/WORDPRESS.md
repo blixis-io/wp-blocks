@@ -18,6 +18,33 @@ Baseline decided in [ADR 0001](adrs/0001-supported-environments.md): WordPress 7
 
 Working layout, locale content, publication pointer, and immutable snapshots use separate protected postmeta keys under ADR 0003 §3. Fixed keys are registered per editable public REST post type; `blixis_builder_post_types` defaults to `post` and `page`. Dynamic key capabilities are restricted to valid builder keys and `edit_post`; all builder keys stay out of core revision/autosave meta. Writes use the storage repository's per-row CAS, while first inserts use a per-key advisory lock because postmeta has no unique key. Full document schema validation is BWB-043; current checks cover the 2 MiB envelope and revision fields. See [BWB-040 spike](spikes/BWB-040-persistence.md) for the contract, sanitize fallback, revision decision, and smoke-test gaps.
 
+# Editor screen (BWB-049)
+
+The plugin serves an isolated editor document at `wp-admin/admin.php?page=blixis-editor&post=<id>[&locale=<locale>]`. The page is hidden from the admin menu and is rendered before the normal admin template, without `wp_head`, `admin_head`, admin styles, or admin scripts. The only application assets are `assets/editor/editor.css` and `assets/editor/editor.js`, loaded from `wordpress/plugin/assets/editor/` using the validated manifest hash as the cache version. The frontend build produces `apps/editor/dist/`; packaging copies that output into the plugin asset directory.
+
+The URL parser accepts a strictly positive decimal post ID within the PHP integer range. `admin_init` renders only when WordPress identifies the request as `admin.php`, so matching `page` parameters on `admin-ajax.php` or `admin-post.php` cannot render the editor. A missing or invalid locale falls back to the site's configured default; valid locales must also be enabled. Bootstrap locales are checked against the same grammar as `MetaKeys::is_valid_locale` (`^[a-z]{2,3}(_[A-Za-z0-9]{2,8})*$`, at most 20 characters); invalid enabled entries are dropped and an invalid editor-interface locale falls back to `en_US`. Authentication is left to WordPress's admin login flow. For an authenticated user, missing posts, non-opted-in post types, and failed `edit_post` checks all produce the same generic 403, so the response does not reveal post existence. Compatible themes enable editing. An incompatible theme still permits the document in read-only mode and passes the stable `ThemeStatus` reason as `lockReason` (ADR 0002 §5: data remains readable while editing is locked).
+
+The document response is private and non-cacheable. It sets `nosniff`, same-origin referrer and frame policies, and a restrictive CSP: no default sources, same-origin scripts/styles/connections/frames, images from `self` and `data:` only, same-origin fonts, no base URL, no objects, and same-origin form/frame ancestors. The style nonce in `style-src` matches `cspNonce` in that response's bootstrap and is regenerated per request. No inline executable script is used; bootstrap JSON is in an `application/json` script element with JSON_HEX escaping. A permalink is sent as `viewUrl` only when its scheme, host and effective port match the admin origin; `adminUrl` has same-origin fallback handling. `restRoot` remains the WordPress REST URL, including installations that deliberately configure it cross-origin. Future canvas/media protocol requirements may extend this policy in their own issue.
+
+Bootstrap contract v1 (the editor validates this shape):
+
+| Field | Meaning |
+|---|---|
+| `version` | Contract version, `1`. |
+| `restRoot`, `nonce` | Absolute `blixis/v1` REST root and WordPress REST nonce. |
+| `postId`, `postTitle`, `postType` | Current post identity and stored title as plain text (tags stripped and entities decoded, capped at 200 characters). The browser `<title>` is separately HTML-escaped. |
+| `contentLocale` | Selected enabled website-content locale. |
+| `defaultLocale`, `enabledLocales` | Site translation configuration. |
+| `editorLocale` | `get_user_locale()` for editor chrome; independent from `contentLocale`. |
+| `pluginVersion`, `themeName` | Running plugin and active theme display versions/names. |
+| `editingEnabled`, `lockReason` | Edit capability and theme-lock explanation; reason is null when unlocked. |
+| `adminUrl`, `viewUrl` | Post edit/list destination and permalink (null when unavailable). |
+| `cspNonce` | Per-response nonce (base64 of 18 random bytes) that the response's `Content-Security-Policy` allows for `<style>` elements. |
+
+**Why a style nonce.** The policy is `style-src 'self' 'nonce-<random>'` with no `unsafe-inline`: the bundled Radix dialogs lock page scrolling by injecting a `<style>` element, which a real browser blocks otherwise (found by the real-browser check; jsdom does not enforce CSP). The editor hands the nonce to those libraries through `__webpack_nonce__` before the first render; a malformed nonce can never reach the header (`EditorHeaders::is_valid_nonce`).
+
+`manifest.json` is limited to 4096 bytes and must be JSON version 1 with the exact filenames `editor.js` and `editor.css`, plus lowercase 64-character SHA-256 values `jsSha256` and `cssSha256`. Missing or malformed assets produce a friendly administrator notice and a generic unavailable message for other users; they never cause a PHP fatal error.
+
 ## Document REST API
 
 BWB-041 registers these working-stream routes under `blixis/v1`:

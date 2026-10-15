@@ -197,6 +197,8 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Build the editor bundle (the plugin serves it)
+        run: pnpm build:editor
       - name: Start WordPress and seed fixtures
         run: pnpm wp:start
       - name: Smoke test

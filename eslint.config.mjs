@@ -8,7 +8,17 @@ import prettier from 'eslint-config-prettier';
 import { builtinModules } from 'node:module';
 
 export default tseslint.config(
-  { ignores: ['**/node_modules/**', '**/dist/**', '**/coverage/**', '**/vendor/**', 'docs/**', 'pnpm-lock.yaml'] },
+  {
+    ignores: [
+      '**/node_modules/**',
+      '**/dist/**',
+      'wordpress/plugin/assets/editor/**',
+      '**/coverage/**',
+      '**/vendor/**',
+      'docs/**',
+      'pnpm-lock.yaml',
+    ],
+  },
   js.configs.recommended,
   {
     files: ['**/*.{js,mjs,cjs}'],

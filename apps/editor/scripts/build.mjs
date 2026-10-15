@@ -1,0 +1,170 @@
+// Builds dist/editor.js (esbuild), dist/editor.css (Tailwind v4 via @tailwindcss/node + @tailwindcss/oxide, like the
+// theme: no CLI, no Vite plugin) and dist/manifest.json. Deterministic: two runs produce identical bytes.
+import { createHash } from 'node:crypto';
+import { mkdir, readdir, readFile, writeFile, rm } from 'node:fs/promises';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { compile, optimize } from '@tailwindcss/node';
+import { Scanner } from '@tailwindcss/oxide';
+import { build as esbuild, context as esbuildContext } from 'esbuild';
+
+const root = dirname(dirname(fileURLToPath(import.meta.url)));
+const repo = dirname(dirname(root));
+
+const sha256 = (data) => createHash('sha256').update(data).digest('hex');
+
+const jsOptions = (outfile) => ({
+  entryPoints: [join(root, 'src/main.tsx')],
+  outfile,
+  bundle: true,
+  format: 'iife',
+  target: 'es2022',
+  platform: 'browser',
+  minify: true,
+  sourcemap: false,
+  legalComments: 'external',
+  metafile: true,
+  absWorkingDir: root,
+  jsx: 'automatic',
+  charset: 'ascii',
+  logLevel: 'warning',
+  define: { 'process.env.NODE_ENV': '"production"' },
+  tsconfig: join(root, 'tsconfig.json'),
+});
+
+export async function buildCss() {
+  const input = join(root, 'src/styles/editor.src.css');
+  const compiler = await compile(await readFile(input, 'utf8'), {
+    base: dirname(input),
+    from: input,
+    onDependency() {},
+  });
+  const scanner = new Scanner({
+    sources: [
+      { base: join(root, 'src'), pattern: '**/*.{ts,tsx}', negated: false },
+      { base: join(repo, 'packages/editor-ui/src'), pattern: '**/*.{ts,tsx}', negated: false },
+    ],
+  });
+  const css = compiler.build(scanner.scan());
+  return stripPropertiesFallback(optimize(css, { file: input, minify: true }).code);
+}
+
+/**
+ * Tailwind emits an `@layer properties` fallback whose selector is the universal `*` (for browsers without
+ * `@property`). It would style every element on the page, so it is removed; the `@property` rules that remain
+ * provide the initial values in every supported browser.
+ */
+export function stripPropertiesFallback(css) {
+  const start = css.indexOf('@layer properties{');
+  if (start === -1) return css;
+  let depth = 0;
+  for (let index = start; index < css.length; index++) {
+    if (css[index] === '{') depth++;
+    else if (css[index] === '}' && --depth === 0) return css.slice(0, start) + css.slice(index + 1);
+  }
+  throw new Error('unbalanced @layer properties block');
+}
+
+export async function buildEditor({ outDir = join(root, 'dist') } = {}) {
+  await rm(outDir, { recursive: true, force: true });
+  await mkdir(outDir, { recursive: true });
+  const result = await esbuild(jsOptions(join(outDir, 'editor.js')));
+  await writeNotice(outDir, result.metafile);
+  return writeAssets(outDir);
+}
+
+/** Package directory (…/node_modules/<name>) that a bundled input file belongs to, or null for first-party files. */
+function packageDirOf(input) {
+  const marker = 'node_modules/';
+  const at = input.lastIndexOf(marker);
+  if (at === -1) return null;
+  const rest = input.slice(at + marker.length).split('/');
+  const length = rest[0]?.startsWith('@') ? 2 : 1;
+  return input.slice(0, at + marker.length) + rest.slice(0, length).join('/');
+}
+
+/**
+ * Writes `NOTICE.txt`: every third-party package that is bundled into editor.js (taken from esbuild's metafile, so
+ * it is exactly what ships), with exact version, licence id and licence text (ADR 0008 section 4). Sorted, so the
+ * file is reproducible.
+ */
+async function writeNotice(outDir, metafile) {
+  const dirs = new Set();
+  for (const input of Object.keys(metafile.inputs)) {
+    const dir = packageDirOf(input);
+    if (dir !== null) dirs.add(dir);
+  }
+  const byId = new Map();
+  for (const dir of dirs) {
+    const manifest = JSON.parse(await readFile(resolve(root, dir, 'package.json'), 'utf8'));
+    const files = await readdir(resolve(root, dir));
+    const licenceFile = files.sort().find((name) => /^(licen[cs]e|copying)(\.|$)/i.test(name));
+    const text = licenceFile ? await readFile(resolve(root, dir, licenceFile), 'utf8') : null;
+    const licence = typeof manifest.license === 'string' ? manifest.license : manifest.license?.type;
+    if (!licence) throw new Error(`no licence id declared by ${manifest.name}`);
+    const repository = typeof manifest.repository === 'string' ? manifest.repository : manifest.repository?.url;
+    const fallback = `No licence file is shipped in the package. Declared licence: ${licence}.${repository ? ` Source: ${repository}` : ''}`;
+    byId.set(`${manifest.name}@${manifest.version}`, {
+      name: manifest.name,
+      version: manifest.version,
+      licence,
+      text: text === null ? fallback : text.replace(/\r\n/g, '\n').trim(),
+    });
+  }
+  const packages = [...byId.values()];
+  packages.sort((a, b) => (a.name === b.name ? a.version.localeCompare(b.version) : a.name.localeCompare(b.name)));
+  const sections = packages.map((p) => `${p.name}@${p.version}\nLicense: ${p.licence}\n\n${p.text}\n`);
+  const header =
+    'Third-party software bundled into editor.js (Blixis Blocks editor).\n' +
+    'Inline legal comments of the bundle are in editor.js.LEGAL.txt.\n';
+  await writeFile(join(outDir, 'NOTICE.txt'), `${[header, ...sections].join(`\n${'-'.repeat(72)}\n\n`)}`);
+}
+
+async function writeAssets(outDir) {
+  await writeFile(join(outDir, 'editor.css'), await buildCss());
+  const js = await readFile(join(outDir, 'editor.js'));
+  const css = await readFile(join(outDir, 'editor.css'));
+  const manifest = { version: 1, js: 'editor.js', css: 'editor.css', jsSha256: sha256(js), cssSha256: sha256(css) };
+  await writeFile(join(outDir, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
+  return manifest;
+}
+
+async function main() {
+  const args = process.argv.slice(2);
+  const outIndex = args.indexOf('--out');
+  const outDir = outIndex === -1 ? join(root, 'dist') : resolve(args[outIndex + 1] ?? '');
+  if (outIndex !== -1) args.splice(outIndex, 2);
+  const unknown = args.filter((a) => a !== '--watch' && a !== '--verify-reproducible');
+  if (unknown.length > 0) {
+    throw new Error(`Usage: build.mjs [--out dir] [--watch] [--verify-reproducible] (unknown: ${unknown.join(' ')})`);
+  }
+  if (args.includes('--watch')) {
+    const dist = outDir;
+    await mkdir(dist, { recursive: true });
+    const ctx = await esbuildContext({
+      ...jsOptions(join(dist, 'editor.js')),
+      plugins: [
+        {
+          name: 'assets',
+          setup: (b) =>
+            b.onEnd((result) =>
+              writeNotice(dist, result.metafile)
+                .then(() => writeAssets(dist))
+                .then(() => console.log('rebuilt')),
+            ),
+        },
+      ],
+    });
+    await ctx.watch();
+    return;
+  }
+  const first = await buildEditor({ outDir });
+  if (args.includes('--verify-reproducible')) {
+    const second = await buildEditor({ outDir });
+    if (JSON.stringify(first) !== JSON.stringify(second)) throw new Error('editor build is not reproducible');
+    console.log('editor build is reproducible');
+  }
+  console.log(JSON.stringify(first));
+}
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) await main();

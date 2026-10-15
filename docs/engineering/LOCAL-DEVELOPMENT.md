@@ -19,6 +19,9 @@ Docker (Docker Desktop, OrbStack or Docker Engine with Compose v2), Node 24 and 
 
 The site is at `http://127.0.0.1:8888` (override with `BLX_WP_PORT`). Administrator: `admin` / `password`. Fixture users for permission tests: `editor_ed`, `author_ann`, `contributor_con`, `subscriber_sub` (all with the password `password`). Fixture pages: `home` (front page), `about`, `contact`. These are development-only credentials; the stack binds to the loopback interface only and the database publishes no port. Never reuse them anywhere else.
 
+## Building the editor
+`pnpm build:editor` bundles the React editor (`apps/editor`) into `apps/editor/dist/` (`editor.js`, `editor.css`, `manifest.json`). `dist/` is git-ignored, so CI and `pnpm wp:smoke` must run `pnpm build:editor` first; `pnpm --filter @blixis/wp-editor run dev` rebuilds on change (a watch build, no dev server). Run `node apps/editor/scripts/build.mjs --verify-reproducible` to prove that two builds are byte-identical. See `docs/architecture/EDITOR.md`.
+
 ## Versions
 Defaults are the ADR 0001 floor: WordPress 7.0 on PHP 8.2, MariaDB 11.4, all pinned by image digest. Try other versions with environment variables, for example:
 

@@ -1,0 +1,385 @@
+/*
+ * Editor stylesheet source (BWB-049). Compiled by scripts/build.mjs with Tailwind v4 (no CLI, no Vite plugin).
+ * Everything ends up inside `@layer blx-editor` and under `.blx-editor`, so it can never restyle wp-admin or a
+ * website. Theme variables are declared with `inline` so no `:root` rules are emitted.
+ */
+@layer blx-editor;
+
+@theme inline {
+  --spacing: 0.25rem;
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1rem;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.25rem;
+  --text-lg: 1.125rem;
+  --text-lg--line-height: 1.75rem;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --color-ed-bg: var(--ed-bg);
+  --color-ed-fg: var(--ed-fg);
+  --color-ed-fg-muted: var(--ed-fg-muted);
+  --color-ed-surface-2: var(--ed-surface-2);
+  --color-ed-surface-hover: var(--ed-surface-hover);
+  --color-ed-border: var(--ed-border);
+  --color-ed-border-strong: var(--ed-border-strong);
+  --color-ed-selected: var(--ed-selected);
+  --color-ed-selected-fg: var(--ed-selected-fg);
+  --color-ed-primary: var(--ed-primary);
+  --color-ed-primary-fg: var(--ed-primary-fg);
+  --color-ed-primary-hover: var(--ed-primary-hover);
+  --color-ed-destructive: var(--ed-destructive);
+  --color-ed-destructive-fg: var(--ed-destructive-fg);
+  --color-ed-destructive-hover: var(--ed-destructive-hover);
+  --color-ed-overlay: var(--ed-overlay);
+  --color-ed-tooltip: var(--ed-tooltip);
+  --color-ed-tooltip-fg: var(--ed-tooltip-fg);
+}
+
+@layer blx-editor {
+  .blx-editor {
+    @tailwind utilities;
+
+    /* Chrome theme tokens. The pairs are checked for contrast in src/styles.test.ts. */
+    &[data-editor-theme='light'] {
+      color-scheme: light;
+      --ed-bg: #ffffff;
+      --ed-fg: #1d2327;
+      --ed-fg-muted: #50575e;
+      --ed-surface-2: #f0f0f1;
+      --ed-surface-hover: #e4e6e8;
+      --ed-border: #c3c4c7;
+      --ed-border-strong: #7c828a;
+      --ed-selected: #dbe4ff;
+      --ed-selected-fg: #1e3a8a;
+      --ed-selected-ring: #1d4ed8;
+      --ed-primary: #1d4ed8;
+      --ed-primary-fg: #ffffff;
+      --ed-primary-hover: #1e40af;
+      --ed-destructive: #b42318;
+      --ed-destructive-fg: #ffffff;
+      --ed-destructive-hover: #912018;
+      --ed-overlay: rgb(0 0 0 / 0.5);
+      --ed-tooltip: #1d2327;
+      --ed-tooltip-fg: #ffffff;
+      --ed-focus: #1d4ed8;
+      --ed-banner: #fff4d6;
+      --ed-banner-fg: #4a3500;
+    }
+
+    &[data-editor-theme='dark'] {
+      color-scheme: dark;
+      --ed-bg: #16181d;
+      --ed-fg: #e8eaed;
+      --ed-fg-muted: #a9afb7;
+      --ed-surface-2: #22252b;
+      --ed-surface-hover: #2e323a;
+      --ed-border: #3a3f47;
+      --ed-border-strong: #7d8590;
+      --ed-selected: #2a3a66;
+      --ed-selected-fg: #dbe4ff;
+      --ed-selected-ring: #7aa2ff;
+      --ed-primary: #7aa2ff;
+      --ed-primary-fg: #0b1220;
+      --ed-primary-hover: #9bb8ff;
+      --ed-destructive: #f97066;
+      --ed-destructive-fg: #1a0b0a;
+      --ed-destructive-hover: #fda29b;
+      --ed-overlay: rgb(0 0 0 / 0.65);
+      --ed-tooltip: #e8eaed;
+      --ed-tooltip-fg: #16181d;
+      --ed-focus: #7aa2ff;
+      --ed-banner: #3b2f0b;
+      --ed-banner-fg: #ffe9a8;
+    }
+
+    /* Scoped, minimal reset: nothing outside .blx-editor is touched. */
+    &,
+    & *,
+    & *::before,
+    & *::after {
+      box-sizing: border-box;
+    }
+
+    & {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      overflow: hidden;
+      background: var(--ed-bg);
+      color: var(--ed-fg);
+      font-family:
+        system-ui,
+        -apple-system,
+        'Segoe UI',
+        Roboto,
+        'Helvetica Neue',
+        Arial,
+        sans-serif;
+      font-size: 0.875rem;
+      line-height: 1.4;
+      text-align: start;
+    }
+
+    & :where(h1, h2, h3, p, ul, ol, dl, dd, figure) {
+      margin: 0;
+      padding: 0;
+    }
+    & :where(ul, ol) {
+      list-style: none;
+    }
+    & :where(button, input, select, textarea) {
+      font: inherit;
+      color: inherit;
+      margin: 0;
+    }
+    & :where(button) {
+      border: 0;
+      background: none;
+      cursor: pointer;
+    }
+    & :where(a) {
+      color: inherit;
+      text-decoration: none;
+    }
+    & [hidden] {
+      display: none !important;
+    }
+
+    /* Selected state is not conveyed by colour alone (WCAG 1.4.11): an inset 2px ring in --ed-selected-ring. */
+    button[aria-checked='true'],
+    button[aria-pressed='true'],
+    [role='tab'][aria-selected='true'] {
+      box-shadow: inset 0 0 0 2px var(--ed-selected-ring);
+    }
+
+    .ed-focus-ring:focus-visible,
+    .blx-skip:focus-visible,
+    .blx-main:focus-visible {
+      outline: 2px solid var(--ed-focus);
+      outline-offset: 2px;
+    }
+
+    .blx-skip {
+      position: absolute;
+      inset-block-start: 0.5rem;
+      inset-inline-start: 0.5rem;
+      z-index: 60;
+      padding: 0.5rem 0.75rem;
+      border-radius: 0.375rem;
+      background: var(--ed-primary);
+      color: var(--ed-primary-fg);
+      transform: translateY(-300%);
+    }
+    .blx-skip:focus {
+      transform: none;
+    }
+
+    .blx-header {
+      display: flex;
+      align-items: center;
+      min-block-size: 3rem;
+      padding-inline: 0.5rem;
+      border-block-end: 1px solid var(--ed-border);
+      background: var(--ed-bg);
+    }
+    .blx-header [role='toolbar'] {
+      flex: 1;
+      flex-wrap: wrap;
+      row-gap: 0.25rem;
+      padding-block: 0.25rem;
+    }
+    .blx-title {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      min-inline-size: 0;
+      max-inline-size: 20rem;
+      padding-inline: 0.5rem;
+    }
+    .blx-title-text {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-weight: 600;
+    }
+    .blx-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.125rem 0.5rem;
+      border: 1px solid var(--ed-border-strong);
+      border-radius: 999px;
+      font-size: 0.75rem;
+      white-space: nowrap;
+      color: var(--ed-fg-muted);
+    }
+    .blx-spacer {
+      flex: 1;
+    }
+
+    .blx-banner {
+      padding: 0.5rem 1rem;
+      background: var(--ed-banner);
+      color: var(--ed-banner-fg);
+      border-block-end: 1px solid var(--ed-border-strong);
+    }
+
+    .blx-body {
+      display: grid;
+      grid-template-columns: 16rem minmax(0, 1fr) 20rem;
+      min-block-size: 0;
+    }
+    .blx-body[data-left='closed'] {
+      grid-template-columns: 0 minmax(0, 1fr) 20rem;
+    }
+    .blx-body[data-right='closed'] {
+      grid-template-columns: 16rem minmax(0, 1fr) 0;
+    }
+    .blx-body[data-left='closed'][data-right='closed'] {
+      grid-template-columns: 0 minmax(0, 1fr) 0;
+    }
+    .blx-panel {
+      display: flex;
+      flex-direction: column;
+      min-inline-size: 0;
+      min-block-size: 0;
+      overflow: hidden;
+      background: var(--ed-bg);
+    }
+    /* Explicit columns: a hidden panel leaves the grid, and auto-placement would otherwise shift the canvas into the 0-width track. */
+    .blx-panel-left {
+      grid-column: 1;
+      border-inline-end: 1px solid var(--ed-border);
+    }
+    .blx-panel-right {
+      grid-column: 3;
+      border-inline-start: 1px solid var(--ed-border);
+    }
+    .blx-panel-title {
+      padding: 0.75rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      border-block-end: 1px solid var(--ed-border);
+    }
+    .blx-empty {
+      padding: 0.75rem;
+      color: var(--ed-fg-muted);
+    }
+    .blx-main {
+      grid-column: 2;
+      display: grid;
+      place-items: center;
+      min-inline-size: 0;
+      overflow: auto;
+      padding: 1.5rem;
+      background: var(--ed-surface-2);
+    }
+    .blx-canvas {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      inline-size: min(100%, 48rem);
+      padding: 3rem 1.5rem;
+      text-align: center;
+      border: 1px dashed var(--ed-border-strong);
+      border-radius: 0.5rem;
+      background: var(--ed-bg);
+    }
+    .blx-error {
+      display: grid;
+      place-items: center;
+      padding: 1.5rem;
+    }
+    .blx-error > div {
+      max-inline-size: 32rem;
+      padding: 1.5rem;
+      border: 1px solid var(--ed-border-strong);
+      border-radius: 0.5rem;
+    }
+    .blx-shortcuts {
+      display: grid;
+      grid-template-columns: max-content 1fr;
+      gap: 0.5rem 1rem;
+      align-items: center;
+    }
+    .blx-shortcuts dt {
+      display: flex;
+      gap: 0.25rem;
+    }
+    .blx-shortcuts-heading {
+      margin-block-end: 0.5rem;
+      font-weight: 600;
+    }
+
+    @media (max-width: 52rem) {
+      .blx-body,
+      .blx-body[data-left='closed'],
+      .blx-body[data-right='closed'] {
+        grid-template-columns: minmax(0, 1fr);
+      }
+      .blx-panel-left,
+      .blx-main,
+      .blx-panel-right {
+        grid-column: 1;
+      }
+      .blx-panel-left,
+      .blx-panel-right {
+        border-inline: 0;
+      }
+      /* Reflow (WCAG 1.4.10): panels stack, so the whole editor scrolls vertically instead of clipping. */
+      & {
+        overflow: auto;
+        grid-template-rows: auto auto;
+      }
+      .blx-body {
+        overflow: visible;
+        grid-template-rows: auto;
+        align-content: start;
+      }
+      .blx-panel-left,
+      .blx-panel-right {
+        min-block-size: 14rem;
+        overflow: visible;
+      }
+      .blx-main {
+        min-block-size: 18rem;
+      }
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      .ed-focus-ring,
+      .blx-skip {
+        transition:
+          background-color 120ms ease,
+          color 120ms ease;
+      }
+    }
+
+    @media (forced-colors: active) {
+      .ed-focus-ring:focus-visible,
+      .blx-skip:focus-visible,
+      .blx-main:focus-visible {
+        outline-color: Highlight;
+      }
+      .blx-chip,
+      .blx-canvas,
+      .blx-banner,
+      .blx-panel {
+        border-color: CanvasText;
+      }
+      [aria-checked='true'],
+      [aria-pressed='true'],
+      [aria-selected='true'] {
+        outline: 2px solid Highlight;
+        outline-offset: -2px;
+      }
+    }
+  }
+}
