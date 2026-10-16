@@ -50,6 +50,13 @@ const canvasOptions = (outfile) => ({
   tsconfig: join(root, 'tsconfig.json'),
 });
 
+const richtextOptions = (outfile) => ({
+  ...canvasOptions(outfile),
+  entryPoints: [join(root, 'src/canvas/richtext-entry.ts')],
+  globalName: 'BlixisRichText',
+  legalComments: 'external',
+});
+
 export async function buildCss() {
   const input = join(root, 'src/styles/editor.src.css');
   const compiler = await compile(await readFile(input, 'utf8'), {
@@ -88,7 +95,11 @@ export async function buildEditor({ outDir = join(root, 'dist') } = {}) {
   await mkdir(outDir, { recursive: true });
   const editor = await esbuild(jsOptions(join(outDir, 'editor.js')));
   const canvas = await esbuild(canvasOptions(join(outDir, 'canvas.js')));
-  await writeNotice(outDir, [editor.metafile, canvas.metafile]);
+  const richtext = await esbuild(richtextOptions(join(outDir, 'richtext.js')));
+  const { gzipSync } = await import('node:zlib');
+  const gzipBytes = gzipSync(await readFile(join(outDir, 'richtext.js')), { level: 9 }).byteLength;
+  if (gzipBytes >= 200_000) throw new Error(`richtext.js gzip budget exceeded: ${gzipBytes} bytes`);
+  await writeNotice(outDir, [editor.metafile, canvas.metafile, richtext.metafile]);
   return writeAssets(outDir);
 }
 
@@ -142,7 +153,7 @@ async function writeNotice(outDir, metafiles) {
     return `${p.name}@${p.version}\nLicense: ${p.licence}\n\n${p.text}${attribution}\n`;
   });
   const header =
-    'Third-party software bundled into editor.js and canvas.js (Blixis Blocks editor).\n' +
+    'Third-party software bundled into editor.js, canvas.js and richtext.js (Blixis Blocks editor).\n' +
     'Inline legal comments of the bundle are in editor.js.LEGAL.txt.\n';
   await writeFile(join(outDir, 'NOTICE.txt'), `${[header, ...sections].join(`\n${'-'.repeat(72)}\n\n`)}`);
 }
@@ -152,6 +163,7 @@ async function writeAssets(outDir) {
   const js = await readFile(join(outDir, 'editor.js'));
   const css = await readFile(join(outDir, 'editor.css'));
   const canvasJs = await readFile(join(outDir, 'canvas.js'));
+  const richtextJs = await readFile(join(outDir, 'richtext.js'));
   const manifest = {
     version: 1,
     js: 'editor.js',
@@ -160,6 +172,8 @@ async function writeAssets(outDir) {
     cssSha256: sha256(css),
     canvasJs: 'canvas.js',
     canvasJsSha256: sha256(canvasJs),
+    richtextJs: 'richtext.js',
+    richtextJsSha256: sha256(richtextJs),
   };
   await writeFile(join(outDir, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
   return manifest;
@@ -179,8 +193,9 @@ async function main() {
     await mkdir(dist, { recursive: true });
     const metafiles = {};
     const finish = () => {
-      if (metafiles.editor === undefined || metafiles.canvas === undefined) return Promise.resolve();
-      return writeNotice(dist, [metafiles.editor, metafiles.canvas])
+      if (metafiles.editor === undefined || metafiles.canvas === undefined || metafiles.richtext === undefined)
+        return Promise.resolve();
+      return writeNotice(dist, [metafiles.editor, metafiles.canvas, metafiles.richtext])
         .then(() => writeAssets(dist))
         .then(() => console.log('rebuilt'));
     };
@@ -201,6 +216,7 @@ async function main() {
     const contexts = [
       await watching('editor', jsOptions(join(dist, 'editor.js'))),
       await watching('canvas', canvasOptions(join(dist, 'canvas.js'))),
+      await watching('richtext', richtextOptions(join(dist, 'richtext.js'))),
     ];
     await Promise.all(contexts.map((ctx) => ctx.watch()));
     return;

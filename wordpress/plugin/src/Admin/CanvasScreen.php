@@ -179,7 +179,7 @@ final class CanvasScreen {
 					'cspNonce' => $nonce,
 				]
 			)
-		) . '">' . $theme_styles . ( '' !== $font_faces ? '<style class="wp-fonts-local" nonce="' . \esc_attr( $nonce ) . '">' . $font_faces . '</style>' : '' ) . '<style nonce="' . \esc_attr( $nonce ) . '">' . $tokens . '</style></head><body class="' . $body_classes . '">' . $shell['open'] . '<div class="entry-content">' . $document . '</div>' . $shell['close'] . '<script src="' . \esc_url( $canvas_url ) . '" nonce="' . \esc_attr( $nonce ) . '" defer></script></body></html>'; // phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedScript -- Standalone document includes only its explicit trusted runtime.
+		) . '">' . $theme_styles . ( '' !== $font_faces ? '<style class="wp-fonts-local" nonce="' . \esc_attr( $nonce ) . '">' . $font_faces . '</style>' : '' ) . '<style nonce="' . \esc_attr( $nonce ) . '">' . $tokens . '</style></head><body class="' . $body_classes . '">' . $shell['open'] . '<div class="entry-content">' . $document . '</div>' . $shell['close'] . '<script data-blx-canvas src="' . \esc_url( $canvas_url ) . '" nonce="' . \esc_attr( $nonce ) . '" defer></script></body></html>'; // phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedScript -- Standalone document includes only its explicit trusted runtime.
 	}
 
 	/**

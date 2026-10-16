@@ -35,7 +35,8 @@
         "assets/editor/manifest.json",
         "assets/editor/NOTICE.txt",
         "assets/editor/editor.js.LEGAL.txt",
-        "assets/editor/canvas.js"
+        "assets/editor/canvas.js",
+        "assets/editor/richtext.js"
       ],
       "tier": "free",
       "identity": "Plugin Name"

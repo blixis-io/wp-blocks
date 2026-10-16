@@ -1,5 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
+import { gzipSync } from 'node:zlib';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -280,7 +281,15 @@ describe('editor build', () => {
   it('scopes every CSS rule and is reproducible, with a matching manifest', { timeout: 120_000 }, () => {
     const a = build();
     const b = build();
-    for (const file of ['editor.js', 'canvas.js', 'editor.css', 'manifest.json', 'editor.js.LEGAL.txt', 'NOTICE.txt']) {
+    for (const file of [
+      'editor.js',
+      'canvas.js',
+      'richtext.js',
+      'editor.css',
+      'manifest.json',
+      'editor.js.LEGAL.txt',
+      'NOTICE.txt',
+    ]) {
       expect(readFileSync(join(a, file)).equals(readFileSync(join(b, file)))).toBe(true);
     }
     const css = readFileSync(join(a, 'editor.css'), 'utf8');
@@ -299,6 +308,8 @@ describe('editor build', () => {
       cssSha256: sha('editor.css'),
       canvasJs: 'canvas.js',
       canvasJsSha256: sha('canvas.js'),
+      richtextJs: 'richtext.js',
+      richtextJsSha256: sha('richtext.js'),
     });
     expect(Object.keys(manifest)).toEqual([
       'version',
@@ -308,6 +319,8 @@ describe('editor build', () => {
       'cssSha256',
       'canvasJs',
       'canvasJsSha256',
+      'richtextJs',
+      'richtextJsSha256',
     ]);
     // The canvas runtime is the only script inside the preview iframe: plain TypeScript, no React, no dynamic code.
     const canvas = readFileSync(join(a, 'canvas.js'), 'utf8');
@@ -320,6 +333,12 @@ describe('editor build', () => {
     expect(canvas).not.toMatch(/document\.cookie|localStorage|sessionStorage|indexedDB/);
     expect(canvas).not.toMatch(/location\.assign|location\.replace|window\.open/);
     expect(canvas).toContain('blx-canvas-hello');
+    const richtext = readFileSync(join(a, 'richtext.js'), 'utf8');
+    expect(richtext).toContain('blx-richtext-root');
+    expect(richtext).not.toMatch(
+      /\beval\s*\(|new\s+Function|document\.write|localStorage|sessionStorage|indexedDB|fetch\s*\(|XMLHttpRequest|WebSocket|window\.open/,
+    );
+    expect(gzipSync(readFileSync(join(a, 'richtext.js'))).byteLength).toBeLessThan(200_000);
     const js = readFileSync(join(a, 'editor.js'), 'utf8');
     expect(js).not.toMatch(/sourceMappingURL/);
     expect(js).not.toMatch(/gsap/i);
@@ -333,6 +352,9 @@ describe('editor build', () => {
       ['class-variance-authority', 'Apache-2.0'],
       ['@iconify-icons/solar', 'CC-BY-4.0'],
       ['@radix-ui/react-direction', 'MIT'],
+      ['@tiptap/core', 'MIT'],
+      ['@tiptap/pm', 'MIT'],
+      ['prosemirror-history', 'MIT'],
     ] as const) {
       expect(notice).toMatch(new RegExp(`^${name}@\\d+\\.\\d+\\.\\d+\\nLicense: ${licence}\\n`, 'm'));
     }

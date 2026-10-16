@@ -18,16 +18,19 @@ import {
   type PostTarget,
 } from '@blixis/wp-canvas-bridge';
 import { checkHtml, isCssSafe } from './guards';
+import { isSafeCanvasUrl } from '@blixis/wp-canvas-bridge';
 
 export const ROOT_ID = 'blx-canvas-root';
 export const META_NAME = 'blixis-canvas';
 export const SELECTED_ATTRIBUTE = 'data-blx-selected';
 export const HOVER_ATTRIBUTE = 'data-blx-hover';
+const canvasScriptAtStart =
+  typeof document === 'undefined' ? null : (document.currentScript as HTMLScriptElement | null);
 const MAX_META_LENGTH = 1024;
 const NONCE_PATTERN = /^[A-Za-z0-9+/_=-]{16,64}$/;
 
 /** Selection and hover are drawn by this stylesheet (a nonce'd `<style>`), never by inline styles. */
-const CHROME_CSS = `[${HOVER_ATTRIBUTE}]{outline:2px dashed #2563ebaa!important;outline-offset:-2px!important}a,area,button,input,textarea,select,summary,[role="button"],[tabindex]{cursor:default!important}`;
+const CHROME_CSS = `[${HOVER_ATTRIBUTE}]{outline:2px dashed #2563ebaa!important;outline-offset:-2px!important}a,area,button,input,textarea,select,summary,[role="button"],[tabindex]{cursor:default!important}/* Base rules Tiptap would inject as an un-nonced <style>, which the canvas CSP blocks (injectCSS is off). */.ProseMirror{position:relative;word-wrap:break-word;white-space:pre-wrap;white-space:break-spaces;font-variant-ligatures:none;font-feature-settings:"liga" 0;outline:none}.ProseMirror p{margin:0}.ProseMirror-hideselection *::selection{background:transparent}`;
 
 export interface CanvasMeta {
   version: 1;
@@ -103,6 +106,54 @@ export function startRuntime(env: RuntimeEnv = { document, window }): Runtime | 
   let closed = false;
   let observer: ResizeObserver | null = null;
   let lastSize = '';
+  // The lazy bundle is loaded as a separately compiled IIFE; its narrow runtime surface is verified after the load event.
+  /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument */
+  let activeEdit: {
+    id: string;
+    prop: string;
+    initial: unknown;
+    element: HTMLElement;
+    editor: any;
+    destroy(): void;
+  } | null = null;
+  let richTextLoading: Promise<
+    ((element: HTMLElement, value: unknown, host: Record<string, unknown>) => { editor: any; destroy(): void }) | null
+  > | null = null;
+  const ensureRichText = (): Promise<
+    ((element: HTMLElement, value: unknown, host: Record<string, unknown>) => { editor: any; destroy(): void }) | null
+  > => {
+    if (richTextLoading) return richTextLoading;
+    richTextLoading = new Promise((resolve) => {
+      const current = canvasScriptAtStart ?? doc.querySelector<HTMLScriptElement>('script[data-blx-canvas]');
+      if (!current?.nonce) {
+        resolve(null);
+        return;
+      }
+      const url = new URL(current.src, doc.baseURI);
+      if (url.origin !== win.location.origin) {
+        resolve(null);
+        return;
+      }
+      url.pathname = url.pathname.replace(/canvas\.js$/, 'richtext.js');
+      if (!url.pathname.endsWith('richtext.js')) {
+        resolve(null);
+        return;
+      }
+      const version = url.searchParams.get('ver');
+      if (version) url.searchParams.set('ver', version);
+      const script = doc.createElement('script');
+      script.src = url.href;
+      script.nonce = current.nonce;
+      script.onload = () => {
+        resolve((win as any).BlixisRichText?.mountRichText ?? null);
+      };
+      script.onerror = () => {
+        resolve(null);
+      };
+      doc.head.appendChild(script);
+    });
+    return richTextLoading;
+  };
   let hoverWanted: string | null = null;
   let hoverSent: string | null = null;
   let hoverTimer: ReturnType<typeof setTimeout> | null = null;
@@ -215,11 +266,41 @@ export function startRuntime(env: RuntimeEnv = { document, window }): Runtime | 
     }
   };
 
+  const activeTokenIds = (): ReadonlySet<string> => {
+    const tokens = new Set<string>();
+    const pattern = /\.blx-m(?:c|h)-([a-z][a-z0-9]*(?:-[a-z0-9]+)*)/g;
+    for (const sheet of Array.from(doc.styleSheets)) {
+      try {
+        for (const rule of Array.from(sheet.cssRules)) {
+          let match: RegExpExecArray | null;
+          pattern.lastIndex = 0;
+          while ((match = pattern.exec(rule.cssText)) !== null) if (match[1]) tokens.add(match[1]);
+        }
+      } catch {
+        // Cross-origin theme styles cannot reveal token ids; local model conversion still enforces token id syntax.
+      }
+    }
+    return tokens;
+  };
+
   const onMessage = (message: ParentMessage): void => {
     if (closed) return;
     switch (message.type) {
       case 'render':
+        if (activeEdit !== null) {
+          deferredRender = { html: message.html, css: message.css, revision: message.revision };
+          break;
+        }
         render(message.html, message.css, message.revision);
+        break;
+      case 'edit-start':
+        void startEdit(message);
+        break;
+      case 'edit-command':
+        runEditCommand(message.name, message.args);
+        break;
+      case 'edit-end':
+        finishEdit(message.commit ? 'commit' : 'cancel');
         break;
       case 'viewport':
         root.setAttribute('data-blx-breakpoint', message.breakpoint);
@@ -231,7 +312,7 @@ export function startRuntime(env: RuntimeEnv = { document, window }): Runtime | 
         break;
       case 'hover':
         hoveredId = message.id;
-        mark(HOVER_ATTRIBUTE, hoveredId);
+        mark(HOVER_ATTRIBUTE, activeEdit === null ? hoveredId : null);
         break;
       case 'scroll-to':
         root.querySelector(`[data-blx-id="${message.id}"]`)?.scrollIntoView({ block: 'center', inline: 'nearest' });
@@ -245,6 +326,79 @@ export function startRuntime(env: RuntimeEnv = { document, window }): Runtime | 
         break;
     }
   };
+
+  let deferredRender: { html: string; css: string; revision: number } | null = null;
+  const finishEdit = (reason: 'commit' | 'cancel') => {
+    if (activeEdit === null) return;
+    const session = activeEdit;
+    activeEdit = null;
+    session.destroy();
+    mark(HOVER_ATTRIBUTE, hoveredId);
+    send({ type: 'edit-ended', id: session.id, reason });
+    if (deferredRender) {
+      const pending = deferredRender;
+      deferredRender = null;
+      render(pending.html, pending.css, pending.revision);
+    }
+  };
+  const startEdit = async (message: Extract<ParentMessage, { type: 'edit-start' }>) => {
+    if (activeEdit !== null) {
+      send({ type: 'edit-error', code: 'session-active' });
+      return;
+    }
+    const element = root.querySelector<HTMLElement>(`[data-blx-id="${message.id}"]`);
+    if (!element) {
+      send({ type: 'edit-error', code: 'target-missing' });
+      return;
+    }
+    const mount = await ensureRichText();
+    if (!mount) {
+      send({ type: 'edit-error', code: 'load-failed' });
+      return;
+    }
+    if (closed) return;
+    const session = mount(element, message.value, {
+      multiline: message.mode === 'inline',
+      onChange: (value: unknown) => {
+        send({ type: 'edit-change', id: message.id, prop: message.prop, value });
+      },
+      onSelection: (value: any) => {
+        send({
+          type: 'edit-selection',
+          id: message.id,
+          empty: value.empty,
+          marks: value.marks,
+          text: value.text,
+          rect: value.rect,
+        });
+      },
+      onEnd: (reason: 'commit' | 'cancel') => {
+        finishEdit(reason);
+      },
+      tokens: activeTokenIds(),
+    });
+    activeEdit = { id: message.id, prop: message.prop, initial: message.value, element, ...session };
+    mark(HOVER_ATTRIBUTE, null);
+    send({ type: 'edit-ready', id: message.id, prop: message.prop });
+  };
+  const runEditCommand = (name: string, args?: Record<string, unknown>) => {
+    const editor = activeEdit?.editor;
+    if (!editor) return;
+    const commands = editor.commands;
+    if (name === 'select-all') commands.selectAll?.();
+    else if (name === 'clear-marks') commands.unsetAllMarks?.();
+    else if (
+      name === 'toggle-mark' &&
+      typeof args?.['mark'] === 'string' &&
+      ['bold', 'italic', 'underline', 'strike', 'code'].includes(args['mark'])
+    )
+      commands.toggleMark?.(args['mark']);
+    else if (name === 'clear-link') commands.unsetMark?.('link');
+    else if (name === 'set-link' && typeof args?.['href'] === 'string' && isSafeCanvasUrl(args['href']))
+      commands.setMark?.('link', { href: args['href'], ...(args['newTab'] === true ? { target: '_blank' } : {}) });
+    else if (name === 'set-style' && args) commands.setMark?.('blxStyle', args);
+  };
+  /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument */
 
   const onInit = (init: Init): void => {
     setAppearance(init.mode);
@@ -308,6 +462,7 @@ export function startRuntime(env: RuntimeEnv = { document, window }): Runtime | 
     stop(event);
   };
   const onKeyboard = (event: KeyboardEvent): void => {
+    if (activeEdit?.element.contains(event.target as Node)) return;
     const editable = closestElement(event.target, 'input,textarea,select,option,[contenteditable="true"]');
     const activation =
       (event.key === 'Enter' || event.key === ' ') && closestElement(event.target, ACTIVATABLE) !== null;
@@ -317,9 +472,27 @@ export function startRuntime(env: RuntimeEnv = { document, window }): Runtime | 
     }
   };
   const onPointerActivation = (event: Event): void => {
+    if (
+      activeEdit?.element.contains(event.target as Node) &&
+      ['pointerdown', 'mousedown', 'touchstart'].includes(event.type)
+    )
+      return;
+    if (activeEdit && !activeEdit.element.contains(event.target as Node)) finishEdit('commit');
     if (closestElement(event.target, INTERACTIVE) !== null) stop(event, event.type !== 'touchstart');
   };
+  const onEditOutside = (event: Event): void => {
+    if (activeEdit !== null && !activeEdit.element.contains(event.target as Node)) finishEdit('commit');
+  };
   const onControlAction = (event: Event): void => {
+    if (event.type === 'dblclick') {
+      const holder = closestElement(event.target, '[data-blx-id]');
+      const id = holder?.getAttribute('data-blx-id');
+      if (id && isElementId(id) && root.contains(holder)) {
+        stop(event);
+        send({ type: 'edit-request', id });
+        return;
+      }
+    }
     const selector =
       event.type === 'dblclick'
         ? INTERACTIVE
@@ -347,6 +520,7 @@ export function startRuntime(env: RuntimeEnv = { document, window }): Runtime | 
     }, wait);
   };
   const onPointerOver = (event: Event): void => {
+    if (activeEdit !== null) return;
     const holder = closestElement(event.target, '[data-blx-id]');
     const id = holder?.getAttribute('data-blx-id');
     queueHover(id !== null && id !== undefined && isElementId(id) && root.contains(holder) ? id : null);
@@ -368,6 +542,7 @@ export function startRuntime(env: RuntimeEnv = { document, window }): Runtime | 
   for (const type of ['pointerdown', 'mousedown', 'dragstart', 'drop', 'touchstart']) {
     doc.addEventListener(type, onPointerActivation, true);
   }
+  doc.addEventListener('pointerdown', onEditOutside, true);
   for (const type of ['dblclick', 'change', 'input', 'toggle', 'play'])
     doc.addEventListener(type, onControlAction, true);
   doc.addEventListener('pointerover', onPointerOver, true);
@@ -377,6 +552,8 @@ export function startRuntime(env: RuntimeEnv = { document, window }): Runtime | 
   function close(): void {
     if (closed) return;
     closed = true;
+    activeEdit?.destroy();
+    activeEdit = null;
     doc.removeEventListener('click', onClick, true);
     doc.removeEventListener('auxclick', onAuxClick, true);
     doc.removeEventListener('contextmenu', onContextMenu, true);
@@ -387,6 +564,7 @@ export function startRuntime(env: RuntimeEnv = { document, window }): Runtime | 
     for (const type of ['pointerdown', 'mousedown', 'dragstart', 'drop', 'touchstart']) {
       doc.removeEventListener(type, onPointerActivation, true);
     }
+    doc.removeEventListener('pointerdown', onEditOutside, true);
     for (const type of ['dblclick', 'change', 'input', 'toggle', 'play'])
       doc.removeEventListener(type, onControlAction, true);
     doc.removeEventListener('pointerover', onPointerOver, true);

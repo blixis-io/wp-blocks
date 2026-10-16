@@ -1,12 +1,27 @@
 import { describe, expect, it } from 'vitest';
 import { ID_PATTERN } from '@blixis/wp-core';
+import { isSafeUrl } from '@blixis/wp-core';
 import { CANVAS_ERROR_CODES, ELEMENT_ID_PATTERN, LIMITS } from './limits.ts';
 import { isElementId, parseCanvasMessage, parseParentMessage } from './messages.ts';
+import { isSafeCanvasUrl } from './safe-url.ts';
 
 const ID = 'el-heading-1';
 const ok = (result: { ok: boolean }) => result.ok;
 
 describe('element ids', () => {
+  it('keeps the iframe URL copy in parity with the canonical core rule', () => {
+    for (const value of [
+      '',
+      '/about',
+      'https://example.test',
+      'mailto:a@example.test',
+      '//evil.test',
+      'javascript:alert(1)',
+      '/a b',
+      'https://x.test/&#106;',
+    ])
+      expect(isSafeCanvasUrl(value)).toBe(isSafeUrl(value));
+  });
   it('use exactly the pattern of core', () => {
     expect(ELEMENT_ID_PATTERN).toBe(ID_PATTERN);
   });
@@ -54,6 +69,18 @@ describe('parent -> canvas messages', () => {
     { type: 'request-rects', revision: 0 },
     { type: 'request-rects', revision: Number.MAX_SAFE_INTEGER },
     { type: 'ping', n: 0 },
+    {
+      type: 'edit-start',
+      id: ID,
+      prop: 'text',
+      value: 'hi',
+      editable: true,
+      mode: 'single-line',
+      locale: 'en_US',
+      dir: 'ltr',
+    },
+    { type: 'edit-command', name: 'toggle-mark', args: { mark: 'bold' } },
+    { type: 'edit-end', commit: true },
   ];
   it.each(valid.map((m) => [(m as { type: string }).type, m]))('accepts a valid %s', (_name, message) => {
     const result = parseParentMessage(message);
@@ -218,6 +245,19 @@ describe('canvas -> parent messages', () => {
     { type: 'rects', revision: 1, items: [rect, { ...rect, x: 12.5, y: 0.25 }] },
     ...CANVAS_ERROR_CODES.map((code) => ({ type: 'error', code })),
     { type: 'pong', n: 9 },
+    { type: 'edit-request', id: ID },
+    { type: 'edit-ready', id: ID, prop: 'text' },
+    { type: 'edit-change', id: ID, prop: 'text', value: { v: 1, inline: [{ t: 'text', s: 'ok' }] } },
+    {
+      type: 'edit-selection',
+      id: ID,
+      empty: false,
+      marks: { strong: true },
+      text: 'ok',
+      rect: { x: 0, y: 0, w: 1, h: 2 },
+    },
+    { type: 'edit-ended', id: ID, reason: 'commit' },
+    { type: 'edit-error', code: 'load-failed' },
   ];
   it.each(valid.map((m, i) => [`${(m as { type: string }).type} #${String(i)}`, m]))('accepts %s', (_name, message) => {
     expect(parseCanvasMessage(message).ok).toBe(true);
@@ -230,6 +270,19 @@ describe('canvas -> parent messages', () => {
       ok: false,
       reason: 'too-large',
     });
+  });
+  it('rejects oversized edit values, invalid ids and long selected text', () => {
+    expect(parseCanvasMessage({ type: 'edit-change', id: ID, prop: 'text', value: 'x'.repeat(20_001) }).ok).toBe(false);
+    expect(parseCanvasMessage({ type: 'edit-change', id: 'bad]', prop: 'text', value: 'x' }).ok).toBe(false);
+    expect(
+      parseCanvasMessage({ type: 'edit-selection', id: ID, empty: false, marks: {}, text: 'x'.repeat(201) }).ok,
+    ).toBe(false);
+    expect(
+      parseParentMessage({ type: 'edit-command', name: 'set-link', args: { href: 'javascript:alert(1)' } }).ok,
+    ).toBe(false);
+    expect(
+      parseCanvasMessage({ type: 'edit-selection', id: ID, empty: true, marks: { onclick: 'alert(1)' }, text: '' }).ok,
+    ).toBe(false);
   });
 
   const invalid: [string, unknown][] = [

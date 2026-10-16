@@ -216,6 +216,83 @@ describe('meta and startup', () => {
   });
 });
 
+describe('lazy rich text asset loading', () => {
+  it('loads the same-origin sibling once with the canvas nonce on the first edit', async () => {
+    const script = document.createElement('script');
+    script.src = `${window.location.origin}/wp/canvas.js?ver=manifest-hash`;
+    script.nonce = NONCE;
+    script.setAttribute('data-blx-canvas', '');
+    document.head.append(script);
+    const h = begin();
+    render(h, PAGE);
+    h.deliver({
+      type: 'edit-start',
+      id: 'el-heading-1',
+      prop: 'text',
+      value: 'Hello',
+      editable: true,
+      mode: 'single-line',
+      locale: 'en_US',
+      dir: 'ltr',
+    });
+    await Promise.resolve();
+    const lazy = document.querySelector<HTMLScriptElement>('script[src*="richtext.js"]');
+    expect(lazy?.src).toBe(`${window.location.origin}/wp/richtext.js?ver=manifest-hash`);
+    expect(lazy?.nonce).toBe(NONCE);
+    Object.defineProperty(window, 'BlixisRichText', {
+      value: { mountRichText: vi.fn(() => ({ editor: {}, destroy: vi.fn() })) },
+      configurable: true,
+    });
+    lazy?.dispatchEvent(new Event('load'));
+    await Promise.resolve();
+    expect(h.sent.some((message) => message.type === 'edit-ready')).toBe(true);
+    expect(document.querySelectorAll('script[src*="richtext.js"]')).toHaveLength(1);
+  });
+  it('refuses loading without a nonce', async () => {
+    const script = document.createElement('script');
+    script.src = 'https://localhost/wp/canvas.js';
+    script.setAttribute('data-blx-canvas', '');
+    document.head.append(script);
+    const h = begin();
+    render(h, PAGE);
+    h.deliver({
+      type: 'edit-start',
+      id: 'el-heading-1',
+      prop: 'text',
+      value: 'Hello',
+      editable: true,
+      mode: 'single-line',
+      locale: 'en_US',
+      dir: 'ltr',
+    });
+    await Promise.resolve();
+    expect(document.querySelector('script[src*="richtext.js"]')).toBeNull();
+    expect(h.sent).toContainEqual({ type: 'edit-error', code: 'load-failed' });
+  });
+  it('refuses a cross-origin canvas script URL', async () => {
+    const script = document.createElement('script');
+    script.src = 'https://evil.test/canvas.js';
+    script.nonce = NONCE;
+    script.setAttribute('data-blx-canvas', '');
+    document.head.append(script);
+    const h = begin();
+    render(h, PAGE);
+    h.deliver({
+      type: 'edit-start',
+      id: 'el-heading-1',
+      prop: 'text',
+      value: 'Hello',
+      editable: true,
+      mode: 'single-line',
+      locale: 'en_US',
+      dir: 'ltr',
+    });
+    await Promise.resolve();
+    expect(document.querySelector('script[src*="richtext.js"]')).toBeNull();
+    expect(h.sent).toContainEqual({ type: 'edit-error', code: 'load-failed' });
+  });
+});
+
 describe('render', () => {
   it('inserts the fragment into the root, the css into one nonce style, and reports rendered', () => {
     const h = begin();

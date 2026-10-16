@@ -1778,6 +1778,121 @@ try {
   await ev(
     `(() => { const doc = document.querySelector('main iframe').contentDocument; doc.body.querySelectorAll('script, img').forEach((el) => el.remove()); })()`,
   );
+  // Rich text editing (BWB-135 stage 2A): a double click mounts the lazily loaded Tiptap engine inside the heading.
+  await nav(editorUrl, 3000);
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    const ready = await frameInfo();
+    if (ready.found && ready.elements > 0) break;
+    await sleep(250);
+  }
+  const modifier = (await ev(`/Mac|iPhone|iPad/.test(navigator.platform)`)) ? 4 : 2;
+  const headingPoint = async () =>
+    ev(
+      `(() => { const f = document.querySelector('main iframe'); const h = f.contentDocument.querySelector('[data-blx-id="hero-h1"]'); const r = h.getBoundingClientRect(); const fr = f.getBoundingClientRect(); return { x: fr.left + r.left + r.width / 2, y: fr.top + r.top + r.height / 2 }; })()`,
+    );
+  const doubleClickHeading = async () => {
+    const point = await headingPoint();
+    for (const count of [1, 2]) {
+      await send('Input.dispatchMouseEvent', {
+        type: 'mousePressed',
+        x: point.x,
+        y: point.y,
+        button: 'left',
+        clickCount: count,
+      });
+      await send('Input.dispatchMouseEvent', {
+        type: 'mouseReleased',
+        x: point.x,
+        y: point.y,
+        button: 'left',
+        clickCount: count,
+      });
+    }
+    await sleep(2500);
+  };
+  const headingEditable = () =>
+    ev(
+      `!!document.querySelector('main iframe').contentDocument.querySelector('[data-blx-id="hero-h1"] [contenteditable="true"]')`,
+    );
+  const chord = async (key, code, keyCode) => {
+    await send('Input.dispatchKeyEvent', {
+      type: 'keyDown',
+      key,
+      code,
+      modifiers: modifier,
+      windowsVirtualKeyCode: keyCode,
+    });
+    await send('Input.dispatchKeyEvent', {
+      type: 'keyUp',
+      key,
+      code,
+      modifiers: modifier,
+      windowsVirtualKeyCode: keyCode,
+    });
+  };
+  const headingText = () =>
+    ev(
+      `document.querySelector('main iframe').contentDocument.querySelector('[data-blx-id="hero-h1"]')?.textContent.trim()`,
+    );
+  const originalHeading = await headingText();
+  const richProblemsBefore = problems.length;
+  await doubleClickHeading();
+  assert.equal(await headingEditable(), true, 'a double click starts an inline edit session in the heading');
+  const richScripts = await ev(
+    `[...document.querySelector('main iframe').contentDocument.querySelectorAll('script[src*="richtext.js"]')].map((script) => script.nonce !== '')`,
+  );
+  assert.deepEqual(richScripts, [true], 'the editor script is loaded exactly once, with the per-response nonce');
+  const richProblems = problems
+    .slice(richProblemsBefore)
+    .filter(
+      (entry) => !/Executing inline (script|event handler) violates the following Content Security Policy/.test(entry),
+    );
+  assert.deepEqual(richProblems, [], 'loading the editor script causes no CSP violation or console error');
+  // Escape cancels and restores the original content.
+  await chord('a', 'KeyA', 65);
+  await send('Input.insertText', { text: 'Cancelled heading text' });
+  await sleep(300);
+  await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 });
+  await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 });
+  await sleep(1500);
+  assert.equal(await headingEditable(), false, 'Escape ends the edit session');
+  assert.equal(await headingText(), originalHeading, 'Escape discards the typed changes');
+  // Type, bold the selection, and end the session by selecting another element: one coalesced undo step.
+  await doubleClickHeading();
+  await chord('a', 'KeyA', 65);
+  await send('Input.insertText', { text: 'Rich heading text' });
+  await sleep(300);
+  await chord('a', 'KeyA', 65);
+  await chord('b', 'KeyB', 66);
+  await sleep(600);
+  assert.equal(
+    await ev(
+      `!!document.querySelector('main iframe').contentDocument.querySelector('[data-blx-id="hero-h1"] [contenteditable] strong')`,
+    ),
+    true,
+    'the bold shortcut wraps the selection in a strong mark inside the editor',
+  );
+  await ev(
+    `[...document.querySelectorAll('nav[aria-label="Structure"] [role="treeitem"]')].find((row) => row.dataset.id === 'hero-txt')?.click()`,
+  );
+  await sleep(2500);
+  assert.equal(await headingEditable(), false, 'selecting another element ends the edit session');
+  assert.equal(
+    await ev(
+      `document.querySelector('main iframe').contentDocument.querySelector('[data-blx-id="hero-h1"] strong')?.textContent`,
+    ),
+    'Rich heading text',
+    'the committed rich value renders a strong element in the canvas preview',
+  );
+  assert.equal(await headingText(), 'Rich heading text', 'the committed text replaces the heading');
+  await ev(`document.querySelector('button[aria-label="Undo"]')?.click()`);
+  await sleep(2000);
+  assert.equal(await headingText(), originalHeading, 'one Undo restores the heading after the whole edit session');
+  assert.equal(
+    await ev(`!!document.querySelector('main iframe').contentDocument.querySelector('[data-blx-id="hero-h1"] strong')`),
+    false,
+    'Undo also removes the bold mark',
+  );
   const wrong = apiResponses.filter((entry) => entry.status !== 200);
   assert.ok(
     apiResponses.length >= 3 && wrong.length === 0,

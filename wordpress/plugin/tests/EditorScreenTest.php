@@ -245,49 +245,57 @@ final class EditorScreenTest extends TestCase {
 		\file_put_contents( $directory . '/editor.js', 'bundle' );
 		\file_put_contents( $directory . '/editor.css', 'bundle' );
 		\file_put_contents( $directory . '/canvas.js', 'bundle' );
+		\file_put_contents( $directory . '/richtext.js', 'bundle' );
 		\file_put_contents(
 			$path,
 			\json_encode(
 				[
-					'version'        => 1,
-					'js'             => 'editor.js',
-					'css'            => 'editor.css',
-					'jsSha256'       => $hash,
-					'cssSha256'      => $hash,
-					'canvasJs'       => 'canvas.js',
-					'canvasJsSha256' => $hash,
+					'version'          => 1,
+					'js'               => 'editor.js',
+					'css'              => 'editor.css',
+					'jsSha256'         => $hash,
+					'cssSha256'        => $hash,
+					'canvasJs'         => 'canvas.js',
+					'canvasJsSha256'   => $hash,
+					'richtextJs'       => 'richtext.js',
+					'richtextJsSha256' => $hash,
 				]
 			)
 		);
 		$this->assertSame(
 			[
-				'js_url'     => 'https://example.test/assets/editor/editor.js',
-				'css_url'    => 'https://example.test/assets/editor/editor.css',
-				'canvas_url' => 'https://example.test/assets/editor/canvas.js',
-				'version'    => $hash . '.' . $hash . '.' . $hash,
+				'js_url'       => 'https://example.test/assets/editor/editor.js',
+				'css_url'      => 'https://example.test/assets/editor/editor.css',
+				'canvas_url'   => 'https://example.test/assets/editor/canvas.js',
+				'richtext_url' => 'https://example.test/assets/editor/richtext.js',
+				'version'      => $hash . '.' . $hash . '.' . $hash . '.' . $hash,
 			],
 			EditorAssets::from_manifest( $path, 'https://example.test/assets/editor' )
 		);
 		foreach ( [ [ 'version' => 2 ], [ 'js' => '../editor.js' ], [ 'canvasJs' => 'other.js' ], [ 'cssSha256' => 'not-hex' ], [ 'canvasJsSha256' => 'NOT-HEX' ], [ 'extra' => true ], [ 'canvasJs' => null ] ] as $override ) {
 			$valid = [
-				'version'        => 1,
-				'js'             => 'editor.js',
-				'css'            => 'editor.css',
-				'jsSha256'       => $hash,
-				'cssSha256'      => $hash,
-				'canvasJs'       => 'canvas.js',
-				'canvasJsSha256' => $hash,
+				'version'          => 1,
+				'js'               => 'editor.js',
+				'css'              => 'editor.css',
+				'jsSha256'         => $hash,
+				'cssSha256'        => $hash,
+				'canvasJs'         => 'canvas.js',
+				'canvasJsSha256'   => $hash,
+				'richtextJs'       => 'richtext.js',
+				'richtextJsSha256' => $hash,
 			];
 			\file_put_contents( $path, \json_encode( \array_merge( $valid, $override ) ) );
 			$this->assertNull( EditorAssets::from_manifest( $path, 'https://example.test/assets/editor' ) );
 		}
 		$missing = [
-			'version'   => 1,
-			'js'        => 'editor.js',
-			'css'       => 'editor.css',
-			'jsSha256'  => $hash,
-			'cssSha256' => $hash,
-			'canvasJs'  => 'canvas.js',
+			'version'        => 1,
+			'js'             => 'editor.js',
+			'css'            => 'editor.css',
+			'jsSha256'       => $hash,
+			'cssSha256'      => $hash,
+			'canvasJs'       => 'canvas.js',
+			'canvasJsSha256' => $hash,
+			'richtextJs'     => 'richtext.js',
 		];
 		\file_put_contents( $path, \json_encode( $missing ) );
 		$this->assertNull( EditorAssets::from_manifest( $path, 'https://example.test/assets/editor' ) );
@@ -297,6 +305,7 @@ final class EditorScreenTest extends TestCase {
 		\unlink( $directory . '/editor.js' );
 		\unlink( $directory . '/editor.css' );
 		\unlink( $directory . '/canvas.js' );
+		\unlink( $directory . '/richtext.js' );
 		\rmdir( $directory );
 	}
 }
