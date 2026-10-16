@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CATALOGS, createTranslator, directionOf, interpolate, resolveCatalogLocale } from './i18n';
 import { en_US } from './messages/en_US';
+import { nl_NL } from './messages/nl_NL';
 
 describe('catalogs', () => {
   it('nl_NL covers every key of en_US', () => {
@@ -9,6 +10,27 @@ describe('catalogs', () => {
   it('messages contain no HTML', () => {
     for (const catalog of Object.values(CATALOGS)) {
       for (const message of Object.values(catalog)) expect(message).not.toMatch(/[<>]/);
+    }
+  });
+  it('keeps rewritten tooltip labels concise and present in both locales', () => {
+    const keys = [
+      'header.undo.hint',
+      'header.redo.hint',
+      'header.preview.hint',
+      'header.save.hint',
+      'header.publish.hint',
+      'header.viewport.desktop',
+      'header.viewport.tablet',
+      'header.viewport.mobile',
+      'rich.shortcut.bold',
+      'rich.shortcut.italic',
+      'rich.shortcut.underline',
+    ] as const;
+    for (const key of keys) {
+      expect(en_US[key]).toBeTruthy();
+      expect(nl_NL[key]).toBeTruthy();
+      expect(en_US[key]).not.toMatch(/[.!?]$/);
+      expect(nl_NL[key]).not.toMatch(/[.!?]$/);
     }
   });
 });

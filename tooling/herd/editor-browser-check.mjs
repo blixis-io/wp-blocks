@@ -159,6 +159,50 @@ try {
     });
     await sleep(150);
   };
+  const checkUndoTooltip = async (theme) => {
+    const point = await ev(
+      `(() => { const r = document.querySelector('button[aria-label="Undo"]')?.getBoundingClientRect(); return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null; })()`,
+    );
+    assert.ok(point, `${theme} chrome has a real Undo trigger`);
+    await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: point.x, y: point.y });
+    await sleep(500);
+    const actual = await ev(
+      `(() => { const trigger = document.querySelector('button[aria-label="Undo"]'); const tip = document.querySelector('[role="tooltip"]'); if (!trigger || !tip) return null; const a=trigger.getBoundingClientRect(), b=tip.getBoundingClientRect(), style=getComputedStyle(tip), header=getComputedStyle(trigger.closest('.blx-header') ?? trigger.parentElement); const rgb=(v)=>{const n=v.match(/[\\d.]+/g)?.slice(0,3).map(Number)??[];return v.startsWith('color(')?n.map(x=>x*255):n}; const lum=(v)=>{const [r,g,b]=rgb(v).map(x=>x/255).map(x=>x<=.04045?x/12.92:((x+.055)/1.055)**2.4);return .2126*r+.7152*g+.0722*b}; const ratio=(x,y)=>{const p=lum(x),q=lum(y);return (Math.max(p,q)+.05)/(Math.min(p,q)+.05)}; const border=style.borderTopColor; return {text:tip.querySelector('.ed-tooltip-title')?.textContent, keys:[...tip.querySelectorAll('kbd')].map(k=>k.textContent), bg:style.backgroundColor, header:header.backgroundColor, border, borderHeaderRatio:ratio(border,header.backgroundColor), fg:style.color, muted:getComputedStyle(tip.querySelector('.ed-tooltip-keys')?.firstElementChild??tip).color, fgRatio:ratio(style.color,style.backgroundColor), mutedRatio:ratio(getComputedStyle(tip.querySelector('.ed-tooltip-keys')?.firstElementChild??tip).color,style.backgroundColor), arrow:!!tip.querySelector('.ed-tooltip-arrow'), pointer:style.pointerEvents, gap:Math.max(a.top-b.bottom,b.top-a.bottom,a.left-b.right,b.left-a.right), intersects:!(a.right<=b.left||b.right<=a.left||a.bottom<=b.top||b.bottom<=a.top), inside:b.left>=0&&b.top>=0&&b.right<=innerWidth&&b.bottom<=innerHeight, rect:{x:b.left+b.width/2,y:b.top+b.height/2}}; })()`,
+    );
+    assert.ok(actual, `${theme} Undo tooltip opens after the hover delay`);
+    assert.equal(actual.text, 'Undo', `${theme} tooltip uses the concise title`);
+    assert.ok(actual.keys.includes('Z') && actual.keys.length >= 2, `${theme} tooltip shows shortcut keycaps`);
+    assert.ok(
+      actual.bg !== actual.header || actual.borderHeaderRatio >= 1.5,
+      `${theme} tooltip is distinguishable from header surface (${JSON.stringify({ bg: actual.bg, header: actual.header, border: actual.border, borderHeaderRatio: actual.borderHeaderRatio })})`,
+    );
+    assert.ok(actual.fgRatio >= 4.5 && actual.mutedRatio >= 4.5, `${theme} tooltip title and shortcut contrast pass`);
+    assert.equal(actual.arrow, true, `${theme} tooltip arrow is present`);
+    assert.equal(actual.pointer, 'none', `${theme} tooltip does not receive pointer events`);
+    assert.equal(actual.intersects, false, `${theme} tooltip does not cover its trigger`);
+    assert.ok(actual.gap >= 4, `${theme} tooltip clears its trigger by at least 4px`);
+    assert.equal(actual.inside, true, `${theme} tooltip stays inside the viewport`);
+    await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: actual.rect.x, y: actual.rect.y });
+    await sleep(140);
+    assert.equal(
+      await ev(`!!document.querySelector('[role="tooltip"]')`),
+      false,
+      `${theme} moving over tooltip does not keep it open`,
+    );
+    await ev(`document.querySelector('button[aria-label="Undo"]')?.focus()`);
+    await sleep(80);
+    assert.equal(
+      await ev(`!!document.querySelector('[role="tooltip"]')`),
+      true,
+      `${theme} keyboard focus opens Undo tooltip immediately`,
+    );
+    await press('Escape');
+    assert.equal(
+      await ev(`!!document.querySelector('[role="tooltip"]')`),
+      false,
+      `${theme} Escape dismisses Undo tooltip`,
+    );
+  };
   await send('Page.enable');
   await send('Runtime.enable');
   await send('Log.enable');
@@ -308,6 +352,7 @@ try {
   assert.equal(dark.html, htmlBefore, 'the document element is not touched by the editor chrome theme');
   assert.equal(dark.stored, 'dark', 'the choice is stored under its own key');
   assert.equal(dark.site, null, 'the website appearance preference is untouched');
+  await checkUndoTooltip('dark');
   const bgDark = await ev(`getComputedStyle(document.querySelector('.blx-editor')).backgroundColor`);
   const tooltipTrigger = await ev(
     `(() => { const el = document.querySelector('.blx-appearance-help'); const r = el?.getBoundingClientRect(); return r ? { x: r.x + r.width / 2, y: r.y + r.height / 2 } : null; })()`,
@@ -316,7 +361,7 @@ try {
   await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: tooltipTrigger.x, y: tooltipTrigger.y });
   await sleep(650);
   const tooltipStyle = await ev(
-    `(() => { const tip = document.querySelector('[role="tooltip"]'); if (!tip) return null; const style = getComputedStyle(tip); const page = getComputedStyle(document.querySelector('.blx-editor')); const rgb = (value) => value.match(/[\\d.]+/g)?.slice(0, 3).map(Number) ?? []; const lum = (value) => { const [r,g,b] = rgb(value).map(v => v / 255).map(v => v <= .04045 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4); return .2126*r + .7152*g + .0722*b; }; const a=lum(style.color), b=lum(style.backgroundColor); return { bg: style.backgroundColor, fg: style.color, page: page.backgroundColor, contrast: (Math.max(a,b)+.05)/(Math.min(a,b)+.05), insideFrame: !!tip.ownerDocument.defaultView?.frameElement }; })()`,
+    `(() => { const tip = document.querySelector('[role="tooltip"]'); if (!tip) return null; const style = getComputedStyle(tip); const page = getComputedStyle(document.querySelector('.blx-editor')); const rgb = (value) => { const n = value.match(/[\\d.]+/g)?.slice(0, 3).map(Number) ?? []; return value.startsWith('color(') ? n.map((x) => x * 255) : n; }; const lum = (value) => { const [r,g,b] = rgb(value).map(v => v / 255).map(v => v <= .04045 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4); return .2126*r + .7152*g + .0722*b; }; const a=lum(style.color), b=lum(style.backgroundColor); return { bg: style.backgroundColor, fg: style.color, page: page.backgroundColor, contrast: (Math.max(a,b)+.05)/(Math.min(a,b)+.05), insideFrame: !!tip.ownerDocument.defaultView?.frameElement }; })()`,
   );
   assert.ok(tooltipStyle, 'hover opens the editor tooltip');
   assert.notEqual(tooltipStyle.bg, 'rgba(0, 0, 0, 0)', 'tooltip background is opaque');
@@ -333,6 +378,7 @@ try {
   await clickReal('button[aria-label="More options"]');
   await ev(`${buttonByText('Editor appearance: Light')}.click()`);
   await sleep(300);
+  await checkUndoTooltip('light');
   const bgLight = await ev(`getComputedStyle(document.querySelector('.blx-editor')).backgroundColor`);
   assert.notEqual(bgDark, bgLight, 'light and dark chrome render different backgrounds');
   await clickReal('button[aria-label="More options"]');

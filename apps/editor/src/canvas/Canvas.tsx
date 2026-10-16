@@ -38,6 +38,7 @@ import {
 import { styleSelector } from '../inspector/style-mapping';
 import { PROPERTIES } from '@blixis/wp-style-engine';
 import { isSafeUrl } from '@blixis/wp-element-registry';
+import { shortcutKeys } from '../shortcuts';
 
 const PREVIEW_MODES = [
   { id: 'light', label: 'canvas.appearance.light', icon: <Icon name="light" /> },
@@ -103,7 +104,7 @@ export function PreviewAppearance() {
               <Icon name="info" size={14} />
             </button>
           </TooltipTrigger>
-          <TooltipContent>{t('canvas.appearance.hint')}</TooltipContent>
+          <TooltipContent description={t('canvas.appearance.hint')}>{t('canvas.appearance')}</TooltipContent>
         </Tooltip>
         <span id="blx-appearance-hint" className="sr-only">
           {t('canvas.appearance.hint')}
@@ -665,31 +666,40 @@ export function Canvas({
             <option value="code">{t('rich.code')}</option>
           </select>
           {(['bold', 'italic', 'underline', 'strike'] as const).map((mark) => (
-            <button
-              key={mark}
-              type="button"
-              aria-label={t(`rich.${mark}`)}
-              aria-pressed={Boolean(
-                session.editSelection?.marks[
-                  mark === 'bold' ? 'strong' : mark === 'italic' ? 'em' : mark === 'underline' ? 'u' : 's'
-                ],
-              )}
-              title={mark === 'strike' ? t('rich.strike') : t(`rich.shortcut.${mark}`)}
-              onClick={() => {
-                session.sendEditCommand('toggle-mark', { mark });
-                frame?.contentWindow?.focus();
-              }}
-            >
-              {mark === 'bold' ? (
-                <Icon name="bold" />
-              ) : mark === 'italic' ? (
-                <Icon name="italic" />
-              ) : mark === 'underline' ? (
-                <Icon name="underline" />
-              ) : (
-                <Icon name="strikethrough" />
-              )}
-            </button>
+            <Tooltip key={mark}>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  aria-label={t(`rich.${mark}`)}
+                  aria-pressed={Boolean(
+                    session.editSelection?.marks[
+                      mark === 'bold' ? 'strong' : mark === 'italic' ? 'em' : mark === 'underline' ? 'u' : 's'
+                    ],
+                  )}
+                  onClick={() => {
+                    session.sendEditCommand('toggle-mark', { mark });
+                    frame?.contentWindow?.focus();
+                  }}
+                >
+                  {mark === 'bold' ? (
+                    <Icon name="bold" />
+                  ) : mark === 'italic' ? (
+                    <Icon name="italic" />
+                  ) : mark === 'underline' ? (
+                    <Icon name="underline" />
+                  ) : (
+                    <Icon name="strikethrough" />
+                  )}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent
+                {...(mark === 'bold' || mark === 'italic' || mark === 'underline'
+                  ? { shortcut: shortcutKeys(mark, navigator.platform) }
+                  : {})}
+              >
+                {mark === 'strike' ? t('rich.strike') : t(`rich.shortcut.${mark}`)}
+              </TooltipContent>
+            </Tooltip>
           ))}
           {(['color', 'highlight'] as const).map((kind) => (
             <span className="blx-format-popover-anchor" key={kind}>
@@ -968,102 +978,105 @@ export function Canvas({
                           ? 'bottom'
                           : `top-${position.includes('w') !== (dir === 'rtl') ? 'left' : 'right'}`;
                 return (
-                  <button
-                    key={position}
-                    type="button"
-                    data-handle={position}
-                    className={`blx-selection-handle is-${position} ed-focus-ring`}
-                    aria-label={t('canvas.resize.handle', { edge })}
-                    aria-disabled={!enabled}
-                    title={!enabled ? reason : undefined}
-                    tabIndex={0}
-                    onPointerDown={(event) => {
-                      if (!enabled) return;
-                      event.preventDefault();
-                      event.currentTarget.setPointerCapture(event.pointerId);
-                      event.currentTarget.closest('.blx-editor')?.setAttribute('data-motion-paused', 'true');
-                      resizeRef.current = {
-                        handle: position,
-                        pointerId: event.pointerId,
-                        x: event.clientX,
-                        y: event.clientY,
-                        rect: { x: selectedRect.x, y: selectedRect.y, w: selectedRect.w, h: selectedRect.h },
-                        shift: event.shiftKey || selected?.type === 'blixis/image',
-                        alt: event.altKey,
-                        snap: event.ctrlKey || event.metaKey,
-                        capture: event.currentTarget,
-                      };
-                    }}
-                    onPointerMove={(event) => {
-                      const active = resizeRef.current;
-                      if (active?.pointerId !== event.pointerId) return;
-                      pendingResize.current = resizeFromDelta(
-                        active.rect,
-                        active.handle,
-                        event.clientX - active.x,
-                        event.clientY - active.y,
-                        {
-                          shift: event.shiftKey || active.shift,
-                          alt: event.altKey || active.alt,
-                          snap: event.ctrlKey || event.metaKey || active.snap,
-                          rtl: dir === 'rtl',
-                        },
-                      );
-                      resizeFrame.current ??= requestAnimationFrame(() => {
-                        resizeFrame.current = null;
-                        setResizePreview(pendingResize.current);
-                      });
-                    }}
-                    onPointerUp={() => {
-                      finishResize(true);
-                    }}
-                    onPointerCancel={() => {
-                      finishResize(false);
-                    }}
-                    onLostPointerCapture={() => {
-                      finishResize(false);
-                    }}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Escape') {
-                        finishResize(false);
-                        if (keyboardResize.current) clearTimeout(keyboardResize.current.timer);
-                        keyboardResize.current = null;
-                        canvasRegion.current?.focus();
-                        return;
-                      }
-                      if (!event.key.startsWith('Arrow') || !enabled) return;
-                      event.preventDefault();
-                      const dx =
-                        event.key === 'ArrowRight'
-                          ? (dir === 'rtl' ? -1 : 1) * (event.altKey ? 1.6 : event.shiftKey ? 10 : 1)
-                          : event.key === 'ArrowLeft'
-                            ? (dir === 'rtl' ? 1 : -1) * (event.altKey ? 1.6 : event.shiftKey ? 10 : 1)
-                            : 0;
-                      const dy =
-                        event.key === 'ArrowDown'
-                          ? event.shiftKey
-                            ? 10
-                            : event.altKey
-                              ? 1.6
-                              : 1
-                          : event.key === 'ArrowUp'
-                            ? -(event.altKey ? 1.6 : event.shiftKey ? 10 : 1)
-                            : 0;
-                      const starting = keyboardResize.current?.rect ?? {
-                        x: selectedRect.x,
-                        y: selectedRect.y,
-                        w: selectedRect.w,
-                        h: selectedRect.h,
-                      };
-                      const next = resizeFromDelta(starting, position, dx, dy, { rtl: dir === 'rtl' });
-                      if (keyboardResize.current) clearTimeout(keyboardResize.current.timer);
-                      const timer = setTimeout(() => {
-                        keyboardResize.current = null;
-                        commitResize(next);
-                      }, 300);
-                      keyboardResize.current = { rect: next, timer };
-                    }}
-                  />
+                  <Tooltip key={position}>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        data-handle={position}
+                        className={`blx-selection-handle is-${position} ed-focus-ring`}
+                        aria-label={t('canvas.resize.handle', { edge })}
+                        aria-disabled={!enabled}
+                        tabIndex={0}
+                        onPointerDown={(event) => {
+                          if (!enabled) return;
+                          event.preventDefault();
+                          event.currentTarget.setPointerCapture(event.pointerId);
+                          event.currentTarget.closest('.blx-editor')?.setAttribute('data-motion-paused', 'true');
+                          resizeRef.current = {
+                            handle: position,
+                            pointerId: event.pointerId,
+                            x: event.clientX,
+                            y: event.clientY,
+                            rect: { x: selectedRect.x, y: selectedRect.y, w: selectedRect.w, h: selectedRect.h },
+                            shift: event.shiftKey || selected?.type === 'blixis/image',
+                            alt: event.altKey,
+                            snap: event.ctrlKey || event.metaKey,
+                            capture: event.currentTarget,
+                          };
+                        }}
+                        onPointerMove={(event) => {
+                          const active = resizeRef.current;
+                          if (active?.pointerId !== event.pointerId) return;
+                          pendingResize.current = resizeFromDelta(
+                            active.rect,
+                            active.handle,
+                            event.clientX - active.x,
+                            event.clientY - active.y,
+                            {
+                              shift: event.shiftKey || active.shift,
+                              alt: event.altKey || active.alt,
+                              snap: event.ctrlKey || event.metaKey || active.snap,
+                              rtl: dir === 'rtl',
+                            },
+                          );
+                          resizeFrame.current ??= requestAnimationFrame(() => {
+                            resizeFrame.current = null;
+                            setResizePreview(pendingResize.current);
+                          });
+                        }}
+                        onPointerUp={() => {
+                          finishResize(true);
+                        }}
+                        onPointerCancel={() => {
+                          finishResize(false);
+                        }}
+                        onLostPointerCapture={() => {
+                          finishResize(false);
+                        }}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Escape') {
+                            finishResize(false);
+                            if (keyboardResize.current) clearTimeout(keyboardResize.current.timer);
+                            keyboardResize.current = null;
+                            canvasRegion.current?.focus();
+                            return;
+                          }
+                          if (!event.key.startsWith('Arrow') || !enabled) return;
+                          event.preventDefault();
+                          const dx =
+                            event.key === 'ArrowRight'
+                              ? (dir === 'rtl' ? -1 : 1) * (event.altKey ? 1.6 : event.shiftKey ? 10 : 1)
+                              : event.key === 'ArrowLeft'
+                                ? (dir === 'rtl' ? 1 : -1) * (event.altKey ? 1.6 : event.shiftKey ? 10 : 1)
+                                : 0;
+                          const dy =
+                            event.key === 'ArrowDown'
+                              ? event.shiftKey
+                                ? 10
+                                : event.altKey
+                                  ? 1.6
+                                  : 1
+                              : event.key === 'ArrowUp'
+                                ? -(event.altKey ? 1.6 : event.shiftKey ? 10 : 1)
+                                : 0;
+                          const starting = keyboardResize.current?.rect ?? {
+                            x: selectedRect.x,
+                            y: selectedRect.y,
+                            w: selectedRect.w,
+                            h: selectedRect.h,
+                          };
+                          const next = resizeFromDelta(starting, position, dx, dy, { rtl: dir === 'rtl' });
+                          if (keyboardResize.current) clearTimeout(keyboardResize.current.timer);
+                          const timer = setTimeout(() => {
+                            keyboardResize.current = null;
+                            commitResize(next);
+                          }, 300);
+                          keyboardResize.current = { rect: next, timer };
+                        }}
+                      />
+                    </TooltipTrigger>
+                    {!enabled ? <TooltipContent>{reason}</TooltipContent> : null}
+                  </Tooltip>
                 );
               })}
               {resizePreview ? (
