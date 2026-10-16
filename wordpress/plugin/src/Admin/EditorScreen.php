@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Blixis\Builder\Admin;
 
 use Blixis\Builder\Locale\LocaleConfig;
+use Blixis\Builder\Locale\NativeLocaleRouter;
 use Blixis\Builder\Rest\WordPressPostAccess;
 use Blixis\Builder\Storage\MetaRegistration;
 use Blixis\Builder\Theme\ThemeCompat;
@@ -173,6 +174,15 @@ final class EditorScreen {
 		if ( \is_string( $view_url ) && ! EditorBootstrap::same_origin( $view_url, \admin_url() ) ) {
 			$view_url = null;
 		}
+		$locale_router = NativeLocaleRouter::instance();
+		$preview_base  = null !== $locale_router ? $locale_router->url_for( $request->post_id, $request->content_locale ) : null;
+		if ( ! \is_string( $preview_base ) || '' === $preview_base ) {
+			$preview_base = \is_post_publicly_viewable( $post ) ? \get_permalink( $request->post_id ) : \get_preview_post_link( $post );
+		}
+		$preview_url = \is_string( $preview_base ) && '' !== $preview_base ? \add_query_arg( 'blixis_preview', \wp_create_nonce( 'blixis_preview_' . $request->post_id ), $preview_base ) : null;
+		if ( \is_string( $preview_url ) && ! EditorBootstrap::same_origin( $preview_url, \admin_url() ) ) {
+			$preview_url = null;
+		}
 		$csp_nonce = EditorHeaders::new_nonce();
 		$bootstrap = EditorBootstrap::build(
 			[
@@ -194,6 +204,8 @@ final class EditorScreen {
 				'adminUrl'              => $admin_url,
 				'canvasUrl'             => '' !== $canvas_url ? $canvas_url : null,
 				'viewUrl'               => \is_string( $view_url ) && '' !== $view_url ? $view_url : null,
+				'previewUrl'            => $preview_url,
+				'siteUrl'               => \home_url( '/' ),
 			]
 		);
 		foreach ( EditorHeaders::list( $csp_nonce ) as $name => $value ) {

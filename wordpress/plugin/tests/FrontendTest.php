@@ -12,6 +12,7 @@ namespace Blixis\Builder\Tests;
 use Blixis\Builder\Autoloader;
 use Blixis\Builder\Frontend\PageRenderer;
 use Blixis\Builder\Frontend\PublishedReader;
+use Blixis\Builder\Frontend\WorkingReader;
 use Blixis\Builder\Frontend\RenderCacheKey;
 use Blixis\Builder\Registry\ElementRegistry;
 use Blixis\Builder\Render\CoreDocumentRenderer;
@@ -130,6 +131,107 @@ final class FrontendTest extends TestCase {
 		);
 		$this->assertNull( ( new PublishedReader( $this->database ) )->read( 5, 'en_US' ) );
 		$this->assertNotContains( MetaKeys::LAYOUT, $this->database->read_keys, 'the working layout is never read' );
+	}
+
+	/** WorkingReader selects edits and uses the default working locale as fallback without touching snapshots. */
+	public function test_working_reader_uses_current_locale_and_default_fallback(): void {
+		$this->put(
+			MetaKeys::LAYOUT,
+			[
+				'schemaVersion'  => 1,
+				'layoutRevision' => 7,
+				'root'           => [],
+			]
+		);
+		$this->put(
+			MetaKeys::content( 'en_US' ),
+			[
+				'schemaVersion'   => 1,
+				'contentRevision' => 3,
+				'entries'         => [],
+			]
+		);
+		$this->put(
+			MetaKeys::content( 'nl_NL' ),
+			[
+				'schemaVersion'   => 1,
+				'contentRevision' => 5,
+				'entries'         => [],
+			]
+		);
+		$reader = new WorkingReader( $this->database );
+		$nl     = $reader->read( 5, 'nl_NL', 'en_US' );
+		$this->assertSame( [ 'nl_NL', 7, 5, 3 ], [ $nl?->locale, $nl?->layout_revision, $nl?->content_revision, $nl?->default_content_revision ] );
+		$this->assertNotContains( MetaKeys::PUBLISHED, $this->database->read_keys );
+		$this->assertNotContains( MetaKeys::snap_layout( 7 ), $this->database->read_keys );
+	}
+
+	/** Working render shows the saved edit while the public reader continues to resolve the published snapshot. */
+	public function test_working_edit_and_published_text_render_separately(): void {
+		$node = [
+			'id'       => 'el-001',
+			'type'     => 'blixis/heading',
+			'props'    => new \stdClass(),
+			'children' => [],
+			'style'    => [],
+		];
+		$this->put(
+			MetaKeys::LAYOUT,
+			[
+				'schemaVersion'  => 1,
+				'layoutRevision' => 2,
+				'root'           => [ $node ],
+			]
+		);
+		$this->put(
+			MetaKeys::content( 'en_US' ),
+			[
+				'schemaVersion'   => 1,
+				'contentRevision' => 4,
+				'entries'         => [
+					'el-001' => [
+						'status' => 'translated',
+						'values' => [ 'text' => 'Edited draft text' ],
+					],
+				],
+			]
+		);
+		$this->layout( 1 );
+		$this->content( 'en_US', 1, 'Published text' );
+		$this->pointer(
+			[
+				'publishedLayoutRevision' => 1,
+				'defaultLocale'           => 'en_US',
+				'locales'                 => [
+					'en_US' => [
+						'contentSnapshot' => 1,
+						'baseLayout'      => 1,
+					],
+				],
+			]
+		);
+		$media    = new class() implements MediaResolver {
+			/** No media is used by this test.
+			 *
+			 * @param int $attachment_id Attachment ID.
+			 * @return array{url:string,width:int,height:int,alt:string}|null
+			 */
+			public function resolve( int $attachment_id ): ?array {
+				unset( $attachment_id );
+				return null;
+			}
+		};
+		$renderer = new PageRenderer( new CoreDocumentRenderer( ElementRegistry::from_manifest_file( \dirname( __DIR__ ) . '/data/core-elements.json' ), $media ) );
+		$working  = ( new WorkingReader( $this->database ) )->read( 5, 'en_US', 'en_US' );
+		$public   = ( new PublishedReader( $this->database ) )->read( 5, 'en_US' );
+		$this->assertNotNull( $working );
+		$this->assertNotNull( $public );
+		$working_page = $renderer->render( $working );
+		$public_page  = $renderer->render( $public );
+		$this->assertNotNull( $working_page );
+		$this->assertNotNull( $public_page );
+		$this->assertStringContainsString( 'Edited draft text', $working_page['html'] );
+		$this->assertStringContainsString( 'Published text', $public_page['html'] );
 	}
 
 	/** A pointer to a missing or invalid snapshot is null, never a partial page or the working layout. */

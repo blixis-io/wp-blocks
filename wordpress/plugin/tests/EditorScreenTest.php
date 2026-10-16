@@ -110,7 +110,36 @@ final class EditorScreenTest extends TestCase {
 				'editorLocale'  => 'en_US',
 			]
 		);
-		$this->assertSame( [ 'version', 'restRoot', 'nonce', 'postId', 'postTitle', 'postType', 'contentLocale', 'defaultLocale', 'enabledLocales', 'editorLocale', 'pluginVersion', 'themeName', 'editingEnabled', 'lockReason', 'adminUrl', 'canvasUrl', 'viewUrl', 'cspNonce', 'contentLocaleExplicit' ], \array_keys( $bootstrap ) );
+		$this->assertSame( [ 'version', 'restRoot', 'nonce', 'postId', 'postTitle', 'postType', 'contentLocale', 'defaultLocale', 'enabledLocales', 'editorLocale', 'pluginVersion', 'themeName', 'editingEnabled', 'lockReason', 'adminUrl', 'canvasUrl', 'viewUrl', 'previewUrl', 'cspNonce', 'contentLocaleExplicit' ], \array_keys( $bootstrap ) );
+		$this->assertNull( $bootstrap['previewUrl'] );
+		$this->assertSame(
+			'https://example.test/page/?blixis_preview=nonce',
+			EditorBootstrap::build(
+				[
+					'adminUrl'   => 'https://example.test/wp-admin/',
+					'siteUrl'    => 'https://example.test/',
+					'previewUrl' => 'https://example.test/page/?blixis_preview=nonce',
+				]
+			)['previewUrl']
+		);
+		$this->assertNull(
+			EditorBootstrap::build(
+				[
+					'adminUrl'   => 'https://example.test/wp-admin/',
+					'siteUrl'    => 'https://example.test/',
+					'previewUrl' => 'https://evil.test/',
+				]
+			)['previewUrl']
+		);
+		$this->assertNull(
+			EditorBootstrap::build(
+				[
+					'adminUrl'   => 'https://example.test/wp-admin/',
+					'siteUrl'    => 'https://example.test/',
+					'previewUrl' => 'https://user@example.test/',
+				]
+			)['previewUrl']
+		);
 		$this->assertSame( 200, \mb_strlen( $bootstrap['postTitle'] ) );
 		$this->assertSame( 'nl_NL', $bootstrap['contentLocale'] );
 		$this->assertSame( 'en_US', $bootstrap['editorLocale'] );

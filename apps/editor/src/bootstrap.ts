@@ -71,6 +71,7 @@ export function createBootstrapSchema(origin: string) {
     lockReason: z.string().max(1000).nullable(),
     adminUrl: url,
     viewUrl: url.nullable(),
+    previewUrl: url.nullable(),
     /**
      * Same-origin URL of the dedicated canvas document (`admin.php?page=blixis-canvas&post=<id>&locale=<l>`). Absent or null
      * means the canvas is unavailable and the editor shows a placeholder instead of the preview iframe.

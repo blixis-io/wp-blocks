@@ -200,6 +200,19 @@ export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppeara
     [now, savedAt, locale, t],
   );
   const viewUrl = validLocalUrl(bootstrap.viewUrl);
+  const previewUrl = validLocalUrl(bootstrap.previewUrl);
+  const previewLabel = hasDirty ? t('header.saveAndPreview') : t('header.preview');
+  const openPreview = async () => {
+    if (!previewUrl) return;
+    if (hasDirty) {
+      await store.getState().saveDraft();
+      const state = store.getState();
+      if (state.saveError || state.dirty.layout || Object.values(state.dirty.content).some(Boolean)) return;
+    }
+    const target = `blixis-preview-${String(bootstrap.postId)}`;
+    const opened = window.open(previewUrl, target);
+    if (opened) opened.opener = null;
+  };
   const pagesUrl = validLocalUrl(new URL('edit.php', bootstrap.adminUrl).href);
   const title = bootstrap.postTitle.trim() === '' ? t('header.untitled') : bootstrap.postTitle;
   const icon = 'size-4';
@@ -241,11 +254,17 @@ export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppeara
     ...(width < 900
       ? [
           {
-            label: t('header.preview'),
+            label: t('header.viewPage'),
             href: viewUrl ?? undefined,
             disabled: viewUrl === null,
-            describedBy: viewUrl === null ? 'blx-preview-hint' : undefined,
             icon: <Icon name="preview" size={15} />,
+          },
+          {
+            label: previewLabel,
+            disabled: previewUrl === null || !bootstrap.editingEnabled || saveLocked || saveStatus === 'saving',
+            describedBy: previewUrl === null ? 'blx-preview-hint' : undefined,
+            icon: <Icon name="preview" size={15} />,
+            onSelect: () => void openPreview(),
           },
           {
             label: t('header.saveDraft'),
@@ -404,18 +423,18 @@ export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppeara
           <ToolbarSeparator />
           {width >= 900 && (
             <>
-              {viewUrl ? (
-                <ToolbarLink
+              {previewUrl ? (
+                <ToolbarButton
                   className="blx-header-secondary"
                   variant="outline"
-                  href={viewUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={t('header.preview')}
+                  disabled={!bootstrap.editingEnabled || saveLocked || saveStatus === 'saving'}
+                  aria-label={previewLabel}
+                  aria-busy={saveStatus === 'saving'}
+                  onClick={() => void openPreview()}
                 >
                   <Icon name="preview" className={icon} />
-                  <span>{t('header.preview')}</span>
-                </ToolbarLink>
+                  <span>{previewLabel}</span>
+                </ToolbarButton>
               ) : (
                 <Hint text={t('header.preview.hint')} description={t('header.preview.unavailable')}>
                   <ToolbarButton
@@ -429,6 +448,18 @@ export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppeara
                     <span>{t('header.preview')}</span>
                   </ToolbarButton>
                 </Hint>
+              )}
+              {viewUrl && (
+                <ToolbarLink
+                  className="blx-header-secondary"
+                  variant="ghost"
+                  href={viewUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={t('header.viewPage')}
+                >
+                  <span>{t('header.viewPage')}</span>
+                </ToolbarLink>
               )}
               <Hint text={t('header.save.hint')} shortcut="save">
                 <ToolbarButton

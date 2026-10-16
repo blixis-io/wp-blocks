@@ -32,6 +32,18 @@ describe('parseBootstrap', () => {
     ).toBe(true);
   });
 
+  it.each([
+    ['cross-origin previewUrl', { previewUrl: 'https://evil.example/?blixis_preview=x' }],
+    ['javascript previewUrl', { previewUrl: 'javascript:alert(1)' }],
+    ['relative previewUrl', { previewUrl: '/draft/' }],
+  ])('refuses %s', (_name, override) => {
+    expect(parseBootstrap(makeBootstrap(override), ORIGIN).ok).toBe(false);
+  });
+
+  it('accepts a null previewUrl', () => {
+    expect(parseBootstrap(makeBootstrap({ previewUrl: null }), ORIGIN).ok).toBe(true);
+  });
+
   it('accepts an absent, a null and a same-origin canvasUrl and returns the normalised href', () => {
     const url = `${location.origin}/wp-admin/admin.php?page=blixis-canvas&post=42&locale=fr_FR`;
     expect(parseBootstrap(makeBootstrap(), ORIGIN).ok).toBe(true);

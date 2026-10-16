@@ -18,6 +18,7 @@ export function makeBootstrap(overrides: Partial<EditorBootstrap> = {}): EditorB
     lockReason: null,
     adminUrl: `${location.origin}/wp-admin/`,
     viewUrl: `${location.origin}/about/`,
+    previewUrl: `${location.origin}/about/?blixis_preview=nonce`,
     cspNonce: 'dGVzdC1ub25jZS1mb3ItanNkb20=',
     ...overrides,
   };

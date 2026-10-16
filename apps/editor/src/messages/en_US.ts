@@ -35,6 +35,8 @@ export const en_US = {
   'header.viewport.mobile': 'Mobile',
   'header.viewport.hint': 'Changes the width of the page preview.',
   'header.preview': 'Preview',
+  'header.saveAndPreview': 'Save and preview',
+  'header.viewPage': 'View page',
   'header.preview.hint': 'Preview',
   'header.preview.unavailable': 'There is no public page to preview yet.',
   'header.save': 'Save',

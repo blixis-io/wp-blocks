@@ -36,6 +36,8 @@ export const nl_NL: Record<MessageKey, string> = {
   'header.viewport.mobile': 'Mobiel',
   'header.viewport.hint': 'Wijzigt de breedte van de voorvertoning.',
   'header.preview': 'Voorvertoning',
+  'header.saveAndPreview': 'Opslaan en bekijken',
+  'header.viewPage': 'Pagina bekijken',
   'header.preview.hint': 'Voorbeeld',
   'header.preview.unavailable': 'Er is nog geen openbare pagina om te bekijken.',
   'header.save': 'Opslaan',

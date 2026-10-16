@@ -2734,6 +2734,75 @@ try {
   );
   assert.equal(inspectorSavedHeading, 'Saved by the check', 'the shortcut-saved heading appears in the inspector');
 
+  // Draft preview saves a dirty heading before opening an authenticated front-end tab (BWB-151).
+  await replaceHeadingInline('Preview smoke heading');
+  await waitForSaveState('dirty');
+  // A preview tab left behind by an aborted earlier run would become the first page target; start from a clean browser.
+  for (const stale of (await (await fetch('http://127.0.0.1:9334/json')).json()).filter(
+    (target) => target.type === 'page' && target.url.includes('blixis_preview='),
+  ))
+    await fetch(`http://127.0.0.1:9334/json/close/${stale.id}`);
+  const targetsBeforePreview = new Set(
+    (await (await fetch('http://127.0.0.1:9334/json')).json()).map((target) => target.id),
+  );
+  await clickReal('button[aria-label="Save and preview"]');
+  await waitForSaveState('saved');
+  let previewTarget = null;
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    previewTarget = (await (await fetch('http://127.0.0.1:9334/json')).json()).find(
+      (target) =>
+        target.type === 'page' && !targetsBeforePreview.has(target.id) && target.url.includes('blixis_preview='),
+    );
+    if (previewTarget) break;
+    await sleep(250);
+  }
+  assert.ok(previewTarget, 'Preview opens a new front-end tab with a blixis_preview nonce');
+  const previewWs = new WebSocket(previewTarget.webSocketDebuggerUrl);
+  await new Promise((resolve) => (previewWs.onopen = resolve));
+  let previewSeq = 0;
+  const previewPending = new Map();
+  previewWs.onmessage = (event) => {
+    const message = JSON.parse(event.data);
+    if (message.id && previewPending.has(message.id)) {
+      previewPending.get(message.id)(message);
+      previewPending.delete(message.id);
+    }
+  };
+  const previewSend = (method, params = {}) =>
+    new Promise((resolve) => {
+      const id = (previewSeq += 1);
+      previewPending.set(id, resolve);
+      previewWs.send(JSON.stringify({ id, method, params }));
+    });
+  await previewSend('Runtime.enable');
+  let previewBody;
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    previewBody = await previewSend('Runtime.evaluate', {
+      expression: 'document.body.innerText',
+      returnByValue: true,
+    });
+    if (previewBody.result?.result?.value.includes('Preview smoke heading')) break;
+    await sleep(250);
+  }
+  assert.ok(
+    previewBody.result?.result?.value.includes('Preview smoke heading'),
+    'the draft preview tab renders the saved working heading',
+  );
+  assert.ok(previewBody.result?.result?.value.includes('Draft preview'), 'the real front-end preview shows its badge');
+  // curl, not fetch: Herd's local certificate is not in Node's trust store. -k is limited to this local development host.
+  const anonymousPublishedRaw = execFileSync('curl', ['-sk', '-w', '\n%{http_code}', `${SITE}/builder-demo/`], {
+    encoding: 'utf8',
+  });
+  const anonymousPublishedStatus = anonymousPublishedRaw.slice(anonymousPublishedRaw.lastIndexOf('\n') + 1);
+  const anonymousPublishedText = anonymousPublishedRaw.slice(0, anonymousPublishedRaw.lastIndexOf('\n'));
+  assert.equal(anonymousPublishedStatus, '200', 'the anonymous published permalink remains available');
+  assert.ok(
+    anonymousPublishedText.includes(originalHeading) && !anonymousPublishedText.includes('Preview smoke heading'),
+    'the anonymous published permalink keeps the prior published heading and does not expose working draft text',
+  );
+  previewWs.close();
+  await fetch(`http://127.0.0.1:9334/json/close/${previewTarget.id}`);
+
   await replaceHeadingInline(originalHeading);
   await waitForSaveState('dirty');
   const restoreButton = await ev(
