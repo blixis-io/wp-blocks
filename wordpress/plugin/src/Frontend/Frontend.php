@@ -128,8 +128,31 @@ final class Frontend {
 		$cache  = new TransientRenderCache();
 		$page   = $cache->get( $key );
 		if ( null === $page ) {
+			$system    = \get_option( 'blixis_design_system', false );
+			$token_map = \is_array( $system ) && \is_array( $system['tokens'] ?? null ) ? $system['tokens'] : [];
+			$token_ids = [];
+			$tokens    = [];
+			foreach ( $token_map as $id => $token ) {
+				if ( ! \is_string( $id ) || 1 !== \preg_match( '/^color-[a-z0-9]+(?:-[a-z0-9]+)*$/D', $id ) || ! \is_array( $token ) || ! \is_string( $token['value'] ?? null ) ) {
+					continue;
+				}
+				$token_ids[] = $id;
+				$tokens[]    = [
+					'name'     => '--blx-' . $id,
+					'value'    => $token['value'],
+					'category' => 'color',
+				];
+				if ( \is_string( $token['dark'] ?? null ) && $token['dark'] !== $token['value'] ) {
+					$tokens[] = [
+						'name'     => '--blx-' . $id,
+						'value'    => $token['dark'],
+						'category' => 'color',
+						'mode'     => 'dark',
+					];
+				}
+			}
 			$renderer = new PageRenderer( new CoreDocumentRenderer( ElementRegistry::from_manifest_file( \Blixis\Builder\DIR . '/data/core-elements.json' ), new WordPressMediaResolver() ) );
-			$page     = $renderer->render( $published, $fallback );
+			$page     = $renderer->render( $published, $fallback, $token_ids, $tokens );
 			if ( null === $page ) {
 				return null;
 			}

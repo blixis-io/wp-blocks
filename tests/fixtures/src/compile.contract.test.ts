@@ -49,6 +49,7 @@ const name = (text: string): string => createHash('sha256').update(text).digest(
 const LAYERS = [
   'blx.theme',
   'blx.tokens',
+  'blx.marks',
   ...['class', 'el'].flatMap((origin) =>
     ['s0', 'hover', 'focus', 'focus-visible', 'active'].flatMap((state) =>
       ['base', 'bp', 'mode', 'modebp'].map((kind) => `blx.${origin}.${state}.${kind}`),
@@ -73,7 +74,7 @@ const run = (document: unknown, extra: Partial<CompileInput> = {}): string => {
   if (!validated.ok) throw new Error('invalid document');
   return compile({ document: validated.document, ...extra }).css;
 };
-const header = `/*blx-css:1*/\n@layer ${LAYERS.join(',')};\n`;
+const header = `/*blx-css:1*/\n@layer ${LAYERS.join(',')};\n@layer blx.marks{.blx-mw-normal{font-weight:400}.blx-mw-medium{font-weight:500}.blx-mw-bold{font-weight:700}}\n`;
 
 describe('compile: hand-derived stylesheets', () => {
   it('owner example: base, mobile, dark and dark+mobile in the four layers, dark and auto forms', () => {

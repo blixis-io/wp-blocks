@@ -1,0 +1,778 @@
+{
+  "valid": [
+    {
+      "id": "plain-text-html-is-data",
+      "value": {
+        "v": 1,
+        "inline": [
+          {
+            "t": "text",
+            "s": "<script>alert(1)</script> &colon;"
+          }
+        ]
+      }
+    },
+    {
+      "id": "safe-link",
+      "value": {
+        "v": 1,
+        "inline": [
+          {
+            "t": "text",
+            "s": "go",
+            "m": [
+              {
+                "link": {
+                  "href": "https://example.test/a?x=1&y=2",
+                  "newTab": true
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "html": "<a href=\"https://example.test/a?x=1&amp;y=2\" target=\"_blank\" rel=\"noopener noreferrer\">go</a>"
+    },
+    {
+      "id": "safe-relative",
+      "value": {
+        "v": 1,
+        "inline": [
+          {
+            "t": "text",
+            "s": "go",
+            "m": [
+              {
+                "link": {
+                  "href": "/about"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "html": "<a href=\"/about\">go</a>"
+    },
+    {
+      "id": "style-token-ids",
+      "value": {
+        "v": 1,
+        "inline": [
+          {
+            "t": "text",
+            "s": "colored",
+            "m": [
+              {
+                "style": {
+                  "color": "color-primary",
+                  "highlight": "color-mark",
+                  "weight": "bold"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "html": "<span class=\"blx-mc-color-primary blx-mh-color-mark blx-mw-bold\">colored</span>"
+    },
+    {
+      "id": "line-break",
+      "value": {
+        "v": 1,
+        "inline": [
+          {
+            "t": "text",
+            "s": "one"
+          },
+          {
+            "t": "br"
+          },
+          {
+            "t": "text",
+            "s": "two"
+          }
+        ]
+      },
+      "html": "one<br>two"
+    },
+    {
+      "id": "duplicate-mark-is-deduplicated",
+      "value": {
+        "v": 1,
+        "inline": [
+          {
+            "t": "text",
+            "s": "x",
+            "m": ["strong", "strong"]
+          }
+        ]
+      },
+      "html": "<strong>x</strong>"
+    },
+    {
+      "id": "integral-float-version-json-number",
+      "value": {
+        "v": 1,
+        "inline": [
+          {
+            "t": "br"
+          }
+        ]
+      },
+      "html": "<br>",
+      "php_raw_value": "{\"v\":1.0,\"inline\":[{\"t\":\"br\"}]}"
+    },
+    {
+      "id": "non-ascii-mark-order",
+      "value": {
+        "v": 1,
+        "inline": [
+          {
+            "t": "text",
+            "s": "accent",
+            "m": [
+              {
+                "style": {
+                  "color": "color-primary"
+                }
+              },
+              {
+                "link": {
+                  "href": "https://example.test/é"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "html": "<a href=\"https://example.test/é\"><span class=\"blx-mc-color-primary\">accent</span></a>"
+    }
+  ],
+  "invalid": [
+    {
+      "id": "javascript-link",
+      "value": {
+        "v": 1,
+        "inline": [
+          {
+            "t": "text",
+            "s": "x",
+            "m": [
+              {
+                "link": {
+                  "href": "JaVaScRiPt:alert(1)"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "data-link",
+      "value": {
+        "v": 1,
+        "inline": [
+          {
+            "t": "text",
+            "s": "x",
+            "m": [
+              {
+                "link": {
+                  "href": "data:text/html,x"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "protocol-relative",
+      "value": {
+        "v": 1,
+        "inline": [
+          {
+            "t": "text",
+            "s": "x",
+            "m": [
+              {
+                "link": {
+                  "href": "//evil.test"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "unknown-mark",
+      "value": {
+        "v": 1,
+        "inline": [
+          {
+            "t": "text",
+            "s": "x",
+            "m": ["script"]
+          }
+        ]
+      }
+    },
+    {
+      "id": "empty-run",
+      "value": {
+        "v": 1,
+        "inline": [
+          {
+            "t": "text",
+            "s": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "control-character",
+      "value": {
+        "v": 1,
+        "inline": [
+          {
+            "t": "text",
+            "s": "bad\u0001text"
+          }
+        ]
+      }
+    },
+    {
+      "id": "wrong-version",
+      "value": {
+        "v": 2,
+        "inline": []
+      }
+    },
+    {
+      "id": "conflicting-links",
+      "value": {
+        "v": 1,
+        "inline": [
+          {
+            "t": "text",
+            "s": "x",
+            "m": [
+              {
+                "link": {
+                  "href": "/one"
+                }
+              },
+              {
+                "link": {
+                  "href": "/two"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "reserved-member-key",
+      "value": {
+        "v": 1,
+        "inline": [
+          {
+            "t": "text",
+            "s": "x",
+            "constructor": {}
+          }
+        ]
+      }
+    },
+    {
+      "id": "deep-mark-shape",
+      "value": {
+        "v": 1,
+        "inline": [
+          {
+            "t": "text",
+            "s": "x",
+            "m": [
+              {
+                "link": {
+                  "href": {
+                    "deep": true
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "unknown-style-key",
+      "value": {
+        "v": 1,
+        "inline": [
+          {
+            "t": "text",
+            "s": "x",
+            "m": [
+              {
+                "style": {
+                  "evil": 1
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "unknown-style-injection",
+      "value": {
+        "v": 1,
+        "inline": [
+          {
+            "t": "text",
+            "s": "x",
+            "m": [
+              {
+                "style": {
+                  "color": "a",
+                  "evil": "\"><x"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "style-proto-key",
+      "value": {
+        "v": 1,
+        "inline": [
+          {
+            "t": "text",
+            "s": "x",
+            "m": [
+              {
+                "style": {
+                  "__proto__": {
+                    "color": "x"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "null-m",
+      "value": {
+        "v": 1,
+        "inline": [
+          {
+            "t": "text",
+            "s": "x",
+            "m": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "null-newtab",
+      "value": {
+        "v": 1,
+        "inline": [
+          {
+            "t": "text",
+            "s": "x",
+            "m": [
+              {
+                "link": {
+                  "href": "/a",
+                  "newTab": null
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "null-color",
+      "value": {
+        "v": 1,
+        "inline": [
+          {
+            "t": "text",
+            "s": "x",
+            "m": [
+              {
+                "style": {
+                  "color": null
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "null-weight",
+      "value": {
+        "v": 1,
+        "inline": [
+          {
+            "t": "text",
+            "s": "x",
+            "m": [
+              {
+                "style": {
+                  "weight": null
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "array-weight",
+      "value": {
+        "v": 1,
+        "inline": [
+          {
+            "t": "text",
+            "s": "x",
+            "m": [
+              {
+                "style": {
+                  "weight": ["bold"]
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "extra-top-key",
+      "value": {
+        "v": 1,
+        "inline": [],
+        "x": 1
+      }
+    },
+    {
+      "id": "empty-href",
+      "value": {
+        "v": 1,
+        "inline": [
+          {
+            "t": "text",
+            "s": "x",
+            "m": [
+              {
+                "link": {
+                  "href": ""
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "newline-in-run",
+      "value": {
+        "v": 1,
+        "inline": [
+          {
+            "t": "text",
+            "s": "one\ntwo"
+          }
+        ]
+      }
+    },
+    {
+      "id": "empty-style",
+      "value": {
+        "v": 1,
+        "inline": [
+          {
+            "t": "text",
+            "s": "x",
+            "m": [
+              {
+                "style": {}
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "oversized-token",
+      "value": {
+        "v": 1,
+        "inline": [
+          {
+            "t": "text",
+            "s": "x",
+            "m": [
+              {
+                "style": {
+                  "color": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "url-single-quote",
+      "value": {
+        "v": 1,
+        "inline": [
+          {
+            "t": "text",
+            "s": "x",
+            "m": [
+              {
+                "link": {
+                  "href": "https://a.test/it's"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "url-double-quote",
+      "value": {
+        "v": 1,
+        "inline": [
+          {
+            "t": "text",
+            "s": "x",
+            "m": [
+              {
+                "link": {
+                  "href": "https://a.test/\"x"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "token-constructor",
+      "value": {
+        "v": 1,
+        "inline": [
+          {
+            "t": "text",
+            "s": "x",
+            "m": [
+              {
+                "style": {
+                  "constructor": {
+                    "weight": "bold"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "oversized-href",
+      "value": {
+        "v": 1,
+        "inline": [
+          {
+            "t": "text",
+            "s": "x",
+            "m": [
+              {
+                "link": {
+                  "href": "/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "too-many-marks",
+      "value": {
+        "v": 1,
+        "inline": [
+          {
+            "t": "text",
+            "s": "x",
+            "m": [
+              "strong",
+              "em",
+              "u",
+              "s",
+              "code",
+              {
+                "style": {
+                  "weight": "bold"
+                }
+              },
+              {
+                "style": {
+                  "color": "color-primary"
+                }
+              },
+              {
+                "style": {
+                  "highlight": "color-primary"
+                }
+              },
+              {
+                "link": {
+                  "href": "/x"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "huge-integer-not-string",
+      "value": {
+        "v": 1,
+        "inline": [
+          {
+            "t": "text",
+            "s": 7
+          }
+        ]
+      },
+      "raw_invalid_json": "{\"v\":1,\"inline\":[{\"t\":\"text\",\"s\":100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000}]}"
+    },
+    {
+      "id": "reserved-constructor-node-key",
+      "value": {
+        "v": 1,
+        "inline": [
+          {
+            "t": "text",
+            "s": "x",
+            "constructor": true
+          }
+        ]
+      }
+    }
+  ],
+  "url_cases": [
+    {
+      "value": "",
+      "safe": true
+    },
+    {
+      "value": "https://a.test/it's",
+      "safe": false
+    },
+    {
+      "value": "https://a.test/\"x",
+      "safe": false
+    },
+    {
+      "value": "javascript:",
+      "safe": false
+    },
+    {
+      "value": "JaVaScRiPt:alert(1)",
+      "safe": false
+    },
+    {
+      "value": "vbscript:msgbox(1)",
+      "safe": false
+    },
+    {
+      "value": "data:text/html,x",
+      "safe": false
+    },
+    {
+      "value": "//evil",
+      "safe": false
+    },
+    {
+      "value": "/\\evil",
+      "safe": false
+    },
+    {
+      "value": "java\tscript:alert(1)",
+      "safe": false
+    },
+    {
+      "value": "java\nscript:alert(1)",
+      "safe": false
+    },
+    {
+      "value": "javascript&colon;alert(1)",
+      "safe": false
+    },
+    {
+      "value": "&#x6A;avascript:",
+      "safe": false
+    },
+    {
+      "value": "https://a.test/%6a",
+      "safe": true
+    },
+    {
+      "value": "https://a.test/\\x",
+      "safe": false
+    },
+    {
+      "value": "https://a.test/\u0000x",
+      "safe": false
+    },
+    {
+      "value": "https://a.test/\u0001x",
+      "safe": false
+    },
+    {
+      "value": "https://a.test/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "safe": false
+    },
+    {
+      "value": "/ok",
+      "safe": true
+    }
+  ],
+  "mark_css": {
+    "tokens": [
+      {
+        "name": "--blx-color-mark",
+        "value": "#abcdef",
+        "category": "color"
+      },
+      {
+        "name": "--blx-color-primary",
+        "value": "#123456",
+        "category": "color"
+      },
+      {
+        "name": "--blx-space-4",
+        "value": "1rem",
+        "category": "spacing"
+      }
+    ],
+    "expected": "@layer blx.marks{.blx-mc-color-mark{color:var(--blx-color-mark)}.blx-mh-color-mark{background-color:var(--blx-color-mark)}.blx-mc-color-primary{color:var(--blx-color-primary)}.blx-mh-color-primary{background-color:var(--blx-color-primary)}.blx-mw-normal{font-weight:400}.blx-mw-medium{font-weight:500}.blx-mw-bold{font-weight:700}}"
+  }
+}

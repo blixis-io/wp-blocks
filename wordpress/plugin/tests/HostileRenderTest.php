@@ -25,6 +25,35 @@ Autoloader::register();
 
 /** Independent HTML parser checks complement the final preview sanitizer. */
 final class HostileRenderTest extends TestCase {
+	/** Invalid rich content is reduced to escaped plain text for public readers. */
+	public function test_invalid_rich_value_degrades_to_plain_text(): void {
+		$media    = new class() implements MediaResolver {
+			/** No media is used by text.
+			 *
+			 * @param int $id Attachment ID.
+			 */
+			public function resolve( int $id ): ?array {
+				return null;
+			}
+		};
+		$renderer = new CoreDocumentRenderer( ElementRegistry::from_manifest_file( \dirname( __DIR__ ) . '/data/core-elements.json' ), $media );
+		$document = (object) [
+			'root'          => [
+				(object) [
+					'id'       => 'txt-1',
+					'type'     => 'blixis/text',
+					'props'    => (object) [],
+					'children' => [],
+				],
+			],
+			'defaultLocale' => 'en_US',
+			'translations'  => (object) [ 'en_US' => (object) [ 'txt-1' => (object) [ 'values' => (object) [ 'text' => \json_decode( '{"v":1,"inline":[{"t":"text","s":"<img src=x onerror=alert(1)>"},{"t":"script","s":"discarded"}]}' ) ] ] ] ],
+		];
+		$html     = $renderer->render( $document, 'en_US', 'light' );
+		$this->assertStringContainsString( '&lt;img src=x onerror=alert(1)&gt;', $html );
+		$this->assertStringNotContainsString( '<img', $html );
+	}
+
 	/**
 	 * Malicious strings reused across every element and property.
 	 *

@@ -139,10 +139,10 @@ export function validateTokenSet(input: unknown): TokenSetResult {
 export function tokensForCompile(set: ValidatedTokenSet): TokenValue[] {
   const out: TokenValue[] = [];
   for (const token of set.tokens) {
-    out.push({ name: tokenProperty(token.name), value: token.value });
+    out.push({ name: tokenProperty(token.name), value: token.value, category: token.category });
     // Modes are sparse: a dark value equal to the base value says nothing and is not emitted.
     if (token.dark !== undefined && token.dark !== token.value) {
-      out.push({ name: tokenProperty(token.name), value: token.dark, mode: 'dark' });
+      out.push({ name: tokenProperty(token.name), value: token.dark, mode: 'dark', category: token.category });
     }
   }
   return out;

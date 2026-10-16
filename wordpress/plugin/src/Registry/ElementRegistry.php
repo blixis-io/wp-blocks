@@ -14,7 +14,7 @@ final class ElementRegistry {
 	private const MAX_BYTES       = 262144;
 	private const CATEGORIES      = [ 'layout', 'content', 'media', 'interactive' ];
 	private const CLASSIFICATIONS = [ 'invariant', 'translatable', 'locale-specific' ];
-	private const KINDS           = [ 'string', 'integer', 'boolean', 'enum', 'url', 'media' ];
+	private const KINDS           = [ 'string', 'text', 'integer', 'boolean', 'enum', 'url', 'media' ];
 
 	/**
 	 * Apply the documented contract.
@@ -101,9 +101,10 @@ final class ElementRegistry {
 					throw new \InvalidArgumentException( 'Invalid property definition.' );
 				}
 				$extra = match ( $prop['kind'] ) {
-					'string' => [ 'maxLength' ], 'integer' => [ 'min', 'max' ], 'enum' => [ 'values' ], default => [],
+					'string' => [ 'maxLength' ], 'text' => [ 'maxLength', 'inline' ], 'integer' => [ 'min', 'max' ], 'enum' => [ 'values' ], default => [],
 				};
-				if ( ! self::keys( $prop, \array_merge( [ 'kind', 'classification', 'label' ], $extra ), [ 'required', 'default' ] ) || ( isset( $prop['required'] ) && ! \is_bool( $prop['required'] ) ) || ( 'translatable' === $prop['classification'] && 'string' !== $prop['kind'] ) || ( 'locale-specific' === $prop['classification'] && ! \in_array( $prop['kind'], [ 'string', 'url', 'media' ], true ) ) || ( ( $prop['required'] ?? false ) && ( 'invariant' !== $prop['classification'] || ! \array_key_exists( 'default', $prop ) ) ) ) {
+				$optional = 'text' === $prop['kind'] ? [ 'required', 'default', 'marks' ] : [ 'required', 'default' ];
+				if ( ! self::keys( $prop, \array_merge( [ 'kind', 'classification', 'label' ], $extra ), $optional ) || ( isset( $prop['required'] ) && ! \is_bool( $prop['required'] ) ) || ( 'translatable' === $prop['classification'] && ! \in_array( $prop['kind'], [ 'string', 'text' ], true ) ) || ( 'text' === $prop['kind'] && ( true !== ( $prop['inline'] ?? null ) || ( isset( $prop['marks'] ) && ( ! \is_array( $prop['marks'] ) || ! \array_is_list( $prop['marks'] ) || [] === $prop['marks'] || [] !== \array_diff( $prop['marks'], [ 'strong', 'em', 'u', 's', 'code', 'link', 'style' ] ) ) ) ) ) || ( 'locale-specific' === $prop['classification'] && ! \in_array( $prop['kind'], [ 'string', 'url', 'media' ], true ) ) || ( ( $prop['required'] ?? false ) && ( 'invariant' !== $prop['classification'] || ! \array_key_exists( 'default', $prop ) ) ) ) {
 					throw new \InvalidArgumentException( 'Invalid property rules.' );
 				}
 				if ( 'enum' === $prop['kind'] && \is_array( $prop['values'] ) ) {
@@ -113,7 +114,7 @@ final class ElementRegistry {
 						}
 					}
 				}
-				if ( ( 'string' === $prop['kind'] && ( ! \is_int( $prop['maxLength'] ) || $prop['maxLength'] < 1 || $prop['maxLength'] > 100000 ) ) || ( 'integer' === $prop['kind'] && ( ! \is_int( $prop['min'] ) || ! \is_int( $prop['max'] ) || $prop['min'] > $prop['max'] ) ) || ( 'enum' === $prop['kind'] && ( ! \is_array( $prop['values'] ) || ! \array_is_list( $prop['values'] ) || [] === $prop['values'] || \count( $prop['values'] ) > 32 ) ) || ( \array_key_exists( 'default', $prop ) && ! self::valid_value( $prop, $prop['default'] ) ) ) {
+				if ( ( \in_array( $prop['kind'], [ 'string', 'text' ], true ) && ( ! \is_int( $prop['maxLength'] ) || $prop['maxLength'] < 1 || $prop['maxLength'] > 100000 ) ) || ( 'integer' === $prop['kind'] && ( ! \is_int( $prop['min'] ) || ! \is_int( $prop['max'] ) || $prop['min'] > $prop['max'] ) ) || ( 'enum' === $prop['kind'] && ( ! \is_array( $prop['values'] ) || ! \array_is_list( $prop['values'] ) || [] === $prop['values'] || \count( $prop['values'] ) > 32 ) ) || ( \array_key_exists( 'default', $prop ) && ! self::valid_value( $prop, $prop['default'] ) ) ) {
 					throw new \InvalidArgumentException( 'Invalid property constraints.' );
 				}
 			}
@@ -146,6 +147,20 @@ final class ElementRegistry {
 		return $this->definitions[ $type ] ?? null;
 	}
 
+	/** Whether any registered definition declares this property as inline text.
+	 *
+	 * @param string $property Property id.
+	 */
+	public function is_inline_text_property( string $property ): bool {
+		foreach ( $this->definitions as $definition ) {
+			$prop = $definition['props'][ $property ] ?? null;
+			if ( \is_array( $prop ) && 'text' === ( $prop['kind'] ?? null ) && true === ( $prop['inline'] ?? false ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	/**
 	 * Apply the documented contract.
 	 *
@@ -175,6 +190,7 @@ final class ElementRegistry {
 	public static function valid_value( array $prop, mixed $value ): bool {
 		return match ( $prop['kind'] ) {
 			'string' => \is_string( $value ) && SafeUrl::utf16_length( $value ) <= $prop['maxLength'],
+			'text' => ( \is_string( $value ) && SafeUrl::utf16_length( $value ) <= $prop['maxLength'] ) || ( $value instanceof \stdClass && \Blixis\Builder\Render\RichText::valid( $value, [], $prop['marks'] ?? [] ) && SafeUrl::utf16_length( \Blixis\Builder\Render\RichText::plain( $value ) ) <= $prop['maxLength'] ),
 			'integer' => \is_int( $value ) && $value >= $prop['min'] && $value <= $prop['max'],
 			'boolean' => \is_bool( $value ),
 			'enum' => \is_string( $value ) && \in_array( $value, $prop['values'], true ),

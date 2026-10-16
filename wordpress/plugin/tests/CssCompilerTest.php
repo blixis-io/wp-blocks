@@ -52,6 +52,15 @@ final class CssCompilerTest extends TestCase {
 		}
 	}
 
+	/** PHP and TypeScript emit the same mark CSS for the shared token set. */
+	public function test_shared_rich_text_mark_css(): void {
+		$root    = \dirname( __DIR__, 3 );
+		$rich    = \json_decode( (string) \file_get_contents( $root . '/tests/fixtures/rich-text/cases.json' ), true, 512, JSON_THROW_ON_ERROR ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Shared fixture.
+		$compile = \json_decode( (string) \file_get_contents( $root . '/tests/fixtures/compile/compile-tokens.fixture.json' ), true, 512, JSON_THROW_ON_ERROR ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Compile fixture.
+		$result  = Compiler::compile( $compile['input']['document'], [], $rich['mark_css']['tokens'] );
+		$this->assertStringContainsString( $rich['mark_css']['expected'], $result->css );
+	}
+
 	/** All style-resolution cases have regenerated TypeScript CSS as their byte oracle. */
 	public function test_style_resolution_corpus(): void {
 		$dir   = \dirname( __DIR__, 3 ) . '/tests/fixtures/compile-corpus';

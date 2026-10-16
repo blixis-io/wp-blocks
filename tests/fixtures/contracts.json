@@ -117,6 +117,17 @@
       }
     },
     {
+      "id": "rich-text-corpus",
+      "description": "Valid and malicious bounded inline rich text values shared by core validation and the PHP renderer.",
+      "paths": ["tests/fixtures/rich-text/cases.json"],
+      "ts": ["packages/core/src/translation/rich-text.test.ts"],
+      "php": {
+        "level": "full",
+        "runner": "wordpress/plugin/tests/RichTextTest.php",
+        "covers": ["test_shared_fixture_corpus"]
+      }
+    },
+    {
       "id": "source-digest-corpus",
       "description": "Translation source markers: the digest of default-locale source text, independently computed.",
       "paths": ["packages/core/corpus/source-digest.json"],

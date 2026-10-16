@@ -13,6 +13,7 @@ import { MediaControl } from './controls/media-control';
 import { InspectorSection } from './InspectorSection';
 import { PROPERTIES } from '@blixis/wp-style-engine';
 import { BoxModelControl } from './controls/box-model-control';
+import { richToPlain, type RichText } from '@blixis/wp-core';
 
 type Tab = InspectorTab;
 
@@ -85,6 +86,7 @@ function PropField({
     if (result.ok) setInteraction((current) => ({ ...current, dirty: false }));
   };
   const label = t(`inspector.prop.${name}` as never);
+  const isRichValue = definition.kind === 'text' && value !== null && typeof value === 'object' && 'inline' in value;
   const family = controlFamilyFor(definition);
   const controlProps = {
     id: fieldId,
@@ -115,36 +117,48 @@ function PropField({
       if (definition.kind === 'url') dispatch(draft);
     },
   };
-  const control =
-    name === 'level' ? (
-      <select
-        id={fieldId}
-        aria-label={label}
-        value={typeof value === 'number' ? String(value) : String(definition.default ?? 2)}
-        disabled={!editable}
-        onChange={(event) => {
-          dispatch(Number(event.target.value));
-        }}
-      >
-        {[1, 2, 3, 4, 5, 6].map((level) => (
-          <option key={level} value={level}>
-            H{level}
-          </option>
-        ))}
-      </select>
-    ) : family === 'text' ? (
-      <TextControl {...controlProps} />
-    ) : family === 'number' ? (
-      <NumberControl {...controlProps} />
-    ) : family === 'choice' ? (
-      <ChoiceControl {...controlProps} />
-    ) : (
-      <MediaControl {...controlProps} />
-    );
+  const control = isRichValue ? (
+    <textarea
+      id={fieldId}
+      aria-label={label}
+      value={richToPlain(value as unknown as RichText)}
+      readOnly
+      aria-describedby={`${fieldId}-rich-hint`}
+    />
+  ) : name === 'level' ? (
+    <select
+      id={fieldId}
+      aria-label={label}
+      value={typeof value === 'number' ? String(value) : String(definition.default ?? 2)}
+      disabled={!editable}
+      onChange={(event) => {
+        dispatch(Number(event.target.value));
+      }}
+    >
+      {[1, 2, 3, 4, 5, 6].map((level) => (
+        <option key={level} value={level}>
+          H{level}
+        </option>
+      ))}
+    </select>
+  ) : family === 'text' ? (
+    <TextControl {...controlProps} />
+  ) : family === 'number' ? (
+    <NumberControl {...controlProps} />
+  ) : family === 'choice' ? (
+    <ChoiceControl {...controlProps} />
+  ) : (
+    <MediaControl {...controlProps} />
+  );
   return (
     <div className="blx-inspector-field">
       <label htmlFor={fieldId}>{label}</label>
       {control}
+      {isRichValue ? (
+        <p id={`${fieldId}-rich-hint`} className="blx-inspector-hint">
+          {t('inspector.richText.later')}
+        </p>
+      ) : null}
       {definition.kind === 'media' ? (
         <p id={`${fieldId}-hint`} className="blx-inspector-hint">
           {t('inspector.media.later')}

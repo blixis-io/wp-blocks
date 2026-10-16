@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ElementTypeSchema, PropertyIdSchema, type Json } from '@blixis/wp-core';
+import { ElementTypeSchema, PropertyIdSchema, richToPlain, validateRichText, type Json } from '@blixis/wp-core';
 import { isSafeUrl } from './url.ts';
 
 /** Version of the registration contract. A definition may require at most this version (docs/architecture/EXTENSION-API.md). */
@@ -27,6 +27,18 @@ export const PropDefinitionSchema = z.discriminatedUnion('kind', [
     ...common,
     kind: z.literal('string'),
     maxLength: z.number().int().min(1).max(100_000),
+    default: z.string().optional(),
+  }),
+  z.strictObject({
+    ...common,
+    kind: z.literal('text'),
+    inline: z.literal(true),
+    maxLength: z.number().int().min(1).max(100_000),
+    marks: z
+      .array(z.enum(['strong', 'em', 'u', 's', 'code', 'link', 'style']))
+      .min(1)
+      .max(7)
+      .optional(),
     default: z.string().optional(),
   }),
   z.strictObject({
@@ -86,6 +98,12 @@ export function valueSchemaFor(def: PropDefinition): z.ZodType<Json> {
   switch (def.kind) {
     case 'string':
       return z.string().max(def.maxLength);
+    case 'text':
+      return z.custom<Json>((value) => {
+        if (typeof value === 'string') return value.length <= def.maxLength;
+        const validated = validateRichText(value);
+        return validated.ok && richToPlain(validated.value).length <= def.maxLength;
+      });
     case 'enum':
       return z.enum(def.values as [string, ...string[]]);
     case 'integer':

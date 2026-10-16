@@ -18,8 +18,17 @@
         "label": {
           "classification": "translatable",
           "default": "Button",
-          "kind": "string",
+          "inline": true,
+          "kind": "text",
           "label": "Label",
+          "marks": [
+            "strong",
+            "em",
+            "u",
+            "s",
+            "code",
+            "style"
+          ],
           "maxLength": 100
         },
         "newTab": {
@@ -132,7 +141,8 @@
         "text": {
           "classification": "translatable",
           "default": "Heading",
-          "kind": "string",
+          "inline": true,
+          "kind": "text",
           "label": "Text",
           "maxLength": 500
         }
@@ -266,7 +276,8 @@
         "text": {
           "classification": "translatable",
           "default": "Write something",
-          "kind": "string",
+          "inline": true,
+          "kind": "text",
           "label": "Text",
           "maxLength": 5000
         }

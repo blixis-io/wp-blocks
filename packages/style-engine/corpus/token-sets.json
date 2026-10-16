@@ -48,16 +48,19 @@
         "compile": [
           {
             "name": "--blx-color-primary",
-            "value": "#1a56db"
+            "value": "#1a56db",
+            "category": "color"
           },
           {
             "name": "--blx-color-primary",
             "value": "#76a9fa",
-            "mode": "dark"
+            "mode": "dark",
+            "category": "color"
           },
           {
             "name": "--blx-space-4",
-            "value": "1rem"
+            "value": "1rem",
+            "category": "spacing"
           }
         ]
       }
@@ -102,20 +105,24 @@
         "compile": [
           {
             "name": "--blx-brand",
-            "value": "#111111"
+            "value": "#111111",
+            "category": "color"
           },
           {
             "name": "--blx-brand",
             "value": "#eeeeee",
-            "mode": "dark"
+            "mode": "dark",
+            "category": "color"
           },
           {
             "name": "--blx-text",
-            "value": "var(--blx-brand)"
+            "value": "var(--blx-brand)",
+            "category": "color"
           },
           {
             "name": "--blx-link",
-            "value": "var(--blx-text)"
+            "value": "var(--blx-text)",
+            "category": "color"
           }
         ]
       }
@@ -152,11 +159,13 @@
         "compile": [
           {
             "name": "--blx-gap",
-            "value": "1rem"
+            "value": "1rem",
+            "category": "spacing"
           },
           {
             "name": "--blx-pad",
-            "value": "clamp(var(--blx-gap), 2vw, calc(var(--blx-gap) * 2))"
+            "value": "clamp(var(--blx-gap), 2vw, calc(var(--blx-gap) * 2))",
+            "category": "spacing"
           }
         ]
       }
@@ -186,7 +195,8 @@
         "compile": [
           {
             "name": "--blx-a",
-            "value": "var(--blx-missing, #fff)"
+            "value": "var(--blx-missing, #fff)",
+            "category": "color"
           }
         ]
       }
@@ -223,11 +233,13 @@
         "compile": [
           {
             "name": "--blx-b",
-            "value": "#000000"
+            "value": "#000000",
+            "category": "color"
           },
           {
             "name": "--blx-a",
-            "value": "var(--blx-b, #fff)"
+            "value": "var(--blx-b, #fff)",
+            "category": "color"
           }
         ]
       }
@@ -257,7 +269,8 @@
         "compile": [
           {
             "name": "--blx-font-body",
-            "value": "\"Source Sans 3\", system-ui, sans-serif"
+            "value": "\"Source Sans 3\", system-ui, sans-serif",
+            "category": "font-family"
           }
         ]
       }
@@ -805,67 +818,83 @@
         "compile": [
           {
             "name": "--blx-n0",
-            "value": "var(--blx-n1)"
+            "value": "var(--blx-n1)",
+            "category": "color"
           },
           {
             "name": "--blx-n1",
-            "value": "var(--blx-n2)"
+            "value": "var(--blx-n2)",
+            "category": "color"
           },
           {
             "name": "--blx-n2",
-            "value": "var(--blx-n3)"
+            "value": "var(--blx-n3)",
+            "category": "color"
           },
           {
             "name": "--blx-n3",
-            "value": "var(--blx-n4)"
+            "value": "var(--blx-n4)",
+            "category": "color"
           },
           {
             "name": "--blx-n4",
-            "value": "var(--blx-n5)"
+            "value": "var(--blx-n5)",
+            "category": "color"
           },
           {
             "name": "--blx-n5",
-            "value": "var(--blx-n6)"
+            "value": "var(--blx-n6)",
+            "category": "color"
           },
           {
             "name": "--blx-n6",
-            "value": "var(--blx-n7)"
+            "value": "var(--blx-n7)",
+            "category": "color"
           },
           {
             "name": "--blx-n7",
-            "value": "var(--blx-n8)"
+            "value": "var(--blx-n8)",
+            "category": "color"
           },
           {
             "name": "--blx-n8",
-            "value": "var(--blx-n9)"
+            "value": "var(--blx-n9)",
+            "category": "color"
           },
           {
             "name": "--blx-n9",
-            "value": "var(--blx-n10)"
+            "value": "var(--blx-n10)",
+            "category": "color"
           },
           {
             "name": "--blx-n10",
-            "value": "var(--blx-n11)"
+            "value": "var(--blx-n11)",
+            "category": "color"
           },
           {
             "name": "--blx-n11",
-            "value": "var(--blx-n12)"
+            "value": "var(--blx-n12)",
+            "category": "color"
           },
           {
             "name": "--blx-n12",
-            "value": "var(--blx-n13)"
+            "value": "var(--blx-n13)",
+            "category": "color"
           },
           {
             "name": "--blx-n13",
-            "value": "var(--blx-n14)"
+            "value": "var(--blx-n14)",
+            "category": "color"
           },
           {
             "name": "--blx-n14",
-            "value": "var(--blx-n15)"
+            "value": "var(--blx-n15)",
+            "category": "color"
           },
           {
             "name": "--blx-n15",
-            "value": "red"
+            "value": "red",
+            "category": "color"
           }
         ]
       }
@@ -1083,7 +1112,8 @@
         "compile": [
           {
             "name": "--blx-a",
-            "value": "red"
+            "value": "red",
+            "category": "color"
           }
         ]
       }
@@ -1122,16 +1152,19 @@
         "compile": [
           {
             "name": "--blx-line",
-            "value": "#cccccc"
+            "value": "#cccccc",
+            "category": "color"
           },
           {
             "name": "--blx-bg",
-            "value": "#ffffff"
+            "value": "#ffffff",
+            "category": "color"
           },
           {
             "name": "--blx-bg",
             "value": "#111111",
-            "mode": "dark"
+            "mode": "dark",
+            "category": "color"
           }
         ]
       }

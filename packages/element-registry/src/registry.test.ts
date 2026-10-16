@@ -281,7 +281,7 @@ describe('registration rules', () => {
     [
       'translatable non-string',
       { props: { n: { kind: 'integer', classification: 'translatable', label: 'N', min: 0, max: 5 } } },
-      /only string properties can be translatable/,
+      /only string or text properties can be translatable/,
     ],
     [
       'locale-specific boolean',

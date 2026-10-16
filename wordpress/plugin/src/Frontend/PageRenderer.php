@@ -30,13 +30,15 @@ final class PageRenderer {
 	/**
 	 * Render a published document.
 	 *
-	 * @param PublishedDocument $published Document.
-	 * @param string            $fallback Missing-translation policy.
+	 * @param PublishedDocument                                                  $published Document.
+	 * @param string                                                             $fallback Missing-translation policy.
+	 * @param string[]                                                           $token_ids Active color token ids.
+	 * @param list<array{name:string,value:string,category:string,mode?:string}> $tokens Active CSS tokens.
 	 * @return ?array{html: string, css: string} Null when the output is unsafe or too large.
 	 */
-	public function render( PublishedDocument $published, string $fallback = 'source' ): ?array {
-		$compiled = Compiler::compile( $published->document );
-		$html     = $this->renderer->render( $published->document, $published->locale, 'light', $compiled->class_names, $fallback );
+	public function render( PublishedDocument $published, string $fallback = 'source', array $token_ids = [], array $tokens = [] ): ?array {
+		$compiled = Compiler::compile( $published->document, [], $tokens );
+		$html     = $this->renderer->render( $published->document, $published->locale, 'light', $compiled->class_names, $fallback, $token_ids );
 		if ( \strlen( $html ) > self::MAX_HTML || ! PreviewSanitizer::accepts( $html ) ) {
 			return null;
 		}

@@ -140,6 +140,7 @@ export const en_US = {
   'inspector.style.empty': 'Select an element to edit its style.',
   'inspector.settings.empty': 'Select an element to edit its settings.',
   'inspector.prop.text': 'Text',
+  'inspector.richText.later': 'Rich text: editing arrives with BWB-135 stage 2',
   'inspector.prop.level': 'Heading level',
   'inspector.prop.label': 'Label',
   'inspector.prop.href': 'Link',

@@ -167,6 +167,7 @@ describe('deterministic output', () => {
       'blx.el.s0.bp',
       'blx.el.s0.mode',
       'blx.el.s0.modebp',
+      'blx.marks',
     ]);
   });
 });

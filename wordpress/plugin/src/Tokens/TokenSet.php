@@ -147,14 +147,16 @@ final class TokenSet {
 		foreach ( $set->tokens as $token ) {
 			$name  = '--blx-' . $token->name;
 			$out[] = [
-				'name'  => $name,
-				'value' => $token->value,
+				'name'     => $name,
+				'value'    => $token->value,
+				'category' => $token->category,
 			];
 			if ( \property_exists( $token, 'dark' ) && $token->dark !== $token->value ) {
 				$out[] = [
-					'name'  => $name,
-					'value' => $token->dark,
-					'mode'  => 'dark',
+					'name'     => $name,
+					'value'    => $token->dark,
+					'category' => $token->category,
+					'mode'     => 'dark',
 				];
 			}
 		}

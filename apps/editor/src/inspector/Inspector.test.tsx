@@ -64,6 +64,7 @@ async function mount(
     reactive?: boolean;
     chromeTheme?: 'light' | 'dark';
     preserveSectionDefaults?: boolean;
+    richValue?: boolean;
   } = {},
 ) {
   const target = el('target', type);
@@ -72,7 +73,25 @@ async function mount(
     document: makeDocument({
       root: [target],
       locales: ['en_US', 'fr_FR'],
-      translations: { en_US: { target: { values: { text: 'Source' }, status: 'translated' } }, fr_FR: {} },
+      translations: {
+        en_US: {
+          target: {
+            values: {
+              text: options.richValue
+                ? {
+                    v: 1,
+                    inline: [
+                      { t: 'text', s: 'Rich ', m: ['strong'] },
+                      { t: 'text', s: 'text' },
+                    ],
+                  }
+                : 'Source',
+            },
+            status: 'translated',
+          },
+        },
+        fr_FR: {},
+      },
     }),
   });
   store.getState().setContentLocale(options.locale ?? 'en_US');
@@ -302,6 +321,17 @@ describe('Inspector controls', () => {
     await mount('blixis/text');
     expect(screen.getByRole('textbox', { name: 'Text' })).toBeTruthy();
     expect(screen.getByRole('textbox', { name: 'Text' }).tagName).toBe('TEXTAREA');
+  });
+
+  it('shows rich text as read-only plain text and does not dispatch edits', async () => {
+    const { store } = await mount('blixis/heading', { richValue: true });
+    const field = screen.getByRole<HTMLTextAreaElement>('textbox', { name: 'Text' });
+    expect(field.value).toBe('Rich text');
+    expect(field.readOnly).toBe(true);
+    expect(screen.getByText('Rich text: editing arrives with BWB-135 stage 2')).toBeTruthy();
+    const before = store.getState().document;
+    fireEvent.change(field, { target: { value: 'replacement' } });
+    expect(store.getState().document).toEqual(before);
   });
 
   it('renders the schema-backed heading tag control', async () => {

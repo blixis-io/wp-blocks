@@ -53,6 +53,14 @@ final class RegistryRenderTest extends TestCase {
 		ElementRegistry::from_array( $manifest );
 	}
 
+	/** Mark names in text property definitions must match the TypeScript enum. */
+	public function test_manifest_rejects_unknown_text_marks(): void {
+		$manifest = \json_decode( (string) \file_get_contents( \dirname( __DIR__ ) . '/data/core-elements.json' ), true ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Fixture.
+		$manifest['elements'][0]['props']['text']['marks'] = [ 'bogus', 1 ];
+		$this->expectException( \InvalidArgumentException::class );
+		ElementRegistry::from_array( $manifest );
+	}
+
 	/** The optional style capability list accepts property ids and rejects malformed or duplicate entries. */
 	public function test_style_properties_are_bounded_property_ids(): void {
 		$manifest = \json_decode( (string) \file_get_contents( \dirname( __DIR__ ) . '/data/core-elements.json' ), true ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Fixture.
@@ -74,6 +82,9 @@ final class RegistryRenderTest extends TestCase {
 	 * Apply the documented contract.
 	 */
 	public function test_url_rejects_obfuscation(): void {
+		$corpus = \json_decode( (string) \file_get_contents( \dirname( __DIR__, 3 ) . '/tests/fixtures/rich-text/cases.json' ) ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Shared fixture.
+		foreach ( $corpus->url_cases as $case ) {
+			$this->assertSame( $case->safe, SafeUrl::accepts( $case->value ), $case->value ); }
 		foreach ( [ 'javascript:x', 'data:x', '//evil.test', 'java%0ascript:x', "java\tscript:x", 'java&#58;script:x', 'x\\y', 'x y' ] as $url ) {
 			$this->assertFalse( SafeUrl::accepts( $url ), $url );
 		}

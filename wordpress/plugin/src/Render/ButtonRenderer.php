@@ -20,6 +20,7 @@ final class ButtonRenderer implements ElementRenderer {
 		$variant = $node->value( 'variant', 'solid' );
 		$variant = \in_array( $variant, [ 'solid', 'outline', 'link' ], true ) ? $variant : 'solid';
 		$target  = true === $node->value( 'newTab', false ) ? ' target="_blank" rel="noopener noreferrer"' : '';
-		return '<a' . Escape::hooks( $node, 'blx-button blx-button--' . $variant ) . ' href="' . Escape::url( (string) $node->value( 'href', '#' ) ) . '"' . $target . '>' . Escape::html( (string) $node->value( 'label', 'Button' ) ) . '</a>';
+		$label   = $node->value( 'label', 'Button' );
+		return '<a' . Escape::hooks( $node, 'blx-button blx-button--' . $variant ) . ' href="' . Escape::url( (string) $node->value( 'href', '#' ) ) . '"' . $target . '>' . ( \is_string( $label ) ? Escape::html( $label ) : RichText::render_validated( $label, false, $context->token_ids ) ) . '</a>';
 	}
 }

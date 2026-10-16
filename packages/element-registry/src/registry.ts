@@ -1,4 +1,4 @@
-import { admitValue, type ElementNode, type Json, type TranslationCheck } from '@blixis/wp-core';
+import { admitValue, validateRichText, type ElementNode, type Json, type TranslationCheck } from '@blixis/wp-core';
 import {
   EXTENSION_API_VERSION,
   ElementDefinitionSchema,
@@ -63,8 +63,8 @@ function checkDefinition(def: ElementDefinition, source: Source): string[] {
     );
   for (const [name, prop] of Object.entries(def.props)) {
     const where = `property ${name}`;
-    if (prop.classification === 'translatable' && prop.kind !== 'string')
-      errors.push(`${where}: only string properties can be translatable`);
+    if (prop.classification === 'translatable' && !['string', 'text'].includes(prop.kind))
+      errors.push(`${where}: only string or text properties can be translatable`);
     if (prop.classification === 'locale-specific' && !['string', 'url', 'media'].includes(prop.kind))
       errors.push(`${where}: ${prop.kind} properties cannot be locale-specific`);
     if (prop.kind === 'integer' && prop.min > prop.max) errors.push(`${where}: min is greater than max`);
@@ -182,7 +182,27 @@ export class ElementRegistry {
         message: `${property} is not a translatable or locale-specific property of ${type}`,
       };
     }
-    const messages = describe(property, prop, value);
+    const messages =
+      prop.kind === 'text' && typeof value !== 'string'
+        ? (() => {
+            const result = validateRichText(value);
+            if (!result.ok) return [`invalid rich text (${result.code})`];
+            if (!valueSchemaFor(prop).safeParse(value).success) return ['rich text exceeds this property limit'];
+            if (prop.marks !== undefined) {
+              const allowed = new Set(prop.marks);
+              for (const node of result.value.inline) {
+                if (
+                  node.t === 'text' &&
+                  node.m?.some(
+                    (mark) => !allowed.has(typeof mark === 'string' ? mark : 'link' in mark ? 'link' : 'style'),
+                  )
+                )
+                  return ['rich text contains a mark not permitted by this property'];
+              }
+            }
+            return [];
+          })()
+        : describe(property, prop, value);
     return messages.length === 0
       ? { ok: true }
       : { ok: false, code: 'invalid-translation', message: messages.join('; ') };

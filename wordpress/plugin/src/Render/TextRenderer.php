@@ -17,6 +17,7 @@ final class TextRenderer implements ElementRenderer {
 	 * @param RenderContext $context Context.
 	 */
 	public function render( ElementNode $node, RenderContext $context ): string {
-		return '<p' . Escape::hooks( $node ) . '>' . Escape::html( (string) $node->value( 'text', 'Write something' ) ) . '</p>';
+		$value = $node->value( 'text', 'Write something' );
+		return '<p' . Escape::hooks( $node ) . '>' . ( \is_string( $value ) ? Escape::html( $value ) : RichText::render_validated( $value, true, $context->token_ids ) ) . '</p>';
 	}
 }

@@ -37,6 +37,8 @@ Strings are accepted only in `font-family` and in `--blx-*` custom properties (d
 
 ## Implementation
 
+Inline rich-text styling uses the separate `blx.marks` layer. It generates fixed `.blx-mc-<token-id>` and `.blx-mh-<token-id>` classes only for active color tokens and fixed `.blx-mw-*` weights. These classes contain token references or enumerated numeric weights; translated content never supplies CSS values. Inline style attributes remain prohibited by the canvas CSP. See ADR 0014.
+
 A hand-written linear scanner (`src/tokenize.ts`), not regular expressions on the value, produces a small tree (identifiers, numbers, dimensions, percentages, hashes, functions, commas, slashes, operators). The grammar (`src/grammar.ts`) validates functions first, then the property's grammar. It uses no Node APIs, so it runs in the editor and in Node. The PHP twin (BWB-027) reads `manifest/css-properties.json` for the allow-lists, but the manifest is data only: the tokenizer, canonical serialization, function argument policies, `var()` stand-ins and grammar algorithms are normative in `src/*.ts` and are pinned by the corpus, which the twin must pass byte for byte (including the error codes and the canonical value). The corpus grows with every divergence found.
 
 ## PHP twin

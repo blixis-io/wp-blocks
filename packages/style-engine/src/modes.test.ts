@@ -98,7 +98,7 @@ describe('light and dark tokens end to end (tokens -> compiler -> cascade)', () 
     const dark = /:where\(html\[data-theme="dark"\]\)\{([^}]*)\}/.exec(result.css)?.[1] ?? '';
     expect(dark).toBe('--blx-color-bg:#101418;--blx-color-text:#e5e7eb');
     expect(tokensForCompile(validated.set).filter((t) => t.name === '--blx-color-line')).toEqual([
-      { name: '--blx-color-line', value: '#d1d5db' },
+      { name: '--blx-color-line', value: '#d1d5db', category: 'color' },
     ]);
   });
 

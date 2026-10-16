@@ -8,7 +8,7 @@
       },
       "label": {
         "classification": "translatable",
-        "kind": "string"
+        "kind": "text"
       },
       "newTab": {
         "classification": "invariant",
@@ -32,7 +32,7 @@
       },
       "text": {
         "classification": "translatable",
-        "kind": "string"
+        "kind": "text"
       }
     },
     "blixis/image": {
@@ -58,7 +58,7 @@
     "blixis/text": {
       "text": {
         "classification": "translatable",
-        "kind": "string"
+        "kind": "text"
       }
     }
   }

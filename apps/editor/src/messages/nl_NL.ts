@@ -143,6 +143,7 @@ export const nl_NL: Record<MessageKey, string> = {
   'inspector.style.empty': 'Selecteer een element om de stijl te bewerken.',
   'inspector.settings.empty': 'Selecteer een element om de instellingen te bewerken.',
   'inspector.prop.text': 'Tekst',
+  'inspector.richText.later': 'Rich text: bewerken komt in BWB-135 fase 2',
   'inspector.prop.level': 'Kopniveau',
   'inspector.prop.label': 'Label',
   'inspector.prop.href': 'Link',

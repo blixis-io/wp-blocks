@@ -3,12 +3,13 @@ import type { FieldControlProps } from './field-types';
 
 export function TextControl(props: FieldControlProps) {
   const { id, name, definition, draft, disabled, describedBy, onDraft, onCommit, onFocus, onBlur } = props;
-  const multiline = definition.kind === 'string' && name === 'text' && definition.maxLength > 1000;
+  const multiline =
+    (definition.kind === 'string' || definition.kind === 'text') && name === 'text' && definition.maxLength > 1000;
   const common = {
     id,
     disabled,
     'aria-describedby': describedBy,
-    maxLength: definition.kind === 'string' ? definition.maxLength : undefined,
+    maxLength: definition.kind === 'string' || definition.kind === 'text' ? definition.maxLength : undefined,
     value: draft,
     onFocus,
     onBlur,

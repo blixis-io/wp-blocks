@@ -70,12 +70,17 @@ final class LocaleSavingTest extends TestCase {
 		);
 	}
 
-	/** Shape and bounds of content streams are enforced; rich text and unknown keys are refused. */
+	/** Shape and bounds of content streams are enforced; validated rich text is accepted. */
 	public function test_content_validation(): void {
 		$validator = new ContentValidator();
 		$key       = MetaKeys::content( 'nl_NL' );
 		$this->assertTrue( $validator->accepts( $this->content(), $key ) );
 		$this->assertTrue( $validator->accepts( $this->content( [ 'entries' => new \stdClass() ] ), $key ) );
+		$rich = \json_decode( '{"v":1,"inline":[{"t":"text","s":"Hallo","m":["strong"]}]}' );
+		$this->assertInstanceOf( \stdClass::class, $rich );
+		$this->assertTrue( $validator->accepts( $this->content( [ 'entries' => [ 'hed-1' => [ 'values' => [ 'text' => $rich ] ] ] ] ), $key ) );
+		$this->assertFalse( $validator->accepts( $this->content( [ 'entries' => [ 'hed-1' => [ 'values' => [ 'href' => $rich ] ] ] ] ), $key ), 'rich value under URL property' );
+		$this->assertFalse( $validator->accepts( $this->content( [ 'entries' => [ 'hed-1' => [ 'values' => [ 'alt' => $rich ] ] ] ] ), $key ), 'rich value under alternative text property' );
 		$entry = static fn ( array $over ): array => [
 			'entries' => [
 				'hed-1' => $over,
@@ -90,6 +95,7 @@ final class LocaleSavingTest extends TestCase {
 			'source hash too long'  => $entry( [ 'sourceHash' => \str_repeat( 'a', 17 ) ] ),
 			'values not an object'  => $entry( [ 'values' => [ 'x' ] ] ),
 			'rich text array'       => $entry( [ 'values' => [ 'text' => [ 'type' => 'p' ] ] ] ),
+			'unsafe rich URL'       => $entry( [ 'values' => [ 'text' => \json_decode( '{"v":1,"inline":[{"t":"text","s":"x","m":[{"link":{"href":"javascript:alert(1)"}}]}]}' ) ] ] ),
 			'float value'           => $entry( [ 'values' => [ 'n' => 1.5 ] ] ),
 			'bad property name'     => $entry( [ 'values' => [ 'Text' => 'x' ] ] ),
 			'string too long'       => $entry( [ 'values' => [ 'text' => \str_repeat( 'a', 20001 ) ] ] ),
