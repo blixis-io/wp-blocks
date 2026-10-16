@@ -90,6 +90,59 @@ export interface RichTextHost {
   onEnd(reason: 'commit' | 'cancel'): void;
   tokens?: ReadonlySet<string>;
   multiline: boolean;
+  focus?: boolean;
+}
+/** Replaces only the changed plain-text range so marks outside the edit survive. */
+export function replacePlainText(editor: Editor, text: string, multiline: boolean): void {
+  if (editor.view.composing || text.length > 20_000) return;
+  const next = text.replace(/[\r\n]+/g, multiline ? '\n' : ' ');
+  const doc = editor.state.doc;
+  const previous = doc.textBetween(0, doc.content.size, '\n');
+  let prefix = 0;
+  while (prefix < previous.length && prefix < next.length && previous[prefix] === next[prefix]) prefix++;
+  let suffix = 0;
+  while (
+    suffix < previous.length - prefix &&
+    suffix < next.length - prefix &&
+    previous[previous.length - 1 - suffix] === next[next.length - 1 - suffix]
+  )
+    suffix++;
+  const positionAt = (offset: number): number => {
+    let remaining = offset;
+    let result = 1;
+    let found = false;
+    doc.descendants((node, pos) => {
+      if (found) return false;
+      if (node.isText) {
+        const length = node.text?.length ?? 0;
+        if (remaining <= length) {
+          result = pos + remaining;
+          found = true;
+          return false;
+        }
+        remaining -= length;
+      } else if (node.type.name === 'hardBreak') {
+        if (remaining === 0) {
+          result = pos;
+          found = true;
+          return false;
+        }
+        remaining--;
+      }
+      return true;
+    });
+    return result;
+  };
+  const from = positionAt(prefix);
+  const to = positionAt(previous.length - suffix);
+  const marks = doc.resolve(Math.max(1, Math.min(from, doc.content.size - 1))).marks();
+  const lines = next.slice(prefix, next.length - suffix).split('\n');
+  const hardBreakNode = editor.schema.nodes['hardBreak'];
+  const inserted = lines.flatMap((line, index) => [
+    ...(line ? [editor.schema.text(line, marks)] : []),
+    ...(index < lines.length - 1 && hardBreakNode ? [hardBreakNode.create()] : []),
+  ]);
+  editor.view.dispatch(editor.state.tr.replaceWith(from, to, inserted));
 }
 function singleLineValue(value: unknown): unknown {
   if (typeof value === 'string') return value.replace(/[\r\n]+/g, ' ');
@@ -109,7 +162,7 @@ export function mountRichText(
   element: HTMLElement,
   value: unknown,
   host: RichTextHost & { caret?: number },
-): { editor: Editor; destroy(): void } {
+): { editor: Editor; setText(text: string): void; destroy(): void } {
   const original = element.innerHTML;
   const mount = element.ownerDocument.createElement('div');
   const initialValue = host.multiline ? value : singleLineValue(value);
@@ -213,7 +266,7 @@ export function mountRichText(
   element.replaceChildren(mount);
   // The edit starts from a double click on a non-focusable element: put the caret in the editor (and focus the canvas window),
   // otherwise key events keep going to the body and typing, shortcuts and Escape do nothing.
-  element.ownerDocument.defaultView?.focus();
+  if (host.focus !== false) element.ownerDocument.defaultView?.focus();
   const textLength = editor.state.doc.textBetween(0, editor.state.doc.content.size, '\n').length;
   const caret =
     typeof host.caret === 'number' && Number.isInteger(host.caret)
@@ -228,8 +281,11 @@ export function mountRichText(
     remaining -= take;
     return remaining > 0;
   });
-  editor.commands.setTextSelection(Math.max(1, Math.min(position, editor.state.doc.content.size - 1)));
-  editor.commands.focus();
+  // A mirrored session (the inspector field drives it) must not touch the canvas selection or focus at all.
+  if (host.focus !== false) {
+    editor.commands.setTextSelection(Math.max(1, Math.min(position, editor.state.doc.content.size - 1)));
+    editor.commands.focus();
+  }
   let destroyed = false;
   const onCompositionEnd = (): void => {
     setTimeout(() => {
@@ -239,6 +295,9 @@ export function mountRichText(
   editor.view.dom.addEventListener('compositionend', onCompositionEnd);
   return {
     editor,
+    setText: (text) => {
+      replacePlainText(editor, text, host.multiline);
+    },
     destroy() {
       if (destroyed) return;
       destroyed = true;

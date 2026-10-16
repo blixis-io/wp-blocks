@@ -91,6 +91,7 @@ describe('parent -> canvas messages', () => {
       caret: 2,
     },
     { type: 'edit-command', name: 'toggle-mark', args: { mark: 'bold' } },
+    { type: 'edit-command', name: 'set-text', args: { text: 'edited\nvalue' } },
     { type: 'edit-end', commit: true },
   ];
   it.each(valid.map((m) => [(m as { type: string }).type, m]))('accepts a valid %s', (_name, message) => {
@@ -128,6 +129,10 @@ describe('parent -> canvas messages', () => {
     ['viewport long breakpoint', { type: 'viewport', width: 300, breakpoint: 'a'.repeat(33) }],
     ['viewport breakpoint with newline', { type: 'viewport', width: 300, breakpoint: 'base\n' }],
     ['mode unknown', { type: 'mode', mode: 'sepia' }],
+    ['set-text too long', { type: 'edit-command', name: 'set-text', args: { text: 'x'.repeat(20_001) } }],
+    ['set-text control character', { type: 'edit-command', name: 'set-text', args: { text: 'x\u0001y' } }],
+    ['set-text unknown argument', { type: 'edit-command', name: 'set-text', args: { text: 'x', html: 'x' } }],
+    ['set-text unknown command field', { type: 'edit-command', name: 'set-text', text: 'x' }],
     ['select bad id', { type: 'select', id: 'x' }],
     ['select undefined id', { type: 'select', id: undefined }],
     ['select missing id', { type: 'select' }],

@@ -79,12 +79,22 @@ function Shell({
   const [sendEditCommand, setSendEditCommand] = useState<(name: string, args?: Record<string, unknown>) => void>(
     () => () => undefined,
   );
-  const [startEdit, setStartEdit] = useState<(id: string, prop: string) => void>(() => () => undefined);
+  const [startEdit, setStartEdit] = useState<(id: string, prop: string, focus?: boolean) => void>(
+    () => () => undefined,
+  );
+  const [setEditText, setSetEditText] = useState<(text: string) => void>(() => () => undefined);
+  const [endEdit, setEndEdit] = useState<(commit: boolean) => void>(() => () => undefined);
   const registerEditCommand = useCallback((send: (name: string, args?: Record<string, unknown>) => void) => {
     setSendEditCommand(() => send);
   }, []);
-  const registerEditStart = useCallback((start: (id: string, prop: string) => void) => {
+  const registerEditStart = useCallback((start: (id: string, prop: string, focus?: boolean) => void) => {
     setStartEdit(() => start);
+  }, []);
+  const registerEditText = useCallback((setText: (text: string) => void) => {
+    setSetEditText(() => setText);
+  }, []);
+  const registerEditEnd = useCallback((end: (commit: boolean) => void) => {
+    setEndEdit(() => end);
   }, []);
   const store = useEditorStoreApi();
   const panels = useEditorStore((state) => state.panels);
@@ -203,6 +213,8 @@ function Shell({
                 onTokenColorsChange={setTokenColors}
                 onEditCommandApiChange={registerEditCommand}
                 onEditStartApiChange={registerEditStart}
+                onEditTextApiChange={registerEditText}
+                onEditEndApiChange={registerEditEnd}
                 {...canvas}
               />
             </>
@@ -265,14 +277,16 @@ function Shell({
                 editSelection={editSelection}
                 tokenColors={tokenColors}
                 sendEditCommand={sendEditCommand}
+                setEditText={setEditText}
+                endEdit={endEdit}
                 inlineEditing={inlineEditing}
                 onInlineEditingChange={(value) => {
                   setInlineEditing(value);
                   writeSessionStorage('blixis-inline-editing', String(value));
                 }}
-                startEdit={(id, prop) => {
+                startEdit={(id, prop, focus) => {
                   setInspectorTab('content');
-                  startEdit(id, prop);
+                  startEdit(id, prop, focus);
                 }}
               />
             </TabsContent>

@@ -130,6 +130,8 @@ export interface CanvasProps extends CanvasTestOptions {
   onTokenColorsChange?: (colors: CanvasSession['tokenColors']) => void;
   onEditCommandApiChange?: (send: CanvasSession['sendEditCommand']) => void;
   onEditStartApiChange?: (start: CanvasSession['startEdit']) => void;
+  onEditTextApiChange?: (setText: CanvasSession['setEditText']) => void;
+  onEditEndApiChange?: (end: CanvasSession['endEdit']) => void;
   inlineEditing?: boolean;
 }
 
@@ -146,6 +148,8 @@ export function Canvas({
   onTokenColorsChange,
   onEditCommandApiChange,
   onEditStartApiChange,
+  onEditTextApiChange,
+  onEditEndApiChange,
   inlineEditing = true,
 }: CanvasProps) {
   const { t, lang, dir } = useI18n();
@@ -218,8 +222,8 @@ export function Canvas({
     },
     [frame],
   );
-  const stableStartEdit = useCallback((id: string, prop: string) => {
-    startEditRef.current(id, prop);
+  const stableStartEdit = useCallback((id: string, prop: string, focus?: boolean) => {
+    startEditRef.current(id, prop, focus);
   }, []);
   useEffect(() => {
     onEditSessionChange?.(session.editSession);
@@ -228,6 +232,8 @@ export function Canvas({
   useEffect(() => onTokenColorsChange?.(session.tokenColors), [onTokenColorsChange, session.tokenColors]);
   useEffect(() => onEditCommandApiChange?.(stableSendEditCommand), [onEditCommandApiChange, stableSendEditCommand]);
   useEffect(() => onEditStartApiChange?.(stableStartEdit), [onEditStartApiChange, stableStartEdit]);
+  useEffect(() => onEditTextApiChange?.(session.setEditText), [onEditTextApiChange, session.setEditText]);
+  useEffect(() => onEditEndApiChange?.(session.endEdit), [onEditEndApiChange, session.endEdit]);
   const width = FRAME_WIDTHS[viewport];
   useLayoutEffect(() => {
     if (!frame || !stage) {

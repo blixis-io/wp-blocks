@@ -24,6 +24,7 @@ export type ParentMessage =
       locale: string;
       dir: 'ltr' | 'rtl';
       caret?: number;
+      focus?: boolean;
     }
   | { type: 'edit-command'; name: string; args?: Record<string, unknown> }
   | { type: 'edit-end'; commit: boolean };
@@ -188,6 +189,15 @@ function validEditCommand(name: string, args: unknown): boolean {
   if (args === undefined) return ['select-all', 'clear-marks', 'clear-link', 'collapse-selection'].includes(name);
   if (!args || typeof args !== 'object' || Array.isArray(args)) return false;
   const record = args as Record<string, unknown>;
+  if (name === 'set-text') {
+    const text = record['text'];
+    if (Object.keys(record).length !== 1 || typeof text !== 'string' || text.length > 20_000) return false;
+    for (let index = 0; index < text.length; index += 1) {
+      const code = text.charCodeAt(index);
+      if ((code < 0x20 && code !== 0x0a) || code === 0x7f) return false;
+    }
+    return true;
+  }
   if (name === 'toggle-mark')
     return (
       Object.keys(record).length === 1 &&
@@ -295,7 +305,11 @@ function parseParent(data: unknown): Parsed<ParentMessage> {
       return isInt(f['n'], 0, Number.MAX_SAFE_INTEGER) ? succeed({ type, n: f['n'] }) : fail('invalid-field');
     }
     case 'edit-start': {
-      const f = readExact(data, ['type', 'id', 'prop', 'value', 'editable', 'mode', 'locale', 'dir'], ['caret']);
+      const f = readExact(
+        data,
+        ['type', 'id', 'prop', 'value', 'editable', 'mode', 'locale', 'dir'],
+        ['caret', 'focus'],
+      );
       if (f === null) return fail('malformed');
       if (
         !isElementId(f['id']) ||
@@ -306,7 +320,8 @@ function parseParent(data: unknown): Parsed<ParentMessage> {
         typeof f['locale'] !== 'string' ||
         f['locale'].length > 64 ||
         !['ltr', 'rtl'].includes(String(f['dir'])) ||
-        (f['caret'] !== undefined && !isInt(f['caret'], 0, 20_000))
+        (f['caret'] !== undefined && !isInt(f['caret'], 0, 20_000)) ||
+        (f['focus'] !== undefined && typeof f['focus'] !== 'boolean')
       )
         return fail('invalid-field');
       return succeed({
@@ -319,6 +334,7 @@ function parseParent(data: unknown): Parsed<ParentMessage> {
         locale: f['locale'],
         dir: f['dir'] as 'ltr' | 'rtl',
         ...(f['caret'] === undefined ? {} : { caret: f['caret'] }),
+        ...(f['focus'] === undefined ? {} : { focus: f['focus'] }),
       });
     }
     case 'edit-command': {
@@ -335,6 +351,7 @@ function parseParent(data: unknown): Parsed<ParentMessage> {
           'select-all',
           'collapse-selection',
           'apply-to-all',
+          'set-text',
         ].includes(f['name'])
       )
         return fail('malformed');

@@ -112,17 +112,37 @@ export function startRuntime(env: RuntimeEnv = { document, window }): Runtime | 
   let activeEdit: {
     id: string;
     prop: string;
+    multiline: boolean;
     initial: unknown;
     caret?: number;
     element: HTMLElement;
     editor: any;
+    setText(text: string): void;
     destroy(): void;
   } | null = null;
   let richTextLoading: Promise<
-    ((element: HTMLElement, value: unknown, host: Record<string, unknown>) => { editor: any; destroy(): void }) | null
+    | ((
+        element: HTMLElement,
+        value: unknown,
+        host: Record<string, unknown>,
+      ) => {
+        editor: any;
+        setText(text: string): void;
+        destroy(): void;
+      })
+    | null
   > | null = null;
   const ensureRichText = (): Promise<
-    ((element: HTMLElement, value: unknown, host: Record<string, unknown>) => { editor: any; destroy(): void }) | null
+    | ((
+        element: HTMLElement,
+        value: unknown,
+        host: Record<string, unknown>,
+      ) => {
+        editor: any;
+        setText(text: string): void;
+        destroy(): void;
+      })
+    | null
   > => {
     if (richTextLoading) return richTextLoading;
     richTextLoading = new Promise((resolve) => {
@@ -416,12 +436,14 @@ export function startRuntime(env: RuntimeEnv = { document, window }): Runtime | 
       onEnd: (reason: 'commit' | 'cancel') => {
         finishEdit(reason);
       },
+      focus: message.focus,
       tokens: activeTokenIds(),
       caret: message.caret,
     });
     activeEdit = {
       id: message.id,
       prop: message.prop,
+      multiline: message.mode === 'inline',
       initial: message.value,
       element,
       ...(message.caret === undefined ? {} : { caret: message.caret }),
@@ -434,6 +456,10 @@ export function startRuntime(env: RuntimeEnv = { document, window }): Runtime | 
     const editor = activeEdit?.editor;
     if (!editor) return;
     const commands = editor.commands;
+    if (name === 'set-text' && typeof args?.['text'] === 'string') {
+      activeEdit?.setText(args['text']);
+      return;
+    }
     if (name === 'apply-to-all' && typeof args?.['name'] === 'string') {
       const previous = editor.state.selection;
       editor.commands.selectAll();
