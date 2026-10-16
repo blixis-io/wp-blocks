@@ -22,6 +22,7 @@ final class ErrorCatalog {
 		'blixis_invalid_locale'        => [ 400, 'Invalid locale.' ],
 		'blixis_invalid_mode'          => [ 400, 'Invalid mode.' ],
 		'blixis_invalid_revision'      => [ 400, 'Invalid revision.' ],
+		'blixis_invalid_page_settings' => [ 400, 'Page settings are invalid.' ],
 		'blixis_unauthenticated'       => [ 401, 'Authentication is required.' ],
 		'blixis_forbidden'             => [ 403, 'Access is forbidden.' ],
 		'blixis_revision_not_found'    => [ 404, 'Revision not found.' ],

@@ -36,7 +36,7 @@ final class AuditEvent {
 		private readonly int $pointer_revision,
 		private readonly ?int $time = null
 	) {
-		if ( ! \in_array( $kind, [ 'publish', 'rollback' ], true ) ) {
+		if ( ! \in_array( $kind, [ 'publish', 'rollback', 'page-settings' ], true ) ) {
 			throw new \InvalidArgumentException( 'Invalid audit event kind.' );
 		}
 	}

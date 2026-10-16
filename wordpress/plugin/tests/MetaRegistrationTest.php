@@ -37,9 +37,12 @@ final class MetaRegistrationTest extends TestCase {
 		$this->assertCount( 1, HookState::$filters['map_meta_cap'] );
 		$this->assertCount( 1, HookState::$filters['wp_post_revision_meta_keys'] );
 		MetaRegistration::register();
-		$this->assertCount( 4, HookState::$meta );
+		$this->assertCount( 8, HookState::$meta );
 		$this->assertSame( [ 'post', MetaKeys::LAYOUT ], \array_slice( HookState::$meta[0], 0, 2 ) );
-		$this->assertSame( [ 'page', MetaKeys::PUBLISHED ], \array_slice( HookState::$meta[3], 0, 2 ) );
+		$this->assertSame( [ 'post', MetaKeys::SEO ], \array_slice( HookState::$meta[2], 0, 2 ) );
+		$this->assertSame( [ 'page', MetaKeys::LAYOUT ], \array_slice( HookState::$meta[4], 0, 2 ) );
+		$this->assertSame( [ 'page', MetaKeys::SEO ], \array_slice( HookState::$meta[6], 0, 2 ) );
+		$this->assertSame( [ 'post', MetaKeys::PAGE_VERSION ], \array_slice( HookState::$meta[3], 0, 2 ) );
 		$this->assertSame( false, HookState::$meta[0][2]['show_in_rest'] );
 		$this->assertSame( 'string', HookState::$meta[0][2]['type'] );
 		$this->assertSame( true, HookState::$meta[0][2]['single'] );

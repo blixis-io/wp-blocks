@@ -13,8 +13,10 @@ namespace Blixis\Builder\Storage;
 
 /** Only these key families belong to the builder repository. */
 final class MetaKeys {
-	public const LAYOUT    = '_blixis_layout';
-	public const PUBLISHED = '_blixis_published';
+	public const LAYOUT       = '_blixis_layout';
+	public const PUBLISHED    = '_blixis_published';
+	public const SEO          = '_blixis_seo';
+	public const PAGE_VERSION = '_blixis_page_version';
 
 	/**
 	 * Check a WordPress locale identifier.
@@ -105,7 +107,7 @@ final class MetaKeys {
 	 * @param string $key Value.
 	 */
 	public static function is_valid_key( string $key ): bool {
-		if ( self::LAYOUT === $key || self::PUBLISHED === $key ) {
+		if ( self::LAYOUT === $key || self::PUBLISHED === $key || self::SEO === $key || self::PAGE_VERSION === $key ) {
 			return true;
 		}
 		if ( 1 === \preg_match( '/^_blixis_content_(.+)$/D', $key, $parts ) ) {

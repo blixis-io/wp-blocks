@@ -19,9 +19,12 @@ final class WordPressRateLimiter implements RateLimiter {
 	 */
 	private SlidingRateLimiter $limiter;
 
-	/** Create the transient-backed policy. */
-	public function __construct() {
-		$this->limiter = new SlidingRateLimiter( new WordPressTransientRateStore(), static fn (): int => \time() );
+	/** Create the transient-backed policy.
+	 *
+	 * @param string $prefix Transient key prefix (one bucket family per feature).
+	 */
+	public function __construct( string $prefix = 'blixis_pub_' ) {
+		$this->limiter = new SlidingRateLimiter( new WordPressTransientRateStore( $prefix ), static fn (): int => \time() );
 	}
 
 	/** Check the current window.

@@ -492,6 +492,206 @@ async function smoke() {
           body: doc('author'),
         });
         check(authorWrite.status === 403, 'an author cannot write another user page');
+        const pageSettingsPost = command(
+          'post',
+          'create',
+          '--post_type=page',
+          '--post_status=publish',
+          '--post_title=Page settings smoke',
+          '--post_name=page-settings-smoke',
+          '--porcelain',
+        );
+        const pageRoute = `${pageSettingsPost}/page`;
+        const pageAs = (who, extra = {}) => api(pageRoute, { cookie: who.cookie, nonce: who.nonce, ...extra });
+        const pageAdmin = { cookie: adminCookie, nonce: adminNonce };
+        const pageRead = await pageAs(pageAdmin);
+        const pageSettings = await json(pageRead);
+        check(
+          pageRead.status === 200 &&
+            typeof pageSettings.version === 'string' &&
+            pageRead.headers.get('etag') === `"${pageSettings.version}"`,
+          'page settings GET returns a version token and matching ETag in the authenticated session',
+        );
+        check(
+          pageSettings.title === 'Page settings smoke' &&
+            typeof pageSettings.slug === 'string' &&
+            pageSettings.slug.startsWith('page-settings-smoke') &&
+            pageSettings.featuredImage === null &&
+            Array.isArray(pageSettings.locales) &&
+            pageSettings.locales.every((locale) => typeof pageSettings.seo?.[locale]?.metaTitle === 'string'),
+          'page settings GET returns the post fields and SEO defaults for every enabled locale',
+        );
+        check((await api(pageRoute, {})).status === 401, 'anonymous users cannot read page settings');
+        const pageSubscriber = { cookie: subscriberCookie, nonce: subscriberNonce };
+        const pageAuthor = { cookie: authorCookie, nonce: authorNonce };
+        check((await pageAs(pageSubscriber)).status === 403, 'a subscriber cannot read page settings');
+        check((await pageAs(pageAuthor)).status === 403, 'an author of another page cannot read page settings');
+        const putPage = (who, version, body) =>
+          pageAs(who, { method: 'PUT', ...(version === null ? {} : { ifMatch: version }), body: JSON.stringify(body) });
+        check(
+          (await putPage(pageSubscriber, `"${pageSettings.version}"`, { title: 'x' })).status === 403 &&
+            (await putPage(pageAuthor, `"${pageSettings.version}"`, { title: 'x' })).status === 403,
+          'a subscriber and an author of another page cannot write page settings',
+        );
+        check(
+          (
+            await api(pageRoute, {
+              method: 'PUT',
+              ifMatch: `"${pageSettings.version}"`,
+              body: '{"title":"Anonymous attempt"}',
+            })
+          ).status === 401,
+          'anonymous users cannot PUT page settings',
+        );
+        check(
+          (await putPage(pageAdmin, null, { title: 'No precondition' })).status === 428,
+          'PUT without If-Match is 428',
+        );
+        const stalePage = await putPage(pageAdmin, '"stale-version"', { title: 'Stale' });
+        check(stalePage.status === 409, 'PUT with a stale If-Match is a conflict');
+        const readPage = async () => json(await pageAs(pageAdmin));
+        check((await readPage()).title === 'Page settings smoke', 'a rejected PUT leaves the post unchanged');
+        const hostileSeo = '"><script>alert(1)</script> & "Unicode \u03a9"';
+        const invalidBodies = [
+          ['an unknown top-level key', { title: 'Ok title', admin: true }],
+          ['an unknown SEO field', { seo: { en_US: { robotsMeta: 'x' } } }],
+          ['a locale that is not enabled', { seo: { xx_XX: { metaTitle: 'x' } } }],
+          ['a javascript: canonical URL', { seo: { en_US: { canonical: 'javascript:alert(1)' } } }],
+          ['a data: canonical URL', { seo: { en_US: { canonical: 'data:text/html,x' } } }],
+          ['a protocol-relative canonical URL', { seo: { en_US: { canonical: '//evil.test/x' } } }],
+          ['a canonical URL on another host', { seo: { en_US: { canonical: 'https://evil.test/x' } } }],
+          ['a canonical URL with credentials', { seo: { en_US: { canonical: 'http://user:pass@localhost/x' } } }],
+          ['an overlong title', { title: 'x'.repeat(201) }],
+          ['a control character in the title', { title: 'bad\u0000title' }],
+          ['an overlong meta description', { seo: { en_US: { metaDescription: 'x'.repeat(321) } } }],
+          ['a non-image attachment id', { featuredImageId: Number(pageSettingsPost) }],
+          ['a missing attachment id', { featuredImageId: 99999999 }],
+          ['a non-boolean noindex', { seo: { en_US: { noindex: 'yes' } } }],
+          [
+            'a valid title next to an invalid canonical (atomic)',
+            { title: 'Must not be saved', seo: { en_US: { canonical: 'https://evil.test/x' } } },
+          ],
+        ];
+        let currentVersion = pageSettings.version;
+        for (const [label, body] of invalidBodies) {
+          const response = await putPage(pageAdmin, `"${currentVersion}"`, body);
+          const failure = await json(response);
+          check(
+            response.status === 400 && failure.code === 'blixis_invalid_page_settings',
+            `page settings reject ${label}`,
+          );
+        }
+        const pageAfterInvalid = await readPage();
+        check(
+          pageAfterInvalid.title === 'Page settings smoke' && pageAfterInvalid.version === currentVersion,
+          'rejected page settings requests write nothing (title and version are unchanged)',
+        );
+        const pageWrite = await putPage(pageAdmin, `"${currentVersion}"`, {
+          title: 'Page settings smoke edited',
+          excerpt: 'Excerpt with <b>markup</b>',
+          seo: {
+            en_US: {
+              metaTitle: hostileSeo,
+              metaDescription: hostileSeo,
+              ogTitle: 'OG title',
+              noindex: true,
+            },
+          },
+        });
+        const pageWritten = await json(pageWrite);
+        check(
+          pageWrite.status === 200 && typeof pageWritten.version === 'string' && pageWritten.version !== currentVersion,
+          'a valid page settings PUT is applied and returns a new version',
+        );
+        check(
+          (await putPage(pageAdmin, `"${currentVersion}"`, { title: 'Replay' })).status === 409,
+          'the previous version token no longer applies after a write (lost update protection)',
+        );
+        currentVersion = pageWritten.version;
+        const pageAfterWrite = await readPage();
+        check(
+          pageAfterWrite.title === 'Page settings smoke edited' &&
+            pageAfterWrite.excerpt === 'Excerpt with markup' &&
+            pageAfterWrite.seo.en_US.noindex === true &&
+            pageAfterWrite.seo.en_US.metaTitle === '"> & "Unicode \u03a9"',
+          'GET returns what was saved, with markup stripped from plain-text fields',
+        );
+        const pageHtml = await (await http(`${base}/${pageSettings.slug}/`)).text();
+        check(
+          pageHtml.includes('&quot;&gt;') &&
+            !pageHtml.includes('<script>alert(1)</script>') &&
+            !pageHtml.includes('content=""><script'),
+          'hostile page SEO values are escaped in the public HTML',
+        );
+        check(
+          pageHtml.includes('<meta name="description" content="&quot;&gt; &amp; &quot;Unicode \u03a9&quot;">') &&
+            new RegExp(`<link rel="canonical" href="[^"]*${pageSettings.slug}/?"`).test(pageHtml) &&
+            (pageHtml.match(/rel="canonical"/g) ?? []).length === 1 &&
+            /<meta name=.robots. content=.[^'"]*noindex/.test(pageHtml) &&
+            /<meta property="og:title" content="OG title">/.test(pageHtml),
+          'the public page prints the description, a single canonical link, robots noindex and Open Graph tags',
+        );
+        // Two writes in a row (same second): each fresh token applies, the replayed one is a conflict.
+        const quickA = await putPage(pageAdmin, `"${currentVersion}"`, { excerpt: 'Quick one' });
+        const quickAVersion = (await json(quickA)).version;
+        const quickB = await putPage(pageAdmin, `"${quickAVersion}"`, { excerpt: 'Quick two' });
+        const quickBVersion = (await json(quickB)).version;
+        check(
+          quickA.status === 200 &&
+            quickB.status === 200 &&
+            quickAVersion !== quickBVersion &&
+            quickAVersion !== currentVersion,
+          'two page settings writes within one second each return a distinct new version',
+        );
+        check(
+          (await putPage(pageAdmin, `"${quickAVersion}"`, { excerpt: 'Replay' })).status === 409,
+          'a version token that was superseded within the same second is rejected',
+        );
+        currentVersion = quickBVersion;
+        for (const [label, canonical] of [
+          ['another port', `${Object.assign(new URL(base), { port: '9999' }).origin}/x`],
+          ['the other scheme', `${base.replace(/^http:/, 'https:')}/x`],
+          ['userinfo', `${base.replace('://', '://user@')}/x`],
+        ]) {
+          const response = await putPage(pageAdmin, `"${currentVersion}"`, { seo: { en_US: { canonical } } });
+          check(response.status === 400, `page settings reject a canonical URL with ${label}`);
+        }
+        // Direct meta writes bypass the endpoint (XML-RPC, WP-CLI, other code): the front end must still neutralise them.
+        const hostileEnvelope = JSON.stringify({
+          schemaVersion: 1,
+          locales: {
+            en_US: {
+              metaTitle: '</title><script>alert(1)</script>Direct title',
+              metaDescription: '"><script>alert(2)</script>',
+              canonical: 'https://evil.test/x',
+              noindex: false,
+            },
+          },
+        });
+        command('post', 'meta', 'update', pageSettingsPost, '_blixis_seo', hostileEnvelope);
+        const directHtml = await (await http(`${base}/${pageSettings.slug}/`)).text();
+        const directTitle = /<title>([\s\S]*?)<\/title>/.exec(directHtml)?.[1] ?? '';
+        check(
+          !directTitle.includes('<') &&
+            !directHtml.includes('<script>alert(1)</script>') &&
+            !directHtml.includes('<script>alert(2)</script>') &&
+            !directHtml.includes('evil.test'),
+          'a hostile envelope written around the endpoint is neutralised in the title, description and canonical output',
+        );
+        check(
+          wpOut(
+            'eval',
+            `wp_set_current_user( get_user_by( 'login', 'author_ann' )->ID ); echo current_user_can( 'edit_post_meta', ${pageSettingsPost}, '_blixis_seo' ) ? 'yes' : 'no';`,
+          ) === 'no',
+          'no user, not even an author, may edit the endpoint-owned SEO meta through the general meta APIs',
+        );
+        const anonymousPageWrite = await api(pageRoute, {
+          method: 'PUT',
+          ifMatch: `"${currentVersion}"`,
+          body: JSON.stringify({ title: 'Anonymous attempt' }),
+        });
+        check(anonymousPageWrite.status === 401, 'anonymous users still cannot PUT page settings');
+        command('post', 'delete', pageSettingsPost, '--force');
         // Preview API (BWB-042): working vs request source, auth, caps and no leaking of other posts or the published state.
         const previewUrl = (id) => `${base}/?rest_route=/blixis/v1/documents/${id}/preview`;
         const preview = async (id, { cookie, nonce, body, contentType = 'application/json' } = {}) =>

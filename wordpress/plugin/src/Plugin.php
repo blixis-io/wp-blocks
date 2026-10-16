@@ -19,6 +19,8 @@ use Blixis\Builder\Theme\AdminNotice;
 use Blixis\Builder\Admin\EditorScreen;
 use Blixis\Builder\Admin\CanvasScreen;
 use Blixis\Builder\Canvas\PageShell;
+use Blixis\Builder\Rest\PageSettingsController;
+use Blixis\Builder\Seo\Head;
 
 \defined( 'ABSPATH' ) || exit;
 
@@ -34,11 +36,13 @@ final class Plugin {
 		\add_action( 'rest_api_init', [ DocumentController::class, 'register' ] );
 		\add_action( 'rest_api_init', [ MediaController::class, 'register' ] );
 		\add_action( 'rest_api_init', [ StatusController::class, 'register' ] );
+		\add_action( 'rest_api_init', [ PageSettingsController::class, 'register' ] );
 		AdminNotice::hooks();
 		EditorScreen::hooks();
 		CanvasScreen::hooks();
 		PageShell::hooks();
 		Frontend::hooks();
+		Head::hooks();
 		NativeLocaleRouter::boot();
 	}
 
