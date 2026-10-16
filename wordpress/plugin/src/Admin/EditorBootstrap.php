@@ -30,6 +30,7 @@ final class EditorBootstrap {
 		$content_locale  = \is_string( $values['contentLocale'] ?? null ) && MetaKeys::is_valid_locale( $values['contentLocale'] ) ? $values['contentLocale'] : 'en_US';
 		$default_locale  = \is_string( $values['defaultLocale'] ?? null ) && MetaKeys::is_valid_locale( $values['defaultLocale'] ) ? $values['defaultLocale'] : 'en_US';
 		$editor_locale   = \is_string( $values['editorLocale'] ?? null ) && MetaKeys::is_valid_locale( $values['editorLocale'] ) ? $values['editorLocale'] : 'en_US';
+		$preview_url     = \is_string( $values['previewUrl'] ?? null ) && self::valid_preview_url( $values['previewUrl'], (string) ( $values['siteUrl'] ?? $values['adminUrl'] ?? '' ) ) ? $values['previewUrl'] : null;
 		return [
 			'version'               => 1,
 			'restRoot'              => (string) ( $values['restRoot'] ?? '' ),
@@ -48,6 +49,7 @@ final class EditorBootstrap {
 			'adminUrl'              => (string) ( $values['adminUrl'] ?? '' ),
 			'canvasUrl'             => \is_string( $values['canvasUrl'] ?? null ) ? $values['canvasUrl'] : null,
 			'viewUrl'               => \is_string( $values['viewUrl'] ?? null ) ? $values['viewUrl'] : null,
+			'previewUrl'            => $preview_url,
 			'cspNonce'              => (string) ( $values['cspNonce'] ?? '' ),
 			'contentLocaleExplicit' => true === ( $values['contentLocaleExplicit'] ?? false ),
 		];
@@ -82,6 +84,17 @@ final class EditorBootstrap {
 		$left_port    = $left['port'] ?? ( 'https' === $left_scheme ? 443 : ( 'http' === $left_scheme ? 80 : null ) );
 		$right_port   = $right['port'] ?? ( 'https' === $right_scheme ? 443 : ( 'http' === $right_scheme ? 80 : null ) );
 		return $left_scheme === $right_scheme && \strtolower( $left['host'] ) === \strtolower( $right['host'] ) && $left_port === $right_port;
+	}
+
+	/**
+	 * Validate the preview URL as a bounded, credential-free same-origin HTTP URL.
+	 *
+	 * @param string $url Candidate preview URL.
+	 * @param string $origin_url Expected site origin URL.
+	 */
+	private static function valid_preview_url( string $url, string $origin_url ): bool {
+		$parts = \parse_url( $url ); // phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url -- Pure validation contract also runs outside WordPress.
+		return \strlen( $url ) <= 2048 && \is_array( $parts ) && isset( $parts['scheme'] ) && \in_array( \strtolower( $parts['scheme'] ), [ 'http', 'https' ], true ) && ! isset( $parts['user'] ) && ! isset( $parts['pass'] ) && self::same_origin( $url, $origin_url );
 	}
 
 	/**

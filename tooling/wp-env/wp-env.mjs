@@ -665,6 +665,75 @@ async function smoke() {
           html.includes('data-blx-document') && html.includes('data-blx-id="el-001"') && html.includes('Published one'),
           'a published page renders its snapshot',
         );
+        // A WordPress nonce is bound to the user's session token, so mint the nonces and the logged-in cookie in one session.
+        const previewSession = JSON.parse(
+          wpOut(
+            'eval',
+            `wp_set_current_user( 1 ); $expiration = time() + 600; $token = WP_Session_Tokens::get_instance( 1 )->create( $expiration ); $_COOKIE[ LOGGED_IN_COOKIE ] = wp_generate_auth_cookie( 1, $expiration, 'logged_in', $token ); echo wp_json_encode( [ 'cookie' => LOGGED_IN_COOKIE . '=' . $_COOKIE[ LOGGED_IN_COOKIE ], 'nonce' => wp_create_nonce( 'blixis_preview_${pageId}' ), 'other' => wp_create_nonce( 'blixis_preview_${Number(pageId) + 1}' ) ] );`,
+          ),
+        );
+        const previewNonce = previewSession.nonce;
+        const previewCookie = previewSession.cookie;
+        const cachedKeysBeforePreview = command(
+          'option',
+          'list',
+          '--transients',
+          '--search=_transient_blx_*',
+          '--field=option_name',
+        );
+        const draftPreview = await http(
+          `${base}/?page_id=${pageId}&blixis_preview=${encodeURIComponent(previewNonce)}`,
+          { headers: { cookie: previewCookie }, redirect: 'follow', signal: AbortSignal.timeout(15000) },
+        );
+        const draftPreviewHtml = await draftPreview.text();
+        check(
+          draftPreview.status === 200 &&
+            draftPreviewHtml.includes('DRAFT-SECRET') &&
+            draftPreviewHtml.includes('Draft preview'),
+          'an authenticated per-post preview renders working text and its badge',
+        );
+        const requestPreview = async (nonce, cookie) => {
+          const response = await http(`${base}/?page_id=${pageId}&blixis_preview=${encodeURIComponent(nonce)}`, {
+            ...(cookie ? { headers: { cookie } } : {}),
+            redirect: 'follow',
+            signal: AbortSignal.timeout(15000),
+          });
+          return { status: response.status, text: await response.text() };
+        };
+        const anonymousPreview = await requestPreview(previewNonce);
+        const subscriberPreview = await requestPreview(previewNonce, subscriberCookie);
+        const invalidNoncePreview = await requestPreview('expired-or-invalid', previewCookie);
+        const otherPostNonce = previewSession.other;
+        const wrongPostNoncePreview = await requestPreview(otherPostNonce, previewCookie);
+        for (const [name, result] of [
+          ['anonymous', anonymousPreview],
+          ['subscriber', subscriberPreview],
+          ['invalid nonce', invalidNoncePreview],
+          ['nonce for another post', wrongPostNoncePreview],
+        ]) {
+          check(
+            result.status === 200 && result.text.includes('Published one') && !result.text.includes('DRAFT-SECRET'),
+            `${name} preview request follows the unchanged published response`,
+          );
+        }
+        check(
+          draftPreview.headers.get('cache-control')?.includes('no-store') &&
+            draftPreview.headers.get('x-robots-tag')?.includes('noindex') &&
+            draftPreview.headers.get('referrer-policy') === 'same-origin',
+          'authorized draft preview sends private no-store, noindex and same-origin referrer headers',
+        );
+        const cachedKeysAfterPreview = command(
+          'option',
+          'list',
+          '--transients',
+          '--search=_transient_blx_*',
+          '--field=option_name',
+        );
+        check(
+          cachedKeysAfterPreview === cachedKeysBeforePreview,
+          'draft preview adds no entry to the public render cache',
+        );
+        check(!html.includes('DRAFT-SECRET'), 'anonymous published output still excludes the working draft text');
         const elementClass = /data-blx-id="el-001"[^>]*class="(blx-[0-9a-f]{12})"/.exec(html)?.[1];
         check(
           elementClass !== undefined && html.includes(`.${elementClass}{color:red}`),

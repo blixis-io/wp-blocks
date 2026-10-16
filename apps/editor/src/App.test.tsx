@@ -26,9 +26,9 @@ function descriptionOf(element: Element): string {
 
 function setup(overrides: Partial<EditorBootstrap> = {}) {
   const user = userEvent.setup();
-  const { store } = makeStore({ bootstrap: overrides, deps: { now: Date.now } });
+  const { store, client } = makeStore({ bootstrap: overrides, deps: { now: Date.now } });
   const view = render(<EditorApp bootstrap={makeBootstrap(overrides)} store={store} />);
-  return { user, ...view, store, root: screen.getByTestId('editor-root') };
+  return { user, ...view, store, client, root: screen.getByTestId('editor-root') };
 }
 
 function mockSystemDark(dark: boolean) {
@@ -75,16 +75,57 @@ describe('shell landmarks', () => {
     expect(screen.getByText('Canvas arrives with the canvas protocol.')).toBeTruthy();
   });
 
-  it('links back to admin and to the preview when a view URL exists, and disables preview otherwise', () => {
+  it('opens the draft preview URL and keeps the published URL on View page', () => {
     const { unmount } = setup();
     expect(screen.getByRole('button', { name: 'Pages' })).toBeTruthy();
-    expect(screen.getByRole('link', { name: 'Preview' }).getAttribute('href')).toBe(`${location.origin}/about/`);
+    expect(screen.getByRole('link', { name: 'View page' }).getAttribute('href')).toBe(`${location.origin}/about/`);
+    const open = vi.spyOn(window, 'open').mockReturnValue({ opener: window } as Window);
+    fireEvent.click(screen.getByRole('button', { name: 'Preview' }));
+    expect(open).toHaveBeenCalledWith(`${location.origin}/about/?blixis_preview=nonce`, 'blixis-preview-42');
+    expect((open.mock.results[0]?.value as Window).opener).toBeNull();
+    open.mockRestore();
     unmount();
-    setup({ viewUrl: null });
-    expect(screen.queryByRole('link', { name: 'Preview' })).toBeNull();
+    setup({ previewUrl: null });
     expect(screen.getByRole('button', { name: 'Preview' }).getAttribute('aria-describedby')).toContain(
       'blx-preview-hint',
     );
+  });
+
+  it('saves dirty changes before opening preview', async () => {
+    const { store, client } = setup();
+    const open = vi.spyOn(window, 'open').mockReturnValue({ opener: window } as Window);
+    await waitFor(() => {
+      expect(store.getState().document).not.toBeNull();
+    });
+    act(() => {
+      store.getState().dispatch({ type: 'update-props', id: 'el-heading-1', set: { level: 3 } });
+    });
+    expect(screen.getByRole('button', { name: 'Save and preview' })).toBeTruthy();
+    client.writeLayout = vi.fn().mockResolvedValue({ ok: true, value: { revision: 6 } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save and preview' }));
+    await waitFor(() => {
+      expect(open).toHaveBeenCalledTimes(1);
+    });
+    expect(store.getState().dirty.layout).toBe(false);
+    open.mockRestore();
+  });
+
+  it('does not open preview when saving dirty changes fails', async () => {
+    const { store, client } = setup();
+    const open = vi.spyOn(window, 'open').mockReturnValue(null);
+    await waitFor(() => {
+      expect(store.getState().document).not.toBeNull();
+    });
+    act(() => {
+      store.getState().dispatch({ type: 'update-props', id: 'el-heading-1', set: { level: 3 } });
+    });
+    client.writeLayout = vi.fn().mockResolvedValue({ ok: false, error: { kind: 'network' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save and preview' }));
+    await waitFor(() => {
+      expect(store.getState().saveStatus).toBe('failed');
+    });
+    expect(open).not.toHaveBeenCalled();
+    open.mockRestore();
   });
 
   it('keeps undo and publish disabled until their workflows are available', () => {
@@ -128,7 +169,8 @@ describe('redesigned editor header', () => {
     ['Desktop', 'radio'],
     ['Tablet', 'radio'],
     ['Mobile', 'radio'],
-    ['Preview', 'link'],
+    ['Preview', 'button'],
+    ['View page', 'link'],
     ['Save Draft', 'button'],
     ['Publish', 'button'],
     ['Publish options', 'button'],
@@ -199,7 +241,7 @@ describe('redesigned editor header', () => {
   });
 
   it('rejects cross-origin preview URLs', () => {
-    setup({ viewUrl: 'https://elsewhere.example/page' });
+    setup({ previewUrl: 'https://elsewhere.example/page' });
     expect(screen.queryByRole('link', { name: 'Preview' })).toBeNull();
     expect(screen.getByRole('button', { name: 'Preview' }).getAttribute('aria-describedby')).toContain(
       'blx-preview-hint',
@@ -249,7 +291,7 @@ describe('redesigned editor header', () => {
     });
     const header = screen.getByRole('banner');
     expect(header.getAttribute('data-compact')).toBe('true');
-    expect(screen.getByRole('link', { name: 'Preview' }).querySelector('span')?.textContent).toContain('Preview');
+    expect(screen.getByRole('button', { name: 'Preview' }).querySelector('span')?.textContent).toContain('Preview');
     expect(screen.getByRole('button', { name: 'Save Draft' })).toBeTruthy();
   });
 
@@ -280,9 +322,9 @@ describe('redesigned editor header', () => {
     expect(await axeViolations(root)).toEqual([]);
   });
 
-  it('uses preview target and rel only for validated same-origin URLs', () => {
+  it('uses same-origin preview URLs and secure published links', () => {
     setup();
-    const link = screen.getByRole('link', { name: 'Preview' });
+    const link = screen.getByRole('link', { name: 'View page' });
     expect(link.getAttribute('target')).toBe('_blank');
     expect(link.getAttribute('rel')).toBe('noopener noreferrer');
   });
