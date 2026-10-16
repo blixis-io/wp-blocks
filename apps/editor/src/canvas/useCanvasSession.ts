@@ -320,7 +320,7 @@ export function useCanvasSession(options: CanvasSessionOptions): CanvasSession {
           if (editing && message.id !== editing.id) endEdit(true);
           store.getState().select(message.id);
           // A click inside the live editor keeps the caret in the canvas; any other pick hands the focus back to the host.
-          if (!editing || message.id !== editing.id) releaseFocus(frame);
+          if (editing?.id !== message.id) releaseFocus(frame);
           break;
         case 'hover':
           store.getState().hover(message.id);

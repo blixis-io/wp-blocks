@@ -445,6 +445,10 @@ export function startRuntime(env: RuntimeEnv = { document, window }): Runtime | 
       editor.commands.focus();
       return;
     }
+    if (name === 'focus-end') {
+      commands.focus?.('end');
+      return;
+    }
     if (name === 'select-all') commands.selectAll?.();
     else if (name === 'collapse-selection') commands.setTextSelection?.(editor.state.selection.to);
     else if (name === 'clear-marks') commands.unsetAllMarks?.();
@@ -588,7 +592,7 @@ export function startRuntime(env: RuntimeEnv = { document, window }): Runtime | 
       closestElement(event.target, '[data-blx-richtext-root]') === null
     ) {
       event.preventDefault();
-      activeEdit.editor?.commands.focus?.('end');
+      runEditCommand('focus-end');
       return;
     }
     if (
