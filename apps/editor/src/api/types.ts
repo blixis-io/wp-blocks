@@ -12,6 +12,10 @@ export interface ApiError {
   code?: string;
   /** Server-provided details (revisions of a 409, the lock reason of a 423 ...). Plain data only. */
   data?: Record<string, unknown>;
+  /** Safe server message for actionable publication failures. */
+  message?: string;
+  /** Retry-After seconds from a rate-limited response. */
+  retryAfter?: number;
 }
 
 export type ApiResult<T> = { ok: true; value: T } | { ok: false; error: ApiError };
@@ -50,6 +54,23 @@ export interface PublicationState {
     { state: 'unpublished' | 'published' | 'published-with-pending-changes'; snapshot: number; workingRevision: number }
   >;
 }
+
+export interface PublicationResult {
+  pointerRevision: number;
+  layoutSnapshot: number | null;
+  contentSnapshot: number | null;
+  pinnedLocales: string[];
+}
+export interface PublishOptions {
+  pointerRevision: number;
+  layout: boolean;
+  locale?: string;
+  confirmImpact?: boolean;
+  excludeIncompatible?: boolean;
+}
+export type RollbackOptions =
+  | { pointerRevision: number; layoutSnapshot: number; confirmImpact?: boolean }
+  | { pointerRevision: number; locale: string; contentSnapshot: number; confirmImpact?: boolean };
 
 /** Body of `POST /documents/{id}/preview`: all optional. `document` previews the unsaved editor state (never persisted). */
 export interface PreviewRequestBody {
@@ -93,6 +114,8 @@ export interface RestClient {
     options?: { signal?: AbortSignal },
   ): Promise<ApiResult<{ current: number; revisions: RevisionEntry[] }>>;
   readPublication(options?: { signal?: AbortSignal }): Promise<ApiResult<PublicationState>>;
+  publish(options: PublishOptions, requestOptions?: { signal?: AbortSignal }): Promise<ApiResult<PublicationResult>>;
+  rollback(options: RollbackOptions, requestOptions?: { signal?: AbortSignal }): Promise<ApiResult<PublicationResult>>;
   /** `POST documents/{postId}/preview` (no If-Match). Responses are capped at 1.3 MiB of text (html 1 MiB + css 256 KiB + envelope). */
   preview(body: PreviewRequestBody, options?: { signal?: AbortSignal }): Promise<ApiResult<PreviewResult>>;
 }

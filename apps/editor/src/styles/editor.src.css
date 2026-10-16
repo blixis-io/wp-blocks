@@ -451,6 +451,36 @@
       font-size: var(--ed-font-xs);
       gap: 0.35rem;
     }
+    .blx-publication-chip {
+      display: inline-flex;
+      align-items: center;
+      min-block-size: var(--ed-control-height-small);
+      padding-inline: 0.5rem;
+      border: 1px solid var(--ed-header-border);
+      border-radius: 999px;
+      color: var(--ed-header-fg);
+      background: var(--ed-header);
+      font-size: var(--ed-font-xs);
+      white-space: nowrap;
+    }
+    .blx-publication-success {
+      color: var(--ed-header-success);
+      font-size: var(--ed-font-xs);
+      white-space: nowrap;
+    }
+    .blx-publication-summary fieldset {
+      display: grid;
+      gap: 0.5rem;
+      margin-block-start: 0.75rem;
+      border: 1px solid var(--ed-border);
+      border-radius: var(--ed-radius-small);
+      padding: 0.75rem;
+    }
+    .blx-publication-summary label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
     .blx-saved i {
       inline-size: 0.45rem;
       block-size: 0.45rem;

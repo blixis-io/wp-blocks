@@ -223,6 +223,66 @@ describe('document slice: loading', () => {
   });
 });
 
+describe('publication slice', () => {
+  it('saves a dirty draft before publishing and refreshes the publication state', async () => {
+    const { store, client } = makeStore();
+    const order: string[] = [];
+    let phase: 'initial' | 'saved' | 'published' = 'initial';
+    client.readPublication = () =>
+      Promise.resolve(
+        ok(
+          phase === 'initial'
+            ? {
+                pointerRevision: 7,
+                layout: { state: 'published', snapshot: 1, workingRevision: 1 },
+                locales: { en_US: { state: 'published', snapshot: 1, workingRevision: 1 } },
+              }
+            : phase === 'saved'
+              ? {
+                  pointerRevision: 7,
+                  layout: { state: 'published-with-pending-changes', snapshot: 1, workingRevision: 2 },
+                  locales: { en_US: { state: 'published', snapshot: 1, workingRevision: 1 } },
+                }
+              : {
+                  pointerRevision: 8,
+                  layout: { state: 'published', snapshot: 2, workingRevision: 2 },
+                  locales: { en_US: { state: 'published', snapshot: 2, workingRevision: 2 } },
+                },
+        ),
+      );
+    client.writeLayout = (_doc, revision) => {
+      order.push(`save:${String(revision)}`);
+      phase = 'saved';
+      return Promise.resolve(ok({ revision: revision + 1 }));
+    };
+    client.publish = (options) => {
+      order.push(`publish:${String(options.pointerRevision)}:${String(options.layout)}`);
+      phase = 'published';
+      return Promise.resolve(ok({ pointerRevision: 8, layoutSnapshot: 2, contentSnapshot: null, pinnedLocales: [] }));
+    };
+    await store.getState().loadDocument();
+    store.getState().dispatch({ type: 'update-props', id: 'el-heading-1', set: { level: 3 } });
+    await store.getState().publish(['en_US']);
+    expect(order).toEqual(['save:5', 'publish:7:true']);
+    expect(store.getState().publication).toMatchObject({ pointerRevision: 8, layout: { state: 'published' } });
+    expect(store.getState().publicationStatus).toBe('idle');
+    expect(store.getState().publicationSuccess).toBe(true);
+  });
+
+  it('aborts publication when saving the dirty draft fails', async () => {
+    const { store, client } = await makeLoadedStore();
+    client.writeLayout = () => Promise.resolve({ ok: false, error: { kind: 'http', status: 500 } });
+    const publishMock = vi.fn(() =>
+      Promise.resolve(ok({ pointerRevision: 1, layoutSnapshot: 1, contentSnapshot: null, pinnedLocales: [] })),
+    );
+    client.publish = publishMock;
+    store.getState().dispatch({ type: 'update-props', id: 'el-heading-1', set: { level: 3 } });
+    await store.getState().publish(['en_US']);
+    expect(publishMock).not.toHaveBeenCalled();
+    expect(store.getState().publicationStatus).toBe('failed');
+  });
+});
+
 describe('document slice: draft saving', () => {
   it('writes only a dirty layout with its known revision and records the returned revision', async () => {
     const { store, client } = await makeLoadedStore();

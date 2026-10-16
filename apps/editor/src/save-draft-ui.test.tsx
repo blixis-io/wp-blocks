@@ -8,10 +8,18 @@ import { makeStore, streamsOf } from './test/state-helpers';
 import { axeViolations } from './test/axe';
 
 const hostile = '<img src=x onerror=alert(1)>Server says no';
-async function setup(options: { locale?: string; reason?: string | null } = {}) {
-  const bootstrap = makeBootstrap({ editorLocale: options.locale ?? 'en_US', lockReason: options.reason ?? null });
+async function setup(options: { locale?: string; reason?: string | null; editingEnabled?: boolean } = {}) {
+  const bootstrap = makeBootstrap({
+    editorLocale: options.locale ?? 'en_US',
+    lockReason: options.reason ?? null,
+    editingEnabled: options.editingEnabled ?? true,
+  });
   const made = makeStore({
-    bootstrap: { editorLocale: options.locale ?? 'en_US', lockReason: options.reason ?? null },
+    bootstrap: {
+      editorLocale: options.locale ?? 'en_US',
+      lockReason: options.reason ?? null,
+      editingEnabled: options.editingEnabled ?? true,
+    },
   });
   const view = render(<EditorApp bootstrap={bootstrap} store={made.store} />);
   await waitFor(() => {
@@ -43,6 +51,38 @@ afterEach(() => {
 });
 
 describe('Save Draft UI recovery', () => {
+  it('disables publishing when editing is locked', async () => {
+    await setup({ editingEnabled: false });
+    expect(screen.getByRole('button', { name: 'Publish' }).getAttribute('aria-disabled')).toBe('true');
+  });
+
+  it('opens an accessible publish dialog with selectable locales and reports server failures', async () => {
+    const { client, user } = await setup();
+    const failed = {
+      ok: false as const,
+      error: {
+        kind: 'http' as const,
+        status: 409,
+        code: 'blixis_conflict',
+        message: 'Publication changed elsewhere',
+        data: { currentRevision: 4 },
+      },
+    };
+    client.publish = vi.fn(() => Promise.resolve(failed));
+    await user.click(screen.getByRole('button', { name: 'Publish' }));
+    const dialog = screen.getByRole('dialog', { name: 'Publish this page?' });
+    expect(dialog.getAttribute('aria-describedby')).toBeTruthy();
+    expect((screen.getByRole('checkbox', { name: /en_US/ }) as HTMLInputElement).checked).toBe(true);
+    await user.click(screen.getByRole('checkbox', { name: /fr_FR/ }));
+    expect((screen.getByRole('checkbox', { name: /fr_FR/ }) as HTMLInputElement).checked).toBe(false);
+    await user.click(screen.getAllByRole('button', { name: 'Publish' }).at(-1)!);
+    expect((await screen.findByRole('alert')).textContent).toContain('Publication changed elsewhere');
+    expect(screen.getByRole('button', { name: 'Reload publication state' })).toBeTruthy();
+    expect(client.publish).toHaveBeenCalledWith(
+      expect.objectContaining({ locale: 'en_US', layout: true, pointerRevision: 0 }),
+    );
+  });
+
   it.each([
     [401, 'Your session expired or you do not have permission. Sign in again, then retry.'],
     [403, 'Your session expired or you do not have permission. Sign in again, then retry.'],
