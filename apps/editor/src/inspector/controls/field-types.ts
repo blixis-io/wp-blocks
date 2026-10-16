@@ -1,5 +1,6 @@
 import type { Json } from '@blixis/wp-core';
 import type { PropDefinition } from '@blixis/wp-element-registry';
+import type { MediaItem } from '../../api/types';
 
 export interface FieldControlProps {
   id: string;
@@ -14,4 +15,5 @@ export interface FieldControlProps {
   onCommit: (value: Json) => void;
   onFocus: () => void;
   onBlur: () => void;
+  onMediaPick?: (item: MediaItem) => void;
 }

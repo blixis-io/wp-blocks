@@ -35,7 +35,8 @@ Bootstrap contract v1 (the editor validates this shape):
 | Field | Meaning |
 |---|---|
 | `version` | Contract version, `1`. |
-| `restRoot`, `nonce` | Absolute `blixis/v1` REST root and WordPress REST nonce. |
+| `restRoot`, `wpRestRoot`, `nonce` | Absolute Blixis `blixis/v1` and core `wp/v2` REST roots, plus the WordPress REST nonce. `wpRestRoot` must be same-origin HTTP(S) so the nonce is never sent cross-origin. |
+| `maxUploadBytes`, `canUpload` | `wp_max_upload_size()` and `current_user_can( 'upload_files' )`; the editor validates the byte limit and hides upload controls without the capability. |
 | `postId`, `postTitle`, `postType` | Current post identity and stored title as plain text (tags stripped and entities decoded, capped at 200 characters). The browser `<title>` is separately HTML-escaped. |
 | `contentLocale` | Selected enabled website-content locale. |
 | `defaultLocale`, `enabledLocales` | Site translation configuration. |

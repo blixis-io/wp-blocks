@@ -43,3 +43,5 @@ export function describeApiError(error: ApiError): ApiErrorDescription {
   if ((error.status ?? 0) >= 500) return 'server';
   return 'server';
 }
+export { createMediaClient } from './media-client';
+export type { MediaClient, MediaItem, MediaPage } from './types';

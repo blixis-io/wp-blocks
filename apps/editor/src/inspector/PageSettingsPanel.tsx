@@ -4,6 +4,9 @@ import { InspectorSection } from './InspectorSection';
 import { useEditorStore, useEditorStoreApi } from '../state';
 import { useI18n } from '../i18n-react';
 import { languageName } from '../canvas/language-name';
+import { MediaField } from '../media/MediaField';
+import type { MediaItem } from '../api/types';
+import { useState } from 'react';
 
 function trimPreview(value: string, maximum: number): string {
   const clean = value.trim();
@@ -31,6 +34,7 @@ export function PageSettingsPanel({ editingEnabled }: { editingEnabled: boolean 
   const errors = useEditorStore((state) => state.pageSettingsFieldErrors);
   const locale = useEditorStore((state) => state.contentLocale);
   const bootstrap = useEditorStore((state) => state.bootstrap);
+  const [ogImage, setOgImage] = useState<MediaItem | null>(null);
   const localeSeo = page?.seo[locale] ?? {
     metaTitle: '',
     metaDescription: '',
@@ -173,51 +177,39 @@ export function PageSettingsPanel({ editingEnabled }: { editingEnabled: boolean 
         </div>
       </InspectorSection>
       <InspectorSection id="page-featured-image" title={t('page.featuredImage')}>
-        {page.featuredImage ? (
-          <img
-            src={page.featuredImage.url}
-            alt={page.featuredImage.alt}
-            width={page.featuredImage.width}
-            height={page.featuredImage.height}
-          />
-        ) : (
-          <div className="blx-page-image-empty">
-            <Icon name="image" size={20} />
-            <strong>{t('page.noImageTitle')}</strong>
-            <span>{t('page.noImage')}</span>
-          </div>
-        )}
-        <details className="blx-page-image-id-disclosure" open={Boolean(page.featuredImage)}>
-          <summary>{t('page.useAttachmentId')}</summary>
-          <div className="blx-inspector-field">
-            <label htmlFor="page-featured-image-id">{t('page.imageId')}</label>
-            <input
-              id="page-featured-image-id"
-              type="number"
-              min={1}
-              disabled={!editingEnabled}
-              value={page.featuredImage?.id ?? ''}
-              onChange={(event) => {
-                store.getState().updatePageSettings({
-                  featuredImage: event.target.value
-                    ? { id: Number(event.target.value), url: '', alt: '', width: 0, height: 0 }
-                    : null,
-                });
-              }}
-            />
-          </div>
-        </details>
-        {page.featuredImage ? (
-          <button
-            type="button"
-            disabled={!editingEnabled}
-            onClick={() => {
-              store.getState().updatePageSettings({ featuredImage: null });
-            }}
-          >
-            {t('page.removeImage')}
-          </button>
-        ) : null}
+        <MediaField
+          label={t('page.featuredImage')}
+          emptyText={t('page.noImageTitle')}
+          disabled={!editingEnabled}
+          value={
+            page.featuredImage
+              ? {
+                  id: page.featuredImage.id,
+                  url: page.featuredImage.url,
+                  thumbUrl: page.featuredImage.url,
+                  alt: page.featuredImage.alt,
+                  title: '',
+                  width: page.featuredImage.width,
+                  height: page.featuredImage.height,
+                  mime: 'image',
+                }
+              : null
+          }
+          fallbackId={page.featuredImage?.id ?? null}
+          onSelect={(item) => {
+            store.getState().updatePageSettings({
+              featuredImage: { id: item.id, url: item.url, alt: item.alt, width: item.width, height: item.height },
+            });
+          }}
+          onRemove={() => {
+            store.getState().updatePageSettings({ featuredImage: null });
+          }}
+          onFallbackId={(id) => {
+            store
+              .getState()
+              .updatePageSettings({ featuredImage: id ? { id, url: '', alt: '', width: 0, height: 0 } : null });
+          }}
+        />
       </InspectorSection>
       <InspectorSection id="page-seo" title={t('page.seo')}>
         <div className="blx-page-locale-notice" role="note">
@@ -356,31 +348,24 @@ export function PageSettingsPanel({ editingEnabled }: { editingEnabled: boolean 
               }}
             />
           </div>
-          {!localeSeo.ogImageId ? (
-            <div className="blx-page-image-empty">
-              <Icon name="image" size={20} />
-              <strong>{t('page.noImageTitle')}</strong>
-              <span>{t('page.noImage')}</span>
-            </div>
-          ) : null}
-          <details className="blx-page-image-id-disclosure" open={Boolean(localeSeo.ogImageId)}>
-            <summary>{t('page.useAttachmentId')}</summary>
-            <div className="blx-inspector-field">
-              <div className="blx-inspector-field-label">
-                <label htmlFor="seo-og-image-id">{t('page.ogImageId')}</label>
-              </div>
-              <input
-                id="seo-og-image-id"
-                type="number"
-                min={1}
-                disabled={!editable}
-                value={localeSeo.ogImageId ?? ''}
-                onChange={(event) => {
-                  updateSeo('ogImageId', Number(event.target.value) || null);
-                }}
-              />
-            </div>
-          </details>
+          <MediaField
+            label={t('page.ogImageId')}
+            emptyText={t('page.noImageTitle')}
+            disabled={!editable}
+            value={ogImage?.id === localeSeo.ogImageId ? ogImage : null}
+            fallbackId={localeSeo.ogImageId}
+            onSelect={(item) => {
+              setOgImage(item);
+              updateSeo('ogImageId', item.id);
+            }}
+            onRemove={() => {
+              setOgImage(null);
+              updateSeo('ogImageId', null);
+            }}
+            onFallbackId={(id) => {
+              updateSeo('ogImageId', id);
+            }}
+          />
         </InspectorSection>
       </InspectorSection>
     </div>

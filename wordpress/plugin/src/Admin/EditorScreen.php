@@ -188,6 +188,9 @@ final class EditorScreen {
 			[
 				'cspNonce'              => $csp_nonce,
 				'restRoot'              => \rest_url( 'blixis/v1' ),
+				'wpRestRoot'            => \rest_url( 'wp/v2' ),
+				'maxUploadBytes'        => (int) \wp_max_upload_size(),
+				'canUpload'             => \current_user_can( 'upload_files' ),
 				'nonce'                 => \wp_create_nonce( 'wp_rest' ),
 				'postId'                => $request->post_id,
 				'postTitle'             => $post->post_title,

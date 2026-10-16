@@ -25,6 +25,8 @@ import { StoreProvider, useEditorStore, useEditorStoreApi, type EditorStore } fr
 import { Inspector } from './inspector/Inspector';
 import { readSessionStorage, writeSessionStorage } from './storage';
 import { ElementId } from './ElementId';
+import { MediaProvider } from './media/MediaContext';
+import type { MediaClient } from './api/types';
 
 const STRUCTURE_ID = 'blx-structure';
 const INSPECTOR_ID = 'blx-inspector';
@@ -334,6 +336,7 @@ export function EditorApp({
   store,
   client,
   canvas,
+  mediaClient,
 }: {
   bootstrap: EditorBootstrap;
   store: EditorStore;
@@ -341,6 +344,7 @@ export function EditorApp({
   client?: RestClient;
   /** Test seams of the canvas session. */
   canvas?: CanvasTestOptions;
+  mediaClient?: MediaClient;
 }) {
   const [root, setRoot] = useState<HTMLDivElement | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -386,21 +390,23 @@ export function EditorApp({
       data-testid="editor-root"
     >
       <StoreProvider store={store}>
-        <I18nProvider editorLocale={bootstrap.editorLocale}>
-          <DirectionProvider dir={dir}>
-            <PortalContainerProvider container={root}>
-              <TooltipProvider>
-                <Shell
-                  bootstrap={bootstrap}
-                  client={client}
-                  canvas={canvas}
-                  preference={preference}
-                  onPreference={setPreference}
-                />
-              </TooltipProvider>
-            </PortalContainerProvider>
-          </DirectionProvider>
-        </I18nProvider>
+        <MediaProvider bootstrap={bootstrap} client={mediaClient}>
+          <I18nProvider editorLocale={bootstrap.editorLocale}>
+            <DirectionProvider dir={dir}>
+              <PortalContainerProvider container={root}>
+                <TooltipProvider>
+                  <Shell
+                    bootstrap={bootstrap}
+                    client={client}
+                    canvas={canvas}
+                    preference={preference}
+                    onPreference={setPreference}
+                  />
+                </TooltipProvider>
+              </PortalContainerProvider>
+            </DirectionProvider>
+          </I18nProvider>
+        </MediaProvider>
       </StoreProvider>
     </div>
   );

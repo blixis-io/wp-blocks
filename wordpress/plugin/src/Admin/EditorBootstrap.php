@@ -34,6 +34,9 @@ final class EditorBootstrap {
 		return [
 			'version'               => 1,
 			'restRoot'              => (string) ( $values['restRoot'] ?? '' ),
+			'wpRestRoot'            => self::valid_rest_root( $values['wpRestRoot'] ?? null, (string) ( $values['adminUrl'] ?? $values['siteUrl'] ?? '' ) ) ? $values['wpRestRoot'] : '',
+			'maxUploadBytes'        => \is_int( $values['maxUploadBytes'] ?? null ) && $values['maxUploadBytes'] > 0 ? $values['maxUploadBytes'] : 1,
+			'canUpload'             => true === ( $values['canUpload'] ?? false ),
 			'nonce'                 => (string) ( $values['nonce'] ?? '' ),
 			'postId'                => (int) ( $values['postId'] ?? 0 ),
 			'postTitle'             => self::title( $title ),
@@ -54,6 +57,21 @@ final class EditorBootstrap {
 			'cspNonce'              => (string) ( $values['cspNonce'] ?? '' ),
 			'contentLocaleExplicit' => true === ( $values['contentLocaleExplicit'] ?? false ),
 		];
+	}
+
+	/**
+	 * Validate a core REST root as same-origin HTTP(S), without credentials or control characters.
+	 *
+	 * @param mixed  $root Candidate REST root.
+	 * @param string $origin_url Expected site origin.
+	 * @return bool
+	 */
+	private static function valid_rest_root( mixed $root, string $origin_url ): bool {
+		if ( ! \is_string( $root ) || '' === $root || \strlen( $root ) > 2048 || 1 === \preg_match( '/[\\x00-\\x1F\\x7F\\\\]/', $root ) ) {
+			return false;
+		}
+		$parts = \function_exists( 'wp_parse_url' ) ? \wp_parse_url( $root ) : \parse_url( $root ); // phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url -- Standalone contract tests run without WordPress.
+		return \is_array( $parts ) && isset( $parts['scheme'] ) && \in_array( \strtolower( $parts['scheme'] ), [ 'http', 'https' ], true ) && ! isset( $parts['user'] ) && ! isset( $parts['pass'] ) && self::same_origin( $root, $origin_url );
 	}
 
 	/**
