@@ -57,6 +57,8 @@ final class CanvasTest extends TestCase {
 		$this->assertStringNotContainsString( 'site-header', $html );
 		$this->assertStringContainsString( '<meta name="color-scheme" content="light">', $html );
 		$this->assertStringContainsString( 'data-blx-mode="light"', $html );
+		// phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedScript -- Assert the standalone canvas script has its nonce.
+		$this->assertStringContainsString( '<script data-blx-canvas src="https://example.test/plugin/canvas.js" nonce="AAAAAAAAAAAAAAAAAAAAAAAA" defer></script>', $html );
 		$this->assertStringContainsString( 'href="https://example.test/wp-content/themes/blixis/assets/css/theme.css"', $html ); // phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedStylesheet -- Assertion against standalone document markup.
 		$this->assertSame( 3, \substr_count( $html, '<link rel="stylesheet"' ) ); // phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedStylesheet -- Count stylesheet links in standalone markup.
 		$font_css  = '@font-face{font-family:Montserrat;font-style:normal;font-weight:400;src:url("https://example.test/wp-content/fonts/montserrat.woff2") format("woff2")}';

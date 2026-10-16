@@ -23,19 +23,23 @@ function PropField({
   definition,
   editable,
   locale,
+  editTarget,
 }: {
   element: ElementNode;
   name: string;
   definition: PropDefinition;
   editable: boolean;
   locale: string;
+  editTarget?: { id: string; prop: string; value?: string | RichText } | null | undefined;
 }) {
   const { t } = useI18n();
   const store = useEditorStoreApi();
   const translated = definition.classification !== 'invariant';
-  const value = useEditorStore((s) =>
+  const storedValue = useEditorStore((s) =>
     translated ? s.document?.translations[locale]?.[element.id]?.values[name] : element.props[name],
   );
+  const isCanvasEditing = editTarget?.id === element.id && editTarget.prop === name;
+  const value = isCanvasEditing && Object.hasOwn(editTarget, 'value') ? editTarget.value : storedValue;
   const initial =
     typeof value === 'string'
       ? value
@@ -92,9 +96,10 @@ function PropField({
     id: fieldId,
     name,
     definition,
-    value,
+    value: value as Json | undefined,
     draft,
     disabled: !editable,
+    readOnly: isCanvasEditing,
     describedBy:
       [
         error ? errorId : '',
@@ -177,10 +182,12 @@ export function Inspector({
   element,
   tab,
   editingEnabled,
+  editTarget,
 }: {
   element: ElementNode | null;
   tab: Tab;
   editingEnabled: boolean;
+  editTarget?: { id: string; prop: string; status: 'loading' | 'ready'; value?: string | RichText } | null;
 }) {
   const { t } = useI18n();
   const locale = useEditorStore((s) => s.contentLocale);
@@ -279,6 +286,7 @@ export function Inspector({
               definition={prop}
               editable={editable}
               locale={locale}
+              editTarget={editTarget}
             />
           ))}
           {element.type === 'blixis/image' && element.props['decorative'] !== true && !altValue ? (

@@ -250,6 +250,42 @@ describe('handshake wiring', () => {
 });
 
 describe('preview requests', () => {
+  it('keeps one active inline edit, ignores stale changes and commits the final value as one undo step', async () => {
+    const s = setup();
+    await ready(s);
+    const endpoint = s.endpoints.last();
+    endpoint.deliver({ type: 'edit-request', id: 'el-heading-1' });
+    const start = endpoint.sent.find((message) => message.type === 'edit-start');
+    expect(start).toMatchObject({
+      type: 'edit-start',
+      id: 'el-heading-1',
+      prop: 'text',
+      editable: true,
+      mode: 'single-line',
+    });
+    endpoint.deliver({ type: 'edit-ready', id: 'el-heading-1', prop: 'text' });
+    endpoint.deliver({ type: 'edit-change', id: 'el-text-1', prop: 'text', value: 'forged' });
+    endpoint.deliver({ type: 'edit-change', id: 'el-heading-1', prop: 'text', value: 'Hello world' });
+    expect(screen.getByRole<HTMLTextAreaElement>('textbox', { name: 'Text' }).value).toBe('Hello world');
+    expect(screen.getByRole('textbox', { name: 'Text' }).getAttribute('readonly')).not.toBeNull();
+    expect(s.store.getState().document?.translations['fr_FR']?.['el-heading-1']?.values['text']).toBeUndefined();
+    endpoint.deliver({ type: 'edit-ended', id: 'el-heading-1', reason: 'commit' });
+    expect(s.store.getState().document?.translations['fr_FR']?.['el-heading-1']?.values['text']).toBe('Hello world');
+    expect(screen.getByRole('textbox', { name: 'Text' }).getAttribute('readonly')).toBeNull();
+    act(() => {
+      s.store.getState().undo();
+    });
+    expect(s.store.getState().document?.translations['fr_FR']?.['el-heading-1']?.values['text']).toBeUndefined();
+  });
+
+  it('refuses an edit request while the document is locked', async () => {
+    const s = setup({ editingEnabled: false });
+    await ready(s);
+    const endpoint = s.endpoints.last();
+    endpoint.deliver({ type: 'edit-request', id: 'el-heading-1' });
+    expect(endpoint.sent.some((message) => message.type === 'edit-start')).toBe(false);
+  });
+
   it('sends the preview result as a render message with a revision', async () => {
     const s = setup();
     await ready(s);

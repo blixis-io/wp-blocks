@@ -8,6 +8,7 @@ export interface FieldControlProps {
   value: Json | undefined;
   draft: string;
   disabled: boolean;
+  readOnly?: boolean;
   describedBy?: string | undefined;
   onDraft: (value: string) => void;
   onCommit: (value: Json) => void;

@@ -1,6 +1,6 @@
 # ADR 0014: Inline rich text
 
-- Status: Accepted
+- Status: Accepted; Stage 2A editing engine implemented (toolbar remains Stage 2B)
 - Date: 2026-10-16
 - Issues: #207 (BWB-135)
 - Deciders: owner (Tiptap approval), orchestrator (stored model)

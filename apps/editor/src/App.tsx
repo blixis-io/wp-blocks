@@ -11,7 +11,7 @@ import { Icon } from '@blixis/wp-editor-ui';
 import type { RestClient } from './api/types';
 import { Canvas, PreviewAppearance, type CanvasTestOptions } from './canvas/Canvas';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { findPath, nodeAt, type ElementNode } from '@blixis/wp-core';
+import { findPath, nodeAt, type ElementNode, type RichText } from '@blixis/wp-core';
 import type { EditorBootstrap } from './bootstrap';
 import { useChromeTheme, type ChromePreference } from './chrome-theme';
 import { elementLabel } from './element-label';
@@ -59,6 +59,12 @@ function Shell({
     const saved = readSessionStorage('blixis-inspector-tab');
     return saved === 'style' || saved === 'advanced' ? saved : 'content';
   });
+  const [editTarget, setEditTarget] = useState<{
+    id: string;
+    prop: string;
+    status: 'loading' | 'ready';
+    value?: string | RichText;
+  } | null>(null);
   const store = useEditorStoreApi();
   const panels = useEditorStore((state) => state.panels);
   const togglePanel = useEditorStore((state) => state.togglePanel);
@@ -169,6 +175,7 @@ function Shell({
                 client={client}
                 selected={selected}
                 editingEnabled={bootstrap.editingEnabled}
+                onEditSessionChange={setEditTarget}
                 {...canvas}
               />
             </>
@@ -222,7 +229,12 @@ function Shell({
               <TabsTrigger value="advanced">{t('inspector.advanced')}</TabsTrigger>
             </TabsList>
             <TabsContent value="content">
-              <Inspector element={selected} tab="content" editingEnabled={bootstrap.editingEnabled} />
+              <Inspector
+                element={selected}
+                tab="content"
+                editingEnabled={bootstrap.editingEnabled}
+                editTarget={editTarget}
+              />
             </TabsContent>
             <TabsContent value="style">
               <Inspector element={selected} tab="style" editingEnabled={bootstrap.editingEnabled} />

@@ -5,6 +5,7 @@
 //   BLX_WP_PORT                                host port on 127.0.0.1 (default 8888)
 //   BLX_EXPECT_WP, BLX_EXPECT_PHP              smoke test expectations (version prefixes)
 import { spawn, spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -1678,6 +1679,30 @@ async function smoke() {
             !/adminmenu|wp-admin\/css|admin-bar|wpadminbar|wp-includes\/js/.test(canvasHtml),
           'the canvas is standalone, uses the content locale and website appearance, and loads its runtime without wp-admin chrome',
         );
+        const canvasAssetUrl = /<script\b[^>]*\bsrc="([^"]*canvas\.js[^"]*)"/.exec(canvasHtml)?.[1];
+        if (canvasAssetUrl) {
+          const richUrl = new URL(canvasAssetUrl, canvasUrl);
+          richUrl.pathname = richUrl.pathname.replace(/canvas\.js$/, 'richtext.js');
+          const manifestUrl = new URL('manifest.json', richUrl);
+          const [richResponse, manifestResponse] = await Promise.all([http(richUrl.href), http(manifestUrl.href)]);
+          const richBytes = Buffer.from(await richResponse.arrayBuffer());
+          let assetManifest = null;
+          try {
+            assetManifest = await manifestResponse.json();
+          } catch {
+            assetManifest = null;
+          }
+          check(
+            richResponse.status === 200 &&
+              /javascript|ecmascript/i.test(richResponse.headers.get('content-type') ?? '') &&
+              manifestResponse.status === 200 &&
+              assetManifest?.richtextJs === 'richtext.js' &&
+              createHash('sha256').update(richBytes).digest('hex') === assetManifest.richtextJsSha256,
+            'the lazy rich text bundle is served as JavaScript and matches its editor asset manifest hash',
+          );
+        } else {
+          check(false, 'the canvas document exposes the canvas runtime asset URL for sibling asset verification');
+        }
         const themeLinks = [...canvasHtml.matchAll(/<link\s+rel="stylesheet"\s+href="([^"]+)"\s*\/?\s*>/gi)].map(
           (match) => match[1],
         );

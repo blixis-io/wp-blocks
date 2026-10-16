@@ -20,14 +20,16 @@ if (
   manifest.version !== 1 ||
   manifest.js !== 'editor.js' ||
   manifest.css !== 'editor.css' ||
-  manifest.canvasJs !== 'canvas.js'
+  manifest.canvasJs !== 'canvas.js' ||
+  manifest.richtextJs !== 'richtext.js'
 ) {
   throw new Error('unexpected editor manifest');
 }
 if (
   sha256(join(from, manifest.js)) !== manifest.jsSha256 ||
   sha256(join(from, manifest.css)) !== manifest.cssSha256 ||
-  sha256(join(from, manifest.canvasJs)) !== manifest.canvasJsSha256
+  sha256(join(from, manifest.canvasJs)) !== manifest.canvasJsSha256 ||
+  sha256(join(from, manifest.richtextJs)) !== manifest.richtextJsSha256
 ) {
   throw new Error('editor bundle does not match its manifest hashes');
 }
@@ -37,6 +39,15 @@ mkdirSync(to, { recursive: true });
 for (const legal of ['NOTICE.txt', 'editor.js.LEGAL.txt']) {
   if (!existsSync(join(from, legal))) throw new Error(`apps/editor/dist/${legal} is missing; rebuild the editor`);
 }
-for (const name of ['editor.js', 'editor.css', 'canvas.js', 'manifest.json', 'NOTICE.txt', 'editor.js.LEGAL.txt'])
-  copyFileSync(join(from, name), join(to, name));
+for (const name of [
+  'editor.js',
+  'editor.css',
+  'canvas.js',
+  'richtext.js',
+  'manifest.json',
+  'NOTICE.txt',
+  'editor.js.LEGAL.txt',
+  'richtext.js.LEGAL.txt',
+])
+  if (existsSync(join(from, name))) copyFileSync(join(from, name), join(to, name));
 console.log(`editor assets copied to wordpress/plugin/assets/editor (${manifest.jsSha256.slice(0, 12)}…)`);

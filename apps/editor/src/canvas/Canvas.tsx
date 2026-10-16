@@ -19,7 +19,13 @@ import { placeSelectionToolbar } from './selection-chrome';
 import { findPath, nodeAt, type ElementNode } from '@blixis/wp-core';
 import { elementLabel } from '../element-label';
 import { ElementId } from '../ElementId';
-import { FRAME_WIDTHS, useCanvasSession, type CanvasSessionOptions, type PreviewProblem } from './useCanvasSession';
+import {
+  FRAME_WIDTHS,
+  useCanvasSession,
+  type CanvasSession,
+  type CanvasSessionOptions,
+  type PreviewProblem,
+} from './useCanvasSession';
 import {
   rectAtScroll,
   resizeCssValue,
@@ -117,6 +123,7 @@ export interface CanvasProps extends CanvasTestOptions {
   client: RestClient;
   selected?: ElementNode | null;
   editingEnabled?: boolean;
+  onEditSessionChange?: (session: CanvasSession['editSession']) => void;
 }
 
 /** The preview iframe and its connection, error and retry states. */
@@ -127,6 +134,7 @@ export function Canvas({
   debounceMs,
   selected = null,
   editingEnabled = true,
+  onEditSessionChange,
 }: CanvasProps) {
   const { t, lang, dir } = useI18n();
   const store = useEditorStoreApi();
@@ -168,9 +176,13 @@ export function Canvas({
     frame,
     src,
     attempt,
+    editingEnabled,
     ...(createEndpoint === undefined ? {} : { createEndpoint }),
     ...(debounceMs === undefined ? {} : { debounceMs }),
   });
+  useEffect(() => {
+    onEditSessionChange?.(session.editSession);
+  }, [onEditSessionChange, session.editSession]);
   const width = FRAME_WIDTHS[viewport];
   useLayoutEffect(() => {
     if (!frame || !stage) {
@@ -192,7 +204,10 @@ export function Canvas({
     observer?.observe(frame);
     return () => observer?.disconnect();
   }, [frame, stage]);
-  const selectedRect = selectedId === null ? undefined : session.rects.find((rect) => rect.id === selectedId);
+  const selectedRect =
+    selectedId === null || session.editSession !== null
+      ? undefined
+      : session.rects.find((rect) => rect.id === selectedId);
   const selectedDefinition = selected ? store.getState().registry.get(selected.type) : undefined;
   const locked = selected?.['locked'] === true;
   const canResizeWidth =
@@ -388,6 +403,8 @@ export function Canvas({
   };
 
   return (
+    // The canvas stage is a keyboard interaction target for Enter-to-edit.
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
     <div
       className="blx-canvas-stage"
       data-testid="canvas-stage"
@@ -398,6 +415,12 @@ export function Canvas({
         canvasRegion.current = node;
       }}
       tabIndex={-1}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' && selected && editingEnabled && session.editSession === null) {
+          event.preventDefault();
+          session.startEdit(selected.id, selected.type === 'blixis/button' ? 'label' : 'text');
+        }
+      }}
     >
       {session.status === 'connecting' ? (
         <p role="status" className="blx-canvas-note" data-testid="canvas-connecting">
@@ -529,7 +552,7 @@ export function Canvas({
           </div>
         </div>
       ) : null}
-      {frame && overlayBox && selectedId !== null ? (
+      {frame && overlayBox && selectedId !== null && session.editSession === null ? (
         <div className="blx-overlay-viewport" data-testid="canvas-overlay-viewport" style={overlayBox}>
           {session.rects
             .filter((rect) => rect.id === selectedId)

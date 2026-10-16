@@ -10,6 +10,8 @@ import {
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ApiError, RestClient } from '../api/types';
 import { directionOf } from '../i18n';
+import { createCoreRegistry } from '@blixis/wp-element-registry';
+import { findPath, nodeAt, validateRichText, type Json, type RichText } from '@blixis/wp-core';
 import type { EditorStore, Viewport } from '../state';
 
 /** Debounce between the last document change and the preview request. */
@@ -84,6 +86,7 @@ export interface CanvasSessionOptions {
   /** Replaced in tests with a fake endpoint. */
   createEndpoint?: CreateParentEndpoint;
   debounceMs?: number;
+  editingEnabled?: boolean;
 }
 
 export interface CanvasSession {
@@ -95,6 +98,10 @@ export interface CanvasSession {
   scroll: Snapshot['scroll'];
   /** Requests a new preview now (after a failed one). */
   refresh: () => void;
+  editSession: { id: string; prop: string; status: 'loading' | 'ready'; value?: string | RichText } | null;
+  startEdit: (id: string, prop: string) => void;
+  endEdit: (commit: boolean) => void;
+  sendEditCommand: (name: string, args?: Record<string, unknown>) => void;
 }
 
 /**
@@ -108,6 +115,12 @@ export function useCanvasSession(options: CanvasSessionOptions): CanvasSession {
   const debounceMs = options.debounceMs ?? PREVIEW_DEBOUNCE_MS;
   // The snapshot belongs to one iframe element: a new element starts from the initial state without resetting in an effect.
   const [snapshot, setSnapshot] = useState<Snapshot>(INITIAL);
+  const [editSession, setEditSession] = useState<CanvasSession['editSession']>(null);
+  const controls = useRef<{
+    start: (id: string, prop: string) => void;
+    end: (commit: boolean) => void;
+    command: (name: string, args?: Record<string, unknown>) => void;
+  }>({ start: () => undefined, end: () => undefined, command: () => undefined });
   const current = snapshot.owner === frame ? snapshot : INITIAL;
   const refreshRef = useRef<() => void>(() => undefined);
   const refresh = useCallback(() => {
@@ -144,6 +157,42 @@ export function useCanvasSession(options: CanvasSessionOptions): CanvasSession {
     let counter = 0;
     let timer: ReturnType<typeof setTimeout> | null = null;
     let controller: AbortController | null = null;
+    let editing: { id: string; prop: string; last: unknown; sessionId: string } | null = null;
+    const registry = createCoreRegistry();
+    const startEdit = (id: string, prop: string) => {
+      const state = store.getState();
+      if (options.editingEnabled === false || state.document === null || editing !== null) return;
+      const path = findPath(state.document.root, id);
+      const node = path === null ? undefined : nodeAt(state.document.root, path);
+      if (!node) return;
+      const definition = registry.get(node.type);
+      const property = definition?.props[prop];
+      if (property?.kind !== 'text' || property.classification !== 'translatable') return;
+      const value = state.document.translations[state.contentLocale]?.[id]?.values[prop] ?? node.props[prop] ?? '';
+      const sessionId = `${id}-${Date.now().toString(36)}`;
+      editing = { id, prop, last: value, sessionId };
+      setEditSession({ id, prop, status: 'loading' });
+      endpoint.send({
+        type: 'edit-start',
+        id,
+        prop,
+        value: value,
+        editable: true,
+        mode: node.type === 'blixis/text' ? 'inline' : 'single-line',
+        locale: state.contentLocale,
+        dir: directionOf(state.contentLocale),
+      });
+    };
+    const endEdit = (commit: boolean) => {
+      if (editing) endpoint.send({ type: 'edit-end', commit });
+    };
+    controls.current = {
+      start: startEdit,
+      end: endEdit,
+      command: (name, args) => {
+        if (editing) endpoint.send({ type: 'edit-command', name, ...(args === undefined ? {} : { args }) });
+      },
+    };
 
     const viewportNow = () => {
       const state = store.getState();
@@ -240,6 +289,7 @@ export function useCanvasSession(options: CanvasSessionOptions): CanvasSession {
           break;
         case 'pick':
           // Shift and Alt are reserved for multi-select and duplicate; ignored for now.
+          if (editing && message.id !== editing.id) endEdit(true);
           store.getState().select(message.id);
           releaseFocus(frame);
           break;
@@ -248,6 +298,56 @@ export function useCanvasSession(options: CanvasSessionOptions): CanvasSession {
           break;
         case 'error':
           update({ problem: 'canvas' });
+          break;
+        case 'edit-request': {
+          const current = store.getState().document;
+          const path = current ? findPath(current.root, message.id) : null;
+          const node = current && path ? nodeAt(current.root, path) : undefined;
+          store.getState().select(message.id);
+          const prop = node?.type === 'blixis/button' ? 'label' : 'text';
+          startEdit(message.id, prop);
+          break;
+        }
+        case 'edit-ready':
+          if (editing?.id === message.id && editing.prop === message.prop)
+            setEditSession({ id: message.id, prop: message.prop, status: 'ready' });
+          break;
+        case 'edit-change': {
+          if (editing?.id !== message.id || editing.prop !== message.prop) break;
+          const value = typeof message.value === 'string' ? message.value : validateRichText(message.value);
+          if (typeof value !== 'string' && !value.ok) {
+            endpoint.send({ type: 'edit-end', commit: false });
+            break;
+          }
+          const clean = typeof value === 'string' ? value : value.value;
+          editing.last = clean;
+          setEditSession({ id: editing.id, prop: editing.prop, status: 'ready', value: clean });
+          break;
+        }
+        case 'edit-ended':
+          if (editing?.id === message.id) {
+            if (message.reason === 'commit') {
+              const { id, prop, last } = editing;
+              const locale = store.getState().contentLocale;
+              const key = `rich:${id}:${prop}:${locale}`;
+              store
+                .getState()
+                .dispatch(
+                  { type: 'set-translation', locale, elementId: id, set: { [prop]: last as Json } },
+                  { coalesceKey: key, coalesceWindowMs: 60_000 },
+                );
+              store.getState().finishCoalescing();
+            }
+            editing = null;
+            setEditSession(null);
+            requestRects();
+          }
+          break;
+        case 'edit-error':
+          if (editing) {
+            editing = null;
+            setEditSession(null);
+          }
           break;
         case 'rects':
           if (message.revision === lastRenderedRevision) {
@@ -351,6 +451,7 @@ export function useCanvasSession(options: CanvasSessionOptions): CanvasSession {
         schedule(debounceMs);
       }
       if (state.selectedId !== previous.selectedId) endpoint.send({ type: 'select', id: state.selectedId });
+      if (editing && state.selectedId !== editing.id) endEdit(true);
       if (state.hoveredId !== previous.hoveredId) endpoint.send({ type: 'hover', id: state.hoveredId });
       if (state.selectedId !== previous.selectedId) {
         update({ rects: [] });
@@ -372,7 +473,7 @@ export function useCanvasSession(options: CanvasSessionOptions): CanvasSession {
       refreshRef.current = () => undefined;
       endpoint.close();
     };
-  }, [frame, store, client, src, attempt, create, debounceMs]);
+  }, [frame, store, client, src, attempt, create, debounceMs, options.editingEnabled]);
 
   return {
     status: current.status,
@@ -381,6 +482,16 @@ export function useCanvasSession(options: CanvasSessionOptions): CanvasSession {
     rects: current.rects,
     scroll: current.scroll,
     refresh,
+    editSession,
+    startEdit: (id, prop) => {
+      controls.current.start(id, prop);
+    },
+    endEdit: (commit) => {
+      controls.current.end(commit);
+    },
+    sendEditCommand: (name, args) => {
+      controls.current.command(name, args);
+    },
   };
 }
 

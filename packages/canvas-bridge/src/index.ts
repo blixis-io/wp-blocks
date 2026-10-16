@@ -11,6 +11,7 @@ export {
   type RandomBytes,
 } from './environment.ts';
 export { type Failure, type Parsed } from './guards.ts';
+export { isSafeCanvasUrl } from './safe-url.ts';
 export { parseHello, parseInit, parseInitPayload, type Hello, type Init, type InitPayload } from './handshake.ts';
 export {
   BREAKPOINT_PATTERN,

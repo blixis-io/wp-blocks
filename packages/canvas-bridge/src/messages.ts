@@ -1,5 +1,6 @@
 import { fail, isFiniteWithin, isInt, isStringMax, readExact, succeed, type Parsed } from './guards.ts';
 import { BREAKPOINT_PATTERN, CANVAS_ERROR_CODES, ELEMENT_ID_PATTERN, LIMITS, type CanvasErrorCode } from './limits.ts';
+import { isSafeCanvasUrl } from './safe-url.ts';
 
 export type PreviewMode = 'light' | 'dark';
 
@@ -12,7 +13,19 @@ export type ParentMessage =
   | { type: 'hover'; id: string | null }
   | { type: 'scroll-to'; id: string }
   | { type: 'request-rects'; revision: number }
-  | { type: 'ping'; n: number };
+  | { type: 'ping'; n: number }
+  | {
+      type: 'edit-start';
+      id: string;
+      prop: string;
+      value: unknown;
+      editable: true;
+      mode: 'inline' | 'single-line';
+      locale: string;
+      dir: 'ltr' | 'rtl';
+    }
+  | { type: 'edit-command'; name: string; args?: Record<string, unknown> }
+  | { type: 'edit-end'; commit: boolean };
 
 export interface ElementRect {
   id: string;
@@ -32,7 +45,20 @@ export type CanvasMessage =
   | { type: 'hover'; id: string | null }
   | { type: 'rects'; revision: number; items: ElementRect[] }
   | { type: 'error'; code: CanvasErrorCode }
-  | { type: 'pong'; n: number };
+  | { type: 'pong'; n: number }
+  | { type: 'edit-request'; id: string }
+  | { type: 'edit-ready'; id: string; prop: string }
+  | { type: 'edit-change'; id: string; prop: string; value: unknown }
+  | {
+      type: 'edit-selection';
+      id: string;
+      empty: boolean;
+      marks: Record<string, unknown>;
+      text: string;
+      rect?: { x: number; y: number; w: number; h: number };
+    }
+  | { type: 'edit-ended'; id: string; reason: 'commit' | 'cancel' }
+  | { type: 'edit-error'; code: string };
 
 const ID = new RegExp(ELEMENT_ID_PATTERN);
 export const isElementId = (value: unknown): value is string => typeof value === 'string' && ID.test(value);
@@ -40,6 +66,142 @@ export const isElementId = (value: unknown): value is string => typeof value ===
 const isNullableId = (value: unknown): value is string | null => value === null || isElementId(value);
 const isMode = (value: unknown): value is PreviewMode => value === 'light' || value === 'dark';
 const isRevision = (value: unknown): value is number => isInt(value, 0, Number.MAX_SAFE_INTEGER);
+const isProp = (value: unknown): value is string => typeof value === 'string' && /^[a-z][A-Za-z0-9]{0,31}$/.test(value);
+const isEditValue = (value: unknown): boolean => {
+  if (typeof value === 'string') return value.length <= 20_000;
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  try {
+    const record = value as Record<string, unknown>;
+    if (
+      Object.keys(record).length !== 2 ||
+      record['v'] !== 1 ||
+      !Array.isArray(record['inline']) ||
+      record['inline'].length > 5_000
+    )
+      return false;
+    let chars = 0;
+    for (const item of record['inline']) {
+      if (!item || typeof item !== 'object' || Array.isArray(item)) return false;
+      const node = item as Record<string, unknown>;
+      if (node['t'] === 'br') {
+        if (Object.keys(node).length !== 1) return false;
+        continue;
+      }
+      if (
+        node['t'] !== 'text' ||
+        typeof node['s'] !== 'string' ||
+        node['s'].length === 0 ||
+        node['s'].includes('\n') ||
+        Object.keys(node).some((k) => !['t', 's', 'm'].includes(k))
+      )
+        return false;
+      chars += node['s'].length;
+      if (chars > 20_000) return false;
+      if (node['m'] !== undefined && (!Array.isArray(node['m']) || node['m'].length > 8)) return false;
+      if (Array.isArray(node['m']) && !node['m'].every(isRichMark)) return false;
+    }
+    return JSON.stringify(value).length <= 100_000;
+  } catch {
+    return false;
+  }
+};
+function isRichMark(mark: unknown): boolean {
+  if (typeof mark === 'string') return ['strong', 'em', 'u', 's', 'code'].includes(mark);
+  if (!mark || typeof mark !== 'object' || Array.isArray(mark) || Object.keys(mark).length !== 1) return false;
+  const record = mark as Record<string, unknown>;
+  if ('link' in record) {
+    const link = record['link'];
+    if (!link || typeof link !== 'object' || Array.isArray(link)) return false;
+    const fields = link as Record<string, unknown>;
+    return (
+      Object.keys(fields).every((key) => key === 'href' || key === 'newTab') &&
+      typeof fields['href'] === 'string' &&
+      fields['href'].length > 0 &&
+      fields['href'].length <= 2048 &&
+      isSafeCanvasUrl(fields['href']) &&
+      (fields['newTab'] === undefined || typeof fields['newTab'] === 'boolean')
+    );
+  }
+  if ('style' in record) {
+    const style = record['style'];
+    if (!style || typeof style !== 'object' || Array.isArray(style)) return false;
+    const fields = style as Record<string, unknown>;
+    return (
+      Object.keys(fields).length > 0 &&
+      Object.keys(fields).every((key) => key === 'color' || key === 'highlight' || key === 'weight') &&
+      Object.entries(fields).every(([key, value]) =>
+        key === 'weight'
+          ? ['normal', 'medium', 'bold'].includes(String(value))
+          : typeof value === 'string' && /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(value) && value.length <= 64,
+      )
+    );
+  }
+  return false;
+}
+function validEditMarks(value: unknown): value is Record<string, unknown> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const record = value as Record<string, unknown>;
+  if (Object.keys(record).some((key) => !['strong', 'em', 'u', 's', 'code', 'link', 'style'].includes(key)))
+    return false;
+  if (['strong', 'em', 'u', 's', 'code'].some((key) => record[key] !== undefined && typeof record[key] !== 'boolean'))
+    return false;
+  if (record['link'] !== undefined) {
+    const link = record['link'];
+    if (!link || typeof link !== 'object' || Array.isArray(link)) return false;
+    const fields = link as Record<string, unknown>;
+    if (
+      Object.keys(fields).some((key) => !['href', 'newTab'].includes(key)) ||
+      (fields['href'] !== undefined && (typeof fields['href'] !== 'string' || !isSafeCanvasUrl(fields['href']))) ||
+      (fields['newTab'] !== undefined && typeof fields['newTab'] !== 'boolean')
+    )
+      return false;
+  }
+  if (record['style'] !== undefined) {
+    const style = record['style'];
+    if (!style || typeof style !== 'object' || Array.isArray(style)) return false;
+    const fields = style as Record<string, unknown>;
+    if (
+      Object.keys(fields).some((key) => !['color', 'highlight', 'weight'].includes(key)) ||
+      Object.entries(fields).some(([key, val]) =>
+        key === 'weight'
+          ? !['normal', 'medium', 'bold'].includes(String(val))
+          : typeof val !== 'string' || !/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(val) || val.length > 64,
+      )
+    )
+      return false;
+  }
+  return true;
+}
+function validEditCommand(name: string, args: unknown): boolean {
+  if (args === undefined) return ['select-all', 'clear-marks', 'clear-link'].includes(name);
+  if (!args || typeof args !== 'object' || Array.isArray(args)) return false;
+  const record = args as Record<string, unknown>;
+  if (name === 'toggle-mark')
+    return (
+      Object.keys(record).length === 1 &&
+      ['bold', 'italic', 'underline', 'strike', 'code'].includes(String(record['mark']))
+    );
+  if (name === 'set-link')
+    return (
+      Object.keys(record).every((key) => key === 'href' || key === 'newTab') &&
+      typeof record['href'] === 'string' &&
+      record['href'].length > 0 &&
+      record['href'].length <= 2048 &&
+      isSafeCanvasUrl(record['href']) &&
+      (record['newTab'] === undefined || typeof record['newTab'] === 'boolean')
+    );
+  if (name === 'set-style')
+    return (
+      Object.keys(record).length > 0 &&
+      Object.keys(record).every((key) => ['color', 'highlight', 'weight'].includes(key)) &&
+      Object.entries(record).every(([key, val]) =>
+        key === 'weight'
+          ? ['normal', 'medium', 'bold'].includes(String(val))
+          : typeof val === 'string' && /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(val) && val.length <= 64,
+      )
+    );
+  return false;
+}
 
 export const isViewportWidth = (value: unknown): value is number =>
   isInt(value, LIMITS.viewportWidthMin, LIMITS.viewportWidthMax);
@@ -109,6 +271,54 @@ function parseParent(data: unknown): Parsed<ParentMessage> {
       const f = readExact(data, ['type', 'n']);
       if (f === null) return fail('malformed');
       return isInt(f['n'], 0, Number.MAX_SAFE_INTEGER) ? succeed({ type, n: f['n'] }) : fail('invalid-field');
+    }
+    case 'edit-start': {
+      const f = readExact(data, ['type', 'id', 'prop', 'value', 'editable', 'mode', 'locale', 'dir']);
+      if (f === null) return fail('malformed');
+      if (
+        !isElementId(f['id']) ||
+        !isProp(f['prop']) ||
+        !isEditValue(f['value']) ||
+        f['editable'] !== true ||
+        !['inline', 'single-line'].includes(String(f['mode'])) ||
+        typeof f['locale'] !== 'string' ||
+        f['locale'].length > 64 ||
+        !['ltr', 'rtl'].includes(String(f['dir']))
+      )
+        return fail('invalid-field');
+      return succeed({
+        type,
+        id: f['id'],
+        prop: f['prop'],
+        value: f['value'],
+        editable: true,
+        mode: f['mode'] as 'inline' | 'single-line',
+        locale: f['locale'],
+        dir: f['dir'] as 'ltr' | 'rtl',
+      });
+    }
+    case 'edit-command': {
+      const f = readExact(data, ['type', 'name', 'args']);
+      if (
+        f === null ||
+        typeof f['name'] !== 'string' ||
+        !['toggle-mark', 'set-link', 'clear-link', 'set-style', 'clear-marks', 'select-all'].includes(f['name'])
+      )
+        return fail('malformed');
+      if (!validEditCommand(f['name'], f['args'])) return fail('invalid-field');
+      return succeed({
+        type,
+        name: f['name'],
+        ...(f['args'] === undefined ? {} : { args: f['args'] as Record<string, unknown> }),
+      });
+    }
+    case 'edit-end': {
+      const f = readExact(data, ['type', 'commit']);
+      return f === null
+        ? fail('malformed')
+        : typeof f['commit'] === 'boolean'
+          ? succeed({ type, commit: f['commit'] })
+          : fail('invalid-field');
     }
     default:
       return fail('unknown-type');
@@ -201,6 +411,78 @@ function parseCanvas(data: unknown): Parsed<CanvasMessage> {
       const f = readExact(data, ['type', 'n']);
       if (f === null) return fail('malformed');
       return isInt(f['n'], 0, Number.MAX_SAFE_INTEGER) ? succeed({ type, n: f['n'] }) : fail('invalid-field');
+    }
+    case 'edit-request': {
+      const f = readExact(data, ['type', 'id']);
+      return f === null
+        ? fail('malformed')
+        : isElementId(f['id'])
+          ? succeed({ type, id: f['id'] })
+          : fail('invalid-field');
+    }
+    case 'edit-ready': {
+      const f = readExact(data, ['type', 'id', 'prop']);
+      return f === null
+        ? fail('malformed')
+        : isElementId(f['id']) && isProp(f['prop'])
+          ? succeed({ type, id: f['id'], prop: f['prop'] })
+          : fail('invalid-field');
+    }
+    case 'edit-change': {
+      const f = readExact(data, ['type', 'id', 'prop', 'value']);
+      return f === null
+        ? fail('malformed')
+        : !isElementId(f['id']) || !isProp(f['prop'])
+          ? fail('invalid-field')
+          : !isEditValue(f['value'])
+            ? fail('too-large')
+            : succeed({ type, id: f['id'], prop: f['prop'], value: f['value'] });
+    }
+    case 'edit-selection': {
+      const f = readExact(data, ['type', 'id', 'empty', 'marks', 'text', 'rect']);
+      if (f === null) return fail('malformed');
+      if (
+        !isElementId(f['id']) ||
+        typeof f['empty'] !== 'boolean' ||
+        !validEditMarks(f['marks']) ||
+        !isStringMax(f['text'], 200)
+      )
+        return fail('invalid-field');
+      const rect = f['rect'];
+      if (rect !== undefined) {
+        const r = readExact(rect, ['x', 'y', 'w', 'h']);
+        if (
+          r === null ||
+          ![r['x'], r['y'], r['w'], r['h']].every((v) => isFiniteWithin(v, LIMITS.coordinateMax)) ||
+          Number(r['w']) < 0 ||
+          Number(r['h']) < 0
+        )
+          return fail('invalid-field');
+      }
+      return succeed({
+        type,
+        id: f['id'],
+        empty: f['empty'],
+        marks: f['marks'],
+        text: f['text'],
+        ...(rect === undefined ? {} : { rect: rect as { x: number; y: number; w: number; h: number } }),
+      });
+    }
+    case 'edit-ended': {
+      const f = readExact(data, ['type', 'id', 'reason']);
+      return f === null
+        ? fail('malformed')
+        : isElementId(f['id']) && ['commit', 'cancel'].includes(String(f['reason']))
+          ? succeed({ type, id: f['id'], reason: f['reason'] as 'commit' | 'cancel' })
+          : fail('invalid-field');
+    }
+    case 'edit-error': {
+      const f = readExact(data, ['type', 'code']);
+      return f === null
+        ? fail('malformed')
+        : typeof f['code'] === 'string' && /^[a-z-]{1,40}$/.test(f['code'])
+          ? succeed({ type, code: f['code'] })
+          : fail('invalid-field');
     }
     default:
       return fail('unknown-type');
