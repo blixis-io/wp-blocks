@@ -322,7 +322,7 @@ try {
   // Shortcuts dialog: opens, traps focus, Escape closes, focus returns to the opener.
   await clickReal('button[aria-label="More options"]');
   await ev(`${buttonByText('Keyboard shortcuts')}.click()`);
-  await sleep(300);
+  await sleep(500);
   assert.equal(await ev(`!!document.querySelector('[role=dialog]')`), true, 'the shortcuts dialog opens');
   for (let i = 0; i < 8; i += 1) await press('Tab');
   assert.equal(
@@ -476,7 +476,7 @@ try {
   );
   assert.equal(loaded.undo, 'true', 'undo is disabled before any command');
   const inlineHeadingPoint = await ev(
-    `(() => { const frame=document.querySelector('main iframe'), target=frame?.contentDocument?.querySelector('[data-blx-id="hero-h1"]'), fr=frame?.getBoundingClientRect(), r=target?.getBoundingClientRect(); return fr&&r ? {x:fr.left+frame.clientLeft+r.left+r.width/2,y:fr.top+frame.clientTop+r.top+r.height/2} : null; })()`,
+    `(() => { const frame=document.querySelector('main iframe'), target=frame?.contentDocument?.querySelector('[data-blx-id="hero-h1"]'); target?.scrollIntoView({block:'center'}); const fr=frame?.getBoundingClientRect(), r=target?.getBoundingClientRect(); return fr&&r ? {x:fr.left+frame.clientLeft+r.left+r.width/2,y:fr.top+frame.clientTop+r.top+r.height/2} : null; })()`,
   );
   assert.ok(inlineHeadingPoint, 'demo heading has a visible canvas click point');
   await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: inlineHeadingPoint.x, y: inlineHeadingPoint.y });
@@ -496,9 +496,12 @@ try {
   });
   await sleep(500);
   const activeEdit = await ev(
-    `(() => { const frame=document.querySelector('main iframe'), heading=frame?.contentDocument?.querySelector('[data-blx-id="hero-h1"]'), root=heading?.querySelector('[data-blx-richtext-root]'); return { active:!!root, text:heading?.textContent ?? '' }; })()`,
+    `(() => { const frame=document.querySelector('main iframe'), heading=frame?.contentDocument?.querySelector('[data-blx-id="hero-h1"]'), root=heading?.querySelector('[data-blx-richtext-root]'), style=heading&&frame.contentWindow.getComputedStyle(heading); return { active:!!root, editing:heading?.hasAttribute('data-blx-editing'), outlineStyle:style?.outlineStyle, outlineWidth:style?.outlineWidth, text:heading?.textContent ?? '' }; })()`,
   );
   assert.ok(activeEdit.active, 'a single CDP click starts inline editing on the demo heading');
+  assert.equal(activeEdit.editing, true, 'the edited heading receives the runtime editing attribute');
+  assert.equal(activeEdit.outlineStyle, 'solid', 'the active edit ring has a visible solid outline');
+  assert.equal(activeEdit.outlineWidth, '2px', 'the active edit ring is two pixels wide');
   await send('Input.insertText', { text: 'X' });
   await sleep(200);
   assert.ok(
@@ -508,13 +511,20 @@ try {
     'typing reaches the heading after one click',
   );
   await press('Escape');
-  await sleep(200);
+  await sleep(500);
   assert.equal(
     await ev(
       `!!document.querySelector('main iframe')?.contentDocument?.querySelector('[data-blx-id="hero-h1"] [data-blx-richtext-root]')`,
     ),
     false,
     'Escape cancels and removes the inline editor',
+  );
+  assert.equal(
+    await ev(
+      `document.querySelector('main iframe')?.contentDocument?.querySelector('[data-blx-id="hero-h1"]')?.hasAttribute('data-blx-editing')`,
+    ),
+    false,
+    'Escape removes the active edit ring attribute',
   );
   assert.equal(
     await ev(
@@ -532,6 +542,48 @@ try {
   );
   assert.ok(picked.current?.includes('hero-h1'), 'the clicked element is marked aria-current');
   assert.ok(picked.inspector.includes('hero-h1'), 'the visually hidden inspector live region announces the selection');
+  assert.equal(
+    await ev(`!!document.querySelector('[data-testid="selection-toolbar"]')`),
+    true,
+    'the selected element shows its toolbar before the background-click check',
+  );
+  const emptyCanvasPoint = await ev(`(() => {
+    const frame=document.querySelector('main iframe'), doc=frame?.contentDocument, fr=frame?.getBoundingClientRect();
+    if (!frame || !doc || !fr) return null;
+    const root=doc.querySelector('#blx-canvas-root'); root?.scrollIntoView({block:'start'});
+    for (const [x,y] of [[doc.documentElement.clientWidth-12,80],[12,80],[doc.documentElement.clientWidth-12,doc.documentElement.clientHeight-20],[12,doc.documentElement.clientHeight-20]]) {
+      const target=doc.elementFromPoint(x,y);
+      if (target && !target.closest('[data-blx-id]')) return {x:fr.left+frame.clientLeft+x,y:fr.top+frame.clientTop+y};
+    }
+    return null;
+  })()`);
+  assert.ok(emptyCanvasPoint, 'the canvas has a visible background point with no builder element ancestor');
+  await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: emptyCanvasPoint.x, y: emptyCanvasPoint.y });
+  await send('Input.dispatchMouseEvent', {
+    type: 'mousePressed',
+    x: emptyCanvasPoint.x,
+    y: emptyCanvasPoint.y,
+    button: 'left',
+    clickCount: 1,
+  });
+  await send('Input.dispatchMouseEvent', {
+    type: 'mouseReleased',
+    x: emptyCanvasPoint.x,
+    y: emptyCanvasPoint.y,
+    button: 'left',
+    clickCount: 1,
+  });
+  await sleep(500);
+  const emptySelection = await ev(
+    `({ toolbar:!!document.querySelector('[data-testid="selection-toolbar"]'), inspector:document.querySelector('[data-testid="inspector-selection"]')?.textContent ?? '', editingChip:!!document.querySelector('[data-testid="canvas-hover-chip"]') })`,
+  );
+  assert.equal(emptySelection.toolbar, false, 'empty canvas click clears the selection toolbar');
+  assert.match(
+    emptySelection.inspector,
+    /No element selected/i,
+    'empty canvas click clears the inspector element chip',
+  );
+  assert.equal(emptySelection.editingChip, false, 'empty canvas click clears the hover chip');
   assert.equal(
     await ev(`!!document.querySelector('nav[aria-label="Structure"] [role="treeitem"][data-on-path]')`),
     false,

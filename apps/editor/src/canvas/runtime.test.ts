@@ -9,7 +9,7 @@ import type {
   ParentMessage,
 } from '@blixis/wp-canvas-bridge';
 import { checkHtml, isCssSafe } from './guards';
-import { readCanvasMeta, startRuntime, type Runtime } from './runtime';
+import { EDITING_ATTRIBUTE, HOVER_ATTRIBUTE, readCanvasMeta, startRuntime, type Runtime } from './runtime';
 
 const NONCE = 'dGVzdC1ub25jZS1mb3ItanNkb20=';
 const META = JSON.stringify({ version: 1, cspNonce: NONCE });
@@ -269,6 +269,17 @@ describe('lazy rich text asset loading', () => {
     lazy?.dispatchEvent(new Event('load'));
     await Promise.resolve();
     expect(h.sent.some((message) => message.type === 'edit-ready')).toBe(true);
+    const edited = need(h.root.querySelector('[data-blx-id="el-heading-1"]'));
+    expect(edited.hasAttribute(EDITING_ATTRIBUTE)).toBe(true);
+    expect(document.getElementById('blx-canvas-chrome')?.textContent).toContain(
+      'outline:2px solid var(--ed-selection-outline',
+    );
+    expect(document.getElementById('blx-canvas-chrome')?.textContent).toContain('prefers-reduced-motion');
+    h.sent.length = 0;
+    document.body.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    expect(h.sent).toEqual([]);
+    h.deliver({ type: 'edit-end', commit: false });
+    expect(edited.hasAttribute(EDITING_ATTRIBUTE)).toBe(false);
     expect(document.querySelectorAll('script[src*="richtext.js"]')).toHaveLength(1);
   });
   it('refuses loading without a nonce', async () => {
@@ -596,6 +607,64 @@ describe('pointer interaction', () => {
     const event = new MouseEvent('click', { bubbles: true, cancelable: true });
     h.root.querySelector('h2')?.dispatchEvent(event);
     expect(event.defaultPrevented).toBe(false);
+  });
+
+  it('deselects on an unmodified primary click on empty canvas and clears hover', () => {
+    const h = begin();
+    render(h, '<p data-blx-id="el-text-1">x</p><div class="gap">gap</div>');
+    h.deliver({ type: 'hover', id: 'el-text-1' });
+    h.sent.length = 0;
+    document.querySelector('.gap')?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    expect(h.sent).toEqual([
+      { type: 'hover', id: null },
+      { type: 'pick', id: null, shift: false, alt: false },
+    ]);
+    expect(h.root.querySelector(`[${HOVER_ATTRIBUTE}]`)).toBeNull();
+  });
+
+  it('ignores modified, dragged, non-primary, auxiliary and context clicks on empty canvas', () => {
+    const h = begin();
+    render(h, '<div id="gap">gap</div>');
+    h.sent.length = 0;
+    const gap = need(document.getElementById('gap'));
+    gap.dispatchEvent(new MouseEvent('click', { bubbles: true, button: 0, shiftKey: true }));
+    gap.dispatchEvent(new MouseEvent('click', { bubbles: true, button: 0, metaKey: true }));
+    gap.dispatchEvent(new MouseEvent('click', { bubbles: true, button: 1 }));
+    gap.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: 0, clientY: 0 }));
+    gap.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: 5, clientY: 0 }));
+    gap.dispatchEvent(new MouseEvent('auxclick', { bubbles: true, button: 1 }));
+    gap.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }));
+    expect(h.sent).toEqual([]);
+  });
+
+  it('does not deselect on an empty click when an inline edit is active', async () => {
+    const script = document.createElement('script');
+    script.src = `${window.location.origin}/wp/canvas.js?ver=manifest-hash`;
+    script.nonce = NONCE;
+    script.setAttribute('data-blx-canvas', '');
+    document.head.append(script);
+    const h = begin();
+    render(h, '<h2 data-blx-id="el-heading-1">Hello</h2><div id="gap"></div>');
+    h.deliver({
+      type: 'edit-start',
+      id: 'el-heading-1',
+      prop: 'text',
+      value: 'Hello',
+      editable: true,
+      mode: 'single-line',
+      locale: 'en_US',
+      dir: 'ltr',
+    });
+    await Promise.resolve();
+    Object.defineProperty(window, 'BlixisRichText', {
+      value: { mountRichText: vi.fn(() => ({ editor: {}, destroy: vi.fn() })) },
+      configurable: true,
+    });
+    document.querySelector('script[src*="richtext.js"]')?.dispatchEvent(new Event('load'));
+    await Promise.resolve();
+    h.sent.length = 0;
+    document.getElementById('gap')?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    expect(h.sent.filter((message) => message.type === 'pick')).toEqual([]);
   });
 
   it('prevents form submits anywhere in the document', () => {

@@ -24,13 +24,14 @@ export const ROOT_ID = 'blx-canvas-root';
 export const META_NAME = 'blixis-canvas';
 export const SELECTED_ATTRIBUTE = 'data-blx-selected';
 export const HOVER_ATTRIBUTE = 'data-blx-hover';
+export const EDITING_ATTRIBUTE = 'data-blx-editing';
 const canvasScriptAtStart =
   typeof document === 'undefined' ? null : (document.currentScript as HTMLScriptElement | null);
 const MAX_META_LENGTH = 1024;
 const NONCE_PATTERN = /^[A-Za-z0-9+/_=-]{16,64}$/;
 
 /** Selection and hover are drawn by this stylesheet (a nonce'd `<style>`), never by inline styles. */
-const CHROME_CSS = `[${HOVER_ATTRIBUTE}]{outline:2px dashed #2563ebaa!important;outline-offset:-2px!important}a,area,button,input,textarea,select,summary,[role="button"],[tabindex]{cursor:default!important}/* Base rules Tiptap would inject as an un-nonced <style>, which the canvas CSP blocks (injectCSS is off). */.ProseMirror{position:relative;word-wrap:break-word;white-space:pre-wrap;white-space:break-spaces;font-variant-ligatures:none;font-feature-settings:"liga" 0;outline:none}.ProseMirror p{margin:0}.ProseMirror-hideselection *::selection{background:transparent}`;
+const CHROME_CSS = `[${HOVER_ATTRIBUTE}]{outline:2px dashed #2563ebaa!important;outline-offset:-2px!important}[${EDITING_ATTRIBUTE}]{outline:2px solid var(--ed-selection-outline,#2563eb)!important;outline-offset:2px!important;box-shadow:0 0 0 4px #fff,0 0 0 6px #111827,inset 0 0 0 9999px rgb(37 99 235 / .08)!important;transition:opacity 120ms ease-out!important}@media(prefers-reduced-motion:reduce){[${EDITING_ATTRIBUTE}]{transition:none!important}}a,area,button,input,textarea,select,summary,[role="button"],[tabindex]{cursor:default!important}/* Base rules Tiptap would inject as an un-nonced <style>, which the canvas CSP blocks (injectCSS is off). */.ProseMirror{position:relative;word-wrap:break-word;white-space:pre-wrap;white-space:break-spaces;font-variant-ligatures:none;font-feature-settings:"liga" 0;outline:none}.ProseMirror p{margin:0}.ProseMirror-hideselection *::selection{background:transparent}`;
 
 export interface CanvasMeta {
   version: 1;
@@ -393,6 +394,7 @@ export function startRuntime(env: RuntimeEnv = { document, window }): Runtime | 
     if (activeEdit === null) return;
     const session = activeEdit;
     activeEdit = null;
+    session.element.removeAttribute(EDITING_ATTRIBUTE);
     session.destroy();
     mark(HOVER_ATTRIBUTE, hoveredId);
     send({ type: 'edit-ended', id: session.id, reason });
@@ -449,6 +451,7 @@ export function startRuntime(env: RuntimeEnv = { document, window }): Runtime | 
       ...(message.caret === undefined ? {} : { caret: message.caret }),
       ...session,
     };
+    element.setAttribute(EDITING_ATTRIBUTE, '');
     mark(HOVER_ATTRIBUTE, null);
     send({ type: 'edit-ready', id: message.id, prop: message.prop });
   };
@@ -533,8 +536,11 @@ export function startRuntime(env: RuntimeEnv = { document, window }): Runtime | 
   const onClick = (event: MouseEvent): void => {
     const interactive = closestElement(event.target, INTERACTIVE);
     if (interactive !== null) stop(event); // activation, navigation, submission and native controls are editor picks only
-    pick(event);
-    if (pointerDown && Math.hypot(event.clientX - pointerDown.x, event.clientY - pointerDown.y) > 4) return;
+    const dragged =
+      pointerDown !== null && Math.hypot(event.clientX - pointerDown.x, event.clientY - pointerDown.y) > 4;
+    pointerDown = null;
+    pick(event, dragged, interactive !== null);
+    if (dragged) return;
     if (event.shiftKey || event.altKey || event.metaKey || event.ctrlKey || activeEdit !== null) return;
     const holder = closestElement(event.target, '[data-blx-id]') as HTMLElement | null;
     const id = holder?.getAttribute('data-blx-id');
@@ -573,11 +579,31 @@ export function startRuntime(env: RuntimeEnv = { document, window }): Runtime | 
     if (closestElement(event.target, INTERACTIVE) !== null) stop(event);
     pick(event);
   };
-  const pick = (event: MouseEvent): void => {
+  const pick = (event: MouseEvent, dragged = false, interactive = false): void => {
     const holder = closestElement(event.target, '[data-blx-id]');
     const id = holder?.getAttribute('data-blx-id');
     if (id !== null && id !== undefined && isElementId(id) && root.contains(holder)) {
       send({ type: 'pick', id, shift: event.shiftKey, alt: event.altKey });
+    } else if (
+      holder === null &&
+      event.type === 'click' &&
+      event.button === 0 &&
+      !dragged &&
+      !interactive &&
+      activeEdit === null &&
+      !event.shiftKey &&
+      !event.altKey &&
+      !event.metaKey &&
+      !event.ctrlKey
+    ) {
+      hoveredId = null;
+      hoverWanted = null;
+      hoverSent = null;
+      if (hoverTimer !== null) clearTimeout(hoverTimer);
+      hoverTimer = null;
+      mark(HOVER_ATTRIBUTE, null);
+      send({ type: 'hover', id: null });
+      send({ type: 'pick', id: null, shift: false, alt: false });
     }
   };
   const onContextMenu = (event: MouseEvent): void => {
@@ -705,7 +731,10 @@ export function startRuntime(env: RuntimeEnv = { document, window }): Runtime | 
   function close(): void {
     if (closed) return;
     closed = true;
-    activeEdit?.destroy();
+    if (activeEdit !== null) {
+      activeEdit.element.removeAttribute(EDITING_ATTRIBUTE);
+      activeEdit.destroy();
+    }
     activeEdit = null;
     doc.removeEventListener('click', onClick, true);
     doc.removeEventListener('mousedown', rememberPointerDown, true);

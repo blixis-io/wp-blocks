@@ -490,6 +490,34 @@ function Palette({ editingEnabled }: { editingEnabled: boolean }) {
   );
 }
 
+type Registry = ReturnType<ReturnType<typeof useEditorStoreApi>['getState']>['registry'];
+type EditorDocument = NonNullable<ReturnType<ReturnType<typeof useEditorStoreApi>['getState']>['document']>;
+
+/** Where a palette card inserts its element: into/after the selection, else the page root, else the last root container. */
+function paletteInsertionPoint(
+  document: EditorDocument,
+  selectedId: string | null,
+  registry: Registry,
+  type: string,
+): { parentId: string | null; index: number } | null {
+  if (selectedId) {
+    const path = findPath(document.root, selectedId);
+    const selected = path ? nodeAt(document.root, path) : undefined;
+    if (selected && registry.canNest(selected.type, type, 'create'))
+      return { parentId: selected.id, index: selected.children.length };
+    if (path) {
+      const parentPath = path.slice(0, -1);
+      const parent = parentPath.length ? nodeAt(document.root, parentPath) : undefined;
+      if (registry.canNest(parent?.type ?? null, type, 'create'))
+        return { parentId: parent?.id ?? null, index: (path[path.length - 1] ?? -1) + 1 };
+    }
+  }
+  if (registry.canNest(null, type, 'create')) return { parentId: null, index: document.root.length };
+  // Nothing selected and the page root does not accept this element: append it to the last root container that does.
+  const container = [...document.root].reverse().find((node) => registry.canNest(node.type, type, 'create'));
+  return container ? { parentId: container.id, index: container.children.length } : null;
+}
+
 function PaletteCard({
   definition,
   index,
@@ -509,26 +537,10 @@ function PaletteCard({
   const store = useEditorStoreApi();
   const document = useEditorStore((state) => state.document);
   const selectedId = useEditorStore((state) => state.selectedId);
-  const placement = useMemo(() => {
-    if (!document) return null;
-    if (selectedId) {
-      const path = findPath(document.root, selectedId);
-      const selected = path ? nodeAt(document.root, path) : undefined;
-      if (selected && store.getState().registry.canNest(selected.type, definition.type, 'create'))
-        return { parentId: selected.id, index: selected.children.length };
-      if (path) {
-        const parentPath = path.slice(0, -1);
-        const parent = parentPath.length ? nodeAt(document.root, parentPath) : undefined;
-        const parentId = parent?.id ?? null;
-        const parentType = parent?.type ?? null;
-        if (store.getState().registry.canNest(parentType, definition.type, 'create'))
-          return { parentId, index: (path[path.length - 1] ?? -1) + 1 };
-      }
-    }
-    if (store.getState().registry.canNest(null, definition.type, 'create'))
-      return { parentId: null, index: document.root.length };
-    return null;
-  }, [document, selectedId, store, definition.type]);
+  const placement = useMemo(
+    () => (document ? paletteInsertionPoint(document, selectedId, store.getState().registry, definition.type) : null),
+    [document, selectedId, store, definition.type],
+  );
   const disabled = !editingEnabled || !placement || !document;
   return (
     <button
