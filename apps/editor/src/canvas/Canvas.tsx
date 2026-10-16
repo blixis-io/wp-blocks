@@ -15,7 +15,7 @@ import {
 } from '@blixis/wp-editor-ui';
 import { languageName } from './language-name';
 import { elementIconName } from '@blixis/wp-editor-ui';
-import { placeSelectionToolbar } from './selection-chrome';
+import { boxesOverlap, placeHoverChip, placeSelectionToolbar } from './selection-chrome';
 import { findPath, nodeAt, type ElementNode } from '@blixis/wp-core';
 import { elementLabel } from '../element-label';
 import { ElementId } from '../ElementId';
@@ -154,6 +154,8 @@ export function Canvas({
   const viewport = useEditorStore((state) => state.viewport);
   const previewMode = useEditorStore((state) => state.previewMode);
   const selectedId = useEditorStore((state) => state.selectedId);
+  const hoveredId = useEditorStore((state) => state.hoveredId);
+  const editorDocument = useEditorStore((state) => state.document);
   const [frame, setFrame] = useState<HTMLIFrameElement | null>(null);
   const [stage, setStage] = useState<HTMLDivElement | null>(null);
   const [attempt, setAttempt] = useState(0);
@@ -251,6 +253,12 @@ export function Canvas({
     selectedId === null || session.editSession !== null
       ? undefined
       : session.rects.find((rect) => rect.id === selectedId);
+  const hoveredPath = hoveredId && editorDocument ? findPath(editorDocument.root, hoveredId) : null;
+  const hoveredNode = hoveredPath && editorDocument ? nodeAt(editorDocument.root, hoveredPath) : null;
+  const hoveredRect =
+    hoveredId === null || hoveredId === selectedId || session.editSession !== null || resizePreview !== null
+      ? undefined
+      : session.rects.find((rect) => rect.id === hoveredId);
   const selectedDefinition = selected ? store.getState().registry.get(selected.type) : undefined;
   const locked = selected?.['locked'] === true;
   const canResizeWidth =
@@ -930,7 +938,7 @@ export function Canvas({
           </Menu>
         </div>
       ) : null}
-      {frame && overlayBox && selectedId !== null && session.editSession === null ? (
+      {frame && overlayBox && session.editSession === null && (selectedId !== null || hoveredRect !== undefined) ? (
         <div className="blx-overlay-viewport" data-testid="canvas-overlay-viewport" style={overlayBox}>
           {session.rects
             .filter((rect) => rect.id === selectedId)
@@ -1091,6 +1099,35 @@ export function Canvas({
               ) : null}
             </div>
           ) : null}
+          {hoveredNode && hoveredRect
+            ? (() => {
+                const element = {
+                  left: hoveredRect.x - session.scroll.x,
+                  top: hoveredRect.y - session.scroll.y,
+                  width: hoveredRect.w,
+                  height: hoveredRect.h,
+                };
+                const position = placeHoverChip(
+                  { left: 0, top: 0, width: overlayBox.width, height: overlayBox.height },
+                  element,
+                  { width: 156, height: 24 },
+                );
+                const toolbarBox = toolbarPosition
+                  ? {
+                      left: toolbarPosition.left - overlayBox.left,
+                      top: toolbarPosition.top - overlayBox.top,
+                      ...toolbarSize,
+                    }
+                  : null;
+                return toolbarBox && boxesOverlap({ ...position, width: 156, height: 24 }, toolbarBox) ? null : (
+                  <div className="blx-hover-chip" data-testid="canvas-hover-chip" aria-hidden="true" style={position}>
+                    <Icon name={elementIconName(hoveredNode.type)} size={14} />
+                    <span>{elementLabel(hoveredNode.type, t)}</span>
+                    <ElementId id={hoveredNode.id} tooltip={false} />
+                  </div>
+                );
+              })()
+            : null}
         </div>
       ) : null}
     </div>

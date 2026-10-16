@@ -481,6 +481,15 @@
       border-radius: var(--ed-radius-small);
       color: inherit;
     }
+    .blx-menu-control .blx-menu-trigger-content {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      line-height: 1;
+    }
+    .blx-menu-control .blx-menu-trigger-content > svg {
+      flex: none;
+    }
     .blx-menu-control .ed-menu-trigger:hover,
     .blx-header [role='toolbar'] button:hover,
     .blx-header [role='toolbar'] a:hover {
@@ -1895,6 +1904,36 @@
       outline: 2px solid var(--ed-primary);
       outline-offset: -1px;
     }
+    .blx-hover-chip {
+      position: absolute;
+      z-index: 3;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      box-sizing: border-box;
+      inline-size: 156px;
+      block-size: 24px;
+      padding-inline: 7px;
+      overflow: hidden;
+      border: 1px solid var(--ed-border);
+      border-radius: var(--ed-radius-small);
+      background: var(--ed-surface-raised);
+      color: var(--ed-fg);
+      box-shadow: var(--ed-shadow-floating);
+      font-size: 12px;
+      line-height: 1;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    .blx-hover-chip > span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .blx-hover-chip .blx-outline-id {
+      flex: none;
+      color: var(--ed-fg-muted);
+      font-size: 10px;
+    }
     .blx-selection-handles {
       position: absolute;
       pointer-events: none;
@@ -2167,6 +2206,11 @@
     }
     &[data-motion-ready='true'] .blx-selection-overlay {
       animation: blx-selection-in var(--ed-motion-fast) var(--ed-ease-standard) both;
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      &[data-motion-ready='true'] .blx-hover-chip {
+        animation: blx-hover-fade var(--ed-motion-fast) var(--ed-ease-standard) both;
+      }
     }
     &[data-motion-ready='true'] [role='status'] {
       animation: blx-toast-in var(--ed-motion-base) var(--ed-ease-standard) both;
@@ -2594,6 +2638,14 @@
     to {
       opacity: 1;
       transform: translateY(0);
+    }
+  }
+  @keyframes blx-hover-fade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
     }
   }
   @keyframes blx-selection-in {

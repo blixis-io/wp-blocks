@@ -23,4 +23,17 @@ export function placeSelectionToolbar(
   return { left, top };
 }
 
+/** Place the decorative hover chip above the element, or on its top edge when the frame leaves no room. */
+export function placeHoverChip(frame: Box, element: Box, size: { width: number; height: number }, gap = 4) {
+  const left = Math.max(frame.left, Math.min(element.left, frame.left + frame.width - size.width));
+  const above = element.top - size.height - gap;
+  const preferredTop = above >= frame.top ? above : Math.max(frame.top, element.top);
+  const top = Math.max(frame.top, Math.min(preferredTop, frame.top + frame.height - size.height));
+  return { left, top };
+}
+
+export function boxesOverlap(a: Box, b: Box): boolean {
+  return a.left < b.left + b.width && b.left < a.left + a.width && a.top < b.top + b.height && b.top < a.top + a.height;
+}
+
 export const HANDLE_POSITIONS = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'] as const;

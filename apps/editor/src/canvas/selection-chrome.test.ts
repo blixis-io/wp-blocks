@@ -1,5 +1,35 @@
 import { describe, expect, it } from 'vitest';
-import { placeSelectionToolbar } from './selection-chrome';
+import { placeHoverChip, placeSelectionToolbar } from './selection-chrome';
+
+describe('hover chip placement', () => {
+  it('places the chip above and keeps it inside horizontal frame bounds', () => {
+    expect(
+      placeHoverChip(
+        { left: 0, top: 0, width: 300, height: 200 },
+        { left: 280, top: 80, width: 10, height: 20 },
+        { width: 100, height: 24 },
+      ),
+    ).toEqual({ left: 200, top: 52 });
+  });
+  it('flips onto the element top edge when there is no room above', () => {
+    expect(
+      placeHoverChip(
+        { left: 0, top: 0, width: 300, height: 200 },
+        { left: 12, top: 3, width: 80, height: 20 },
+        { width: 100, height: 24 },
+      ),
+    ).toEqual({ left: 12, top: 3 });
+  });
+  it('keeps the chip inside the frame when the hovered element is at the bottom edge', () => {
+    expect(
+      placeHoverChip(
+        { left: 0, top: 0, width: 300, height: 200 },
+        { left: 12, top: 198, width: 80, height: 2 },
+        { width: 100, height: 24 },
+      ),
+    ).toEqual({ left: 12, top: 170 });
+  });
+});
 
 describe('selection toolbar placement', () => {
   const frame = { left: 100, top: 100, width: 500, height: 400 };

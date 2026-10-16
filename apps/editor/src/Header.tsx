@@ -316,8 +316,9 @@ export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppeara
             className="blx-menu-control"
             toolbarTrigger
           >
-            <span>
-              <Icon name="pages" size={15} /> <span className="blx-pages-label">{t('header.pages')}</span>{' '}
+            <span className="blx-menu-trigger-content">
+              <Icon name="pages" size={16} />
+              <span className="blx-pages-label">{t('header.pages')}</span>
               <Icon name="chevronDown" size={14} />
             </span>
           </Menu>

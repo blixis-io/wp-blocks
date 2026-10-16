@@ -490,6 +490,45 @@ try {
     'tree ancestors do not receive a selected-path highlight',
   );
 
+  // Hover chrome follows a real pointer move into the iframe and stays out of the selected element toolbar.
+  const pagesGeometry = await ev(
+    `(() => { const c = document.querySelector('.blx-menu-trigger-content'); if (!c) return null; const mid = (el) => { const r = el.getBoundingClientRect(); return r.top + r.height / 2; }; const t = c.closest('.ed-menu-trigger'); return [...c.children].map(mid).concat(mid(t)); })()`,
+  );
+  assert.ok(pagesGeometry, 'the Pages trigger content exists');
+  assert.ok(
+    Math.max(...pagesGeometry) - Math.min(...pagesGeometry) <= 1,
+    `Pages icon, label, chevron and trigger share one centre line (${JSON.stringify(pagesGeometry)})`,
+  );
+  await ev(
+    `document.querySelector('main iframe')?.contentDocument?.querySelector('[data-blx-id="body-img"]')?.scrollIntoView({ block: 'center' })`,
+  );
+  await sleep(500);
+  const hoverPoint = await ev(
+    `(() => { const frame=document.querySelector('main iframe'), target=frame?.contentDocument?.querySelector('[data-blx-id="body-img"]'), fr=frame?.getBoundingClientRect(), r=target?.getBoundingClientRect(); return fr&&r ? {x:fr.left+frame.clientLeft+r.left+r.width/2,y:fr.top+frame.clientTop+r.top+r.height/2,label:target.getAttribute('data-blx-id')} : null; })()`,
+  );
+  assert.ok(hoverPoint, 'a non-selected canvas element has a measurable pointer target');
+  await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: hoverPoint.x, y: hoverPoint.y });
+  await sleep(250);
+  const hoverChip = await ev(
+    `(() => { const chip=document.querySelector('[data-testid="canvas-hover-chip"]'); if(!chip) return null; const r=chip.getBoundingClientRect(),s=getComputedStyle(chip); return {text:chip.textContent, bg:s.backgroundColor, pointer:s.pointerEvents, inside:r.left>=0&&r.top>=0&&r.right<=innerWidth&&r.bottom<=innerHeight}; })()`,
+  );
+  assert.ok(hoverChip, 'hovering a non-selected element shows its editor chrome chip');
+  assert.ok(hoverChip.text.includes('Image'), `chip includes the hovered element label (${hoverChip.text})`);
+  assert.notEqual(hoverChip.bg, 'rgba(0, 0, 0, 0)', 'hover chip background is opaque');
+  assert.equal(hoverChip.pointer, 'none', 'hover chip does not intercept pointer events');
+  assert.equal(hoverChip.inside, true, 'hover chip stays inside the viewport');
+  const selectedPoint = await ev(
+    `(() => { const frame=document.querySelector('main iframe'), target=frame?.contentDocument?.querySelector('[data-blx-id="hero-h1"]'), fr=frame?.getBoundingClientRect(), r=target?.getBoundingClientRect(); return fr&&r ? {x:fr.left+frame.clientLeft+r.left+r.width/2,y:fr.top+frame.clientTop+r.top+r.height/2} : null; })()`,
+  );
+  assert.ok(selectedPoint, 'the selected canvas element has a measurable pointer target');
+  await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: selectedPoint.x, y: selectedPoint.y });
+  await sleep(200);
+  assert.equal(
+    await ev(`!!document.querySelector('[data-testid="canvas-hover-chip"]')`),
+    false,
+    'hovering the selected element hides the chip',
+  );
+
   // BWB-129 palette insert updates both the tree and live canvas; undo removes the inserted element again.
   await ev(`document.querySelector('[data-element-type="blixis/text"]')?.click()`);
   await sleep(1500);

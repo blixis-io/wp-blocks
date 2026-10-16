@@ -157,7 +157,7 @@ export function useCanvasSession(options: CanvasSessionOptions): CanvasSession {
       rectHandle = frames.request(() => {
         rectHandle = null;
         const state = store.getState();
-        if (disposed || !ready || state.selectedId === null) {
+        if (disposed || !ready || (state.selectedId === null && state.hoveredId === null)) {
           update({ rects: [] });
           return;
         }
@@ -399,7 +399,7 @@ export function useCanvasSession(options: CanvasSessionOptions): CanvasSession {
         case 'rects':
           if (message.revision === lastRenderedRevision) {
             const state = store.getState();
-            const valid = new Set([state.selectedId].filter((id): id is string => id !== null));
+            const valid = new Set([state.selectedId, state.hoveredId].filter((id): id is string => id !== null));
             const rects = message.items.filter(
               (item) =>
                 valid.has(item.id) &&
@@ -499,7 +499,10 @@ export function useCanvasSession(options: CanvasSessionOptions): CanvasSession {
       }
       if (state.selectedId !== previous.selectedId) endpoint.send({ type: 'select', id: state.selectedId });
       if (editing && state.selectedId !== editing.id) endEdit(true);
-      if (state.hoveredId !== previous.hoveredId) endpoint.send({ type: 'hover', id: state.hoveredId });
+      if (state.hoveredId !== previous.hoveredId) {
+        endpoint.send({ type: 'hover', id: state.hoveredId });
+        requestRects();
+      }
       if (state.selectedId !== previous.selectedId) {
         update({ rects: [] });
         requestRects();
