@@ -4,7 +4,7 @@ import { gzipSync } from 'node:zlib';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { contrastRatio } from '@blixis/wp-design-tokens';
+import { contrastRatio, relativeLuminance } from '@blixis/wp-design-tokens';
 import { afterAll, describe, expect, it } from 'vitest';
 import { findScopeViolations } from './test/css-walker';
 
@@ -20,6 +20,45 @@ function tokens(theme: 'light' | 'dark'): Record<string, string> {
       m[2] ?? '',
     ]),
   );
+}
+
+function tooltipColor(
+  theme: 'light' | 'dark',
+  role: 'bg' | 'fg' | 'muted' | 'border' | 'header-bg' | 'surface',
+): string {
+  const block = new RegExp(`\\[data-editor-theme='${theme}'\\]\\s*\\{([^}]*)\\}`).exec(source)?.[1] ?? '';
+  const roles: Record<string, string> = {};
+  for (const match of block.matchAll(
+    /--ed-([a-z0-9-]+):\s*(#[0-9a-fA-F]{3,6}|var\(--ed-[a-z0-9-]+\)|color-mix\(in srgb, [^;]+\));/g,
+  )) {
+    if (match[1] && match[2]) roles[match[1]] = match[2];
+  }
+  const resolve = (input: string | undefined, depth = 0): string => {
+    if (!input || depth > 8) return '';
+    if (input.startsWith('var(')) return resolve(roles[input.slice(4, -1).replace(/^--ed-/, '')], depth + 1);
+    const mix = /^color-mix\(in srgb,\s*(.+?)\s+(\d+)%,\s*(.+)\)$/.exec(input);
+    if (mix?.[1] && mix[2] && mix[3]) {
+      const a = channels(resolve(mix[1], depth + 1));
+      const b = channels(resolve(mix[3], depth + 1));
+      const weight = Number(mix[2]) / 100;
+      return `#${a
+        .map((channel, index) =>
+          Math.round(channel * weight + (b[index] ?? 0) * (1 - weight))
+            .toString(16)
+            .padStart(2, '0'),
+        )
+        .join('')}`;
+    }
+    return input;
+  };
+  const channels = (value: string): number[] => {
+    if (value === 'white') return [255, 255, 255];
+    if (value === 'black') return [0, 0, 0];
+    const hex = value.slice(1);
+    const normalized = hex.length === 3 ? hex.replace(/./g, (part) => part + part) : hex;
+    return [0, 2, 4].map((index) => Number.parseInt(normalized.slice(index, index + 2), 16));
+  };
+  return resolve(roles[role === 'header-bg' ? 'header-bg' : role === 'surface' ? 'surface' : `tooltip-${role}`]);
 }
 
 describe.each(['light', 'dark'] as const)('%s chrome contrast', (theme) => {
@@ -38,8 +77,6 @@ describe.each(['light', 'dark'] as const)('%s chrome contrast', (theme) => {
     ['primary-fg', 'primary-hover'],
     ['destructive-fg', 'destructive'],
     ['destructive-fg', 'destructive-hover'],
-    ['tooltip-fg', 'tooltip-bg'],
-    ['tooltip-border', 'tooltip-bg'],
     ['banner-fg', 'banner'],
     ['fg', 'selected'],
     ['fg', 'surface'],
@@ -193,10 +230,28 @@ describe('editor polish CSS contracts', () => {
   });
 
   it('keeps tooltip background, foreground, and border on explicit tokens', () => {
-    expect(source).toMatch(/--ed-tooltip-bg:\s*#[0-9a-f]{6}/i);
-    expect(source).toMatch(/--ed-tooltip-fg:\s*#[0-9a-f]{6}/i);
-    expect(source).toMatch(/--ed-tooltip-border:\s*#[0-9a-f]{6}/i);
+    expect(source).toMatch(/--ed-tooltip-bg:\s*color-mix\(in srgb, var\(--ed-header-bg\) 92%, white\)/);
+    expect(source).toMatch(/--ed-tooltip-fg:\s*var\(--ed-header-fg\)/);
+    expect(source).toMatch(/--ed-tooltip-muted:\s*var\(--ed-header-muted\)/);
+    expect(source).toMatch(/--ed-tooltip-border:\s*color-mix\(in srgb, white 24%, var\(--ed-tooltip-bg\)\)/);
+    expect(source).toMatch(/--ed-tooltip-shadow:\s*0 0 0 1px var\(--ed-tooltip-border\), 0 8px 24px/);
     expect(source).not.toMatch(/bg-ed-tooltip|text-ed-tooltip-fg/);
+  });
+  it.each(['light', 'dark'] as const)('%s tooltip title and muted text meet 4.5:1', (theme) => {
+    const bg = tooltipColor(theme, 'bg');
+    for (const role of ['fg', 'muted'] as const) {
+      expect(contrastRatio(tooltipColor(theme, role), bg)).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+  it.each(['light', 'dark'] as const)('%s tooltip edge separates from header and panel surfaces', (theme) => {
+    const bg = tooltipColor(theme, 'bg');
+    const border = tooltipColor(theme, 'border');
+    const header = tooltipColor(theme, 'header-bg');
+    const panel = tooltipColor(theme, 'surface');
+    const delta = Math.abs((relativeLuminance(bg) ?? 0) - (relativeLuminance(header) ?? 0));
+    expect(delta >= 0.02 || (contrastRatio(border, header) ?? 0) >= 1.5).toBe(true);
+    expect(contrastRatio(border, header)).toBeGreaterThanOrEqual(1.5);
+    expect(contrastRatio(border, panel)).toBeGreaterThanOrEqual(1.5);
   });
   it('uses the Solar check icon only as the checked item affordance', () => {
     expect(source).not.toMatch(/\.ed-menu-item\[aria-checked='true'\][^{]*\{[^}]*outline/);
@@ -219,9 +274,11 @@ describe('editor polish CSS contracts', () => {
   });
   it.each(['light', 'dark'])('%s tooltip border and text tokens are present', (theme) => {
     const block = new RegExp(`\\[data-editor-theme='${theme}'\\]\\s*\\{([^}]*)\\}`).exec(source)?.[1] ?? '';
-    expect(block).toMatch(/--ed-tooltip-bg:/);
-    expect(block).toMatch(/--ed-tooltip-fg:/);
-    expect(block).toMatch(/--ed-tooltip-border:/);
+    expect(block).toMatch(/--ed-tooltip-bg:\s*(?:var\(|color-mix\()/);
+    expect(block).toMatch(/--ed-tooltip-fg:\s*var\(/);
+    expect(block).toMatch(/--ed-tooltip-muted:\s*(?:var\(|color-mix\()/);
+    expect(block).toMatch(/--ed-tooltip-border:\s*color-mix\(/);
+    expect(block).toMatch(/--ed-tooltip-shadow:\s*0 0 0 1px var\(--ed-tooltip-border\),/);
   });
   it.each([
     '.blx-inspector-selection',

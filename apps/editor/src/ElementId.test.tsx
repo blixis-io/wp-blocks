@@ -27,6 +27,8 @@ describe('ElementId', () => {
     expect(label?.getAttribute('aria-label')).toBe('el-heading-a-very-long-stable-id-123456');
     if (!label) throw new Error('ElementId label was not rendered');
     await userEvent.setup().hover(label);
-    expect((await screen.findByRole('tooltip')).textContent).toBe('el-heading-a-very-long-stable-id-123456');
+    expect((await screen.findByRole('tooltip', {}, { timeout: 2000 })).textContent).toBe(
+      'el-heading-a-very-long-stable-id-123456',
+    );
   });
 });

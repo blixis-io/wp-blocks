@@ -171,7 +171,7 @@ describe('redesigned editor header', () => {
       const button = screen.getByRole('button', { name });
       expect(button.getAttribute('aria-disabled')).toBe('true');
       expect(button.getAttribute('aria-describedby')).toBeTruthy();
-      expect(descriptionOf(button)).toMatch(/document|publish|opslaan/i);
+      expect(descriptionOf(button)).toMatch(/save|concept|publish/i);
     }
   });
 
@@ -496,7 +496,10 @@ describe('toolbar roving tabindex', () => {
     await user.tab();
     for (let i = 0; i < 10 && document.activeElement !== undo; i++) await user.keyboard('{ArrowRight}');
     expect(document.activeElement).toBe(undo);
-    expect((await screen.findByRole('tooltip')).textContent).toContain('Undo the last change.');
+    const tooltip = await screen.findByRole('tooltip');
+    expect(tooltip.textContent).toContain('Undo');
+    expect(tooltip.querySelectorAll('kbd')).toHaveLength(2);
+    expect(tooltip.querySelector('.ed-tooltip-arrow')).toBeTruthy();
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('tooltip')).toBeNull();
   });

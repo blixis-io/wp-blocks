@@ -2,6 +2,7 @@ import { Dialog, DialogContent, DialogTrigger, Kbd } from '@blixis/wp-editor-ui'
 import type { ReactNode } from 'react';
 import { useI18n } from './i18n-react';
 import type { MessageKey } from './i18n';
+import { shortcutKeys } from './shortcuts';
 
 interface Shortcut {
   keys: readonly string[];
@@ -15,10 +16,10 @@ const AVAILABLE: readonly Shortcut[] = [
   { keys: ['Esc'], label: 'shortcuts.key.escape' },
 ];
 
-const PLANNED: readonly Shortcut[] = [
-  { keys: ['Mod', 'Z'], label: 'shortcuts.key.undo' },
-  { keys: ['Mod', 'Shift', 'Z'], label: 'shortcuts.key.redo' },
-  { keys: ['Mod', 'S'], label: 'shortcuts.key.save' },
+const planned = (platform: string): readonly Shortcut[] => [
+  { keys: shortcutKeys('undo', platform), label: 'shortcuts.key.undo' },
+  { keys: shortcutKeys('redo', platform), label: 'shortcuts.key.redo' },
+  { keys: shortcutKeys('save', platform), label: 'shortcuts.key.save' },
   { keys: ['Mod', '/'], label: 'shortcuts.key.shortcuts' },
   { keys: ['Mod', 'Alt', '1'], label: 'shortcuts.key.structure' },
   { keys: ['Mod', 'Alt', '2'], label: 'shortcuts.key.inspector' },
@@ -73,7 +74,7 @@ export function ShortcutsDialog({
         closeLabel={t('dialog.close')}
       >
         <Group heading={t('shortcuts.now')} items={AVAILABLE} />
-        <Group heading={t('shortcuts.planned')} items={PLANNED} />
+        <Group heading={t('shortcuts.planned')} items={planned(navigator.platform)} />
       </DialogContent>
     </Dialog>
   );

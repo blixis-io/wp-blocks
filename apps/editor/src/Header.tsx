@@ -18,6 +18,7 @@ import { CHROME_PREFERENCES, type ChromePreference } from './chrome-theme';
 import type { MessageKey } from './i18n';
 import { useI18n } from './i18n-react';
 import type { PanelState } from './panels';
+import { shortcutKeys, type ShortcutAction } from './shortcuts';
 import { ShortcutsDialog } from './ShortcutsDialog';
 import { Dialog, DialogContent } from '@blixis/wp-editor-ui';
 import { VIEWPORTS as VIEWPORT_IDS, useEditorStore, useEditorStoreApi, type Viewport } from './state';
@@ -35,11 +36,24 @@ interface HeaderProps {
   appearance: ChromePreference;
   onAppearance: (next: ChromePreference) => void;
 }
-function Hint({ text, children }: { text: string; children: ReactNode }) {
+function Hint({
+  text,
+  description,
+  shortcut,
+  children,
+}: {
+  text: string;
+  description?: string;
+  shortcut?: ShortcutAction;
+  children: ReactNode;
+}) {
+  const keys = shortcut ? shortcutKeys(shortcut, navigator.platform) : undefined;
   return (
     <Tooltip>
       <TooltipTrigger asChild>{children}</TooltipTrigger>
-      <TooltipContent>{text}</TooltipContent>
+      <TooltipContent {...(keys ? { shortcut: keys } : {})} {...(description ? { description } : {})}>
+        {text}
+      </TooltipContent>
     </Tooltip>
   );
 }
@@ -352,13 +366,15 @@ export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppeara
           className="blx-viewport-switcher"
         >
           {VIEWPORTS.map((item) => (
-            <ToolbarToggleItem key={item.id} value={item.id} size="icon" aria-label={t(item.label)}>
-              <Icon name={item.icon} className={icon} />
-            </ToolbarToggleItem>
+            <Hint key={item.id} text={t(item.label)}>
+              <ToolbarToggleItem value={item.id} size="icon" aria-label={t(item.label)}>
+                <Icon name={item.icon} className={icon} />
+              </ToolbarToggleItem>
+            </Hint>
           ))}
         </ToolbarToggleGroup>
         <div className="blx-header-end">
-          <Hint text={t('header.undo.hint')}>
+          <Hint text={t('header.undo.hint')} shortcut="undo">
             <ToolbarButton
               size="icon"
               className="blx-history-control"
@@ -371,7 +387,7 @@ export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppeara
               <Icon name="undo" className={icon} mirrorInRtl />
             </ToolbarButton>
           </Hint>
-          <Hint text={t('header.redo.hint')}>
+          <Hint text={t('header.redo.hint')} shortcut="redo">
             <ToolbarButton
               size="icon"
               className="blx-history-control"
@@ -400,7 +416,7 @@ export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppeara
                   <span>{t('header.preview')}</span>
                 </ToolbarLink>
               ) : (
-                <Hint text={t('header.preview.unavailable')}>
+                <Hint text={t('header.preview.hint')} description={t('header.preview.unavailable')}>
                   <ToolbarButton
                     className="blx-header-secondary"
                     variant="outline"
@@ -413,7 +429,7 @@ export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppeara
                   </ToolbarButton>
                 </Hint>
               )}
-              <Hint text={t('header.save.hint')}>
+              <Hint text={t('header.save.hint')} shortcut="save">
                 <ToolbarButton
                   className="blx-header-secondary"
                   variant="outline"

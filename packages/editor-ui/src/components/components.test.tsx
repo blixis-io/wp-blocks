@@ -447,6 +447,114 @@ describe('Toolbar', () => {
 });
 
 describe('Tooltip', () => {
+  it('opens after the hover delay and renders title, description, keycaps and arrow', async () => {
+    const user = userEvent.setup();
+    render(
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button>Save draft</Button>
+          </TooltipTrigger>
+          <TooltipContent description="Save the current draft" shortcut={['⌘', 'S']}>
+            Save draft
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>,
+    );
+    const started = Date.now();
+    await user.hover(screen.getByRole('button', { name: 'Save draft' }));
+    const tooltip = await screen.findByRole('tooltip');
+    expect(Date.now() - started).toBeGreaterThanOrEqual(400);
+    expect(tooltip.textContent).toContain('Save draft');
+    expect(tooltip.textContent).toContain('Save the current draft');
+    expect([...tooltip.querySelectorAll('kbd')].map((key) => key.textContent)).toEqual(['⌘', 'S']);
+    expect(tooltip.querySelector('.ed-tooltip-arrow')).toBeTruthy();
+  });
+
+  it('honours explicit RTL-ready placement and the shared arrow offset', async () => {
+    render(
+      <TooltipProvider>
+        <Tooltip defaultOpen>
+          <TooltipTrigger asChild>
+            <Button>Mobile</Button>
+          </TooltipTrigger>
+          <TooltipContent side="right" sideOffset={8}>
+            Mobile
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>,
+    );
+    const tooltip = await screen.findByRole('tooltip');
+    expect(tooltip.getAttribute('data-side')).toBe('right');
+    expect(tooltip.querySelector('.ed-tooltip-arrow')).toBeTruthy();
+  });
+
+  it('skips the hover delay when moving to another tooltip trigger', async () => {
+    const user = userEvent.setup();
+    render(
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button>Undo</Button>
+          </TooltipTrigger>
+          <TooltipContent>Undo</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button>Redo</Button>
+          </TooltipTrigger>
+          <TooltipContent>Redo</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>,
+    );
+    await user.hover(screen.getByRole('button', { name: 'Undo' }));
+    await screen.findByRole('tooltip');
+    const start = Date.now();
+    await user.hover(screen.getByRole('button', { name: 'Redo' }));
+    expect(await screen.findByText('Redo')).toBeTruthy();
+    expect(Date.now() - start).toBeLessThan(300);
+  });
+
+  it('closes shortly after pointer leave', async () => {
+    const user = userEvent.setup();
+    render(
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button>Preview</Button>
+          </TooltipTrigger>
+          <TooltipContent>Preview</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>,
+    );
+    await user.hover(screen.getByRole('button', { name: 'Preview' }));
+    await screen.findByRole('tooltip');
+    await user.unhover(screen.getByRole('button', { name: 'Preview' }));
+    expect(screen.getByRole('tooltip')).toBeTruthy();
+    await waitFor(
+      () => {
+        expect(screen.queryByRole('tooltip')).toBeNull();
+      },
+      { timeout: 500 },
+    );
+  });
+
+  it.each(['light', 'dark'] as const)('passes axe in %s editor chrome', async (theme) => {
+    render(
+      <div className="blx-editor" data-editor-theme={theme}>
+        <TooltipProvider>
+          <Tooltip defaultOpen>
+            <TooltipTrigger asChild>
+              <Button aria-label="Desktop">Desktop</Button>
+            </TooltipTrigger>
+            <TooltipContent shortcut={['⌘', 'Z']}>Undo</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>,
+    );
+    expect(await axeViolations(document.body)).toEqual([]);
+  });
+
   it('shows on keyboard focus, is described by the trigger and closes on Escape', async () => {
     const user = userEvent.setup();
     render(
