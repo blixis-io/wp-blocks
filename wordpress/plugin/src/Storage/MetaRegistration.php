@@ -25,7 +25,7 @@ final class MetaRegistration {
 	/** Register fixed post meta per opted-in public post type. */
 	public static function register(): void {
 		foreach ( self::post_types() as $post_type ) {
-			foreach ( [ MetaKeys::LAYOUT, MetaKeys::PUBLISHED ] as $key ) {
+			foreach ( [ MetaKeys::LAYOUT, MetaKeys::PUBLISHED, MetaKeys::SEO, MetaKeys::PAGE_VERSION ] as $key ) {
 				\register_post_meta(
 					$post_type,
 					$key,
@@ -33,12 +33,56 @@ final class MetaRegistration {
 						'single'            => true,
 						'type'              => 'string',
 						'show_in_rest'      => false,
-						'auth_callback'     => [ self::class, 'authorize' ],
-						'sanitize_callback' => [ self::class, 'sanitize' ],
+						'auth_callback'     => MetaKeys::SEO === $key || MetaKeys::PAGE_VERSION === $key ? [ self::class, 'deny_meta' ] : [ self::class, 'authorize' ],
+						'sanitize_callback' => match ( $key ) {
+							MetaKeys::SEO          => [ self::class, 'sanitize_seo' ],
+							MetaKeys::PAGE_VERSION => [ self::class, 'sanitize_counter' ],
+							default                => [ self::class, 'sanitize' ],
+						},
 					]
 				);
 			}
 		}
+	}
+
+	/**
+	 * Keep the page settings write counter a non-negative integer string.
+	 *
+	 * @param mixed $value Input.
+	 */
+	public static function sanitize_counter( mixed $value ): string {
+		return \is_scalar( $value ) && 1 === \preg_match( '/^[0-9]{1,12}$/D', (string) $value ) ? (string) $value : '0';
+	}
+
+	/** Keep SEO meta a bounded JSON envelope; REST writes are validated by PageSettingsRequest.
+	 *
+	 * @param mixed $value Input.
+	 */
+	public static function sanitize_seo( mixed $value ): string {
+		if ( ! \is_string( $value ) || \strlen( $value ) > 65536 ) {
+			return ''; }
+		$data = \json_decode( $value, true );
+		if ( ! \is_array( $data ) || 1 !== ( $data['schemaVersion'] ?? null ) ) {
+			return ''; }
+		$normalized = \Blixis\Builder\Rest\PageSettingsRequest::validate_seo_map( $data['locales'] ?? null );
+		return null === $normalized ? '' : (string) \wp_json_encode(
+			[
+				'schemaVersion' => 1,
+				'locales'       => [] === $normalized ? new \stdClass() : $normalized,
+			]
+		);
+	}
+
+	/**
+	 * Always deny general metadata APIs for endpoint-owned fields.
+	 *
+	 * @param bool   $allowed Core decision (ignored).
+	 * @param string $key Meta key (ignored).
+	 * @param int    $post_id Post ID (ignored).
+	 */
+	public static function deny_meta( bool $allowed, string $key, int $post_id ): bool {
+		unset( $allowed, $key, $post_id );
+		return false;
 	}
 
 	/**
@@ -104,7 +148,9 @@ final class MetaRegistration {
 		if ( ! \in_array( $cap, [ 'add_post_meta', 'edit_post_meta', 'delete_post_meta' ], true ) || ! isset( $args[1] ) || ! \is_string( $args[1] ) || 0 !== \strpos( $args[1], '_blixis_' ) ) {
 			return $caps;
 		}
-		$key     = $args[1];
+		$key = $args[1];
+		if ( in_array( $key, [ MetaKeys::SEO, MetaKeys::PAGE_VERSION ], true ) ) {
+			return [ 'do_not_allow' ]; }
 		$post_id = isset( $args[0] ) ? (int) $args[0] : 0;
 		if ( $post_id < 1 || ! MetaKeys::is_valid_key( $key ) || ! \in_array( \get_post_type( $post_id ), self::post_types(), true ) ) {
 			return [ 'do_not_allow' ];

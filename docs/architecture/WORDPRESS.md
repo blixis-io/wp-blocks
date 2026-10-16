@@ -64,6 +64,14 @@ The editor bootstrap's `canvasUrl` is an absolute admin URL only if its origin m
 
 ## Document REST API
 
+### Page settings (BWB-155 / #252)
+
+`_blixis_seo` and `_blixis_page_version` are endpoint-owned post meta: their `auth_callback` and `map_meta_cap` entries deny every user, so XML-RPC, core REST and `edit_post_meta` cannot write them; `Seo\Head` additionally treats the stored envelope as untrusted when rendering. Page settings writes use their own rate-limit bucket (`blxpage_`, separate from publishing).
+
+`GET` and `PUT /blixis/v1/documents/{id}/page` expose the WordPress page title, slug, status, excerpt, featured image and per-content-locale SEO values. Access matches document routes (`edit_post` on an opted-in public REST post type); cookie writes use WordPress REST nonce middleware. Writes require the quoted opaque `If-Match` token returned as `version`/ETag, derived from a per-post write counter (protected meta `_blixis_page_version`, bumped by every write so two writes inside one second still differ), `post_modified_gmt` and the post ID; the check is repeated under the per-post storage lock before writing. A missing token is 428 and a stale token is 409 with the current version. The request policy strictly validates all submitted fields and rejects the whole request before any write if one field is invalid. Page fields use `wp_update_post`, featured media uses thumbnail APIs, and SEO is stored only in protected `_blixis_seo` JSON `{ schemaVersion: 1, locales }`; it is excluded from core REST and revisions.
+
+SEO head tags are emitted by `Seo\\Head` only for singular builder posts without a known SEO plugin and never on password-protected pages or authorized draft previews. It uses current website locale with configured default fallback, escapes all values, validates the canonical and social image URLs, and replaces core canonical output on those pages. Editor interface locale is independent of this content locale. A successful update emits the existing content-free `blixis_builder_publication_event` audit envelope with kind `page-settings`.
+
 BWB-041 registers these working-stream routes under `blixis/v1`:
 
 | Method | Route | Result |
@@ -84,6 +92,7 @@ PUT requires `Content-Type: application/json`, a JSON envelope object of at most
 | 400 | `blixis_invalid_locale` | Invalid locale. |
 | 400 | `blixis_invalid_mode` | Invalid mode. |
 | 400 | `blixis_invalid_revision` | Invalid revision. |
+| 400 | `blixis_invalid_page_settings` | Page settings are invalid. |
 | 401 | `blixis_unauthenticated` | Authentication is required. |
 | 403 | `blixis_forbidden` | Access is forbidden. |
 | 403 | `rest_cookie_invalid_nonce` | WordPress core rejects cookie nonce |
@@ -189,7 +198,7 @@ Snapshots carry the working revision they came from (`sourceRevision`), the layo
 
 **Publication abuse controls.** After authentication, per-post capability and theme checks, the publication request limits each user to 30 successful publishes or rollbacks of a post in a rolling hour. A rejected request returns 429 `blixis_rate_limited` with `Retry-After` seconds. The publisher refuses a publish that would take a post above 200 stored snapshots; rollback remains available through 240 snapshots for recovery. Both limits return 409 `blixis_snapshot_limit` before any snapshot or pointer write. The limiter uses a per-site transient; its read/update is not atomic across simultaneous requests. A site-wide aggregate cap, alerting and retention accounting remain BWB-070 work.
 
-**Audit hook.** After a successful pointer advance, the publication controller fires `do_action( 'blixis_builder_publication_event', array $event )`. The event has exactly `actor` (user ID), `post`, `locale` (or null), `kind` (`publish` or `rollback`), `layoutSnapshot` (or null), `contentSnapshot` (or null), `pointerRevision`, and `time` (UTC RFC3339). It includes no document content. Hook consumers own their retention and access policy.
+**Audit hook.** After a successful pointer advance, the publication controller fires `do_action( 'blixis_builder_publication_event', array $event )`. The event has exactly `actor` (user ID), `post`, `locale` (or null), `kind` (`publish`, `rollback`, or `page-settings`), `layoutSnapshot` (or null), `contentSnapshot` (or null), `pointerRevision`, and `time` (UTC RFC3339). Page settings updates reuse this envelope with null snapshots and pointer revision zero. It includes no document content. Hook consumers own their retention and access policy.
 
 ## Theme compatibility guard
 

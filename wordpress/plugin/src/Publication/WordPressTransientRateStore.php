@@ -11,6 +11,13 @@ namespace Blixis\Builder\Publication;
 \defined( 'ABSPATH' ) || exit;
 /** Stores timestamps under a bounded transient key. */
 final class WordPressTransientRateStore implements RateStore {
+	/**
+	 * Create the store.
+	 *
+	 * @param string $prefix Transient key prefix (one bucket family per feature).
+	 */
+	public function __construct( private readonly string $prefix = 'blixis_pub_' ) {}
+
 	/** Read the transient.
 	 *
 	 * @param int $actor User ID.
@@ -37,6 +44,6 @@ final class WordPressTransientRateStore implements RateStore {
 	 * @param int $post_id Post ID.
 	 */
 	private function key( int $actor, int $post_id ): string {
-		return 'blixis_pub_' . $actor . '_' . $post_id;
+		return $this->prefix . $actor . '_' . $post_id;
 	}
 }
