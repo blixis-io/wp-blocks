@@ -177,6 +177,39 @@ afterEach(() => {
 });
 
 describe('canvas availability', () => {
+  it('handles the canvas save shortcut only when editable and waits for an inline commit before saving', async () => {
+    const s = setup();
+    await ready(s);
+    const save = vi.fn(() => Promise.resolve());
+    s.store.setState({ saveDraft: save });
+    const endpoint = s.endpoints.last();
+    endpoint.deliver({ type: 'shortcut', name: 'save' });
+    expect(save).not.toHaveBeenCalled();
+    act(() => void s.store.getState().dispatch({ type: 'update-props', id: 'el-heading-1', set: { level: 3 } }));
+    endpoint.deliver({ type: 'shortcut', name: 'save' });
+    expect(save).toHaveBeenCalledOnce();
+    save.mockClear();
+    endpoint.deliver({ type: 'edit-request', id: 'el-heading-1' });
+    endpoint.deliver({ type: 'edit-change', id: 'el-heading-1', prop: 'text', value: 'Committed heading' });
+    endpoint.deliver({ type: 'shortcut', name: 'save' });
+    expect(endpoint.sent).toContainEqual({ type: 'edit-end', commit: true });
+    expect(save).not.toHaveBeenCalled();
+    endpoint.deliver({ type: 'edit-ended', id: 'el-heading-1', reason: 'commit' });
+    expect(s.store.getState().document?.translations['fr_FR']?.['el-heading-1']?.values['text']).toBe(
+      'Committed heading',
+    );
+    expect(save).toHaveBeenCalledOnce();
+  });
+
+  it('ignores canvas save shortcuts in read-only mode', async () => {
+    const s = setup({ editingEnabled: false });
+    await ready(s);
+    const save = vi.fn(() => Promise.resolve());
+    s.store.setState({ saveDraft: save });
+    s.endpoints.last().deliver({ type: 'shortcut', name: 'save' });
+    expect(save).not.toHaveBeenCalled();
+  });
+
   it('keeps the placeholder without a canvas URL or without a client', () => {
     const a = setup({ canvasUrl: null });
     expect(screen.getByText('Canvas arrives with the canvas protocol.')).toBeTruthy();
@@ -212,7 +245,7 @@ describe('handshake wiring', () => {
       locale: 'fr_FR',
       dir: 'ltr',
     });
-    expect(screen.getByRole('status').textContent).toBe('Connecting to the preview...');
+    expect(screen.getByText('Connecting to the preview...')).toBeTruthy();
   });
 
   it('hides the connecting status after ready and requests the first preview', async () => {
@@ -908,7 +941,7 @@ describe('selection and hover', () => {
     expect(capture).toHaveBeenCalledWith(7);
     fireEvent.pointerMove(handle, { pointerId: 7, clientX: 160, clientY: 50 });
     await flush(20);
-    expect(screen.getByRole('status').textContent).toBe('180 × 28');
+    expect(screen.getByText('180 × 28')).toBeTruthy();
     fireEvent.pointerUp(handle, { pointerId: 7, clientX: 160, clientY: 50 });
     expect(s.store.getState().document?.root[0]?.children[0]?.children[1]?.style?.[0]?.declarations).toMatchObject({
       width: '180px',
@@ -1296,7 +1329,7 @@ describe('error states', () => {
     expect(s.endpoints.created[0]?.closed).toBe(true);
     expect(frame()).not.toBe(before);
     expect(screen.queryByTestId('canvas-connection-error')).toBeNull();
-    expect(screen.getByRole('status').textContent).toBe('Connecting to the preview...');
+    expect(screen.getByText('Connecting to the preview...')).toBeTruthy();
   });
 
   it('shows a timeout when the canvas never answers', async () => {
@@ -1590,7 +1623,7 @@ describe('localisation and accessibility', () => {
         name: 'Licht',
       }),
     ).toBeTruthy();
-    expect(screen.getByRole('status').textContent).toBe('Verbinden met de voorvertoning...');
+    expect(screen.getByText('Verbinden met de voorvertoning...')).toBeTruthy();
     expect(frame().getAttribute('title')).toBe('Voorvertoning van de pagina (Frans (Frankrijk))');
     expect(s.endpoints.last().init).toMatchObject({ locale: 'fr_FR' });
   });

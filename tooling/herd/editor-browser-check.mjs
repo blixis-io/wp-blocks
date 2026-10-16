@@ -46,6 +46,7 @@ const chrome = spawn(
   { stdio: 'ignore' },
 );
 let ws;
+let restoreDemoHeading = null;
 try {
   let targets = [];
   for (let i = 0; i < 50 && targets.length === 0; i += 1) {
@@ -68,6 +69,9 @@ try {
     if (message.id && pending.has(message.id)) {
       pending.get(message.id)(message);
       pending.delete(message.id);
+    } else if (message.method === 'Page.javascriptDialogOpening') {
+      // The unsaved-changes guard (beforeunload) opens a dialog when the check reloads a dirty editor: accept, as "Leave".
+      ws.send(JSON.stringify({ id: (seq += 1), method: 'Page.handleJavaScriptDialog', params: { accept: true } }));
     } else if (
       message.method === 'Network.responseReceived' &&
       /blixis\/v1|rest_route=\/blixis\/v1/.test(message.params.response.url)
@@ -1835,6 +1839,54 @@ try {
       `document.querySelector('main iframe').contentDocument.querySelector('[data-blx-id="hero-h1"]')?.textContent.trim()`,
     );
   const originalHeading = await headingText();
+  let demoRestoreNeeded = true;
+  const waitForSaveState = async (state) => {
+    for (let attempt = 0; attempt < 60; attempt += 1) {
+      const found = await ev(`document.querySelector('.blx-saved')?.dataset.saveState`);
+      if (found === state) return;
+      await sleep(250);
+    }
+    throw new Error(`timed out waiting for save state ${state}`);
+  };
+  const replaceHeadingInline = async (value) => {
+    await doubleClickHeading();
+    await chord('a', 'KeyA', 65);
+    await send('Input.insertText', { text: value });
+    await sleep(300);
+    await ev(
+      `[...document.querySelectorAll('nav[aria-label="Structure"] [role="treeitem"]')].find((row) => row.dataset.id === 'hero-txt')?.click()`,
+    );
+    for (let attempt = 0; attempt < 40; attempt += 1) {
+      if (!(await headingEditable())) return;
+      await sleep(100);
+    }
+    throw new Error('timed out waiting for the inline heading edit to commit');
+  };
+  restoreDemoHeading = async () => {
+    if (!demoRestoreNeeded) return;
+    try {
+      await nav(editorUrl, 2500);
+      for (let attempt = 0; attempt < 40; attempt += 1) {
+        if (await headingText()) break;
+        await sleep(250);
+      }
+      if ((await headingText()) !== originalHeading) {
+        await replaceHeadingInline(originalHeading);
+        await waitForSaveState('dirty');
+        const button = await ev(
+          `(() => [...document.querySelectorAll('button')].find((item) => /^(Save Draft|Concept opslaan)$/.test(item.getAttribute('aria-label') ?? ''))?.getAttribute('aria-label'))()`,
+        );
+        assert.ok(button, 'Save Draft button is available for restoring the original heading');
+        await clickReal(`button[aria-label=${JSON.stringify(button)}]`);
+        await waitForSaveState('saved');
+        await nav(editorUrl, 2500);
+      }
+      assert.equal(await headingText(), originalHeading, 'cleanup restores the original stored demo heading');
+      demoRestoreNeeded = false;
+    } catch (error) {
+      console.error(`Best effort demo heading restoration failed: ${error.message}`);
+    }
+  };
   const richProblemsBefore = problems.length;
   await doubleClickHeading();
   assert.equal(await headingEditable(), true, 'a double click starts an inline edit session in the heading');
@@ -2270,6 +2322,78 @@ try {
     false,
     'Undo also removes the bold mark',
   );
+
+  // A real iframe shortcut must commit the just-ended inline session and persist it through the draft REST streams.
+  await nav(editorUrl, 2500);
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    if (await headingText()) break;
+    await sleep(250);
+  }
+  await replaceHeadingInline('Saved by the check');
+  assert.equal(await headingEditable(), false, 'selecting another tree item ends the heading edit session');
+  await waitForSaveState('dirty');
+  const dirtyStatus = await ev(`document.querySelector('.blx-saved')?.textContent.trim()`);
+  assert.match(dirtyStatus, /Unsaved|Niet-opgeslagen/i, 'the translated header status reports unsaved changes');
+  await ev(`document.querySelector('main iframe')?.focus()`);
+  assert.equal(
+    await ev(`document.activeElement === document.querySelector('main iframe')`),
+    true,
+    'canvas owns focus before the save shortcut',
+  );
+  await send('Input.dispatchKeyEvent', {
+    type: 'keyDown',
+    key: 's',
+    code: 'KeyS',
+    modifiers: modifier,
+    windowsVirtualKeyCode: 83,
+  });
+  await send('Input.dispatchKeyEvent', {
+    type: 'keyUp',
+    key: 's',
+    code: 'KeyS',
+    modifiers: modifier,
+    windowsVirtualKeyCode: 83,
+  });
+  await waitForSaveState('saved');
+  assert.equal(
+    await ev(
+      `(() => { const button = document.querySelector('button[aria-label="Save Draft"],button[aria-label="Concept opslaan"]'); return !!button && (button.disabled || button.getAttribute('aria-disabled') === 'true' || button.hasAttribute('data-disabled')); })()`,
+    ),
+    true,
+    'Save Draft is disabled again after the shortcut save completes',
+  );
+  await nav(editorUrl, 2500);
+  assert.equal(await headingText(), 'Saved by the check', 'the shortcut-saved heading persists in the canvas');
+  await ev(
+    `[...document.querySelectorAll('nav[aria-label="Structure"] [role="treeitem"]')].find((row) => row.dataset.id === 'hero-h1')?.click()`,
+  );
+  await sleep(500);
+  await ev(
+    `(() => { const tab = [...document.querySelectorAll('aside[aria-label="Inspector"] [role=tab]')].find((item) => item.textContent.trim() === 'Content'); tab?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0, ctrlKey: false })); })()`,
+  );
+  await sleep(400);
+  const inspectorSavedHeading = await ev(
+    `(() => { const label = [...document.querySelectorAll('aside[aria-label="Inspector"] label')].find((item) => item.textContent.trim() === 'Text'); return label ? document.getElementById(label.htmlFor)?.value : null; })()`,
+  );
+  assert.equal(inspectorSavedHeading, 'Saved by the check', 'the shortcut-saved heading appears in the inspector');
+
+  await replaceHeadingInline(originalHeading);
+  await waitForSaveState('dirty');
+  const restoreButton = await ev(
+    `(() => [...document.querySelectorAll('button')].find((item) => /^(Save Draft|Concept opslaan)$/.test(item.getAttribute('aria-label') ?? ''))?.getAttribute('aria-label'))()`,
+  );
+  assert.ok(restoreButton, 'the header Save Draft action is available for restoration');
+  await clickReal(`button[aria-label=${JSON.stringify(restoreButton)}]`);
+  await waitForSaveState('saved');
+  assert.equal(
+    await ev(`document.querySelector('.blx-saved')?.dataset.saveState`),
+    'saved',
+    'no Saving or Save failed state remains after restoration',
+  );
+  await nav(editorUrl, 2500);
+  assert.equal(await headingText(), originalHeading, 'the final stored demo heading equals the original value');
+  demoRestoreNeeded = false;
+
   const wrong = apiResponses.filter((entry) => entry.status !== 200);
   assert.ok(
     apiResponses.length >= 3 && wrong.length === 0,
@@ -2292,6 +2416,7 @@ try {
   assert.deepEqual(problems, [], 'no console errors, exceptions or content-security-policy violations');
   console.log('Editor browser checks passed.');
 } finally {
+  await restoreDemoHeading?.();
   ws?.close();
   const exited = new Promise((resolve) => chrome.once('exit', resolve));
   chrome.kill();

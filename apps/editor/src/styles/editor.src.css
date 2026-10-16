@@ -340,6 +340,19 @@
       border-radius: 50%;
       background: var(--ed-header-success);
     }
+    .blx-saved[data-save-state='dirty'] i {
+      background: var(--ed-warning);
+    }
+    .blx-saved[data-save-state='saving'] i {
+      background: var(--ed-primary);
+    }
+    .blx-saved[data-save-state='failed'] {
+      color: var(--ed-danger);
+      cursor: pointer;
+    }
+    .blx-saved[data-save-state='failed'] i {
+      background: var(--ed-danger);
+    }
     .blx-menu-control .ed-menu-trigger {
       display: inline-flex;
       align-items: center;

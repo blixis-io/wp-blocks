@@ -115,7 +115,8 @@ function Shell({
         .filter((node): node is ElementNode => node !== undefined) ?? []
     );
   }, [selectedId, document]);
-  const locked = !bootstrap.editingEnabled;
+  const saveLocked = useEditorStore((state) => state.saveLocked);
+  const locked = !bootstrap.editingEnabled || saveLocked;
   return (
     <>
       <a className="blx-skip" href={`#${CANVAS_ID}`}>
@@ -154,8 +155,8 @@ function Shell({
             }
           }}
         >
-          <StructurePanel editingEnabled={bootstrap.editingEnabled} />
-          <ElementsPanel editingEnabled={bootstrap.editingEnabled} />
+          <StructurePanel editingEnabled={!locked} />
+          <ElementsPanel editingEnabled={!locked} />
         </nav>
         <main id={CANVAS_ID} tabIndex={-1} className="blx-main" aria-label={t('canvas.title')}>
           <LoadStatus />
@@ -195,7 +196,7 @@ function Shell({
                 canvasUrl={bootstrap.canvasUrl}
                 client={client}
                 selected={selected}
-                editingEnabled={bootstrap.editingEnabled}
+                editingEnabled={!locked}
                 inlineEditing={inlineEditing}
                 onEditSessionChange={setEditTarget}
                 onEditSelectionChange={setEditSelection}
@@ -259,7 +260,7 @@ function Shell({
               <Inspector
                 element={selected}
                 tab="content"
-                editingEnabled={bootstrap.editingEnabled}
+                editingEnabled={!locked}
                 editTarget={editTarget}
                 editSelection={editSelection}
                 tokenColors={tokenColors}
@@ -276,10 +277,10 @@ function Shell({
               />
             </TabsContent>
             <TabsContent value="style">
-              <Inspector element={selected} tab="style" editingEnabled={bootstrap.editingEnabled} />
+              <Inspector element={selected} tab="style" editingEnabled={!locked} />
             </TabsContent>
             <TabsContent value="advanced">
-              <Inspector element={selected} tab="advanced" editingEnabled={bootstrap.editingEnabled} />
+              <Inspector element={selected} tab="advanced" editingEnabled={!locked} />
             </TabsContent>
           </Tabs>
         </aside>

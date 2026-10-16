@@ -133,7 +133,7 @@ export const createBridgeSlice =
       if (history === null || get().document === null || status === 'loading' || status === 'error') {
         return refuse('not-ready', 'the document is not loaded');
       }
-      if (!deps.editingEnabled) return refuse('read-only', 'editing is disabled for this document');
+      if (!deps.editingEnabled || get().saveLocked) return refuse('read-only', 'editing is disabled for this document');
       return { history };
     };
 

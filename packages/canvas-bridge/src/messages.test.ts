@@ -257,6 +257,7 @@ describe('canvas -> parent messages', () => {
       rect: { x: 0, y: 0, w: 1, h: 2 },
     },
     { type: 'edit-ended', id: ID, reason: 'commit' },
+    { type: 'shortcut', name: 'save' },
     { type: 'edit-error', code: 'load-failed' },
   ];
   it.each(valid.map((m, i) => [`${(m as { type: string }).type} #${String(i)}`, m]))('accepts %s', (_name, message) => {
@@ -270,6 +271,14 @@ describe('canvas -> parent messages', () => {
       ok: false,
       reason: 'too-large',
     });
+  });
+  it.each([
+    { type: 'shortcut', name: 'publish' },
+    { type: 'shortcut', name: 'save-draft' },
+    { type: 'shortcut', name: 'save', extra: true },
+    { type: 'shortcut', name: 'x'.repeat(LIMITS.shortcutNameMax + 1) },
+  ])('rejects forged shortcut payload %#', (message) => {
+    expect(parseCanvasMessage(message).ok).toBe(false);
   });
   it.each(['#abc', '#112233', '#11223344', 'rgb(1, 22, 255)', 'rgba(1,2,3,0.5)', 'hsl(200, 50%, 40%)'])(
     'accepts resolved token color %s',

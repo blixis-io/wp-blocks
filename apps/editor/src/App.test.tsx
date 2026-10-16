@@ -26,7 +26,7 @@ function descriptionOf(element: Element): string {
 
 function setup(overrides: Partial<EditorBootstrap> = {}) {
   const user = userEvent.setup();
-  const { store } = makeStore({ bootstrap: overrides });
+  const { store } = makeStore({ bootstrap: overrides, deps: { now: Date.now } });
   const view = render(<EditorApp bootstrap={makeBootstrap(overrides)} store={store} />);
   return { user, ...view, store, root: screen.getByTestId('editor-root') };
 }
@@ -87,21 +87,14 @@ describe('shell landmarks', () => {
     );
   });
 
-  it('keeps undo, redo, save and publish as disabled placeholders', async () => {
-    const { user } = setup();
-    for (const name of ['Undo', 'Redo', 'Save Draft', 'Publish']) {
+  it('keeps undo and publish disabled until their workflows are available', () => {
+    setup();
+    for (const name of ['Undo', 'Redo', 'Publish']) {
       const button = screen.getByRole('button', { name });
       expect(button.getAttribute('aria-disabled')).toBe('true');
       expect(button.getAttribute('type')).toBe('button');
     }
-    const save = screen.getByRole('button', { name: 'Save Draft' });
-    save.focus();
-    await user.click(save);
-    // Nothing happens: still disabled, still focused (so its tooltip can explain), nothing announced or changed.
-    expect(document.activeElement).toBe(save);
-    expect(save.getAttribute('aria-disabled')).toBe('true');
     expect(screen.queryByRole('alert')).toBeNull();
-    expect(screen.queryByRole('status')).toBeNull();
     for (const name of ['Undo', 'Redo', 'Publish']) {
       expect(screen.getByRole('button', { name }).getAttribute('aria-disabled')).toBe('true');
     }
@@ -648,7 +641,7 @@ describe('editor chrome appearance', () => {
 describe('locked document', () => {
   it('shows a status banner and keeps all editing controls disabled', () => {
     setup({ editingEnabled: false, lockReason: 'Locked by Ann' });
-    expect(screen.getByRole('status').textContent).toContain('Editing is disabled: Locked by Ann');
+    expect(screen.getByTestId('lock-banner').textContent).toContain('Editing is disabled: Locked by Ann');
     for (const name of ['Undo', 'Redo', 'Save Draft', 'Publish']) {
       expect(screen.getByRole('button', { name }).getAttribute('aria-disabled')).toBe('true');
     }
@@ -656,10 +649,10 @@ describe('locked document', () => {
 
   it('uses a default reason and no banner when editing is enabled', () => {
     const { unmount } = setup({ editingEnabled: false, lockReason: null });
-    expect(screen.getByRole('status').textContent).toContain('this document cannot be edited right now.');
+    expect(screen.getByTestId('lock-banner').textContent).toContain('this document cannot be edited right now.');
     unmount();
     setup();
-    expect(screen.queryByRole('status')).toBeNull();
+    expect(screen.queryByTestId('lock-banner')).toBeNull();
   });
 });
 

@@ -25,6 +25,8 @@ export const LIMITS = {
   localeMax: 20,
   /** Invalid port messages tolerated before an endpoint closes itself. */
   invalidMessagesMax: 20,
+  /** Canvas shortcut protocol name is a single closed enum value. */
+  shortcutNameMax: 4,
   /** Default time the parent waits for the canvas hello. */
   handshakeTimeoutMs: 10_000,
 } as const;
