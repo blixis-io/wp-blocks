@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { EditorApp } from './App';
@@ -530,6 +530,22 @@ describe('keyboard shortcuts dialog', () => {
 });
 
 describe('side panels', () => {
+  it('marks the root motion-ready after mount and never leaves focus inside a closed panel', async () => {
+    const { user } = setup();
+    const root = screen.getByTestId('editor-root');
+    expect(root.getAttribute('data-motion-ready')).toBe('true');
+    expect(root.getAttribute('data-reduced-motion')).toMatch(/^(true|false)$/);
+    await user.click(screen.getByRole('button', { name: 'More options' }));
+    const toggle = screen.getByRole('menuitemcheckbox', { name: 'Inspector panel' });
+    await user.click(toggle);
+    const panel = document.getElementById('blx-inspector');
+    expect(panel?.hasAttribute('inert')).toBe(true);
+    expect(panel?.hasAttribute('hidden')).toBe(false);
+    expect(panel?.contains(document.activeElement)).toBe(false);
+    if (panel) fireEvent.transitionEnd(panel);
+    expect(panel?.hasAttribute('hidden')).toBe(true);
+  });
+
   it('collapses and expands with correct ARIA and remembers the state', async () => {
     const { user, unmount } = setup();
     await user.click(screen.getByRole('button', { name: 'More options' }));
@@ -538,7 +554,12 @@ describe('side panels', () => {
     expect(document.getElementById('blx-structure')?.closest('[hidden]') ?? null).toBeNull();
     await user.click(toggle);
     expect(toggle.getAttribute('aria-checked')).toBe('true');
-    expect(document.getElementById('blx-structure')?.hasAttribute('hidden')).toBe(true);
+    const panel = document.getElementById('blx-structure');
+    expect(panel?.hasAttribute('inert')).toBe(true);
+    expect(panel?.getAttribute('aria-hidden')).toBe('true');
+    expect(panel?.hasAttribute('hidden')).toBe(false);
+    if (panel) fireEvent.transitionEnd(panel);
+    expect(panel?.hasAttribute('hidden')).toBe(true);
     expect(JSON.parse(localStorage.getItem(PANELS_STORAGE_KEY) ?? '{}')).toEqual({ left: false, right: true });
     unmount();
     setup();

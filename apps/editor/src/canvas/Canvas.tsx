@@ -256,6 +256,7 @@ export function Canvas({
       const active = resizeRef.current;
       if (!active) return;
       resizeRef.current = null;
+      active.capture.closest('.blx-editor')?.removeAttribute('data-motion-paused');
       if (resizeFrame.current !== null) cancelAnimationFrame(resizeFrame.current);
       resizeFrame.current = null;
       const preview = pendingResize.current;
@@ -589,6 +590,7 @@ export function Canvas({
                       if (!enabled) return;
                       event.preventDefault();
                       event.currentTarget.setPointerCapture(event.pointerId);
+                      event.currentTarget.closest('.blx-editor')?.setAttribute('data-motion-paused', 'true');
                       resizeRef.current = {
                         handle: position,
                         pointerId: event.pointerId,

@@ -10,7 +10,7 @@ import {
 import { Icon } from '@blixis/wp-editor-ui';
 import type { RestClient } from './api/types';
 import { Canvas, PreviewAppearance, type CanvasTestOptions } from './canvas/Canvas';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { findPath, nodeAt, type ElementNode } from '@blixis/wp-core';
 import type { EditorBootstrap } from './bootstrap';
 import { useChromeTheme, type ChromePreference } from './chrome-theme';
@@ -62,6 +62,16 @@ function Shell({
   const store = useEditorStoreApi();
   const panels = useEditorStore((state) => state.panels);
   const togglePanel = useEditorStore((state) => state.togglePanel);
+  const [visiblePanels, setVisiblePanels] = useState(panels);
+  const handleTogglePanel = (side: keyof typeof panels) => {
+    const willClose = panels[side];
+    const panel = globalThis.document.getElementById(side === 'left' ? STRUCTURE_ID : INSPECTOR_ID);
+    if (willClose && panel?.contains(globalThis.document.activeElement)) {
+      globalThis.document.getElementById(CANVAS_ID)?.focus();
+    }
+    if (!willClose) setVisiblePanels((visible) => ({ ...visible, [side]: true }));
+    togglePanel(side);
+  };
   const contentLocale = useEditorStore((state) => state.contentLocale);
   const selectedId = useEditorStore((state) => state.selectedId);
   const document = useEditorStore((state) => state.document);
@@ -88,7 +98,7 @@ function Shell({
         <Header
           bootstrap={bootstrap}
           panels={panels}
-          onTogglePanel={togglePanel}
+          onTogglePanel={handleTogglePanel}
           appearance={preference}
           onAppearance={onPreference}
         />
@@ -108,7 +118,14 @@ function Shell({
           id={STRUCTURE_ID}
           aria-label={t('panel.structure')}
           className="blx-panel blx-panel-left"
-          hidden={!panels.left}
+          aria-hidden={!panels.left || undefined}
+          inert={!panels.left}
+          hidden={!visiblePanels.left}
+          onTransitionEnd={(event) => {
+            if (event.target === event.currentTarget && !panels.left) {
+              setVisiblePanels((visible) => ({ ...visible, left: false }));
+            }
+          }}
         >
           <StructurePanel editingEnabled={bootstrap.editingEnabled} />
           <ElementsPanel editingEnabled={bootstrap.editingEnabled} />
@@ -168,7 +185,14 @@ function Shell({
           id={INSPECTOR_ID}
           aria-label={t('panel.inspector')}
           className="blx-panel blx-panel-right"
-          hidden={!panels.right}
+          aria-hidden={!panels.right || undefined}
+          inert={!panels.right}
+          hidden={!visiblePanels.right}
+          onTransitionEnd={(event) => {
+            if (event.target === event.currentTarget && !panels.right) {
+              setVisiblePanels((visible) => ({ ...visible, right: false }));
+            }
+          }}
         >
           <h2 className="blx-panel-title">{t('panel.inspector')}</h2>
           <p className="blx-inspector-selection" data-testid="inspector-selection" aria-live="polite">
@@ -231,8 +255,32 @@ export function EditorApp({
   canvas?: CanvasTestOptions;
 }) {
   const [root, setRoot] = useState<HTMLDivElement | null>(null);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const attachRoot = useCallback((node: HTMLDivElement | null) => {
+    rootRef.current = node;
+    setRoot(node);
+  }, []);
   const { preference, resolved, setPreference } = useChromeTheme();
   const { lang, dir } = createTranslator(bootstrap.editorLocale);
+  useEffect(() => {
+    const mountedRoot = rootRef.current;
+    if (!mountedRoot) return;
+    if (typeof window.matchMedia !== 'function') {
+      mountedRoot.dataset['reducedMotion'] = 'false';
+      mountedRoot.dataset['motionReady'] = 'true';
+      return;
+    }
+    const media = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const update = () => {
+      mountedRoot.dataset['reducedMotion'] = String(media.matches);
+    };
+    media.addEventListener('change', update);
+    mountedRoot.dataset['motionReady'] = 'true';
+    update();
+    return () => {
+      media.removeEventListener('change', update);
+    };
+  }, [root]);
   useEffect(() => {
     const controller = new AbortController();
     void store.getState().loadDocument({ signal: controller.signal });
@@ -242,7 +290,7 @@ export function EditorApp({
   }, [store]);
   return (
     <div
-      ref={setRoot}
+      ref={attachRoot}
       className="blx-editor"
       data-editor-theme={resolved}
       lang={lang}

@@ -98,6 +98,10 @@ try {
     const response = await send('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true });
     return response.result?.result?.value;
   };
+  const waitForMotion = async () => {
+    await ev(`Promise.all(document.getAnimations().map((animation) => animation.finished.catch(() => undefined)))`);
+    await sleep(350);
+  };
   // Evaluates inside another frame's own JavaScript realm (so `parent.postMessage` really comes from that frame's window).
   const evIn = async (frameId, expression) => {
     const contextId = contexts.get(frameId);
@@ -335,7 +339,12 @@ try {
   const toggle = buttonByText('Structure panel');
   const expandedBefore = await ev(`${toggle}?.getAttribute('aria-checked')`);
   await ev(`${toggle}.click()`);
-  await sleep(200);
+  await waitForMotion();
+  assert.equal(
+    await ev(`document.querySelector('nav[aria-label="Structure"]')?.contains(document.activeElement)`),
+    false,
+    'focus does not remain inside the closed structure panel',
+  );
   await clickReal('button[aria-label="More options"]');
   const expandedAfter = await ev(`${buttonByText('Structure panel')}?.getAttribute('aria-checked')`);
   assert.notEqual(expandedAfter, expandedBefore, 'the structure panel menu checkbox toggles aria-checked');
@@ -356,7 +365,7 @@ try {
   );
   await clickReal('button[aria-label="More options"]');
   await ev(`${buttonByText('Structure panel')}.click()`);
-  await sleep(200);
+  await waitForMotion();
   const reopened = await ev(
     `(() => { const r = document.querySelector('nav[aria-label="Structure"]').getBoundingClientRect(); const m = document.querySelector('main').getBoundingClientRect(); return { structure: Math.round(r.width), mainX: Math.round(m.x) }; })()`,
   );
@@ -640,9 +649,32 @@ try {
   );
   const typographyToggle = `document.querySelector('button[aria-label="Toggle Typography"]')`;
   const before = await ev(`${typographyToggle}?.getAttribute('aria-expanded')`);
+  await ev(`${typographyToggle}?.focus()`);
   await ev(`${typographyToggle}?.click()`);
+  assert.equal(
+    await ev(`document.activeElement === ${typographyToggle}`),
+    true,
+    'section focus stays on its toggle while collapsing',
+  );
+  assert.equal(
+    await ev(`document.activeElement === ${typographyToggle}`),
+    true,
+    'section focus stays on its toggle while collapsing',
+  );
+  const collapsedSemantics = await ev(
+    `(() => { const panel = document.querySelector('#inspector-section-style-typography-panel'); return { inert: panel?.inert, hidden: panel?.hidden, ariaHidden: panel?.getAttribute('aria-hidden') }; })()`,
+  );
+  assert.ok(
+    collapsedSemantics.inert && collapsedSemantics.ariaHidden === 'true',
+    'collapsed content is immediately inert and hidden from accessibility APIs',
+  );
   await sleep(300);
   const collapsed = await ev(`${typographyToggle}?.getAttribute('aria-expanded')`);
+  assert.equal(
+    await ev(`document.querySelector('#inspector-section-style-typography-panel')?.hidden`),
+    true,
+    'collapsed content is hidden after transition',
+  );
   await ev(`${typographyToggle}?.click()`);
   await sleep(300);
   const expanded = await ev(`${typographyToggle}?.getAttribute('aria-expanded')`);
@@ -651,6 +683,16 @@ try {
     sectionState,
     { before: 'true', collapsed: 'false', expanded: 'true' },
     'Typography section toggles with aria-expanded',
+  );
+  assert.equal(
+    await ev(`document.activeElement === ${typographyToggle}`),
+    true,
+    'section focus stays on its toggle after collapse',
+  );
+  assert.equal(
+    await ev(`document.activeElement === ${typographyToggle}`),
+    true,
+    'section focus stays on its toggle after collapse',
   );
   const fontBefore = await ev(
     `document.querySelector('main iframe')?.contentDocument?.querySelector('h1')?.computedStyleMap?.().get('font-size')?.toString() ?? document.querySelector('main iframe')?.contentWindow?.getComputedStyle(document.querySelector('main iframe')?.contentDocument?.querySelector('h1')).fontSize`,
@@ -1548,6 +1590,42 @@ try {
   const channels = () => ev(`window.__blxChannels`);
   const sessionState = () => ev(`document.querySelector('main iframe')?.getAttribute('data-session')`);
   assert.equal(await sessionState(), 'ready', 'the canvas session is connected before the handshake checks');
+  const readMotion = async (preference) => {
+    await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: preference }] });
+    await sleep(300);
+    return ev(`(() => {
+      const root = document.querySelector('.blx-editor');
+      const probe = document.createElement('div');
+      probe.innerHTML = '<section class="blx-inspector-section"><h3 class="blx-inspector-section-heading"><button>Probe</button></h3><div role="region"></div></section><div class="ed-menu"></div><div class="blx-selection-toolbar"></div>';
+      root.appendChild(probe);
+      const section = probe.querySelector('.blx-inspector-section-heading button');
+      const menu = probe.querySelector('.ed-menu');
+      const toolbar = probe.querySelector('.blx-selection-toolbar');
+      const duration = (element, property) => element ? getComputedStyle(element)[property] : null;
+      const result = { mirror: root?.getAttribute('data-reduced-motion'), section: duration(section, 'transitionDuration'), menu: duration(menu, 'animationDuration'), toolbar: duration(toolbar, 'animationDuration') };
+      probe.remove();
+      return result;
+    })()`);
+  };
+  const reduced = await readMotion('reduce');
+  assert.equal(reduced.mirror, 'true', 'reduced-motion preference is mirrored on the root');
+  for (const [name, value] of Object.entries(reduced).filter(([key]) => key !== 'mirror')) {
+    if (value !== null)
+      assert.ok(
+        value.split(',').every((duration) => parseFloat(duration) <= 0.01),
+        `${name} reduced: ${value}`,
+      );
+  }
+  const standard = await readMotion('no-preference');
+  assert.equal(standard.mirror, 'false', 'normal-motion preference is mirrored on the root');
+  for (const [name, value] of Object.entries(standard).filter(([key]) => key !== 'mirror')) {
+    if (value !== null)
+      assert.ok(
+        value.split(',').every((duration) => parseFloat(duration) > 0 && parseFloat(duration) <= 0.3),
+        `${name} bounded: ${value}`,
+      );
+  }
+  await waitForMotion();
   const desktopWidth = (await frameInfo()).width;
   const viewportWidthIs = async (name, width) => {
     await ev(

@@ -249,7 +249,11 @@ describe('Inspector controls', () => {
     toggle.focus();
     await user.keyboard(' ');
     expect(toggle.getAttribute('aria-expanded')).toBe('false');
-    expect(panelId && document.getElementById(panelId)?.hasAttribute('hidden')).toBe(true);
+    const panel = panelId ? document.getElementById(panelId) : null;
+    expect(panel?.hasAttribute('inert')).toBe(true);
+    expect(panel?.getAttribute('aria-hidden')).toBe('true');
+    if (panel) fireEvent.transitionEnd(panel);
+    expect(panel?.hasAttribute('hidden')).toBe(true);
     first.unmount();
     const second = await mount('blixis/heading');
     expect(screen.getByRole('button', { name: 'Toggle Heading' }).getAttribute('aria-expanded')).toBe('false');

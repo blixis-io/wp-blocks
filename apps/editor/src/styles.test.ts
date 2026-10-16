@@ -188,6 +188,68 @@ describe('editor polish CSS contracts', () => {
   });
 });
 
+describe('editor motion contracts', () => {
+  it.each([
+    '--ed-motion-fast: 120ms',
+    '--ed-motion-hover: 80ms',
+    '--ed-motion-base: 160ms',
+    '--ed-motion-slow: 200ms',
+    '--ed-ease-standard:',
+    '--ed-ease-emphasized:',
+  ])('defines motion token %s', (token) => {
+    expect(source).toContain(token);
+  });
+  it('uses token durations for every transition and animation declaration', () => {
+    const declarations = [...source.matchAll(/\b(?:transition|animation):\s*([^;]+);/g)].map((match) => match[1] ?? '');
+    expect(declarations.length).toBeGreaterThan(8);
+    for (const declaration of declarations) {
+      expect(declaration).toMatch(/var\(--ed-motion-(?:hover|fast|base|slow)\)/);
+      expect(declaration).not.toMatch(/\b\d+(?:\.\d+)?\s*(?:ms|s)\b/);
+    }
+  });
+  it('has one reduced motion block with duration overrides and transform suppression', () => {
+    const blocks = source.match(/@media\s*\(prefers-reduced-motion:\s*reduce\)/g) ?? [];
+    expect(blocks).toHaveLength(1);
+    const block = source.slice(source.indexOf(blocks[0] ?? ''));
+    expect(block).toContain('--ed-motion-fast: 0.01ms');
+    expect(block).toContain('--ed-motion-hover: 0.01ms');
+    expect(block).toContain('--ed-motion-base: 0.01ms');
+    expect(block).toContain('--ed-motion-slow: 0.01ms');
+    expect(block).toContain('transform: none !important');
+  });
+  it.each([
+    '.blx-body',
+    ".blx-inspector-section [role='region']",
+    '.blx-frame',
+    '.blx-panel',
+    '.blx-row-menu',
+    '.ed-menu',
+    "[role='tooltip']",
+    '.blx-selection-toolbar',
+    '.blx-selection-handles',
+    '.blx-selection-overlay',
+    '.blx-outline-item',
+    '.blx-tree-toggle svg',
+    '& button:active',
+    '.ed-focus-ring',
+    '.blx-skip',
+    '.blx-inspector-section-heading button',
+    '.ed-menu-item',
+    "[role='status']",
+  ])('includes chrome motion coverage for %s', (selector) => {
+    expect(source).toContain(selector);
+  });
+  it('guards entrance keyframes until motion is ready', () => {
+    expect(source).toMatch(/&\[data-motion-ready='true'\][^{]*\{\s*animation:/);
+    expect(source).toContain("data-motion-ready='true'");
+  });
+  it('keeps the frame resize transition on inline-size and under 300ms', () => {
+    expect(source).toMatch(/\.blx-frame \{[\s\S]*?\}/);
+    expect(source).toContain('inline-size var(--ed-motion-slow)');
+    expect(source).not.toContain('width: 200ms');
+  });
+});
+
 describe('css walker', () => {
   it('flags unscoped selectors and accepts scoped ones', () => {
     const css =
