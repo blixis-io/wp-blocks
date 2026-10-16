@@ -19,6 +19,7 @@ final class HeadingRenderer implements ElementRenderer {
 	public function render( ElementNode $node, RenderContext $context ): string {
 		$level = \max( 1, \min( 6, (int) $node->value( 'level', 2 ) ) );
 		$tag   = 'h' . $level;
-		return '<' . $tag . Escape::hooks( $node ) . '>' . Escape::html( (string) $node->value( 'text', 'Heading' ) ) . '</' . $tag . '>';
+		$value = $node->value( 'text', 'Heading' );
+		return '<' . $tag . Escape::hooks( $node ) . '>' . ( \is_string( $value ) ? Escape::html( $value ) : RichText::render_validated( $value, true, $context->token_ids ) ) . '</' . $tag . '>';
 	}
 }

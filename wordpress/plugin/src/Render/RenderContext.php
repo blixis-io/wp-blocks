@@ -14,7 +14,8 @@ final class RenderContext {
 	/**
 	 * Apply the documented contract.
 	 *
-	 * @param string $children_html Children html.
+	 * @param string    $children_html Children html.
+	 * @param ?string[] $token_ids Active token ids, when available; null means unavailable.
 	 */
-	public function __construct( public readonly string $children_html = '' ) {}
+	public function __construct( public readonly string $children_html = '', public readonly ?array $token_ids = null ) {}
 }

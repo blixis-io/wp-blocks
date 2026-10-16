@@ -1,9 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { isSafeUrl } from './url.ts';
+import { readFileSync } from 'node:fs';
 
 const cp = (...codes: number[]): string => String.fromCodePoint(...codes);
 
 describe('isSafeUrl', () => {
+  it('matches the shared cross-language URL corpus', () => {
+    const cases = JSON.parse(
+      readFileSync(new URL('../../../tests/fixtures/rich-text/cases.json', import.meta.url), 'utf8'),
+    ) as { url_cases: { value: string; safe: boolean }[] };
+    for (const row of cases.url_cases) expect(isSafeUrl(row.value), row.value).toBe(row.safe);
+  });
   it.each([
     '',
     '#',

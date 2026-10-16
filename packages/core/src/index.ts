@@ -47,4 +47,18 @@ export { assertJsonValue, canonicalJson, compareCodePoints } from './json/canoni
 export { utf8Length } from './json/utf8.ts';
 export { sha256Hex, sha256HexUtf8 } from './json/sha256.ts';
 export { sourceDigest } from './translation/source.ts';
+export { isSafeUrl } from './translation/safe-url.ts';
+export {
+  RICH_TEXT_LIMITS,
+  validateRichText,
+  richToPlain,
+  plainToRich,
+  normalizeRich,
+  richEquals,
+  markCount,
+  type RichText,
+  type Inline,
+  type Mark,
+  type RichTextResult,
+} from './translation/rich-text.ts';
 export * from './commands/index.ts';

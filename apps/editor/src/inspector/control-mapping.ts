@@ -7,6 +7,7 @@ export type InspectorTab = 'content' | 'style' | 'advanced';
 export function controlFamilyFor(definition: PropDefinition): ControlFamily {
   switch (definition.kind) {
     case 'string':
+    case 'text':
     case 'url':
       return 'text';
     case 'integer':

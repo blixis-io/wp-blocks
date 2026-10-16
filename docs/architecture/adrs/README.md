@@ -28,3 +28,4 @@ A Codex review is an input, not an approval. Disagreements and their resolution 
 | 0011 | Editor icon set | #196 (BWB-127) | Superseded by ADR 0012 |
 | 0012 | Editor icon set — Solar | epic #195 | Accepted (owner decision 2026-10-15); supersedes 0011 |
 | 0013 | Animation engine — GSAP | #87, #88, #203 | Accepted (owner decision 2026-10-15); supersedes GSAP prohibition in 0008 |
+| 0014 | Inline rich text | #207 (BWB-135) | Accepted |

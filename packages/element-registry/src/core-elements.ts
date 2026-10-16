@@ -91,7 +91,14 @@ export const CORE_ELEMENTS: readonly ElementDefinition[] = [
         default: 2,
         required: true,
       },
-      text: { kind: 'string', classification: 'translatable', label: 'Text', maxLength: 500, default: 'Heading' },
+      text: {
+        kind: 'text',
+        inline: true,
+        classification: 'translatable',
+        label: 'Text',
+        maxLength: 500,
+        default: 'Heading',
+      },
     },
     styleProperties: [
       'font-family',
@@ -125,7 +132,8 @@ export const CORE_ELEMENTS: readonly ElementDefinition[] = [
     requiresApi: 1,
     props: {
       text: {
-        kind: 'string',
+        kind: 'text',
+        inline: true,
         classification: 'translatable',
         label: 'Text',
         maxLength: 5000,
@@ -190,7 +198,15 @@ export const CORE_ELEMENTS: readonly ElementDefinition[] = [
     tier: 'free',
     requiresApi: 1,
     props: {
-      label: { kind: 'string', classification: 'translatable', label: 'Label', maxLength: 100, default: 'Button' },
+      label: {
+        kind: 'text',
+        inline: true,
+        marks: ['strong', 'em', 'u', 's', 'code', 'style'],
+        classification: 'translatable',
+        label: 'Label',
+        maxLength: 100,
+        default: 'Button',
+      },
       href: { kind: 'url', classification: 'locale-specific', label: 'Link', default: '#' },
       variant: {
         kind: 'enum',

@@ -22,7 +22,7 @@ describe('schema to inspector control mapping', () => {
         expect(['text', 'number', 'choice', 'media']).toContain(controlFamilyFor(property));
       }
     }
-    expect(kinds).toEqual(new Set(['string', 'url', 'integer', 'enum', 'boolean', 'media']));
+    expect(kinds).toEqual(new Set(['string', 'text', 'url', 'integer', 'enum', 'boolean', 'media']));
   });
 
   it('places schema-backed text and invariant properties in Content; Advanced stays empty', () => {

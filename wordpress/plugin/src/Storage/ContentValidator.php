@@ -9,19 +9,33 @@ declare(strict_types=1);
 
 namespace Blixis\Builder\Storage;
 
+use Blixis\Builder\Registry\ElementRegistry;
+
 \defined( 'ABSPATH' ) || exit;
 
 /**
  * A content stream is `{ schemaVersion, contentRevision, locale?, entries: { <elementId>: { status?, values?, sourceHash? } } }`.
  * Only shape and bounds are checked here (element existence and translatable properties are checked when publishing,
- * because the layout may change independently). Rich text arrives with BWB-104 and is not accepted yet: values are strings,
- * integers, booleans or null.
+ * because the layout may change independently). Inline values are validated by Render\RichText.
  */
 final class ContentValidator implements DocumentValidator {
 	public const STATUSES     = [ 'missing', 'draft', 'translated', 'reviewed', 'stale', 'orphaned' ];
 	private const MAX_ENTRIES = 5000;
 	private const MAX_VALUES  = 32;
 	private const MAX_STRING  = 20000;
+	/** Registry used to gate rich text properties.
+	 *
+	 * @var ElementRegistry
+	 */
+	private readonly ElementRegistry $registry;
+
+	/** Use the registry to restrict rich values to declared inline text properties.
+	 *
+	 * @param ?ElementRegistry $registry Element property registry.
+	 */
+	public function __construct( ?ElementRegistry $registry = null ) {
+		$this->registry = $registry ?? ElementRegistry::from_manifest_file( \dirname( __DIR__, 2 ) . '/data/core-elements.json' );
+	}
 
 	/**
 	 * Check a content envelope.
@@ -92,7 +106,7 @@ final class ContentValidator implements DocumentValidator {
 			return false;
 		}
 		foreach ( $values as $name => $item ) {
-			$scalar = \is_int( $item ) || \is_bool( $item ) || null === $item || ( \is_string( $item ) && \strlen( $item ) <= self::MAX_STRING );
+			$scalar = \is_int( $item ) || \is_bool( $item ) || null === $item || ( \is_string( $item ) && \strlen( $item ) <= self::MAX_STRING ) || ( $item instanceof \stdClass && $this->registry->is_inline_text_property( (string) $name ) && \Blixis\Builder\Render\RichText::valid( $item ) );
 			if ( 1 !== \preg_match( '/^[a-z][A-Za-z0-9]{0,63}$/D', (string) $name ) || ! $scalar ) {
 				return false;
 			}

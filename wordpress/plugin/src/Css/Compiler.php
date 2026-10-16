@@ -154,7 +154,11 @@ final class Compiler {
 		if ( '' !== $token_css ) {
 			$blocks[1] = [ $token_css ];
 		}
-		$layers = [ 'blx.theme', 'blx.tokens' ];
+		$mark_css = self::marks( $tokens );
+		if ( '' !== $mark_css ) {
+			$blocks[2] = [ $mark_css ];
+		}
+		$layers = [ 'blx.theme', 'blx.tokens', 'blx.marks' ];
 		foreach ( self::ORIGINS as $origin ) {
 			foreach ( self::STATES as $state ) {
 				foreach ( self::KINDS as $kind ) {
@@ -365,7 +369,7 @@ final class Compiler {
 		}
 		$state_index = null === ( $rule['state'] ?? null ) ? 0 : \array_search( $rule['state'], self::STATES, true );
 		$kind_index  = isset( $rule['mode'] ) ? ( null === $bp ? 2 : 3 ) : ( null === $bp ? 0 : 1 );
-		$layer       = 2 + ( 'el' === $origin ? 20 : 0 ) + $state_index * 4 + $kind_index;
+		$layer       = 3 + ( 'el' === $origin ? 20 : 0 ) + $state_index * 4 + $kind_index;
 		$bp_rank     = null === $bp ? 0 : $rank[ $bp['id'] ];
 		$key         = \implode( "\0", [ $layer, $bp_rank, $order, $rule['mode'] ?? '-', $item['decls'] ] );
 		if ( ! isset( $groups[ $key ] ) ) {
@@ -452,5 +456,29 @@ final class Compiler {
 			$css .= ':where(html[data-theme="' . $mode . '"])' . $body . '@media ' . self::AUTO_QUERY[ $mode ] . '{' . self::AUTO_SCOPE . $body . '}';
 		}
 		return $css;
+	}
+
+	/** Fixed inline mark classes for color-category design tokens.
+	 *
+	 * @param list<array<string, mixed>|\stdClass> $all Token compiler values.
+	 */
+	private static function marks( array $all ): string {
+		$ids = [];
+		foreach ( \array_slice( $all, 0, 1000 ) as $raw ) {
+			$token = self::as_array( $raw );
+			if ( 'color' === ( $token['category'] ?? null ) && isset( $token['name'], $token['value'] ) && DeclarationValidator::validate( $token['name'], $token['value'] )->ok && 1 === \preg_match( '/^--blx-([a-z][a-z0-9]*(?:-[a-z0-9]+)*)$/D', $token['name'], $match ) ) {
+				$ids[ $match[1] ] = true;
+			}
+		}
+		\ksort( $ids, SORT_STRING );
+		$rules = [];
+		foreach ( \array_keys( $ids ) as $id ) {
+			$rules[] = '.blx-mc-' . $id . '{color:var(--blx-' . $id . ')}';
+			$rules[] = '.blx-mh-' . $id . '{background-color:var(--blx-' . $id . ')}';
+		}
+		$rules[] = '.blx-mw-normal{font-weight:400}';
+		$rules[] = '.blx-mw-medium{font-weight:500}';
+		$rules[] = '.blx-mw-bold{font-weight:700}';
+		return \implode( '', $rules );
 	}
 }

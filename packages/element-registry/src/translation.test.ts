@@ -13,10 +13,10 @@ const here = dirname(fileURLToPath(import.meta.url));
 describe('localized properties (translatable and locale-specific)', () => {
   it('lists the properties whose values live in the translation streams, in definition order', () => {
     expect(registry.localizedProperties('blixis/heading')).toEqual([
-      { id: 'text', kind: 'string', classification: 'translatable' },
+      { id: 'text', kind: 'text', classification: 'translatable' },
     ]);
     expect(registry.localizedProperties('blixis/button')).toEqual([
-      { id: 'label', kind: 'string', classification: 'translatable' },
+      { id: 'label', kind: 'text', classification: 'translatable' },
       { id: 'href', kind: 'url', classification: 'locale-specific' },
     ]);
     expect(registry.localizedProperties('blixis/section')).toEqual([]);
@@ -195,7 +195,7 @@ describe('stable property ids (locks/property-ids.json)', () => {
   });
 
   it('reports the problems it exists to catch', () => {
-    const text = { classification: 'translatable', kind: 'string' };
+    const text = { classification: 'translatable', kind: 'text' };
     const level = { classification: 'invariant', kind: 'integer' };
     const heading = { type: 'blixis/heading', props: { text, level } };
     const others = CORE_ELEMENTS.filter((d) => d.type !== 'blixis/heading');
@@ -208,7 +208,7 @@ describe('stable property ids (locks/property-ids.json)', () => {
     expect(problems(others)).toContain('blixis/heading: element removed');
     expect(
       problems([...others, { type: heading.type, props: { level, text: { ...text, classification: 'invariant' } } }]),
-    ).toContain('changed from translatable string to invariant string');
+    ).toContain('changed from translatable text to invariant text');
     expect(problems([...others, { type: heading.type, props: { level, text, extra: text } }], true)).toContain(
       'blixis/heading.extra: not recorded in the lock',
     );

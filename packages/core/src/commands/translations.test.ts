@@ -7,6 +7,7 @@ import {
   redo,
   undo,
   validateDocument,
+  validateRichText,
   type BuilderDocument,
   type Command,
   type CommandContext,
@@ -69,6 +70,24 @@ const hook: CommandContext = {
 };
 
 describe('set-translation', () => {
+  it('applies, undoes and redoes a rich translated value', () => {
+    const context: CommandContext = {
+      translationValue: (_type, property, value) =>
+        property === 'text' && validateRichText(value).ok
+          ? { ok: true }
+          : { ok: false, code: 'invalid-translation', message: 'invalid inline value' },
+    };
+    const start = baseDoc();
+    const rich = { v: 1, inline: [{ t: 'text', s: 'Body', m: ['strong'] }] } as const;
+    const edited = ok(
+      start,
+      { type: 'set-translation', locale: 'nl_NL', elementId: 'el-b', set: { text: rich } },
+      context,
+    );
+    expect(edited.document.translations['nl_NL']?.['el-b']?.values['text']).toEqual(rich);
+    expect(ok(edited.document, edited.inverse, context).document).toEqual(start);
+  });
+
   it('creates an entry: draft in a translation locale, translated in the default locale', () => {
     const nl = ok(baseDoc(), { type: 'set-translation', locale: 'nl_NL', elementId: 'el-b', set: { text: 'Tekst' } });
     expect(nl.document.translations['nl_NL']?.['el-b']).toEqual({

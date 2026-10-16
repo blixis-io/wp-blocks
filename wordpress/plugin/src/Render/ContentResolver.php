@@ -51,7 +51,7 @@ final class ContentResolver {
 					}
 				}
 			}
-			if ( 'blank' === $fallback && 'invariant' !== $prop['classification'] && 'string' === ( $prop['kind'] ?? '' ) ) {
+			if ( 'blank' === $fallback && 'invariant' !== $prop['classification'] && \in_array( $prop['kind'] ?? '', [ 'string', 'text' ], true ) ) {
 				$out[ $name ] = '';
 				// A present translation (already in $candidates) still wins below.
 				foreach ( $candidates as $value ) {
@@ -62,11 +62,16 @@ final class ContentResolver {
 				}
 				continue;
 			}
-			if ( \array_key_exists( 'default', $prop ) ) {
-				$candidates[] = $prop['default'];
-			}
+			$degraded = null;
 			foreach ( $candidates as $value ) {
 				if ( 'invariant' !== $prop['classification'] && '' === $value ) {
+					continue;
+				}
+				if ( 'text' === ( $prop['kind'] ?? '' ) && $value instanceof \stdClass && ! ElementRegistry::valid_value( $prop, $value ) ) {
+					$plain = RichText::plain( $value );
+					if ( '' !== $plain ) {
+						$degraded = self::truncate( $plain, (int) $prop['maxLength'] );
+					}
 					continue;
 				}
 				if ( ElementRegistry::valid_value( $prop, $value ) ) {
@@ -74,7 +79,25 @@ final class ContentResolver {
 					break;
 				}
 			}
+			if ( ! \array_key_exists( $name, $out ) && null !== $degraded ) {
+				$out[ $name ] = $degraded;
+			}
+			if ( ! \array_key_exists( $name, $out ) && \array_key_exists( 'default', $prop ) && ( 'invariant' === $prop['classification'] || '' !== $prop['default'] ) && ElementRegistry::valid_value( $prop, $prop['default'] ) ) {
+				$out[ $name ] = $prop['default'];
+			}
 		}
 		return $out;
+	}
+
+	/** UTF-8 safe truncation by Unicode character count.
+	 *
+	 * @param string $value Text to truncate.
+	 * @param int    $limit Maximum number of Unicode characters.
+	 */
+	private static function truncate( string $value, int $limit ): string {
+		if ( \function_exists( 'mb_substr' ) ) {
+			return (string) \mb_substr( $value, 0, $limit, 'UTF-8' ); }
+		$matched = \preg_match_all( '/./us', $value, $characters );
+		return false === $matched ? '' : \implode( '', \array_slice( $characters[0], 0, $limit ) );
 	}
 }

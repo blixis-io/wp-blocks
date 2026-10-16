@@ -21,6 +21,7 @@ export interface TokenValue {
   name: string;
   value: string | number;
   mode?: Mode;
+  category?: string;
 }
 
 export interface CompileInput {
@@ -80,6 +81,7 @@ const ORIGIN_LAYERS = ['class', 'el'] as const;
 export const LAYER_ORDER: readonly string[] = [
   'blx.theme',
   'blx.tokens',
+  'blx.marks',
   ...ORIGIN_LAYERS.flatMap((origin) =>
     STATE_LAYERS.flatMap((state) => KIND_LAYERS.map((kind) => `blx.${origin}.${state}.${kind}`)),
   ),
@@ -93,7 +95,7 @@ const layerIndex = (
 ): number => {
   const s = state === undefined ? 0 : STATE_LAYERS.indexOf(state);
   const k = mode ? (bp ? 3 : 2) : bp ? 1 : 0;
-  return 2 + ORIGIN_LAYERS.indexOf(origin) * 20 + s * 4 + k;
+  return 3 + ORIGIN_LAYERS.indexOf(origin) * 20 + s * 4 + k;
 };
 
 // ---- selectors ------------------------------------------------------------------------------------------------------
@@ -355,12 +357,36 @@ export function compile(input: CompileInput, options: CompileOptions = {}): Comp
 
   const tokenCss = compileTokens(input.tokens ?? [], issue);
   if (tokenCss !== '') blocks.set(1, [tokenCss]);
+  const markCss = compileMarkCss(input.tokens ?? []);
+  if (markCss !== '') blocks.set(2, [markCss]);
 
   const parts = [`/*blx-css:${String(COMPILER_VERSION)}*/`, `@layer ${LAYER_ORDER.join(',')};`];
   for (const index of [...blocks.keys()].sort((a, b) => a - b)) {
     parts.push(`@layer ${at(LAYER_ORDER, index)}{${(blocks.get(index) ?? []).join('')}}`);
   }
   return { css: `${parts.join('\n')}\n`, classNames, issues };
+}
+
+/** Fixed mark utility classes reference active design tokens and follow the token layer's color mode values. */
+function compileMarkCss(tokens: readonly TokenValue[]): string {
+  const ids = [
+    ...new Set(
+      tokens
+        .filter(
+          (token) =>
+            token.category === 'color' &&
+            /^--blx-[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(token.name) &&
+            validateDeclaration(token.name, token.value).ok,
+        )
+        .map((token) => token.name.slice(6)),
+    ),
+  ].sort(compare);
+  const rules = ids.flatMap((id) => [
+    `.blx-mc-${id}{color:var(--blx-${id})}`,
+    `.blx-mh-${id}{background-color:var(--blx-${id})}`,
+  ]);
+  rules.push('.blx-mw-normal{font-weight:400}', '.blx-mw-medium{font-weight:500}', '.blx-mw-bold{font-weight:700}');
+  return rules.join('');
 }
 
 /** Tokens: custom properties on the root, base values first, then light and dark overrides (and their `auto` media forms). */

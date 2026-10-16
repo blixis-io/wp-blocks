@@ -78,17 +78,44 @@ describe('compile: structure', () => {
     const lines = css.split('\n');
     expect(lines[0]).toBe(`/*blx-css:${String(COMPILER_VERSION)}*/`);
     expect(lines[1]).toBe(`@layer ${LAYER_ORDER.join(',')};`);
-    expect(LAYER_ORDER).toHaveLength(42);
-    expect(LAYER_ORDER.slice(0, 4)).toEqual(['blx.theme', 'blx.tokens', 'blx.class.s0.base', 'blx.class.s0.bp']);
+    expect(LAYER_ORDER).toHaveLength(43);
+    expect(LAYER_ORDER.slice(0, 4)).toEqual(['blx.theme', 'blx.tokens', 'blx.marks', 'blx.class.s0.base']);
     expect(LAYER_ORDER.at(-1)).toBe('blx.el.active.modebp');
-    expect(lines).toHaveLength(4);
-    expect(lines[2]).toMatch(/^@layer blx\.el\.s0\.base\{\.blx-[0-9a-f]{12}\{color:red;margin:0\}\}$/);
+    expect(lines).toHaveLength(5);
+    expect(lines[3]).toMatch(/^@layer blx\.el\.s0\.base\{\.blx-[0-9a-f]{12}\{color:red;margin:0\}\}$/);
   });
 
   it('gives an element a stable class name derived from the document and element ids', () => {
     const result = compile({ document });
     expect(result.classNames.get('el-a')).toEqual([`blx-${shortHash('doc-001:el-a')}`]);
     expect(compile({ document }).css).toBe(result.css);
+  });
+
+  it('emits mark classes only for validated color token ids and fixed weights', () => {
+    const result = compile({
+      document,
+      tokens: [
+        { name: '--blx-color-primary', value: '#123456', category: 'color' },
+        { name: '--blx-not-color', value: '1rem', category: 'spacing' },
+        { name: '--blx-color-invalid', value: 'url(https://evil.test)', category: 'color' },
+      ],
+    });
+    expect(result.css).toContain(
+      '@layer blx.marks{.blx-mc-color-primary{color:var(--blx-color-primary)}.blx-mh-color-primary{background-color:var(--blx-color-primary)}',
+    );
+    expect(result.css).toContain('.blx-mw-normal{font-weight:400}');
+    expect(result.css).not.toContain('blx-mc-not-color');
+    expect(result.css).not.toContain('blx-mc-color-invalid');
+  });
+
+  it('matches PHP mark CSS for the shared rich-text token set', () => {
+    const rich = JSON.parse(
+      readFileSync(new URL('../../../tests/fixtures/rich-text/cases.json', import.meta.url), 'utf8'),
+    ) as {
+      mark_css: { tokens: { name: string; value: string; category: string }[]; expected: string };
+    };
+    const result = compile({ document, tokens: rich.mark_css.tokens });
+    expect(result.css).toContain(rich.mark_css.expected);
   });
 
   it('orders shorthands before longhands and custom properties first', () => {
