@@ -65,6 +65,10 @@ async function mount(
     chromeTheme?: 'light' | 'dark';
     preserveSectionDefaults?: boolean;
     richValue?: boolean;
+    formatSession?: boolean;
+    selectedText?: { text: string; marks?: Record<string, unknown> };
+    sendEditCommand?: (name: string, args?: Record<string, unknown>) => void;
+    startEdit?: (id: string, prop: string) => void;
   } = {},
 ) {
   const target = el('target', type);
@@ -101,7 +105,26 @@ async function mount(
       <I18nProvider editorLocale={options.editorLocale ?? 'en_US'}>
         <div className="blx-editor" data-editor-theme={options.chromeTheme ?? 'light'}>
           {options.reactive === false ? (
-            <Inspector element={node} tab={options.tab ?? 'content'} editingEnabled={options.editable ?? true} />
+            <Inspector
+              element={node}
+              tab={options.tab ?? 'content'}
+              editingEnabled={options.editable ?? true}
+              editTarget={
+                options.selectedText || options.formatSession ? { id: 'target', prop: 'text', status: 'ready' } : null
+              }
+              editSelection={
+                options.selectedText || options.formatSession
+                  ? {
+                      id: 'target',
+                      empty: !options.selectedText,
+                      text: options.selectedText?.text ?? '',
+                      marks: options.selectedText?.marks ?? {},
+                    }
+                  : null
+              }
+              {...(options.sendEditCommand ? { sendEditCommand: options.sendEditCommand } : {})}
+              {...(options.startEdit ? { startEdit: options.startEdit } : {})}
+            />
           ) : (
             <ReactiveInspector tab={options.tab ?? 'content'} editable={options.editable ?? true} />
           )}
@@ -120,6 +143,397 @@ async function mount(
 }
 
 describe('Inspector controls', () => {
+  const selectedOptions = (sendEditCommand: (name: string, args?: Record<string, unknown>) => void) => ({
+    reactive: false,
+    selectedText: { text: 'Selected words' },
+    sendEditCommand,
+  });
+
+  it('disables text formatting outside an edit session and describes the controls with the translated hint', async () => {
+    await mount();
+    const button = within(screen.getByRole('group', { name: 'Text Formatting' })).getByRole('button', { name: 'Bold' });
+    expect(button.hasAttribute('disabled')).toBe(true);
+    expect(button.getAttribute('aria-disabled')).toBe('true');
+    expect(button.getAttribute('aria-describedby')).toBe('inspector-text-formatting-hint');
+    expect(screen.getByText('Double-click the text in the canvas to edit it')).toBeTruthy();
+  });
+
+  it('enables text formatting only for a ready edit session', async () => {
+    await mount('blixis/heading', { reactive: false, formatSession: true });
+    expect(
+      within(screen.getByRole('group', { name: 'Text Formatting' }))
+        .getByRole('button', { name: 'Bold' })
+        .hasAttribute('disabled'),
+    ).toBe(false);
+    expect(screen.getByText('Double-click the text in the canvas to edit it')).toBeTruthy();
+  });
+
+  it.each([
+    ['Bold', 'bold'],
+    ['Italic', 'italic'],
+    ['Underline', 'underline'],
+  ] as const)('sends the exact Text Formatting %s command', async (label, mark) => {
+    const command = vi.fn();
+    await mount('blixis/heading', { reactive: false, formatSession: true, sendEditCommand: command });
+    fireEvent.click(
+      within(screen.getByRole('group', { name: 'Text Formatting' })).getByRole('button', { name: label }),
+    );
+    expect(command).toHaveBeenCalledWith('toggle-mark', { mark });
+  });
+
+  it.each([
+    ['Bold', { strong: true }],
+    ['Italic', { em: true }],
+    ['Underline', { u: true }],
+  ] as const)('sets aria-pressed for %s from canvas edit-selection marks', async (label, marks) => {
+    await mount('blixis/heading', { reactive: false, selectedText: { text: 'Words', marks } });
+    expect(
+      within(screen.getByRole('group', { name: 'Text Formatting' }))
+        .getByRole('button', { name: label })
+        .getAttribute('aria-pressed'),
+    ).toBe('true');
+  });
+
+  it('sends clear-marks from the Text Formatting clear button', async () => {
+    const command = vi.fn();
+    await mount('blixis/heading', { reactive: false, formatSession: true, sendEditCommand: command });
+    fireEvent.click(
+      within(screen.getByRole('group', { name: 'Text Formatting' })).getByRole('button', { name: 'Clear formatting' }),
+    );
+    expect(command).toHaveBeenCalledWith('clear-marks');
+  });
+
+  it('prefills the link popover from active marks and applies URL and new-tab state exactly', async () => {
+    const command = vi.fn();
+    await mount('blixis/heading', {
+      reactive: false,
+      selectedText: { text: 'Words', marks: { link: { href: 'https://prefill.test', newTab: true } } },
+      sendEditCommand: command,
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Text Formatting link' }));
+    expect(screen.getByRole<HTMLInputElement>('textbox', { name: 'Text Formatting link URL' }).value).toBe(
+      'https://prefill.test',
+    );
+    expect(
+      within(screen.getByRole('form', { name: 'Text Formatting link' })).getByRole<HTMLInputElement>('checkbox', {
+        name: 'Open in new tab',
+      }).checked,
+    ).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    expect(command).toHaveBeenCalledWith('set-link', { href: 'https://prefill.test', newTab: true });
+  });
+
+  it.each(['javascript:alert(1)', 'data:text/html,x', 'vbscript:msgbox(1)', ''])(
+    'rejects unsafe or empty Text Formatting link URL %s',
+    async (url) => {
+      const command = vi.fn();
+      await mount('blixis/heading', { reactive: false, formatSession: true, sendEditCommand: command });
+      fireEvent.click(screen.getByRole('button', { name: 'Text Formatting link' }));
+      fireEvent.change(screen.getByRole('textbox', { name: 'Text Formatting link URL' }), { target: { value: url } });
+      fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
+      expect(screen.getByRole('alert').textContent).toBe(
+        'Enter a safe link using http, https, mailto, tel, or a relative address.',
+      );
+      expect(command).not.toHaveBeenCalled();
+    },
+  );
+
+  it('rejects Text Formatting link URLs longer than 2048 characters', async () => {
+    const command = vi.fn();
+    await mount('blixis/heading', { reactive: false, formatSession: true, sendEditCommand: command });
+    fireEvent.click(screen.getByRole('button', { name: 'Text Formatting link' }));
+    fireEvent.change(screen.getByRole('textbox', { name: 'Text Formatting link URL' }), {
+      target: { value: `https://${'a'.repeat(2041)}` },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    expect(screen.getByRole('alert')).toBeTruthy();
+    expect(command).not.toHaveBeenCalled();
+  });
+
+  it.each(['https://example.test/path', 'mailto:hello@example.test', 'tel:+12025550123', '/relative/path'])(
+    'accepts safe Text Formatting link URL %s',
+    async (url) => {
+      const command = vi.fn();
+      await mount('blixis/heading', { reactive: false, formatSession: true, sendEditCommand: command });
+      fireEvent.click(screen.getByRole('button', { name: 'Text Formatting link' }));
+      fireEvent.change(screen.getByRole('textbox', { name: 'Text Formatting link URL' }), { target: { value: url } });
+      fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
+      expect(command).toHaveBeenCalledWith('set-link', { href: url, newTab: false });
+    },
+  );
+
+  it('removes an existing link from the popover', async () => {
+    const command = vi.fn();
+    await mount('blixis/heading', {
+      reactive: false,
+      selectedText: { text: 'Words', marks: { link: { href: 'https://existing.test' } } },
+      sendEditCommand: command,
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Text Formatting link' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Remove' }));
+    expect(command).toHaveBeenCalledWith('clear-link');
+  });
+
+  it('keeps Text Formatting link naming distinct from toolbar and Selected Text fields', async () => {
+    await mount('blixis/heading', { reactive: false, selectedText: { text: 'Words' } });
+    expect(screen.getByRole('button', { name: 'Text Formatting link' })).toBeTruthy();
+    expect(screen.getByRole('textbox', { name: 'Selected text link URL' })).toBeTruthy();
+  });
+
+  it.each(['en_US', 'nl_NL'] as const)('translates Text Formatting in %s', async (editorLocale) => {
+    await mount('blixis/heading', { reactive: false, editorLocale });
+    expect(
+      screen.getByRole('heading', { name: editorLocale === 'en_US' ? 'Text Formatting' : 'Tekstopmaak' }),
+    ).toBeTruthy();
+  });
+
+  it.each(['light', 'dark'] as const)(
+    'keeps the Text Formatting section axe clean in %s chrome',
+    async (chromeTheme) => {
+      await mount('blixis/heading', { reactive: false, chromeTheme });
+      expect(await axeViolations(document.body)).toEqual([]);
+    },
+  );
+
+  it('keeps Selected Text controls inside labeled shared inspector rows', async () => {
+    const { container } = await mount('blixis/heading', {
+      reactive: false,
+      selectedText: { text: 'Selected text' },
+    });
+    const panel = container.querySelector('#inspector-section-selected-text-panel');
+    expect(panel).toBeTruthy();
+    for (const id of [
+      'rich-apply-to',
+      'rich-color',
+      'rich-highlight',
+      'rich-weight',
+      'rich-link',
+      'rich-inline-style',
+    ]) {
+      const control = panel?.querySelector(`#${id}`);
+      expect(control?.closest('.blx-inspector-field')).toBeTruthy();
+      expect(control?.closest('.blx-inspector-field')?.querySelector('label')).toBeTruthy();
+    }
+    for (const groupName of ['Font weight', 'Text style']) {
+      const group = within(panel as HTMLElement).getByRole('group', { name: groupName });
+      expect(group.closest('.blx-inspector-field')?.querySelector('.blx-selected-field-label')).toBeTruthy();
+    }
+  });
+
+  it('keeps Content Text Formatting controls within the shared inspector row', async () => {
+    const { container } = await mount('blixis/heading');
+    const panel = container.querySelector('#inspector-section-text-formatting-panel');
+    const group = panel?.querySelector('.blx-text-formatting-controls');
+    expect(group?.closest('.blx-inspector-field')).toBeTruthy();
+    expect(group?.querySelectorAll('button')).toHaveLength(5);
+    expect(panel?.querySelector('.blx-inspector-hint')).toBeTruthy();
+  });
+
+  it('shows rich values as read-only plain text and starts their canvas edit session', async () => {
+    const startEdit = vi.fn();
+    await mount('blixis/heading', { richValue: true, reactive: false, startEdit });
+    const field = screen.getByRole<HTMLTextAreaElement>('textbox', { name: 'Text' });
+    expect(field.value).toBe('Rich text');
+    expect(field.readOnly).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Edit text in canvas' }));
+    expect(startEdit).toHaveBeenCalledWith('target', 'text');
+  });
+
+  it.each([
+    ['Normal', null],
+    ['Medium', 'medium'],
+    ['Bold', 'bold'],
+  ] as const)('sends the exact weight select command for %s', async (label, weight) => {
+    const command = vi.fn();
+    await mount('blixis/heading', selectedOptions(command));
+    fireEvent.change(screen.getByRole('combobox', { name: 'Font weight' }), {
+      target: { value: label.toLowerCase() },
+    });
+    expect(command).toHaveBeenCalledWith('set-style', { weight });
+  });
+
+  it.each([
+    ['Normal', null],
+    ['Medium', 'medium'],
+    ['Bold', 'bold'],
+  ] as const)('sends the exact segmented weight command for %s', async (label, weight) => {
+    const command = vi.fn();
+    await mount('blixis/heading', selectedOptions(command));
+    fireEvent.click(within(screen.getByRole('group', { name: 'Font weight' })).getByRole('button', { name: label }));
+    expect(command).toHaveBeenCalledWith('set-style', { weight });
+  });
+
+  it('binds the weight select and segmented buttons to the current mark value', async () => {
+    await mount('blixis/heading', {
+      reactive: false,
+      selectedText: { text: 'Selected words', marks: { style: { weight: 'medium' } } },
+      sendEditCommand: vi.fn(),
+    });
+    expect(screen.getByRole<HTMLSelectElement>('combobox', { name: 'Font weight' }).value).toBe('medium');
+    expect(screen.getByRole('button', { name: 'Medium' }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByRole('button', { name: 'Normal' }).getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it.each([
+    ['Italic', 'italic'],
+    ['Underline', 'underline'],
+    ['Strikethrough', 'strike'],
+  ] as const)('dispatches the %s mark toggle exactly and reports pressed state', async (label, mark) => {
+    const command = vi.fn();
+    await mount('blixis/heading', selectedOptions(command));
+    const button = within(screen.getByRole('group', { name: 'Text style' })).getByRole('button', { name: label });
+    expect(button.getAttribute('aria-pressed')).toBe('false');
+    fireEvent.click(button);
+    expect(command).toHaveBeenCalledWith('toggle-mark', { mark });
+  });
+
+  it('shows pressed text-style buttons from the live selection marks', async () => {
+    await mount('blixis/heading', {
+      reactive: false,
+      selectedText: { text: 'Selected words', marks: { em: true, u: true, s: true } },
+      sendEditCommand: vi.fn(),
+    });
+    for (const label of ['Italic', 'Underline', 'Strikethrough']) {
+      expect(
+        within(screen.getByRole('group', { name: 'Text style' }))
+          .getByRole('button', { name: label })
+          .getAttribute('aria-pressed'),
+      ).toBe('true');
+    }
+  });
+
+  it.each([
+    'javascript:alert(1)',
+    'data:text/html,x',
+    'vbscript:msgbox(1)',
+    '',
+    'x'.repeat(2049),
+    'https://safe.test/\u0001path',
+  ])('rejects selected text link draft %s with described alert', async (href) => {
+    const command = vi.fn();
+    await mount('blixis/heading', selectedOptions(command));
+    const url = screen.getByRole('textbox', { name: 'Selected text link URL' });
+    fireEvent.change(url, { target: { value: href } });
+    if (!href) {
+      fireEvent.click(screen.getByRole('switch', { name: 'Link' }));
+      fireEvent.blur(url);
+    } else fireEvent.blur(url);
+    expect(screen.getByRole('alert').getAttribute('id')).toBe(url.getAttribute('aria-describedby'));
+    expect(command).not.toHaveBeenCalledWith('set-link', expect.anything());
+    expect((url as HTMLInputElement).value).toBe(href);
+  });
+
+  it.each(['https://safe.test/', 'http://safe.test/', 'mailto:hello@safe.test', 'tel:+31201234567', '/relative/path'])(
+    'accepts selected text link URL %s',
+    async (href) => {
+      const command = vi.fn();
+      await mount('blixis/heading', selectedOptions(command));
+      const url = screen.getByRole('textbox', { name: 'Selected text link URL' });
+      fireEvent.change(url, { target: { value: href } });
+      fireEvent.blur(url);
+      expect(command).toHaveBeenCalledWith('set-link', { href, newTab: false });
+    },
+  );
+
+  it('prefills a selected text link and new-tab state, then removes it', async () => {
+    const command = vi.fn();
+    await mount('blixis/heading', {
+      ...selectedOptions(command),
+      selectedText: { text: 'Selected words', marks: { link: { href: 'https://safe.test', target: '_blank' } } },
+    });
+    expect(screen.getByRole<HTMLInputElement>('textbox', { name: 'Selected text link URL' }).value).toBe(
+      'https://safe.test',
+    );
+    expect(screen.getByRole<HTMLInputElement>('switch', { name: 'Link' }).checked).toBe(true);
+    expect(screen.getByRole<HTMLInputElement>('checkbox', { name: 'Open in new tab' }).checked).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Clear link' }));
+    expect(command).toHaveBeenCalledWith('clear-link', undefined);
+  });
+
+  it('sets a selected text link with newTab enabled', async () => {
+    const command = vi.fn();
+    await mount('blixis/heading', selectedOptions(command));
+    const url = screen.getByRole('textbox', { name: 'Selected text link URL' });
+    fireEvent.change(url, { target: { value: 'https://safe.test' } });
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Open in new tab' }));
+    expect(command).toHaveBeenCalledWith('set-link', { href: 'https://safe.test', newTab: true });
+  });
+
+  it.each([
+    ['Span', 'span'],
+    ['Code', 'code'],
+  ] as const)('selects inline style %s', async (label, value) => {
+    const command = vi.fn();
+    await mount('blixis/heading', selectedOptions(command));
+    fireEvent.change(screen.getByRole('combobox', { name: 'Inline style' }), { target: { value } });
+    if (value === 'code') expect(command).toHaveBeenCalledWith('toggle-mark', { mark: 'code' });
+    else expect(command).not.toHaveBeenCalled();
+    expect(screen.getByRole('option', { name: label }).getAttribute('value')).toBe(value);
+  });
+
+  it('wraps weight, marks, and links for Apply to whole element', async () => {
+    const command = vi.fn();
+    await mount('blixis/heading', selectedOptions(command));
+    fireEvent.change(screen.getByRole('combobox', { name: 'Apply to' }), { target: { value: 'whole' } });
+    fireEvent.change(screen.getByRole('combobox', { name: 'Font weight' }), { target: { value: 'bold' } });
+    expect(command).toHaveBeenCalledWith('apply-to-all', { name: 'set-style', args: { weight: 'bold' } });
+    fireEvent.click(within(screen.getByRole('group', { name: 'Text style' })).getByRole('button', { name: 'Italic' }));
+    expect(command).toHaveBeenCalledWith('apply-to-all', { name: 'toggle-mark', args: { mark: 'italic' } });
+    const url = screen.getByRole('textbox', { name: 'Selected text link URL' });
+    fireEvent.change(url, { target: { value: 'https://safe.test' } });
+    fireEvent.blur(url);
+    expect(command).toHaveBeenCalledWith('apply-to-all', {
+      name: 'set-link',
+      args: { href: 'https://safe.test', newTab: false },
+    });
+  });
+
+  it.each([
+    ['Text color', 'color-primary', { color: 'color-primary' }],
+    ['Background highlight', 'color-surface', { highlight: 'color-surface' }],
+    ['Text color', '', { color: null }],
+    ['Background highlight', '', { highlight: null }],
+  ] as const)('dispatches the selected text %s token change exactly', async (label, value, args) => {
+    const command = vi.fn();
+    await mount('blixis/heading', selectedOptions(command));
+    fireEvent.change(screen.getByRole('combobox', { name: label }), { target: { value } });
+    expect(command).toHaveBeenCalledWith('set-style', args);
+  });
+
+  it('wraps the selected text token change for Apply to whole element', async () => {
+    const command = vi.fn();
+    await mount('blixis/heading', selectedOptions(command));
+    fireEvent.change(screen.getByRole('combobox', { name: 'Apply to' }), { target: { value: 'whole' } });
+    fireEvent.change(screen.getByRole('combobox', { name: 'Background highlight' }), {
+      target: { value: 'color-surface' },
+    });
+    expect(command).toHaveBeenCalledWith('apply-to-all', {
+      name: 'set-style',
+      args: { highlight: 'color-surface' },
+    });
+  });
+
+  it.each(['en_US', 'nl_NL'] as const)('translates selected text controls in %s', async (editorLocale) => {
+    await mount('blixis/heading', {
+      ...selectedOptions(vi.fn()),
+      editorLocale,
+    });
+    const labels =
+      editorLocale === 'en_US'
+        ? [
+            'Font weight',
+            'Inline style',
+            'Select any part of a text element directly in the canvas to style it differently.',
+          ]
+        : ['Tekstgewicht', 'Inline stijl', 'Selecteer tekst rechtstreeks in het canvas om die anders op te maken.'];
+    for (const label of labels) expect(document.body.textContent).toContain(label);
+    expect(
+      screen.getByRole('textbox', {
+        name: editorLocale === 'en_US' ? 'Selected text link URL' : 'URL voor geselecteerde tekstlink',
+      }),
+    ).toBeTruthy();
+  });
+
   it.each(['width', 'height'] as const)('%s custom input is shown only while Custom is selected', async (property) => {
     await mount('blixis/heading', { tab: 'style' });
     const select = screen.getByRole<HTMLSelectElement>('combobox', { name: property === 'width' ? 'Width' : 'Height' });
@@ -259,6 +673,21 @@ describe('Inspector controls', () => {
     expect(container.querySelector('div.blx-inspector-group')).toBeTruthy();
   });
 
+  it.each(['light', 'dark'] as const)(
+    'keeps the Selected Text inspector axe clean in %s chrome',
+    async (chromeTheme) => {
+      const { container } = await mount('blixis/heading', {
+        reactive: false,
+        chromeTheme,
+        selectedText: { text: 'Selected text', marks: { strong: true, em: true } },
+      });
+      const section = screen.getByRole('region', { name: chromeTheme === 'light' ? 'Selected Text' : 'Selected Text' });
+      expect(await axeViolations(section)).toEqual([]);
+      expect(container.querySelector('.blx-format-preview strong em')?.textContent).toBe('Selected text');
+    },
+    15_000,
+  );
+
   it('collapses a section with a real button, exposes its region, and remembers state for the session', async () => {
     const user = userEvent.setup();
     const first = await mount('blixis/heading');
@@ -304,17 +733,17 @@ describe('Inspector controls', () => {
     expect(screen.getByRole('button', { name: 'Toggle Heading' }).getAttribute('aria-expanded')).toBe('true');
   });
 
-  it('makes future-only inspector placeholders disabled and associates their hints', async () => {
+  it('keeps future-only inspector placeholders disabled and exposes the inline editing preference', async () => {
     await mount('blixis/heading');
-    for (const label of ['Static Content', 'Inline Editing', 'Translation']) {
+    for (const label of ['Static Content', 'Translation']) {
       const control = screen.getByRole(label === 'Static Content' ? 'combobox' : 'checkbox', { name: label });
       expect(control.getAttribute('aria-disabled')).toBe('true');
       expect(control.getAttribute('aria-describedby')).toBeTruthy();
       expect(control.hasAttribute('disabled')).toBe(true);
     }
     expect(screen.getByText(/BWB-084/)).toBeTruthy();
-    expect(screen.getAllByText(/BWB-135/)).toHaveLength(2);
     expect(screen.getByText(/BWB-114/)).toBeTruthy();
+    expect(screen.getByRole('switch', { name: 'Inline Editing' }).getAttribute('aria-checked')).toBe('true');
   });
 
   it('renders text and textarea schema controls', async () => {
@@ -328,7 +757,7 @@ describe('Inspector controls', () => {
     const field = screen.getByRole<HTMLTextAreaElement>('textbox', { name: 'Text' });
     expect(field.value).toBe('Rich text');
     expect(field.readOnly).toBe(true);
-    expect(screen.getByText('Rich text: editing arrives with BWB-135 stage 2')).toBeTruthy();
+    expect(screen.getByText('Edit rich text directly in the canvas.')).toBeTruthy();
     const before = store.getState().document;
     fireEvent.change(field, { target: { value: 'replacement' } });
     expect(store.getState().document).toEqual(before);

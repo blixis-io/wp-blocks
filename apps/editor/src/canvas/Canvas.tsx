@@ -1,4 +1,4 @@
-import { Icon } from '@blixis/wp-editor-ui';
+import { Icon, Menu } from '@blixis/wp-editor-ui';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import type { RestClient } from '../api/types';
 import type { MessageKey } from '../i18n';
@@ -37,6 +37,7 @@ import {
 } from './resize';
 import { styleSelector } from '../inspector/style-mapping';
 import { PROPERTIES } from '@blixis/wp-style-engine';
+import { isSafeUrl } from '@blixis/wp-element-registry';
 
 const PREVIEW_MODES = [
   { id: 'light', label: 'canvas.appearance.light', icon: <Icon name="light" /> },
@@ -124,6 +125,11 @@ export interface CanvasProps extends CanvasTestOptions {
   selected?: ElementNode | null;
   editingEnabled?: boolean;
   onEditSessionChange?: (session: CanvasSession['editSession']) => void;
+  onEditSelectionChange?: (selection: CanvasSession['editSelection']) => void;
+  onTokenColorsChange?: (colors: CanvasSession['tokenColors']) => void;
+  onEditCommandApiChange?: (send: CanvasSession['sendEditCommand']) => void;
+  onEditStartApiChange?: (start: CanvasSession['startEdit']) => void;
+  inlineEditing?: boolean;
 }
 
 /** The preview iframe and its connection, error and retry states. */
@@ -135,6 +141,11 @@ export function Canvas({
   selected = null,
   editingEnabled = true,
   onEditSessionChange,
+  onEditSelectionChange,
+  onTokenColorsChange,
+  onEditCommandApiChange,
+  onEditStartApiChange,
+  inlineEditing = true,
 }: CanvasProps) {
   const { t, lang, dir } = useI18n();
   const store = useEditorStoreApi();
@@ -151,6 +162,12 @@ export function Canvas({
   const [toolbarSize, setToolbarSize] = useState({ width: 250, height: 36 });
   const [toolbar, setToolbar] = useState<HTMLDivElement | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [formatMenu, setFormatMenu] = useState<'color' | 'highlight' | 'link' | null>(null);
+  const formatPopover = useRef<HTMLDivElement>(null);
+  const linkPopover = useRef<HTMLFormElement>(null);
+  const [linkDraft, setLinkDraft] = useState('');
+  const [linkNewTab, setLinkNewTab] = useState(false);
+  const [linkError, setLinkError] = useState(false);
   const [resizePreview, setResizePreview] = useState<ResizeRect | null>(null);
   const [resizeError, setResizeError] = useState(false);
   const resizeRef = useRef<{
@@ -169,6 +186,10 @@ export function Canvas({
   const keyboardResize = useRef<{ rect: ResizeRect; timer: ReturnType<typeof setTimeout> } | null>(null);
   const menuItem = useRef<HTMLButtonElement>(null);
   const canvasRegion = useRef<HTMLDivElement>(null);
+  const attachStage = useCallback((node: HTMLDivElement | null) => {
+    setStage(node);
+    canvasRegion.current = node;
+  }, []);
   const src = canvasSrc(canvasUrl, contentLocale);
   const session = useCanvasSession({
     store,
@@ -177,12 +198,33 @@ export function Canvas({
     src,
     attempt,
     editingEnabled,
+    inlineEditing,
     ...(createEndpoint === undefined ? {} : { createEndpoint }),
     ...(debounceMs === undefined ? {} : { debounceMs }),
   });
+  const sendEditCommandRef = useRef(session.sendEditCommand);
+  const startEditRef = useRef(session.startEdit);
+  useEffect(() => {
+    sendEditCommandRef.current = session.sendEditCommand;
+    startEditRef.current = session.startEdit;
+  }, [session.sendEditCommand, session.startEdit]);
+  const stableSendEditCommand = useCallback(
+    (name: string, args?: Record<string, unknown>) => {
+      sendEditCommandRef.current(name, args);
+      frame?.focus();
+    },
+    [frame],
+  );
+  const stableStartEdit = useCallback((id: string, prop: string) => {
+    startEditRef.current(id, prop);
+  }, []);
   useEffect(() => {
     onEditSessionChange?.(session.editSession);
   }, [onEditSessionChange, session.editSession]);
+  useEffect(() => onEditSelectionChange?.(session.editSelection), [onEditSelectionChange, session.editSelection]);
+  useEffect(() => onTokenColorsChange?.(session.tokenColors), [onTokenColorsChange, session.tokenColors]);
+  useEffect(() => onEditCommandApiChange?.(stableSendEditCommand), [onEditCommandApiChange, stableSendEditCommand]);
+  useEffect(() => onEditStartApiChange?.(stableStartEdit), [onEditStartApiChange, stableStartEdit]);
   const width = FRAME_WIDTHS[viewport];
   useLayoutEffect(() => {
     if (!frame || !stage) {
@@ -331,6 +373,20 @@ export function Canvas({
   const focusToolbar = useCallback((): void => {
     toolbar?.querySelector<HTMLElement>('button:not(:disabled)')?.focus();
   }, [toolbar]);
+  const focusFormatToolbar = useCallback((): void => {
+    stage?.querySelector<HTMLElement>('[data-testid="format-toolbar"] button:not(:disabled)')?.focus();
+  }, [stage]);
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent): void => {
+      if (!session.editSession || !event.altKey || event.key !== 'F10') return;
+      event.preventDefault();
+      focusFormatToolbar();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [session.editSession, focusFormatToolbar]);
   const attachToolbar = useCallback((node: HTMLDivElement | null): void => {
     setToolbar(node);
     if (node) setToolbarSize({ width: node.offsetWidth || 250, height: node.offsetHeight || 36 });
@@ -338,6 +394,12 @@ export function Canvas({
   useEffect(() => {
     if (menuOpen) menuItem.current?.focus();
   }, [menuOpen]);
+  useEffect(() => {
+    if (formatMenu === 'color' || formatMenu === 'highlight')
+      formatPopover.current?.querySelector<HTMLButtonElement>('[role="menuitemradio"]')?.focus();
+    else if (formatMenu === 'link')
+      linkPopover.current?.querySelector<HTMLInputElement>('input:not([type="checkbox"])')?.focus();
+  }, [formatMenu]);
   useEffect(() => {
     if (!stage) return;
     const onStageKeyDown = (event: KeyboardEvent): void => {
@@ -410,10 +472,7 @@ export function Canvas({
       data-testid="canvas-stage"
       role="group"
       aria-label={t('canvas.title')}
-      ref={(node) => {
-        setStage(node);
-        canvasRegion.current = node;
-      }}
+      ref={attachStage}
       tabIndex={-1}
       onKeyDown={(event) => {
         if (event.key === 'Enter' && selected && editingEnabled && session.editSession === null) {
@@ -550,6 +609,315 @@ export function Canvas({
               {t('canvas.selection.parent')}
             </button>
           </div>
+        </div>
+      ) : null}
+      {session.editSession &&
+      session.editSelection &&
+      !session.editSelection.empty &&
+      session.editSelection.rect &&
+      overlayBox ? (
+        <div
+          className="blx-selection-toolbar blx-format-toolbar"
+          data-testid="format-toolbar"
+          role="toolbar"
+          aria-label={t('rich.toolbar')}
+          style={placeSelectionToolbar(
+            overlayBox,
+            {
+              left: overlayBox.left + session.editSelection.rect.x,
+              top: overlayBox.top + session.editSelection.rect.y,
+              width: session.editSelection.rect.w,
+              height: session.editSelection.rect.h,
+            },
+            { width: 440, height: 42 },
+            6,
+            dir,
+          )}
+          onMouseDown={(event) => {
+            event.preventDefault();
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') {
+              event.preventDefault();
+              setFormatMenu(null);
+              const trigger = event.currentTarget.querySelector<HTMLButtonElement>(
+                '.blx-format-popover-anchor > button[aria-expanded="true"]',
+              );
+              if (trigger) trigger.focus();
+              else frame?.contentWindow?.focus();
+            }
+            if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+            const buttons = [...event.currentTarget.querySelectorAll<HTMLButtonElement>('button:not(:disabled)')];
+            const index = buttons.indexOf(document.activeElement as HTMLButtonElement);
+            const next = buttons[(index + (event.key === 'ArrowRight' ? 1 : -1) + buttons.length) % buttons.length];
+            event.preventDefault();
+            next?.focus();
+          }}
+        >
+          <select
+            aria-label={t('rich.inlineStyle')}
+            value={session.editSelection.marks['code'] ? 'code' : 'span'}
+            onChange={() => {
+              session.sendEditCommand('toggle-mark', { mark: 'code' });
+            }}
+          >
+            <option value="span">{t('rich.span')}</option>
+            <option value="code">{t('rich.code')}</option>
+          </select>
+          {(['bold', 'italic', 'underline', 'strike'] as const).map((mark) => (
+            <button
+              key={mark}
+              type="button"
+              aria-label={t(`rich.${mark}`)}
+              aria-pressed={Boolean(
+                session.editSelection?.marks[
+                  mark === 'bold' ? 'strong' : mark === 'italic' ? 'em' : mark === 'underline' ? 'u' : 's'
+                ],
+              )}
+              title={mark === 'strike' ? t('rich.strike') : t(`rich.shortcut.${mark}`)}
+              onClick={() => {
+                session.sendEditCommand('toggle-mark', { mark });
+                frame?.contentWindow?.focus();
+              }}
+            >
+              {mark === 'bold' ? (
+                <Icon name="bold" />
+              ) : mark === 'italic' ? (
+                <Icon name="italic" />
+              ) : mark === 'underline' ? (
+                <Icon name="underline" />
+              ) : (
+                <Icon name="strikethrough" />
+              )}
+            </button>
+          ))}
+          {(['color', 'highlight'] as const).map((kind) => (
+            <span className="blx-format-popover-anchor" key={kind}>
+              <button
+                type="button"
+                aria-label={t(`rich.${kind}`)}
+                aria-expanded={formatMenu === kind}
+                onClick={() => {
+                  setFormatMenu(formatMenu === kind ? null : kind);
+                }}
+              >
+                <Icon name={kind === 'color' ? 'textColor' : 'highlighter'} />
+              </button>
+              {formatMenu === kind ? (
+                <div
+                  ref={formatPopover}
+                  className="blx-format-popover"
+                  role="menu"
+                  aria-label={t(`rich.${kind}`)}
+                  tabIndex={-1}
+                  onFocusCapture={(event) => {
+                    event.currentTarget
+                      .querySelectorAll<HTMLButtonElement>('[role="menuitemradio"]')
+                      .forEach((item, index) => {
+                        item.tabIndex =
+                          event.target === (item as HTMLElement)
+                            ? 0
+                            : index === 0 && !event.currentTarget.contains(document.activeElement)
+                              ? 0
+                              : -1;
+                      });
+                  }}
+                  onKeyDown={(event) => {
+                    const items = [
+                      ...event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="menuitemradio"]'),
+                    ];
+                    if (event.key === 'Escape') {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      setFormatMenu(null);
+                      event.currentTarget.parentElement
+                        ?.querySelector<HTMLButtonElement>('button[aria-expanded="true"]')
+                        ?.focus();
+                    } else if (['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
+                      event.preventDefault();
+                      const index = items.indexOf(document.activeElement as HTMLButtonElement);
+                      const horizontalForward = (event.key === 'ArrowRight') !== (dir === 'rtl');
+                      const delta =
+                        event.key === 'ArrowDown' ||
+                        (event.key === 'ArrowRight' && horizontalForward) ||
+                        (event.key === 'ArrowLeft' && !horizontalForward)
+                          ? 1
+                          : -1;
+                      const next = items[(index + delta + items.length) % items.length];
+                      items.forEach((item) => {
+                        item.tabIndex = item === next ? 0 : -1;
+                      });
+                      next?.focus();
+                    }
+                  }}
+                >
+                  {(() => {
+                    const activeStyle = session.editSelection?.marks['style'] as
+                      { color?: string; highlight?: string } | undefined;
+                    const activeValue = kind === 'color' ? activeStyle?.color : activeStyle?.highlight;
+                    const options =
+                      kind === 'color'
+                        ? ['default', 'color-primary', 'color-text', 'color-link']
+                        : ['none', 'color-primary', 'color-surface'];
+                    return options.map((token, index) => {
+                      const selected =
+                        token === (kind === 'color' ? 'default' : 'none') ? !activeValue : activeValue === token;
+                      const tokenId = token.startsWith('color-')
+                        ? token
+                        : token === 'default'
+                          ? 'color-text'
+                          : 'color-surface';
+                      const swatchColor = session.tokenColors[previewMode]?.[tokenId];
+                      return (
+                        <button
+                          type="button"
+                          key={token}
+                          role="menuitemradio"
+                          aria-checked={selected}
+                          tabIndex={index === 0 ? 0 : -1}
+                          onMouseDown={(event) => {
+                            event.preventDefault();
+                          }}
+                          onClick={() => {
+                            session.sendEditCommand(
+                              'set-style',
+                              kind === 'color'
+                                ? { color: token === 'default' ? null : token }
+                                : { highlight: token === 'none' ? null : token },
+                            );
+                            setFormatMenu(null);
+                            frame?.contentWindow?.focus();
+                          }}
+                        >
+                          <span
+                            className={`blx-format-swatch${swatchColor ? '' : ' is-unresolved'}`}
+                            aria-hidden="true"
+                            ref={(node) => {
+                              if (node) {
+                                if (swatchColor) node.style.setProperty('--swatch', swatchColor);
+                                else node.style.removeProperty('--swatch');
+                              }
+                            }}
+                            data-token={tokenId}
+                          />
+                          {selected ? <Icon name="check" size={14} /> : null}
+                          {t(
+                            (token === 'color-text'
+                              ? 'inspector.token.color.text'
+                              : token === 'color-link'
+                                ? 'inspector.token.color.link'
+                                : token === 'color-surface'
+                                  ? 'inspector.token.color.surface'
+                                  : token === 'color-primary'
+                                    ? 'inspector.token.color.primary'
+                                    : `rich.token.${token}`) as never,
+                          )}
+                        </button>
+                      );
+                    });
+                  })()}
+                </div>
+              ) : null}
+            </span>
+          ))}
+          <span className="blx-format-popover-anchor">
+            <button
+              type="button"
+              aria-label={t('rich.link')}
+              aria-expanded={formatMenu === 'link'}
+              onClick={() => {
+                const activeLink = session.editSelection?.marks['link'] as
+                  { href?: string; newTab?: boolean } | undefined;
+                setLinkDraft(activeLink?.href ?? '');
+                setLinkNewTab(activeLink?.newTab ?? false);
+                setLinkError(false);
+                setFormatMenu(formatMenu === 'link' ? null : 'link');
+              }}
+            >
+              <Icon name="link" />
+            </button>
+            {formatMenu === 'link' ? (
+              <form
+                ref={linkPopover}
+                className="blx-format-popover"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (linkDraft === '' || !isSafeUrl(linkDraft)) {
+                    setLinkError(true);
+                    return;
+                  }
+                  session.sendEditCommand('set-link', { href: linkDraft, newTab: linkNewTab });
+                  setFormatMenu(null);
+                  frame?.contentWindow?.focus();
+                }}
+              >
+                <label>
+                  {t('rich.linkUrl')}
+                  <input
+                    value={linkDraft}
+                    aria-describedby={linkError ? 'blx-rich-link-error' : undefined}
+                    onChange={(e) => {
+                      setLinkDraft(e.target.value);
+                    }}
+                    maxLength={2048}
+                  />
+                </label>
+                {linkError ? (
+                  <span id="blx-rich-link-error" role="alert">
+                    {t('inspector.error.url')}
+                  </span>
+                ) : null}
+                <label className="blx-format-new-tab">
+                  <input
+                    type="checkbox"
+                    checked={linkNewTab}
+                    onChange={(event) => {
+                      setLinkNewTab(event.target.checked);
+                    }}
+                  />
+                  {t('rich.newTab')}
+                </label>
+                <button type="submit">{t('rich.apply')}</button>
+                {session.editSelection.marks['link'] ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      session.sendEditCommand('clear-link');
+                      setFormatMenu(null);
+                      frame?.contentWindow?.focus();
+                    }}
+                  >
+                    {t('rich.remove')}
+                  </button>
+                ) : null}
+              </form>
+            ) : null}
+          </span>
+          <Menu
+            label={t('rich.more')}
+            items={[
+              {
+                label: t('rich.clear'),
+                icon: <Icon name="clearFormatting" />,
+                onSelect: () => {
+                  session.sendEditCommand('clear-marks');
+                  frame?.contentWindow?.focus();
+                },
+              },
+              {
+                label: t('rich.removeLink'),
+                icon: <Icon name="link" />,
+                disabled: !session.editSelection.marks['link'],
+                onSelect: () => {
+                  session.sendEditCommand('clear-link');
+                  frame?.contentWindow?.focus();
+                },
+              },
+            ]}
+            className="blx-format-more"
+          >
+            <Icon name="more" />
+          </Menu>
         </div>
       ) : null}
       {frame && overlayBox && selectedId !== null && session.editSession === null ? (

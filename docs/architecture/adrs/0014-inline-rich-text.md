@@ -1,6 +1,6 @@
 # ADR 0014: Inline rich text
 
-- Status: Accepted; Stage 2A editing engine implemented (toolbar remains Stage 2B)
+- Status: Accepted; Stage 2A engine and Stage 2B editor controls implemented in progress
 - Date: 2026-10-16
 - Issues: #207 (BWB-135)
 - Deciders: owner (Tiptap approval), orchestrator (stored model)
@@ -59,3 +59,5 @@ Readers continue to accept legacy strings. If rich value validation or rendering
 ## Review log
 
 - 2026-10-16 owner approved Tiptap core; orchestrator selected the portable inline JSON model and canvas runtime location for stage 2.
+- 2026-10-16 Stage 2B: editor chrome consumes the existing `edit-selection` rectangle and `edit-command` path for a floating format toolbar; it does not add an iframe message type. Inline style is limited to Span/Code, text/highlight values are token identifiers, and link input uses the shared safe URL validator. See `docs/architecture/EDITOR.md` for the UI and focus behavior.
+- 2026-10-16 Stage 2B part 2b: the Selected Text inspector exposes the complete weight, emphasis, safe-link and inline-style controls using the same `Apply to` wrapper and canvas command path as the toolbar. Selecting Normal clears the explicit weight mark; the model mapper omits null weight attributes, so no `blx-mw-normal` class is stored by this control. Canvas selection events remain the source of truth for pressed states and link prefill. The Herd browser check covers inspector-to-canvas edits, generated classes, full-element underline, selection clearing and the existing single-step undo flow.

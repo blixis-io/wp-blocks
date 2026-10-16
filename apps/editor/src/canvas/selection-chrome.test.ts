@@ -3,6 +3,26 @@ import { placeSelectionToolbar } from './selection-chrome';
 
 describe('selection toolbar placement', () => {
   const frame = { left: 100, top: 100, width: 500, height: 400 };
+  it.each(Array.from({ length: 40 }, (_, index) => index))(
+    'maintains a six pixel clearance and stays clamped for placement case %i',
+    (index) => {
+      const flipped = index >= 20;
+      const selection = {
+        left: 120 + (index % 20) * 13,
+        top: flipped ? 104 + (index % 4) : 220 + (index % 10) * 11,
+        width: 48,
+        height: 18,
+      };
+      const size = { width: 120, height: 32 };
+      const result = placeSelectionToolbar(frame, selection, size, 6);
+      if (flipped) expect(result.top).toBeGreaterThanOrEqual(selection.top + selection.height + 6);
+      else expect(result.top + size.height).toBeLessThanOrEqual(selection.top - 6);
+      expect(result.left).toBeGreaterThanOrEqual(frame.left);
+      expect(result.left + size.width).toBeLessThanOrEqual(frame.left + frame.width);
+      expect(result.top).toBeGreaterThanOrEqual(frame.top);
+      expect(result.top + size.height).toBeLessThanOrEqual(frame.top + frame.height);
+    },
+  );
   it.each(Array.from({ length: 16 }, (_, index) => ({ left: 120 + index * 17, top: 180, width: 40, height: 30 })))(
     'places toolbar above a selection when space exists (%#)',
     (selection) => {
@@ -35,10 +55,15 @@ describe('selection toolbar placement', () => {
   it.each(Array.from({ length: 8 }, (_, index) => ({ left: 140 + index * 11, top: 180, width: 180, height: 24 })))(
     'aligns the toolbar to logical inline start in RTL while clamping (%#)',
     (selection) => {
-      const result = placeSelectionToolbar(frame, selection, { width: 100, height: 30 }, 8, 'rtl');
+      const result = placeSelectionToolbar(frame, selection, { width: 100, height: 30 }, 6, 'rtl');
       expect(result.left).toBe(selection.left + selection.width - 100);
       expect(result.left).toBeGreaterThanOrEqual(frame.left);
       expect(result.left + 100).toBeLessThanOrEqual(frame.left + frame.width);
     },
   );
+  it('keeps the requested selection gap when toolbar placement flips below', () => {
+    const selection = { left: 130, top: 104, width: 20, height: 15 };
+    const result = placeSelectionToolbar(frame, selection, { width: 100, height: 30 }, 6);
+    expect(result.top).toBe(selection.top + selection.height + 6);
+  });
 });

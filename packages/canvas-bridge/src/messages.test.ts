@@ -271,6 +271,65 @@ describe('canvas -> parent messages', () => {
       reason: 'too-large',
     });
   });
+  it.each(['#abc', '#112233', '#11223344', 'rgb(1, 22, 255)', 'rgba(1,2,3,0.5)', 'hsl(200, 50%, 40%)'])(
+    'accepts resolved token color %s',
+    (value) => {
+      expect(
+        parseCanvasMessage({
+          type: 'token-colors',
+          mode: 'light',
+          revision: 2,
+          colors: [{ id: 'color-primary', value }],
+        }).ok,
+      ).toBe(true);
+    },
+  );
+  it.each([
+    'red',
+    'red;background:url(x)',
+    'url(x)',
+    '#12345',
+    'rgb(1,2,3);color:red',
+    '',
+    'expression(alert(1))',
+    'var(--secret)',
+    'currentColor',
+    'hsl(1,2,3)',
+    'rgb(1 2 3)',
+    '/*x*/#123',
+    'data:text/css,x',
+    'linear-gradient(red,blue)',
+    'inherit',
+    'initial',
+    'transparent',
+    'rgba(1,2,3,.5) trailing',
+  ])('rejects hostile or malformed resolved color %s', (value) => {
+    expect(parseCanvasMessage({ type: 'token-colors', mode: 'dark', colors: [{ id: 'color-text', value }] }).ok).toBe(
+      false,
+    );
+  });
+  it('bounds token color count, ids, values and exact message shape', () => {
+    const entry = { id: 'color-primary', value: '#123' };
+    expect(
+      parseCanvasMessage({ type: 'token-colors', mode: 'light', colors: Array.from({ length: 64 }, () => entry) }).ok,
+    ).toBe(true);
+    expect(
+      parseCanvasMessage({ type: 'token-colors', mode: 'light', colors: Array.from({ length: 65 }, () => entry) }).ok,
+    ).toBe(false);
+    expect(
+      parseCanvasMessage({ type: 'token-colors', mode: 'light', colors: [{ id: 'bad;', value: '#123' }] }).ok,
+    ).toBe(false);
+    expect(
+      parseCanvasMessage({
+        type: 'token-colors',
+        mode: 'light',
+        colors: [{ id: 'color-primary', value: '#'.padEnd(41, 'a') }],
+      }).ok,
+    ).toBe(false);
+    expect(parseCanvasMessage({ type: 'token-colors', mode: 'nope', colors: [] }).ok).toBe(false);
+    expect(parseCanvasMessage({ type: 'token-colors', mode: 'light', colors: [], injected: true }).ok).toBe(false);
+    expect(parseParentMessage({ type: 'token-colors', mode: 'light', colors: [] }).ok).toBe(false);
+  });
   it('rejects oversized edit values, invalid ids and long selected text', () => {
     expect(parseCanvasMessage({ type: 'edit-change', id: ID, prop: 'text', value: 'x'.repeat(20_001) }).ok).toBe(false);
     expect(parseCanvasMessage({ type: 'edit-change', id: 'bad]', prop: 'text', value: 'x' }).ok).toBe(false);
@@ -283,6 +342,64 @@ describe('canvas -> parent messages', () => {
     expect(
       parseCanvasMessage({ type: 'edit-selection', id: ID, empty: true, marks: { onclick: 'alert(1)' }, text: '' }).ok,
     ).toBe(false);
+  });
+
+  it.each([
+    ['collapse-selection without args', { type: 'edit-command', name: 'collapse-selection' }],
+    [
+      'apply bold to all',
+      { type: 'edit-command', name: 'apply-to-all', args: { name: 'toggle-mark', args: { mark: 'bold' } } },
+    ],
+    [
+      'apply color to all',
+      { type: 'edit-command', name: 'apply-to-all', args: { name: 'set-style', args: { color: 'color-primary' } } },
+    ],
+    [
+      'apply clear color to all',
+      { type: 'edit-command', name: 'apply-to-all', args: { name: 'set-style', args: { color: null } } },
+    ],
+  ])('accepts %s', (_label, message) => {
+    expect(parseParentMessage(message).ok).toBe(true);
+  });
+
+  it.each([
+    ['collapse-selection with payload', { type: 'edit-command', name: 'collapse-selection', args: {} }],
+    ['unknown wrapped name', { type: 'edit-command', name: 'apply-to-all', args: { name: 'collapse-selection' } }],
+    [
+      'forged wrapped name',
+      { type: 'edit-command', name: 'apply-to-all', args: { name: 'eval', args: { code: 'x' } } },
+    ],
+    ['missing nested args', { type: 'edit-command', name: 'apply-to-all', args: { name: 'set-style' } }],
+    [
+      'oversized wrapped URL',
+      {
+        type: 'edit-command',
+        name: 'apply-to-all',
+        args: { name: 'set-link', args: { href: 'https://example.test/' + 'x'.repeat(2048) } },
+      },
+    ],
+    [
+      'forged style token',
+      {
+        type: 'edit-command',
+        name: 'apply-to-all',
+        args: { name: 'set-style', args: { color: 'color-primary;display:none' } },
+      },
+    ],
+    [
+      'unknown wrapper key',
+      {
+        type: 'edit-command',
+        name: 'apply-to-all',
+        args: { name: 'toggle-mark', args: { mark: 'bold' }, extra: true },
+      },
+    ],
+    [
+      'invalid mark',
+      { type: 'edit-command', name: 'apply-to-all', args: { name: 'toggle-mark', args: { mark: 'script' } } },
+    ],
+  ])('rejects %s', (_label, message) => {
+    expect(parseParentMessage(message).ok).toBe(false);
   });
 
   const invalid: [string, unknown][] = [

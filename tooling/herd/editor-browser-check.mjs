@@ -1863,7 +1863,56 @@ try {
   await send('Input.insertText', { text: 'Rich heading text' });
   await sleep(300);
   await chord('a', 'KeyA', 65);
-  await chord('b', 'KeyB', 66);
+  await sleep(500); // the toolbar enters with a short motion; measure it at rest
+  const formatToolbar = await ev(`(() => {
+    const toolbar = document.querySelector('[data-testid="format-toolbar"]');
+    const selection = document.querySelector('main iframe').contentDocument.getSelection();
+    if (!toolbar || !selection || selection.isCollapsed) return null;
+    const toolbarRect = toolbar.getBoundingClientRect();
+    const selectionRect = selection.getRangeAt(0).getBoundingClientRect();
+    const frameRect = document.querySelector('main iframe').getBoundingClientRect();
+    return { top: toolbarRect.top, bottom: toolbarRect.bottom, selectionTop: selectionRect.top + frameRect.top, frameTop: frameRect.top, frameBottom: frameRect.bottom, pressed: toolbar.querySelector('button[aria-label="Bold"]')?.getAttribute('aria-pressed') };
+  })()`);
+  assert.equal(
+    await ev(
+      `[...document.querySelectorAll('aside[aria-label="Inspector"] [role=tab]')].find((tab) => tab.getAttribute('aria-selected') === 'true')?.textContent.trim()`,
+    ),
+    'Content',
+    'starting an edit session shows the Content tab with the Selected Text section',
+  );
+  assert.ok(formatToolbar, 'a non-empty text selection displays the formatting toolbar');
+  assert.equal(formatToolbar.pressed, 'false', 'Bold starts unpressed for unformatted selected text');
+  assert.ok(formatToolbar.bottom <= formatToolbar.selectionTop, 'the formatting toolbar is above the selection');
+  assert.ok(
+    formatToolbar.top >= formatToolbar.frameTop && formatToolbar.bottom <= formatToolbar.frameBottom,
+    'the formatting toolbar stays inside the canvas frame',
+  );
+  const boldPoint = await ev(
+    `(() => { const r = document.querySelector('[data-testid="format-toolbar"] button[aria-label="Bold"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; })()`,
+  );
+  await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: boldPoint.x, y: boldPoint.y });
+  await send('Input.dispatchMouseEvent', {
+    type: 'mousePressed',
+    x: boldPoint.x,
+    y: boldPoint.y,
+    button: 'left',
+    clickCount: 1,
+  });
+  await send('Input.dispatchMouseEvent', {
+    type: 'mouseReleased',
+    x: boldPoint.x,
+    y: boldPoint.y,
+    button: 'left',
+    clickCount: 1,
+  });
+  await sleep(300);
+  assert.equal(
+    await ev(
+      `document.querySelector('[data-testid="format-toolbar"] button[aria-label="Bold"]')?.getAttribute('aria-pressed')`,
+    ),
+    'true',
+    'clicking Bold keeps the selection and updates its pressed state',
+  );
   await sleep(600);
   assert.equal(
     await ev(
@@ -1871,6 +1920,334 @@ try {
     ),
     true,
     'the bold shortcut wraps the selection in a strong mark inside the editor',
+  );
+  // Token color and safe link controls retain the live canvas selection and only store semantic marks.
+  const colorProblemsBefore = problems.length;
+  await clickReal('[data-testid="format-toolbar"] button[aria-label="Text color"]');
+  const swatchColors = await ev(
+    `(() => [...document.querySelectorAll('[data-testid="format-toolbar"] [role="menuitemradio"] .blx-format-swatch')].map((node) => getComputedStyle(node).backgroundColor))()`,
+  );
+  assert.ok(swatchColors.length >= 3, 'resolved token swatches appear in the color popover');
+  assert.ok(
+    swatchColors.every((color) => color !== 'transparent' && color !== 'rgba(0, 0, 0, 0)'),
+    'resolved swatches have non-transparent backgrounds',
+  );
+  assert.notEqual(swatchColors[1], swatchColors[2], 'two color tokens resolve to different swatch colors');
+  await clickReal('[data-testid="format-toolbar"] [role="menuitemradio"]:nth-child(2)');
+  await clickReal('[data-testid="format-toolbar"] button[aria-label="Text color"]');
+  const clickedSwatchColor = await ev(
+    `(() => getComputedStyle(document.querySelector('[data-testid="format-toolbar"] [role="menuitemradio"]:nth-child(2) .blx-format-swatch')).backgroundColor)()`,
+  );
+  assert.ok(
+    clickedSwatchColor !== 'transparent' && clickedSwatchColor !== 'rgba(0, 0, 0, 0)',
+    'clicked token swatch retains its resolved background',
+  );
+  await sleep(500);
+  const coloredMarkup = await ev(`(() => {
+    const doc = document.querySelector('main iframe').contentDocument;
+    const heading = doc.querySelector('[data-blx-id="hero-h1"]');
+    return { marked: !!heading?.querySelector('[class^="blx-mc-"]'), inlineStyles: [...(heading?.querySelectorAll('*') ?? [])].some((node) => node.hasAttribute('style')) || heading?.hasAttribute('style') };
+  })()`);
+  assert.equal(coloredMarkup.marked, true, 'a color token renders as a generated blx-mc class in the heading');
+  assert.equal(
+    coloredMarkup.inlineStyles,
+    false,
+    'color editing adds no style attribute to the heading or descendants',
+  );
+  const colorProblems = problems
+    .slice(colorProblemsBefore)
+    .filter(
+      (entry) => !/Executing inline (script|event handler) violates the following Content Security Policy/.test(entry),
+    );
+  assert.deepEqual(colorProblems, [], 'color editing adds no console or CSP problems');
+  // Selected Text inspector controls share the canvas selection and execute through the existing edit-command bridge.
+  const contentTabPoint = await ev(
+    `(() => { const tab = [...document.querySelectorAll('aside[aria-label="Inspector"] [role="tab"]')].find((item) => item.textContent.trim() === 'Content'); const r = tab?.getBoundingClientRect(); return r ? { x:r.left+r.width/2,y:r.top+r.height/2 } : null; })()`,
+  );
+  assert.ok(contentTabPoint, 'the inspector Content tab exists during inline editing');
+  await send('Input.dispatchMouseEvent', { type: 'mouseMoved', ...contentTabPoint });
+  await send('Input.dispatchMouseEvent', { type: 'mousePressed', ...contentTabPoint, button: 'left', clickCount: 1 });
+  await send('Input.dispatchMouseEvent', { type: 'mouseReleased', ...contentTabPoint, button: 'left', clickCount: 1 });
+  await sleep(300);
+  assert.equal(
+    await ev(
+      `document.querySelector('aside[aria-label="Inspector"] [role="tab"][aria-selected="true"]')?.textContent.trim()`,
+    ),
+    'Content',
+    'Content is the active inspector tab',
+  );
+  assert.equal(
+    await ev(
+      `!!document.querySelector('#inspector-section-selected-text-panel')?.textContent.includes('Rich heading text')`,
+    ),
+    true,
+    'Selected Text contains the active canvas selection',
+  );
+  const inspectorGeometry = await ev(`(() => {
+    const inspect = (id) => {
+      const root = document.querySelector(id);
+      if (!root) return { missing: true };
+      const visible = [...root.querySelectorAll('button,select,input,label')].filter((node) => {
+        const r = node.getBoundingClientRect();
+        return r.width > 0 && r.height > 0 && getComputedStyle(node).visibility !== 'hidden';
+      });
+      const overlaps = [];
+      for (let i = 0; i < visible.length; i++) for (let j = i + 1; j < visible.length; j++) {
+        const a = visible[i].getBoundingClientRect(), b = visible[j].getBoundingClientRect();
+        const area = Math.max(0, Math.min(a.right,b.right)-Math.max(a.left,b.left)) * Math.max(0, Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top));
+        if (area > 1) overlaps.push([visible[i].tagName, visible[j].tagName, area]);
+      }
+      const selects = [...root.querySelectorAll('select')].map((node) => {
+        const option = node.selectedOptions[0];
+        const context = document.createElement('canvas').getContext('2d');
+        if (context) context.font = getComputedStyle(node).font;
+        const textWidth = option && context ? context.measureText(option.textContent ?? '').width : 0;
+        const style = getComputedStyle(node);
+        const available = node.clientWidth - parseFloat(style.paddingInlineStart) - parseFloat(style.paddingInlineEnd) - 20;
+        return { clipped: node.scrollWidth > node.clientWidth + 1, optionFits: textWidth <= available + 1 };
+      });
+      const link = root.querySelector('.blx-selected-link-field');
+      const rect = (node) => {
+        const r = node?.getBoundingClientRect();
+        return r ? { left: r.left, right: r.right, top: r.top, bottom: r.bottom } : null;
+      };
+      const linkLabels = [rect(link?.querySelector('label[for="rich-link"]')), rect(link?.querySelector('label[for="rich-new-tab"]'))];
+      const switches = [...(link?.querySelectorAll('.blx-selected-link-toggle, #rich-new-tab') ?? [])].map((node) => {
+        const r = node.getBoundingClientRect(), bounds = link.getBoundingClientRect();
+        return r.left >= bounds.left - 1 && r.right <= bounds.right + 1 && r.top >= bounds.top - 1 && r.bottom <= bounds.bottom + 1;
+      });
+      const styleButtons = [...root.querySelectorAll('.blx-rich-text-style button')].map((node) => ({
+        clipped: node.scrollWidth > node.clientWidth + 1,
+        accessibleName: node.getAttribute('aria-label'),
+      }));
+      return { overlaps, selects, overflow: root.scrollWidth > root.clientWidth + 1, linkLabels, switches, styleButtons };
+    };
+    const selected = inspect('#inspector-section-selected-text-panel');
+    const formatting = inspect('#inspector-section-text-formatting-panel');
+    const segments = [...document.querySelectorAll('#inspector-section-selected-text-panel .blx-rich-weight-segments button')].map((node) => node.getBoundingClientRect().width);
+    return { selected, formatting, segments };
+  })()`);
+  assert.deepEqual(inspectorGeometry.selected.overlaps, [], 'Selected Text visible labels and controls do not overlap');
+  assert.deepEqual(
+    inspectorGeometry.formatting.overlaps,
+    [],
+    'Text Formatting visible labels and controls do not overlap',
+  );
+  assert.equal(inspectorGeometry.selected.overflow, false, 'Selected Text has no horizontal overflow');
+  const [linkLabelRect, newTabLabelRect] = inspectorGeometry.selected.linkLabels;
+  assert.ok(linkLabelRect && newTabLabelRect, 'Selected Text link and new-tab labels are present');
+  assert.ok(
+    linkLabelRect.bottom <= newTabLabelRect.top || newTabLabelRect.bottom <= linkLabelRect.top,
+    'Link and Open in new tab labels do not overlap',
+  );
+  assert.ok(
+    inspectorGeometry.selected.switches.length === 2 && inspectorGeometry.selected.switches.every(Boolean),
+    'Selected Text link switches stay inside the link section',
+  );
+  assert.equal(
+    inspectorGeometry.selected.styleButtons.some((button) => button.clipped || !button.accessibleName),
+    false,
+    'Selected Text style labels fit or retain an accessible name',
+  );
+  assert.equal(inspectorGeometry.formatting.overflow, false, 'Text Formatting has no horizontal overflow');
+  assert.equal(
+    inspectorGeometry.selected.selects.some((select) => select.clipped || !select.optionFits),
+    false,
+    'Selected Text selects do not clip their text',
+  );
+  assert.ok(
+    inspectorGeometry.segments.length === 3 &&
+      Math.max(...inspectorGeometry.segments) - Math.min(...inspectorGeometry.segments) <= 1,
+    'font weight segments have equal widths',
+  );
+  const inspectorButtonPoint = async (label) =>
+    ev(
+      `(() => { const section = document.querySelector('#inspector-section-selected-text-panel'); const button = [...(section?.querySelectorAll('button') ?? [])].find((item) => item.textContent.trim() === ${JSON.stringify(label)} || item.getAttribute('aria-label') === ${JSON.stringify(label)}); button?.scrollIntoView({ block: 'center' }); const r = button?.getBoundingClientRect(); return r ? { x:r.left+r.width/2,y:r.top+r.height/2 } : null; })()`,
+    );
+  const italicPoint = await inspectorButtonPoint('Italic');
+  assert.ok(italicPoint, 'Selected Text exposes its Italic control');
+  await send('Input.dispatchMouseEvent', { type: 'mouseMoved', ...italicPoint });
+  await send('Input.dispatchMouseEvent', { type: 'mousePressed', ...italicPoint, button: 'left', clickCount: 1 });
+  await send('Input.dispatchMouseEvent', { type: 'mouseReleased', ...italicPoint, button: 'left', clickCount: 1 });
+  await sleep(400);
+  assert.equal(
+    await ev(`!!document.querySelector('main iframe').contentDocument.querySelector('[data-blx-id="hero-h1"] em')`),
+    true,
+    'inspector Italic creates an em mark in the canvas',
+  );
+  assert.equal(
+    await ev(
+      `document.querySelector('[data-testid="format-toolbar"] button[aria-label="Italic"]')?.getAttribute('aria-pressed')`,
+    ),
+    'true',
+    'the toolbar Italic state follows the inspector command',
+  );
+  assert.equal(
+    await ev(`document.activeElement === document.querySelector('main iframe')`),
+    true,
+    'the canvas regains focus after the inspector command',
+  );
+  const inspectorColorProblemsBefore = problems.length;
+  const inspectorColorChanged = await ev(
+    `(() => { const select = document.querySelector('#rich-color'); if (!select) return false; const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')?.set; setter?.call(select, 'color-text'); select.dispatchEvent(new Event('input', { bubbles: true })); select.dispatchEvent(new Event('change', { bubbles: true })); return true; })()`,
+  );
+  assert.equal(inspectorColorChanged, true, 'Selected Text exposes its text color token select');
+  await sleep(400);
+  const inspectorColorMarkup = await ev(
+    `(() => { const heading = document.querySelector('main iframe').contentDocument.querySelector('[data-blx-id="hero-h1"]'); return { token: !!heading?.querySelector('[class^="blx-mc-"]'), inlineStyle: !!heading?.querySelector('[style]') || heading?.hasAttribute('style') }; })()`,
+  );
+  assert.equal(inspectorColorMarkup.token, true, 'inspector color token renders a generated blx-mc class');
+  assert.equal(
+    inspectorColorMarkup.inlineStyle,
+    false,
+    'inspector color token adds no style attribute to the edited element',
+  );
+  const inspectorColorProblems = problems
+    .slice(inspectorColorProblemsBefore)
+    .filter(
+      (entry) => !/Executing inline (script|event handler) violates the following Content Security Policy/.test(entry),
+    );
+  assert.deepEqual(inspectorColorProblems, [], 'inspector color editing adds no console or CSP problems');
+  const selectedWeightBold = await ev(
+    `(() => { const select = document.querySelector('#rich-weight'); if (!select) return false; const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')?.set; setter?.call(select, 'bold'); select.dispatchEvent(new Event('input', { bubbles: true })); select.dispatchEvent(new Event('change', { bubbles: true })); return true; })()`,
+  );
+  assert.equal(selectedWeightBold, true, 'Selected Text exposes the Font weight select');
+  await sleep(400);
+  assert.equal(
+    await ev(
+      `!!document.querySelector('main iframe').contentDocument.querySelector('[data-blx-id="hero-h1"] [class~="blx-mw-bold"]')`,
+    ),
+    true,
+    'weight Bold renders the generated blx-mw-bold class',
+  );
+  const wholeAndUnderline = await ev(
+    `(() => { const apply = document.querySelector('#rich-apply-to'); if (!apply) return false; const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')?.set; setter?.call(apply, 'whole'); apply.dispatchEvent(new Event('change', { bubbles: true })); return true; })()`,
+  );
+  assert.equal(wholeAndUnderline, true, 'Apply to offers Whole element');
+  const underlinePoint = await inspectorButtonPoint('Underline');
+  assert.ok(underlinePoint, 'Selected Text exposes its Underline control');
+  await send('Input.dispatchMouseEvent', { type: 'mouseMoved', ...underlinePoint });
+  await send('Input.dispatchMouseEvent', { type: 'mousePressed', ...underlinePoint, button: 'left', clickCount: 1 });
+  await send('Input.dispatchMouseEvent', { type: 'mouseReleased', ...underlinePoint, button: 'left', clickCount: 1 });
+  await sleep(400);
+  const underlineCoverage = await ev(
+    `(() => { const root = document.querySelector('main iframe').contentDocument.querySelector('[data-blx-id="hero-h1"] [contenteditable]'); const text = root?.textContent ?? ''; const underlined = [...(root?.querySelectorAll('u') ?? [])].map((node) => node.textContent).join(''); return { text, underlined }; })()`,
+  );
+  assert.equal(
+    underlineCoverage.underlined,
+    underlineCoverage.text,
+    'Whole element underlines every character in the heading',
+  );
+  // "Clear selection" collapsed the selection above: select the heading text again so Content tab formatting has a target.
+  await ev(
+    `(() => { const root = document.querySelector('main iframe').contentDocument.querySelector('[data-blx-id="hero-h1"] [contenteditable]'); root.editor.commands.selectAll(); root.editor.commands.focus(); })()`,
+  );
+  await sleep(600);
+  const formattingUnderlinePoint = await ev(
+    `(() => { const button = [...document.querySelectorAll('#inspector-section-text-formatting-panel button')].find((item) => item.getAttribute('aria-label') === 'Underline'); button?.scrollIntoView({ block: 'center' }); const r = button?.getBoundingClientRect(); return r ? { x:r.left+r.width/2,y:r.top+r.height/2 } : null; })()`,
+  );
+  assert.ok(formattingUnderlinePoint, 'Content Text Formatting exposes its Underline button during canvas editing');
+  const hasUnderline = () =>
+    ev(
+      `!!document.querySelector('main iframe').contentDocument.querySelector('[data-blx-id="hero-h1"] [contenteditable] u')`,
+    );
+  const clickFormattingUnderline = async () => {
+    await send('Input.dispatchMouseEvent', { type: 'mouseMoved', ...formattingUnderlinePoint });
+    await send('Input.dispatchMouseEvent', {
+      type: 'mousePressed',
+      ...formattingUnderlinePoint,
+      button: 'left',
+      clickCount: 1,
+    });
+    await send('Input.dispatchMouseEvent', {
+      type: 'mouseReleased',
+      ...formattingUnderlinePoint,
+      button: 'left',
+      clickCount: 1,
+    });
+    await sleep(400);
+  };
+  // The whole heading is already underlined (previous step), so the toggle first removes the mark and then restores it.
+  await clickFormattingUnderline();
+  assert.equal(await hasUnderline(), false, 'Content Text Formatting Underline toggles an existing u mark off');
+  await clickFormattingUnderline();
+  assert.equal(
+    await hasUnderline(),
+    true,
+    'Content Text Formatting Underline creates a u mark in the canvas edit root',
+  );
+  await clickReal('#inspector-section-text-formatting-panel button[aria-label="Text Formatting link"]');
+  const formattingLinkUrl = await ev(
+    `(() => { const input = document.querySelector('#inspector-section-text-formatting-panel input[aria-label="Text Formatting link URL"]'); input?.focus(); input?.scrollIntoView({ block: 'center' }); return !!input; })()`,
+  );
+  assert.equal(formattingLinkUrl, true, 'Text Formatting link popover exposes its distinct URL field');
+  await ev(
+    `(() => { const input = document.querySelector('#inspector-section-text-formatting-panel input[aria-label="Text Formatting link URL"]'); input.value = ''; input.dispatchEvent(new Event('input', { bubbles: true })); })()`,
+  );
+  await send('Input.insertText', { text: 'https://example.test/formatting' });
+  await ev(
+    `document.querySelector('#inspector-section-text-formatting-panel button[type="submit"]')?.scrollIntoView({ block: 'center' })`,
+  );
+  await sleep(300);
+  await clickReal('#inspector-section-text-formatting-panel button[type="submit"]');
+  await sleep(400);
+  assert.equal(
+    await ev(
+      `!!document.querySelector('main iframe').contentDocument.querySelector('[data-blx-id="hero-h1"] [contenteditable] a[href="https://example.test/formatting"]')`,
+    ),
+    true,
+    'Text Formatting link Apply creates the expected anchor in the canvas edit root',
+  );
+  await clickReal('[data-testid="format-toolbar"] button[aria-label="Link"]');
+  await ev(
+    `(() => { const input = document.querySelector('[data-testid="format-toolbar"] input:not([type="checkbox"])'); input.focus(); input.value = ''; })()`,
+  );
+  await send('Input.insertText', { text: 'https://example.test/' });
+  await clickReal('[data-testid="format-toolbar"] input[type="checkbox"]');
+  await clickReal('[data-testid="format-toolbar"] button[type="submit"]');
+  await sleep(350);
+  const linked = await ev(`(() => {
+    const doc = document.querySelector('main iframe').contentDocument;
+    const root = doc.querySelector('[data-blx-id="hero-h1"] [contenteditable]');
+    const anchor = root?.querySelector('a[href="https://example.test/"][target="_blank"][rel~="noopener"]');
+    return { found: !!anchor, href: location.href, frame: document.querySelector('main iframe').src, box: anchor ? (() => { const r = anchor.getBoundingClientRect(); return { x:r.left+r.width/2,y:r.top+r.height/2 }; })() : null };
+  })()`);
+  assert.equal(linked.found, true, 'Apply creates a safe new-tab anchor with noopener in the canvas edit root');
+  const editorUrlBeforeLinkClick = await ev('location.href');
+  const iframeUrlBeforeLinkClick = await ev(`document.querySelector('main iframe').src`);
+  const iframeBox = await ev(`document.querySelector('main iframe').getBoundingClientRect().toJSON()`);
+  const linkPoint = { x: iframeBox.left + linked.box.x, y: iframeBox.top + linked.box.y };
+  await send('Input.dispatchMouseEvent', { type: 'mouseMoved', ...linkPoint });
+  await send('Input.dispatchMouseEvent', { type: 'mousePressed', ...linkPoint, button: 'left', clickCount: 1 });
+  await send('Input.dispatchMouseEvent', { type: 'mouseReleased', ...linkPoint, button: 'left', clickCount: 1 });
+  await sleep(350);
+  assert.equal(
+    await ev('location.href'),
+    editorUrlBeforeLinkClick,
+    'clicking the link leaves the editor URL unchanged',
+  );
+  assert.equal(
+    await ev(`document.querySelector('main iframe').src`),
+    iframeUrlBeforeLinkClick,
+    'clicking the link leaves the preview iframe URL unchanged',
+  );
+  const clearPoint = await ev(
+    `(() => { const button = document.querySelector('#inspector-section-selected-text-panel button.blx-inspector-clear-selection'); button?.scrollIntoView({ block: 'center' }); const r = button?.getBoundingClientRect(); return r ? { x:r.left+r.width/2,y:r.top+r.height/2 } : null; })()`,
+  );
+  assert.ok(clearPoint, 'Selected Text exposes Clear selection');
+  await send('Input.dispatchMouseEvent', { type: 'mouseMoved', ...clearPoint });
+  await send('Input.dispatchMouseEvent', { type: 'mousePressed', ...clearPoint, button: 'left', clickCount: 1 });
+  await send('Input.dispatchMouseEvent', { type: 'mouseReleased', ...clearPoint, button: 'left', clickCount: 1 });
+  await sleep(300);
+  assert.equal(
+    await ev(`document.querySelector('main iframe').contentDocument.getSelection()?.isCollapsed`),
+    true,
+    'Clear selection collapses the canvas selection',
+  );
+  assert.equal(
+    await ev(`!!document.querySelector('#inspector-section-selected-text-panel')`),
+    false,
+    'the Selected Text section disappears after clearing selection',
   );
   await ev(
     `[...document.querySelectorAll('nav[aria-label="Structure"] [role="treeitem"]')].find((row) => row.dataset.id === 'hero-txt')?.click()`,

@@ -259,6 +259,7 @@ export function startRuntime(env: RuntimeEnv = { document, window }): Runtime | 
       lastRevision = revision;
       mark(HOVER_ATTRIBUTE, hoveredId);
       send({ type: 'rendered', revision });
+      queueTokenColors(revision);
       scrollWanted = true;
       scheduleLayout();
     } catch {
@@ -280,7 +281,44 @@ export function startRuntime(env: RuntimeEnv = { document, window }): Runtime | 
         // Cross-origin theme styles cannot reveal token ids; local model conversion still enforces token id syntax.
       }
     }
+    // jsdom does not expose CSSOM rules for nonce style elements; this also keeps token discovery deterministic there.
+    pattern.lastIndex = 0;
+    let match: RegExpExecArray | null;
+    while ((match = pattern.exec(contentStyle.textContent)) !== null) if (match[1]) tokens.add(match[1]);
+    for (const element of Array.from(root.querySelectorAll('[class]'))) {
+      for (const className of (element.getAttribute('class') ?? '').split(/\s+/)) {
+        const id = className.startsWith('blx-mc-') ? className.slice('blx-mc-'.length) : '';
+        if (/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(id)) tokens.add(id);
+      }
+    }
     return tokens;
+  };
+  const queueTokenColors = (revision?: number): void => {
+    const mode = root.getAttribute('data-blx-mode');
+    if (mode !== 'light' && mode !== 'dark') return;
+    const knownIds = new Set(activeTokenIds());
+    for (const match of contentStyle.textContent.matchAll(/\.blx-mc-([a-z][a-z0-9]*(?:-[a-z0-9]+)*)/g)) {
+      const id = match[1];
+      if (id) knownIds.add(id);
+    }
+    for (const element of Array.from(root.querySelectorAll('[class]'))) {
+      for (const className of (element.getAttribute('class') ?? '').split(/\s+/)) {
+        if (className.startsWith('blx-mc-')) knownIds.add(className.slice(7));
+      }
+    }
+    const tokenIds = [...knownIds].slice(0, 64);
+    if (tokenIds.length === 0) return;
+    const colors = tokenIds.flatMap((id) => {
+      const propertyId = id.startsWith('color-') ? id.slice('color-'.length) : id;
+      const value = win.getComputedStyle(doc.documentElement).getPropertyValue(`--blx-color-${propertyId}`).trim();
+      return value.length <= 40 &&
+        /^(?:#[\da-fA-F]{3}|#[\da-fA-F]{6}(?:[\da-fA-F]{2})?|rgba?\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}(?:\s*,\s*(?:0|1|0?\.\d+))?\s*\)|hsla?\(\s*\d{1,3}(?:deg)?\s*,\s*\d{1,3}%\s*,\s*\d{1,3}%(?:\s*,\s*(?:0|1|0?\.\d+))?\s*\))$/i.test(
+          value,
+        )
+        ? [{ id, value }]
+        : [];
+    });
+    send({ type: 'token-colors', mode, colors, ...(revision === undefined ? {} : { revision }) });
   };
 
   const onMessage = (message: ParentMessage): void => {
@@ -307,6 +345,7 @@ export function startRuntime(env: RuntimeEnv = { document, window }): Runtime | 
         break;
       case 'mode':
         setAppearance(message.mode);
+        queueTokenColors(lastRevision < 0 ? undefined : lastRevision);
         break;
       case 'select':
         break;
@@ -385,7 +424,19 @@ export function startRuntime(env: RuntimeEnv = { document, window }): Runtime | 
     const editor = activeEdit?.editor;
     if (!editor) return;
     const commands = editor.commands;
+    if (name === 'apply-to-all' && typeof args?.['name'] === 'string') {
+      const previous = editor.state.selection;
+      editor.commands.selectAll();
+      runEditCommand(args['name'], args['args'] as Record<string, unknown> | undefined);
+      const max = editor.state.doc.content.size;
+      const from = Math.min(previous.from, max);
+      const to = Math.min(previous.to, max);
+      editor.commands.setTextSelection({ from, to });
+      editor.commands.focus();
+      return;
+    }
     if (name === 'select-all') commands.selectAll?.();
+    else if (name === 'collapse-selection') commands.setTextSelection?.(editor.state.selection.to);
     else if (name === 'clear-marks') commands.unsetAllMarks?.();
     else if (
       name === 'toggle-mark' &&
@@ -397,6 +448,7 @@ export function startRuntime(env: RuntimeEnv = { document, window }): Runtime | 
     else if (name === 'set-link' && typeof args?.['href'] === 'string' && isSafeCanvasUrl(args['href']))
       commands.setMark?.('link', { href: args['href'], ...(args['newTab'] === true ? { target: '_blank' } : {}) });
     else if (name === 'set-style' && args) commands.setMark?.('blxStyle', args);
+    commands.focus?.();
   };
   /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument */
 

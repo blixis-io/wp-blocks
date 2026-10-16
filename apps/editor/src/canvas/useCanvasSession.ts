@@ -71,6 +71,7 @@ const INITIAL: Snapshot = {
   rects: [],
   scroll: { x: 0, y: 0 },
 };
+const EMPTY_TOKEN_COLORS: CanvasSession['tokenColors'] = Object.freeze({});
 
 export type CreateParentEndpoint = (options: ParentEndpointOptions) => ParentEndpoint;
 
@@ -87,6 +88,7 @@ export interface CanvasSessionOptions {
   createEndpoint?: CreateParentEndpoint;
   debounceMs?: number;
   editingEnabled?: boolean;
+  inlineEditing?: boolean;
 }
 
 export interface CanvasSession {
@@ -99,6 +101,8 @@ export interface CanvasSession {
   /** Requests a new preview now (after a failed one). */
   refresh: () => void;
   editSession: { id: string; prop: string; status: 'loading' | 'ready'; value?: string | RichText } | null;
+  editSelection: Extract<CanvasMessage, { type: 'edit-selection' }> | null;
+  tokenColors: Partial<Record<'light' | 'dark', Readonly<Record<string, string>>>>;
   startEdit: (id: string, prop: string) => void;
   endEdit: (commit: boolean) => void;
   sendEditCommand: (name: string, args?: Record<string, unknown>) => void;
@@ -116,6 +120,12 @@ export function useCanvasSession(options: CanvasSessionOptions): CanvasSession {
   // The snapshot belongs to one iframe element: a new element starts from the initial state without resetting in an effect.
   const [snapshot, setSnapshot] = useState<Snapshot>(INITIAL);
   const [editSession, setEditSession] = useState<CanvasSession['editSession']>(null);
+  const [editSelection, setEditSelection] = useState<CanvasSession['editSelection']>(null);
+  const [tokenColorSnapshot, setTokenColors] = useState<{
+    owner: HTMLIFrameElement | null;
+    values: CanvasSession['tokenColors'];
+  }>({ owner: null, values: {} });
+  const tokenColors = tokenColorSnapshot.owner === frame ? tokenColorSnapshot.values : EMPTY_TOKEN_COLORS;
   const controls = useRef<{
     start: (id: string, prop: string) => void;
     end: (commit: boolean) => void;
@@ -161,7 +171,13 @@ export function useCanvasSession(options: CanvasSessionOptions): CanvasSession {
     const registry = createCoreRegistry();
     const startEdit = (id: string, prop: string) => {
       const state = store.getState();
-      if (options.editingEnabled === false || state.document === null || editing !== null) return;
+      if (
+        options.editingEnabled === false ||
+        options.inlineEditing === false ||
+        state.document === null ||
+        editing !== null
+      )
+        return;
       const path = findPath(state.document.root, id);
       const node = path === null ? undefined : nodeAt(state.document.root, path);
       if (!node) return;
@@ -300,6 +316,7 @@ export function useCanvasSession(options: CanvasSessionOptions): CanvasSession {
           update({ problem: 'canvas' });
           break;
         case 'edit-request': {
+          if (options.inlineEditing === false) break;
           const current = store.getState().document;
           const path = current ? findPath(current.root, message.id) : null;
           const node = current && path ? nodeAt(current.root, path) : undefined;
@@ -311,6 +328,18 @@ export function useCanvasSession(options: CanvasSessionOptions): CanvasSession {
         case 'edit-ready':
           if (editing?.id === message.id && editing.prop === message.prop)
             setEditSession({ id: message.id, prop: message.prop, status: 'ready' });
+          break;
+        case 'edit-selection':
+          if (editing?.id === message.id) setEditSelection(message);
+          break;
+        case 'token-colors':
+          setTokenColors((previous) => ({
+            owner: frame,
+            values: {
+              ...(previous.owner === frame ? previous.values : {}),
+              [message.mode]: Object.fromEntries(message.colors.map(({ id, value }) => [id, value])),
+            },
+          }));
           break;
         case 'edit-change': {
           if (editing?.id !== message.id || editing.prop !== message.prop) break;
@@ -340,6 +369,7 @@ export function useCanvasSession(options: CanvasSessionOptions): CanvasSession {
             }
             editing = null;
             setEditSession(null);
+            setEditSelection(null);
             requestRects();
           }
           break;
@@ -347,6 +377,7 @@ export function useCanvasSession(options: CanvasSessionOptions): CanvasSession {
           if (editing) {
             editing = null;
             setEditSession(null);
+            setEditSelection(null);
           }
           break;
         case 'rects':
@@ -473,7 +504,7 @@ export function useCanvasSession(options: CanvasSessionOptions): CanvasSession {
       refreshRef.current = () => undefined;
       endpoint.close();
     };
-  }, [frame, store, client, src, attempt, create, debounceMs, options.editingEnabled]);
+  }, [frame, store, client, src, attempt, create, debounceMs, options.editingEnabled, options.inlineEditing]);
 
   return {
     status: current.status,
@@ -483,6 +514,8 @@ export function useCanvasSession(options: CanvasSessionOptions): CanvasSession {
     scroll: current.scroll,
     refresh,
     editSession,
+    editSelection,
+    tokenColors,
     startEdit: (id, prop) => {
       controls.current.start(id, prop);
     },

@@ -39,6 +39,7 @@ export interface ElementRect {
 export type CanvasMessage =
   | { type: 'ready' }
   | { type: 'rendered'; revision: number }
+  | { type: 'token-colors'; revision?: number; mode: PreviewMode; colors: { id: string; value: string }[] }
   | { type: 'size'; width: number; height: number }
   | { type: 'scroll'; x: number; y: number }
   | { type: 'pick'; id: string; shift: boolean; alt: boolean }
@@ -66,6 +67,14 @@ export const isElementId = (value: unknown): value is string => typeof value ===
 const isNullableId = (value: unknown): value is string | null => value === null || isElementId(value);
 const isMode = (value: unknown): value is PreviewMode => value === 'light' || value === 'dark';
 const isRevision = (value: unknown): value is number => isInt(value, 0, Number.MAX_SAFE_INTEGER);
+const isTokenId = (value: unknown): value is string =>
+  typeof value === 'string' && /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(value) && value.length <= 64;
+const isResolvedColor = (value: unknown): value is string =>
+  typeof value === 'string' &&
+  value.length <= 40 &&
+  /^(?:#[\da-fA-F]{3}|#[\da-fA-F]{6}(?:[\da-fA-F]{2})?|rgba?\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}(?:\s*,\s*(?:0|1|0?\.\d+))?\s*\)|hsla?\(\s*\d{1,3}(?:deg)?\s*,\s*\d{1,3}%\s*,\s*\d{1,3}%(?:\s*,\s*(?:0|1|0?\.\d+))?\s*\))$/i.test(
+    value,
+  );
 const isProp = (value: unknown): value is string => typeof value === 'string' && /^[a-z][A-Za-z0-9]{0,31}$/.test(value);
 const isEditValue = (value: unknown): boolean => {
   if (typeof value === 'string') return value.length <= 20_000;
@@ -132,7 +141,8 @@ function isRichMark(mark: unknown): boolean {
       Object.entries(fields).every(([key, value]) =>
         key === 'weight'
           ? ['normal', 'medium', 'bold'].includes(String(value))
-          : typeof value === 'string' && /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(value) && value.length <= 64,
+          : value === null ||
+            (typeof value === 'string' && /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(value) && value.length <= 64),
       )
     );
   }
@@ -173,7 +183,7 @@ function validEditMarks(value: unknown): value is Record<string, unknown> {
   return true;
 }
 function validEditCommand(name: string, args: unknown): boolean {
-  if (args === undefined) return ['select-all', 'clear-marks', 'clear-link'].includes(name);
+  if (args === undefined) return ['select-all', 'clear-marks', 'clear-link', 'collapse-selection'].includes(name);
   if (!args || typeof args !== 'object' || Array.isArray(args)) return false;
   const record = args as Record<string, unknown>;
   if (name === 'toggle-mark')
@@ -197,9 +207,19 @@ function validEditCommand(name: string, args: unknown): boolean {
       Object.entries(record).every(([key, val]) =>
         key === 'weight'
           ? ['normal', 'medium', 'bold'].includes(String(val))
-          : typeof val === 'string' && /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(val) && val.length <= 64,
+          : val === null ||
+            (typeof val === 'string' && /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(val) && val.length <= 64),
       )
     );
+  if (name === 'apply-to-all') {
+    const wrapped = readExact(record, ['name'], ['args']);
+    if (!wrapped || typeof wrapped['name'] !== 'string') return false;
+    const nestedName = wrapped['name'];
+    return (
+      ['toggle-mark', 'set-link', 'clear-link', 'set-style', 'clear-marks'].includes(nestedName) &&
+      validEditCommand(nestedName, wrapped['args'])
+    );
+  }
   return false;
 }
 
@@ -298,11 +318,20 @@ function parseParent(data: unknown): Parsed<ParentMessage> {
       });
     }
     case 'edit-command': {
-      const f = readExact(data, ['type', 'name', 'args']);
+      const f = readExact(data, ['type', 'name'], ['args']);
       if (
         f === null ||
         typeof f['name'] !== 'string' ||
-        !['toggle-mark', 'set-link', 'clear-link', 'set-style', 'clear-marks', 'select-all'].includes(f['name'])
+        ![
+          'toggle-mark',
+          'set-link',
+          'clear-link',
+          'set-style',
+          'clear-marks',
+          'select-all',
+          'collapse-selection',
+          'apply-to-all',
+        ].includes(f['name'])
       )
         return fail('malformed');
       if (!validEditCommand(f['name'], f['args'])) return fail('invalid-field');
@@ -359,6 +388,24 @@ function parseCanvas(data: unknown): Parsed<CanvasMessage> {
       const f = readExact(data, ['type', 'revision']);
       if (f === null) return fail('malformed');
       return isRevision(f['revision']) ? succeed({ type, revision: f['revision'] }) : fail('invalid-field');
+    }
+    case 'token-colors': {
+      const f = readExact(data, ['type', 'mode', 'colors'], ['revision']);
+      if (f === null || !isMode(f['mode']) || !Array.isArray(f['colors'])) return fail('malformed');
+      if (f['colors'].length > 64) return fail('too-large');
+      if (f['revision'] !== undefined && !isRevision(f['revision'])) return fail('invalid-field');
+      const colors: { id: string; value: string }[] = [];
+      for (const item of f['colors']) {
+        const entry = readExact(item, ['id', 'value']);
+        if (entry === null || !isTokenId(entry['id']) || !isResolvedColor(entry['value'])) return fail('invalid-field');
+        colors.push({ id: entry['id'], value: entry['value'] });
+      }
+      return succeed({
+        type,
+        mode: f['mode'],
+        colors,
+        ...(f['revision'] === undefined ? {} : { revision: f['revision'] }),
+      });
     }
     case 'size': {
       const f = readExact(data, ['type', 'width', 'height']);
