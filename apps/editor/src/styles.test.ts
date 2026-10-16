@@ -31,6 +31,8 @@ describe.each(['light', 'dark'] as const)('%s chrome contrast', (theme) => {
     ['fg-muted', 'surface-2'],
     ['fg', 'surface-hover'],
     ['fg-muted', 'surface-hover'],
+    ['fg-muted', 'surface-2'],
+    ['fg', 'surface-2'],
     ['selected-fg', 'selected'],
     ['primary-fg', 'primary'],
     ['primary-fg', 'primary-hover'],
@@ -44,10 +46,6 @@ describe.each(['light', 'dark'] as const)('%s chrome contrast', (theme) => {
     ['fg-muted', 'surface'],
     ['fg', 'surface-raised'],
     ['fg-muted', 'surface-raised'],
-    ['boxmodel-margin-label', 'boxmodel-margin'],
-    ['boxmodel-border-label', 'boxmodel-border'],
-    ['boxmodel-padding-label', 'boxmodel-padding'],
-    ['boxmodel-content-label', 'boxmodel-content'],
     ['danger', 'bg'],
     ['success', 'bg'],
     ['warning', 'bg'],
@@ -94,6 +92,59 @@ describe('selected state indicator', () => {
     const narrow = /@media \(max-width: 52rem\) \{([\s\S]*?)\n {4}\}\n/.exec(source)?.[1] ?? '';
     expect(narrow).toMatch(/overflow: auto/);
     expect(narrow).toMatch(/min-block-size: 14rem/);
+  });
+});
+
+describe('box model theme tokens and layout contract', () => {
+  it.each(['light', 'dark'] as const)('%s box model aliases retain readable value and outline roles', (theme) => {
+    const block = new RegExp(`\\[data-editor-theme='${theme}'\\]\\s*\\{([^}]*)\\}`).exec(source)?.[1] ?? '';
+    const t = tokens(theme);
+    expect(block).toMatch(/--ed-boxmodel-margin:\s*var\(--ed-surface-2\)/);
+    expect(block).toMatch(/--ed-boxmodel-outline:\s*var\(--ed-border-strong\)/);
+    expect(block).toMatch(/--ed-boxmodel-padding:\s*color-mix\(in srgb, var\(--ed-primary\) 9%, var\(--ed-surface\)\)/);
+    expect(block).toMatch(
+      /--ed-boxmodel-content:\s*color-mix\(in srgb, var\(--ed-primary\) 18%, var\(--ed-surface\)\)/,
+    );
+    expect(block).toMatch(/--ed-boxmodel-(?:margin|border|padding|content)-label:\s*var\(--ed-(?:fg|fg-muted)\)/);
+    const mix = (weight: number) => {
+      const channels = (value: string) => {
+        const hex = value.slice(1);
+        const normalized = hex.length === 3 ? hex.replace(/./g, (part) => part + part) : hex;
+        return [0, 2, 4].map((index) => Number.parseInt(normalized.slice(index, index + 2), 16));
+      };
+      const primary = channels(t['primary'] ?? '#000000');
+      const surface = channels(t['surface'] ?? '#ffffff');
+      return `#${primary
+        .map((channel, index) =>
+          Math.round(channel * weight + (surface[index] ?? 0) * (1 - weight))
+            .toString(16)
+            .padStart(2, '0'),
+        )
+        .join('')}`;
+    };
+    expect(contrastRatio(t['fg-muted'] ?? '', t['surface-2'] ?? '')).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(t['border-strong'] ?? '', t['surface-2'] ?? '')).toBeGreaterThanOrEqual(3);
+    expect(contrastRatio(t['fg'] ?? '', mix(0.09))).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(t['fg-muted'] ?? '', mix(0.18))).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(t['primary'] ?? '', mix(0.09))).toBeGreaterThanOrEqual(3);
+  });
+  it('uses no literal hex colours in box model widget rules and keeps focused geometry readable', () => {
+    const rules = source.match(/[^{}]*\.blx-box-model[^{}]*\{[^}]*\}/g)?.join('\n') ?? '';
+    expect(rules).not.toMatch(/#[\da-f]{3,8}\b/i);
+    expect(rules).toMatch(/\.blx-box-model-value input:focus\s*\{[^}]*min-inline-size:\s*52px;[^}]*font-size:\s*13px;/);
+    expect(rules).toMatch(
+      /\.blx-box-model-value input\s*\{[^}]*min-inline-size:\s*44px;[^}]*block-size:\s*24px;[^}]*font:[\s\S]*?500 12px/,
+    );
+    expect(rules).toMatch(/\.blx-box-model-diagram\s*\{[^}]*block-size:\s*228px/);
+    expect(rules).toMatch(/\.blx-box-model-layer-border\s*\{[^}]*inset:\s*32px/);
+    expect(rules).toMatch(/\.blx-box-model-layer-padding\s*\{[^}]*inset:\s*32px/);
+    expect(rules).toMatch(/\.blx-box-model-block-start\s*\{[^}]*inset-inline-start:\s*50%/);
+    expect(rules).toMatch(/\.blx-box-model-block-start\s*\{[^}]*inset-block-start:\s*4px/);
+    expect(rules).toMatch(/\.blx-box-model-inline-end\s*\{[^}]*inset-inline-end:\s*2px/);
+    expect(rules).toMatch(/\.blx-box-model-inline-start\s*\{[^}]*inset-inline-start:\s*2px/);
+    expect(rules).not.toMatch(/\.blx-box-model-caption/);
+    expect(rules).toMatch(/\.blx-box-model-content\s*\{[^}]*min-inline-size:\s*56px/);
+    expect(rules).toMatch(/\.blx-box-model-legend-dot\s*\{[^}]*inline-size:\s*8px;[^}]*block-size:\s*8px/);
   });
 });
 
