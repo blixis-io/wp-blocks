@@ -1826,6 +1826,21 @@ try {
       return result;
     })()`);
   };
+  const floating = await ev(`(() => {
+    const root = document.querySelector('.blx-editor');
+    const probe = document.createElement('div');
+    probe.innerHTML = '<div class="blx-selection-toolbar"></div><div class="blx-selection-menu"></div>';
+    root.appendChild(probe);
+    const result = [...probe.children].map((el) => getComputedStyle(el).backgroundColor);
+    probe.remove();
+    return result;
+  })()`);
+  for (const background of floating) {
+    assert.ok(
+      !/rgba\(.*, 0\)$|^transparent$/.test(background),
+      `canvas floating toolbar and menu are opaque (${background})`,
+    );
+  }
   const reduced = await readMotion('reduce');
   assert.equal(reduced.mirror, 'true', 'reduced-motion preference is mirrored on the root');
   for (const [name, value] of Object.entries(reduced).filter(([key]) => key !== 'mirror')) {

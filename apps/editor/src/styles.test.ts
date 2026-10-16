@@ -486,3 +486,11 @@ describe('editor build', () => {
     expect(readFileSync(join(a, 'editor.js.LEGAL.txt'), 'utf8')).toMatch(/@license React/);
   });
 });
+
+describe('editor token references', () => {
+  it('only references --ed-* tokens that are defined (an undefined token renders transparent)', () => {
+    const defined = new Set([...source.matchAll(/^\s*--ed-([a-z0-9-]+):/gm)].map((m) => m[1]));
+    const used = [...source.matchAll(/var\(--ed-([a-z0-9-]+)/g)].map((m) => m[1] ?? '');
+    expect([...new Set(used.filter((name) => !defined.has(name)))]).toEqual([]);
+  });
+});
