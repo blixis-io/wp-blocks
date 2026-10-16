@@ -210,6 +210,24 @@ describe('canvas availability', () => {
     expect(save).not.toHaveBeenCalled();
   });
 
+  it('commits an active inline edit before an empty-canvas pick clears selection', async () => {
+    const s = setup();
+    await ready(s);
+    const endpoint = s.endpoints.last();
+    act(() => {
+      s.store.getState().select('el-heading-1');
+    });
+    endpoint.sent.length = 0;
+    endpoint.deliver({ type: 'edit-request', id: 'el-heading-1' });
+    endpoint.deliver({ type: 'pick', id: null, shift: false, alt: false });
+    expect(endpoint.sent).toContainEqual({ type: 'edit-end', commit: true });
+    expect(s.store.getState().selectedId).toBeNull();
+    expect(s.store.getState().hoveredId).toBeNull();
+    expect(endpoint.sent.findIndex((message) => message.type === 'edit-end')).toBeLessThan(
+      endpoint.sent.findIndex((message) => message.type === 'select' && message.id === null),
+    );
+  });
+
   it('keeps the placeholder without a canvas URL or without a client', () => {
     const a = setup({ canvasUrl: null });
     expect(screen.getByText('Canvas arrives with the canvas protocol.')).toBeTruthy();
@@ -1117,6 +1135,12 @@ describe('selection and hover', () => {
     endpoint.deliver({ type: 'hover', id: null });
     expect(s.store.getState().hoveredId).toBeNull();
     expect(screen.getByTestId('inspector-selection').textContent).toContain('el-text-1');
+    endpoint.deliver({ type: 'pick', id: null, shift: false, alt: false });
+    expect(s.store.getState().selectedId).toBeNull();
+    expect(s.store.getState().hoveredId).toBeNull();
+    expect(screen.getByTestId('inspector-selection').textContent).toBe('No element selected.');
+    expect(screen.queryByTestId('selection-toolbar')).toBeNull();
+    expect(screen.queryByTestId('selection-handles')).toBeNull();
   });
 
   it('moves focus out of the iframe after a pick', async () => {

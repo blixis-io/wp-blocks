@@ -353,6 +353,7 @@ export function useCanvasSession(options: CanvasSessionOptions): CanvasSession {
           // Shift and Alt are reserved for multi-select and duplicate; ignored for now.
           if (editing && message.id !== editing.id) endEdit(true);
           store.getState().select(message.id);
+          if (message.id === null) store.getState().hover(null);
           // A click inside the live editor keeps the caret in the canvas; any other pick hands the focus back to the host.
           if (editing?.id !== message.id) releaseFocus(frame);
           break;

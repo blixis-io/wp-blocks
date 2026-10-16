@@ -44,7 +44,7 @@ export type CanvasMessage =
   | { type: 'token-colors'; revision?: number; mode: PreviewMode; colors: { id: string; value: string }[] }
   | { type: 'size'; width: number; height: number }
   | { type: 'scroll'; x: number; y: number }
-  | { type: 'pick'; id: string; shift: boolean; alt: boolean }
+  | { type: 'pick'; id: string | null; shift: boolean; alt: boolean }
   | { type: 'hover'; id: string | null }
   | { type: 'rects'; revision: number; items: ElementRect[] }
   | { type: 'error'; code: CanvasErrorCode }
@@ -445,7 +445,7 @@ function parseCanvas(data: unknown): Parsed<CanvasMessage> {
       const f = readExact(data, ['type', 'id', 'shift', 'alt']);
       if (f === null) return fail('malformed');
       const { id, shift, alt } = f;
-      if (!isElementId(id) || typeof shift !== 'boolean' || typeof alt !== 'boolean') return fail('invalid-field');
+      if (!isNullableId(id) || typeof shift !== 'boolean' || typeof alt !== 'boolean') return fail('invalid-field');
       return succeed({ type, id, shift, alt });
     }
     case 'hover': {

@@ -124,6 +124,30 @@ describe('left panel and element palette', () => {
     );
   });
 
+  it('appends to the last root container that accepts the element when nothing is selected', async () => {
+    const user = userEvent.setup();
+    const { store } = renderEditor({
+      document: makeDocument({
+        root: [el('el-section-a', 'blixis/section'), el('el-section-b', 'blixis/section')],
+        translations: { en_US: {}, fr_FR: {} },
+      }),
+    });
+    await waitFor(() => {
+      expect(store.getState().document).not.toBeNull();
+    });
+    act(() => {
+      store.getState().select(null);
+    });
+    await user.click(required(document.querySelector('[data-element-type="blixis/text"]')));
+    await waitFor(() => {
+      expect(store.getState().selectedId).toMatch(/^el-new-/);
+    });
+    const root = store.getState().document?.root ?? [];
+    const inserted = store.getState().selectedId;
+    expect(root[0]?.children.some((node) => node.id === inserted)).toBe(false);
+    expect(root[1]?.children.some((node) => node.id === inserted)).toBe(true);
+  });
+
   it('chooses sibling placement when selected cannot contain the new element and root placement for a section', async () => {
     const user = userEvent.setup();
     const { store } = renderEditor({

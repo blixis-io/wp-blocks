@@ -159,7 +159,7 @@ describe('Inspector controls', () => {
     expect(button.hasAttribute('disabled')).toBe(true);
     expect(button.getAttribute('aria-disabled')).toBe('true');
     expect(button.getAttribute('aria-describedby')).toBe('inspector-text-formatting-hint');
-    expect(screen.getByText('Double-click the text in the canvas to edit it')).toBeTruthy();
+    expect(screen.getByText('Click the text in the canvas to edit it')).toBeTruthy();
   });
 
   it('enables text formatting only for a ready edit session', async () => {
@@ -169,7 +169,7 @@ describe('Inspector controls', () => {
         .getByRole('button', { name: 'Bold' })
         .hasAttribute('disabled'),
     ).toBe(false);
-    expect(screen.getByText('Double-click the text in the canvas to edit it')).toBeTruthy();
+    expect(screen.getByText('Click the text in the canvas to edit it')).toBeTruthy();
   });
 
   it.each([
