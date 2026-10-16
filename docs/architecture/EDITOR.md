@@ -220,7 +220,7 @@ Row actions currently expose Delete through core's `remove` command. The core co
 
 ## Canvas (BWB-051)
 
-While editing, canvas content is selection-only. The trusted runtime captures interactive activation before it reaches links, controls or content handlers, reports the element pick to the editor, and leaves document scrolling available.
+While editing, canvas content is selection-only. The trusted runtime captures interactive activation before it reaches links, controls or content handlers, reports the element pick to the editor, and leaves document scrolling available. With Inline Editing enabled, a single click on an unlocked Heading or Text selects it and starts its rich-text session at the clicked plain-text offset; Shift/Alt/Meta/Ctrl clicks and drags beyond 4 px only select. Buttons retain click-to-select and double-click-to-edit. Edit offsets are optional bounded protocol fields, so older edit-start messages continue to start at the end.
 
 The canvas stage reserves a fixed-height breadcrumb bar even when nothing is selected. One stable breadcrumb navigation contains one always-mounted home button; selection changes only the ordered-list items. This keeps the home icon mounted while the selected path changes. Breadcrumbs occupy the inline-start side and the content Light/Dark radio control sits at inline-end. Its explanation appears as a tooltip and accessible description. This control changes website content appearance; editor chrome appearance remains independent.
 

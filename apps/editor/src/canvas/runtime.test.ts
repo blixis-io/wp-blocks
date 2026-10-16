@@ -690,6 +690,32 @@ describe('pointer interaction', () => {
     expect(h.sent).toEqual([{ type: 'pick', id: 'el-link-1', shift: false, alt: false }]);
   });
 
+  it('single click requests inline editing for text with the caret offset, while buttons remain selection only', () => {
+    const h = begin();
+    render(h, '<h2 data-blx-id="el-heading-1">Hello</h2><button data-blx-id="el-button-1">Go</button>');
+    const heading = need(h.root.querySelector('h2'));
+    const textNode = heading.firstChild;
+    if (!textNode) throw new Error('missing heading text node');
+    Object.defineProperty(document, 'caretPositionFromPoint', {
+      configurable: true,
+      value: () => ({ offsetNode: textNode, offset: 3, getClientRect: () => null }),
+    });
+    heading.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, clientX: 10, clientY: 10 }));
+    expect(h.sent).toContainEqual({ type: 'edit-request', id: 'el-heading-1', caret: 3 });
+    h.sent.length = 0;
+    h.root.querySelector('button')?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    expect(h.sent.some((message) => message.type === 'edit-request')).toBe(false);
+  });
+
+  it('modifier clicks select without requesting inline editing', () => {
+    const h = begin();
+    render(h, '<h2 data-blx-id="el-heading-1">Hello</h2>');
+    const heading = need(h.root.querySelector('h2'));
+    h.sent.length = 0;
+    heading.dispatchEvent(new MouseEvent('click', { bubbles: true, shiftKey: true }));
+    expect(h.sent).toEqual([{ type: 'pick', id: 'el-heading-1', shift: true, alt: false }]);
+  });
+
   it.each([
     ['dblclick', '<button data-blx-id="el-button-1">button</button>', 'button'],
     ['keyup', '<a href="/next" data-blx-id="el-link-1">link</a>', 'a'],

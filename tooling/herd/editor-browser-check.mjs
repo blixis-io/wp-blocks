@@ -475,6 +475,54 @@ try {
     'the outline shows the demo elements by type and id',
   );
   assert.equal(loaded.undo, 'true', 'undo is disabled before any command');
+  const inlineHeadingPoint = await ev(
+    `(() => { const frame=document.querySelector('main iframe'), target=frame?.contentDocument?.querySelector('[data-blx-id="hero-h1"]'), fr=frame?.getBoundingClientRect(), r=target?.getBoundingClientRect(); return fr&&r ? {x:fr.left+frame.clientLeft+r.left+r.width/2,y:fr.top+frame.clientTop+r.top+r.height/2} : null; })()`,
+  );
+  assert.ok(inlineHeadingPoint, 'demo heading has a visible canvas click point');
+  await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: inlineHeadingPoint.x, y: inlineHeadingPoint.y });
+  await send('Input.dispatchMouseEvent', {
+    type: 'mousePressed',
+    x: inlineHeadingPoint.x,
+    y: inlineHeadingPoint.y,
+    button: 'left',
+    clickCount: 1,
+  });
+  await send('Input.dispatchMouseEvent', {
+    type: 'mouseReleased',
+    x: inlineHeadingPoint.x,
+    y: inlineHeadingPoint.y,
+    button: 'left',
+    clickCount: 1,
+  });
+  await sleep(500);
+  const activeEdit = await ev(
+    `(() => { const frame=document.querySelector('main iframe'), heading=frame?.contentDocument?.querySelector('[data-blx-id="hero-h1"]'), root=heading?.querySelector('[data-blx-richtext-root]'); return { active:!!root, text:heading?.textContent ?? '' }; })()`,
+  );
+  assert.ok(activeEdit.active, 'a single CDP click starts inline editing on the demo heading');
+  await send('Input.insertText', { text: 'X' });
+  await sleep(200);
+  assert.ok(
+    await ev(
+      `document.querySelector('main iframe')?.contentDocument?.querySelector('[data-blx-id="hero-h1"]')?.textContent.includes('X')`,
+    ),
+    'typing reaches the heading after one click',
+  );
+  await press('Escape');
+  await sleep(200);
+  assert.equal(
+    await ev(
+      `!!document.querySelector('main iframe')?.contentDocument?.querySelector('[data-blx-id="hero-h1"] [data-blx-richtext-root]')`,
+    ),
+    false,
+    'Escape cancels and removes the inline editor',
+  );
+  assert.equal(
+    await ev(
+      `document.querySelector('main iframe')?.contentDocument?.querySelector('[data-blx-id="hero-h1"]')?.textContent`,
+    ),
+    activeEdit.text,
+    'Escape restores the original heading text',
+  );
   await ev(
     `[...document.querySelectorAll('nav[aria-label="Structure"] [role="treeitem"]')].find((b) => b.textContent.includes('hero-h1')).click()`,
   );
@@ -2080,6 +2128,7 @@ try {
         button: 'left',
         clickCount: count,
       });
+      await sleep(120); // a human double click: the first click already started the edit session
     }
     await sleep(2500);
   };
@@ -2552,6 +2601,9 @@ try {
     iframeUrlBeforeLinkClick,
     'clicking the link leaves the preview iframe URL unchanged',
   );
+  // Clicking inside the live editor moves the caret natively (the click does not drop focus), so select the text again.
+  await chord('a', 'KeyA', 65);
+  await sleep(500);
   const clearPoint = await ev(
     `(() => { const button = document.querySelector('#inspector-section-selected-text-panel button.blx-inspector-clear-selection'); button?.scrollIntoView({ block: 'center' }); const r = button?.getBoundingClientRect(); return r ? { x:r.left+r.width/2,y:r.top+r.height/2 } : null; })()`,
   );

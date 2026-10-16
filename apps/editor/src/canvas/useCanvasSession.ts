@@ -170,7 +170,7 @@ export function useCanvasSession(options: CanvasSessionOptions): CanvasSession {
     let editing: { id: string; prop: string; last: unknown; sessionId: string } | null = null;
     let saveAfterEditCommit = false;
     const registry = createCoreRegistry();
-    const startEdit = (id: string, prop: string) => {
+    const startEdit = (id: string, prop: string, caret?: number) => {
       const state = store.getState();
       if (
         options.editingEnabled === false ||
@@ -181,7 +181,7 @@ export function useCanvasSession(options: CanvasSessionOptions): CanvasSession {
         return;
       const path = findPath(state.document.root, id);
       const node = path === null ? undefined : nodeAt(state.document.root, path);
-      if (!node) return;
+      if (!node || node.props['locked'] === true) return;
       const definition = registry.get(node.type);
       const property = definition?.props[prop];
       if (property?.kind !== 'text' || property.classification !== 'translatable') return;
@@ -198,6 +198,7 @@ export function useCanvasSession(options: CanvasSessionOptions): CanvasSession {
         mode: node.type === 'blixis/text' ? 'inline' : 'single-line',
         locale: state.contentLocale,
         dir: directionOf(state.contentLocale),
+        ...(caret === undefined ? {} : { caret }),
       });
     };
     const endEdit = (commit: boolean) => {
@@ -318,7 +319,8 @@ export function useCanvasSession(options: CanvasSessionOptions): CanvasSession {
           // Shift and Alt are reserved for multi-select and duplicate; ignored for now.
           if (editing && message.id !== editing.id) endEdit(true);
           store.getState().select(message.id);
-          releaseFocus(frame);
+          // A click inside the live editor keeps the caret in the canvas; any other pick hands the focus back to the host.
+          if (!editing || message.id !== editing.id) releaseFocus(frame);
           break;
         case 'hover':
           store.getState().hover(message.id);
@@ -333,7 +335,7 @@ export function useCanvasSession(options: CanvasSessionOptions): CanvasSession {
           const node = current && path ? nodeAt(current.root, path) : undefined;
           store.getState().select(message.id);
           const prop = node?.type === 'blixis/button' ? 'label' : 'text';
-          startEdit(message.id, prop);
+          startEdit(message.id, prop, message.caret);
           break;
         }
         case 'edit-ready':

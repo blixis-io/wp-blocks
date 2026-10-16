@@ -108,7 +108,7 @@ function singleLineValue(value: unknown): unknown {
 export function mountRichText(
   element: HTMLElement,
   value: unknown,
-  host: RichTextHost,
+  host: RichTextHost & { caret?: number },
 ): { editor: Editor; destroy(): void } {
   const original = element.innerHTML;
   const mount = element.ownerDocument.createElement('div');
@@ -214,7 +214,22 @@ export function mountRichText(
   // The edit starts from a double click on a non-focusable element: put the caret in the editor (and focus the canvas window),
   // otherwise key events keep going to the body and typing, shortcuts and Escape do nothing.
   element.ownerDocument.defaultView?.focus();
-  editor.commands.focus('end');
+  const textLength = editor.state.doc.textBetween(0, editor.state.doc.content.size, '\n').length;
+  const caret =
+    typeof host.caret === 'number' && Number.isInteger(host.caret)
+      ? Math.max(0, Math.min(host.caret, textLength))
+      : textLength;
+  let position = 1;
+  let remaining = caret;
+  editor.state.doc.descendants((node, pos) => {
+    if (!node.isText) return true;
+    const take = Math.min(remaining, node.text?.length ?? 0);
+    position = pos + take;
+    remaining -= take;
+    return remaining > 0;
+  });
+  editor.commands.setTextSelection(Math.max(1, Math.min(position, editor.state.doc.content.size - 1)));
+  editor.commands.focus();
   let destroyed = false;
   const onCompositionEnd = (): void => {
     setTimeout(() => {
