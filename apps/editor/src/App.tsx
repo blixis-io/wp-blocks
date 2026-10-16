@@ -20,7 +20,7 @@ import { Header } from './Header';
 import { LoadStatus } from './LoadStatus';
 import { createTranslator } from './i18n';
 import { I18nProvider, useI18n } from './i18n-react';
-import { StructurePanel, ElementsPanel } from './StructurePanel';
+import { StructurePanel } from './StructurePanel';
 import { StoreProvider, useEditorStore, useEditorStoreApi, type EditorStore } from './state';
 import { Inspector } from './inspector/Inspector';
 import { readSessionStorage, writeSessionStorage } from './storage';
@@ -181,7 +181,6 @@ function Shell({
           }}
         >
           <StructurePanel editingEnabled={!locked} />
-          <ElementsPanel editingEnabled={!locked} />
         </nav>
         <main id={CANVAS_ID} tabIndex={-1} className="blx-main" aria-label={t('canvas.title')}>
           <LoadStatus />

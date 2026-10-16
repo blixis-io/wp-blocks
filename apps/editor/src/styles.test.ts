@@ -114,6 +114,14 @@ describe.each(['light', 'dark'] as const)('%s chrome contrast', (theme) => {
 });
 
 describe('selected state indicator', () => {
+  it('never outlines the programmatically focused canvas landmark or large layout regions', () => {
+    expect(source).toMatch(
+      /\.blx-main:focus,[\s\S]*?\.blx-main:focus-visible,[\s\S]*?\.blx-main\.ed-focus-ring:focus,[\s\S]*?\.blx-main\.ed-focus-ring:focus-visible\s*\{\s*outline: none;/,
+    );
+    expect(source).not.toMatch(
+      /(?:\.blx-canvas-stage|\.blx-canvas|\.blx-panel(?:-right)?|\.blx-inspector)(?::focus|\.ed-focus-ring:focus-visible)[^{]*\{[^}]*outline:/,
+    );
+  });
   it('draws a ring from --ed-selected-ring on selected toggles, not colour alone', () => {
     expect(source).toMatch(
       /aria-checked='true'\]:not\(\.ed-menu-item\),[\s\S]*aria-current='true'\]\s*\{\s*box-shadow: inset 0 0 0 2px var\(--ed-selected-ring\)/,

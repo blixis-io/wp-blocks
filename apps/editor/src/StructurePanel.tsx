@@ -8,6 +8,7 @@ import { elementLabel } from './element-label';
 import { useI18n } from './i18n-react';
 import { useEditorStore, useEditorStoreApi } from './state';
 import { ElementId } from './ElementId';
+import { readSessionStorage, writeSessionStorage } from './storage';
 
 interface Row {
   node: ElementNode;
@@ -276,6 +277,9 @@ export function StructurePanel({ editingEnabled }: { editingEnabled: boolean }) 
   const store = useEditorStoreApi();
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const [query, setQuery] = useState('');
+  const [tab, setTab] = useState(() =>
+    readSessionStorage('blixis-left-tab') === 'elements' ? 'elements' : 'structure',
+  );
   const treeRef = useRef<HTMLDivElement>(null);
   const expanded = useMemo(() => new Set(expandedIds), [expandedIds]);
   const filtered = useMemo(() => filterRows(root ?? [], query, t), [root, query, t]);
@@ -373,7 +377,15 @@ export function StructurePanel({ editingEnabled }: { editingEnabled: boolean }) 
     );
   else body = <p className="blx-empty">{t('panel.structure.empty')}</p>;
   return (
-    <Tabs defaultValue="structure" className="blx-left-main">
+    <Tabs
+      value={tab}
+      onValueChange={(value) => {
+        if (value !== 'structure' && value !== 'elements') return;
+        setTab(value);
+        writeSessionStorage('blixis-left-tab', value);
+      }}
+      className="blx-left-main"
+    >
       <TabsList aria-label={t('panel.leftTabs')} className="blx-left-tabs">
         <TabsTrigger value="structure">{t('panel.structure')}</TabsTrigger>
         <TabsTrigger value="elements">{t('panel.elements')}</TabsTrigger>
@@ -572,25 +584,5 @@ function PaletteCard({
       <Icon name={elementIconName(definition.type)} size={20} />
       <span>{elementLabel(definition.type, t)}</span>
     </button>
-  );
-}
-
-export function ElementsPanel({ editingEnabled }: { editingEnabled: boolean }) {
-  const { t } = useI18n();
-  return (
-    <div className="blx-element-dock">
-      <Tabs defaultValue="add" className="blx-dock-tabs">
-        <TabsList aria-label={t('panel.dockTabs')} className="blx-left-tabs">
-          <TabsTrigger value="add">{t('panel.addElements')}</TabsTrigger>
-          <TabsTrigger value="global">{t('panel.globalStyle')}</TabsTrigger>
-        </TabsList>
-        <TabsContent value="add" className="blx-dock-content">
-          <Palette editingEnabled={editingEnabled} />
-        </TabsContent>
-        <TabsContent value="global" className="blx-dock-content">
-          <p className="blx-empty">{t('panel.globalStylePlaceholder')}</p>
-        </TabsContent>
-      </Tabs>
-    </div>
   );
 }
