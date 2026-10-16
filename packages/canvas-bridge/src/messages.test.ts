@@ -79,6 +79,17 @@ describe('parent -> canvas messages', () => {
       locale: 'en_US',
       dir: 'ltr',
     },
+    {
+      type: 'edit-start',
+      id: ID,
+      prop: 'text',
+      value: 'hi',
+      editable: true,
+      mode: 'single-line',
+      locale: 'en_US',
+      dir: 'ltr',
+      caret: 2,
+    },
     { type: 'edit-command', name: 'toggle-mark', args: { mark: 'bold' } },
     { type: 'edit-end', commit: true },
   ];
@@ -246,6 +257,7 @@ describe('canvas -> parent messages', () => {
     ...CANVAS_ERROR_CODES.map((code) => ({ type: 'error', code })),
     { type: 'pong', n: 9 },
     { type: 'edit-request', id: ID },
+    { type: 'edit-request', id: ID, caret: 4 },
     { type: 'edit-ready', id: ID, prop: 'text' },
     { type: 'edit-change', id: ID, prop: 'text', value: { v: 1, inline: [{ t: 'text', s: 'ok' }] } },
     {

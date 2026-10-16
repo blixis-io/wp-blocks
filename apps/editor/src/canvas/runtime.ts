@@ -106,12 +106,14 @@ export function startRuntime(env: RuntimeEnv = { document, window }): Runtime | 
   let closed = false;
   let observer: ResizeObserver | null = null;
   let lastSize = '';
+  let pointerDown: { x: number; y: number } | null = null;
   // The lazy bundle is loaded as a separately compiled IIFE; its narrow runtime surface is verified after the load event.
   /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument */
   let activeEdit: {
     id: string;
     prop: string;
     initial: unknown;
+    caret?: number;
     element: HTMLElement;
     editor: any;
     destroy(): void;
@@ -415,8 +417,16 @@ export function startRuntime(env: RuntimeEnv = { document, window }): Runtime | 
         finishEdit(reason);
       },
       tokens: activeTokenIds(),
+      caret: message.caret,
     });
-    activeEdit = { id: message.id, prop: message.prop, initial: message.value, element, ...session };
+    activeEdit = {
+      id: message.id,
+      prop: message.prop,
+      initial: message.value,
+      element,
+      ...(message.caret === undefined ? {} : { caret: message.caret }),
+      ...session,
+    };
     mark(HOVER_ATTRIBUTE, null);
     send({ type: 'edit-ready', id: message.id, prop: message.prop });
   };
@@ -433,6 +443,10 @@ export function startRuntime(env: RuntimeEnv = { document, window }): Runtime | 
       const to = Math.min(previous.to, max);
       editor.commands.setTextSelection({ from, to });
       editor.commands.focus();
+      return;
+    }
+    if (name === 'focus-end') {
+      commands.focus?.('end');
       return;
     }
     if (name === 'select-all') commands.selectAll?.();
@@ -494,6 +508,40 @@ export function startRuntime(env: RuntimeEnv = { document, window }): Runtime | 
     const interactive = closestElement(event.target, INTERACTIVE);
     if (interactive !== null) stop(event); // activation, navigation, submission and native controls are editor picks only
     pick(event);
+    if (pointerDown && Math.hypot(event.clientX - pointerDown.x, event.clientY - pointerDown.y) > 4) return;
+    if (event.shiftKey || event.altKey || event.metaKey || event.ctrlKey || activeEdit !== null) return;
+    const holder = closestElement(event.target, '[data-blx-id]') as HTMLElement | null;
+    const id = holder?.getAttribute('data-blx-id');
+    if (!holder || !id || !isElementId(id) || !root.contains(holder) || !/^H[1-6]$|^P$/.test(holder.tagName)) return;
+    const caret = textOffsetAtPoint(holder, event.clientX, event.clientY);
+    send({ type: 'edit-request', id, ...(caret === undefined ? {} : { caret }) });
+  };
+  const rememberPointerDown = (event: MouseEvent): void => {
+    pointerDown = { x: event.clientX, y: event.clientY };
+  };
+  const textOffsetAtPoint = (holder: HTMLElement, x: number, y: number): number | undefined => {
+    const docAny = doc as unknown as Record<string, unknown>;
+    const positionGetter = docAny['caretPositionFromPoint'];
+    const rangeGetter = docAny['caretRangeFromPoint'];
+    const position =
+      typeof positionGetter === 'function'
+        ? (positionGetter.call(doc, x, y) as { offsetNode: Node; offset: number } | null)
+        : null;
+    const range = position || typeof rangeGetter !== 'function' ? null : (rangeGetter.call(doc, x, y) as Range | null);
+    const node = position?.offsetNode ?? range?.startContainer;
+    const offset = position?.offset ?? range?.startOffset;
+    if (!node || offset === undefined || (!holder.contains(node) && node !== holder)) return undefined;
+    const before = doc.createRange();
+    try {
+      before.selectNodeContents(holder);
+      before.setEnd(
+        node,
+        Math.min(offset, node.nodeType === Node.TEXT_NODE ? (node.textContent?.length ?? 0) : node.childNodes.length),
+      );
+      return clampInt(before.toString().length, 0, 20_000);
+    } catch {
+      return undefined;
+    }
   };
   const onAuxClick = (event: MouseEvent): void => {
     if (closestElement(event.target, INTERACTIVE) !== null) stop(event);
@@ -536,6 +584,17 @@ export function startRuntime(env: RuntimeEnv = { document, window }): Runtime | 
     }
   };
   const onPointerActivation = (event: Event): void => {
+    // A press on the element's own padding (outside the inline editor) must not drop the focus out of the live session.
+    if (
+      event.type === 'mousedown' &&
+      activeEdit !== null &&
+      activeEdit.element.contains(event.target as Node) &&
+      closestElement(event.target, '[data-blx-richtext-root]') === null
+    ) {
+      event.preventDefault();
+      runEditCommand('focus-end');
+      return;
+    }
     if (
       activeEdit?.element.contains(event.target as Node) &&
       ['pointerdown', 'mousedown', 'touchstart'].includes(event.type)
@@ -549,6 +608,8 @@ export function startRuntime(env: RuntimeEnv = { document, window }): Runtime | 
   };
   const onControlAction = (event: Event): void => {
     if (event.type === 'dblclick') {
+      // A double click inside the live editor selects a word natively; restarting the session would drop the focus.
+      if (activeEdit?.element.contains(event.target as Node)) return;
       const holder = closestElement(event.target, '[data-blx-id]');
       const id = holder?.getAttribute('data-blx-id');
       if (id && isElementId(id) && root.contains(holder)) {
@@ -598,6 +659,7 @@ export function startRuntime(env: RuntimeEnv = { document, window }): Runtime | 
   };
 
   doc.addEventListener('click', onClick, true);
+  doc.addEventListener('mousedown', rememberPointerDown, true);
   doc.addEventListener('auxclick', onAuxClick, true);
   doc.addEventListener('contextmenu', onContextMenu, true);
   doc.addEventListener('submit', onSubmit, true);
@@ -620,6 +682,7 @@ export function startRuntime(env: RuntimeEnv = { document, window }): Runtime | 
     activeEdit?.destroy();
     activeEdit = null;
     doc.removeEventListener('click', onClick, true);
+    doc.removeEventListener('mousedown', rememberPointerDown, true);
     doc.removeEventListener('auxclick', onAuxClick, true);
     doc.removeEventListener('contextmenu', onContextMenu, true);
     doc.removeEventListener('submit', onSubmit, true);

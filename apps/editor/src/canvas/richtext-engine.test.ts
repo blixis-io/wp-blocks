@@ -43,6 +43,21 @@ describe('lazy canvas rich text engine', () => {
       expect(document.activeElement).toBe(root);
     });
   });
+  it('places an optional caret at the bounded plain-text offset', () => {
+    const el = document.createElement('h2');
+    el.textContent = 'Hello';
+    document.body.append(el);
+    const result = mountRichText(el, 'Hello', {
+      multiline: false,
+      caret: 2,
+      onChange: vi.fn(),
+      onEnd: vi.fn(),
+      onSelection: vi.fn(),
+    });
+    mounts.push(result);
+    expect(result.editor.state.selection.from).toBe(3);
+    expect(result.editor.state.selection.to).toBe(3);
+  });
   it('re-sends the selection state after a mark toggle so pressed states stay current', () => {
     const el = document.createElement('h2');
     el.setAttribute('data-blx-id', 'el-heading-1');

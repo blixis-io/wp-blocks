@@ -23,6 +23,7 @@ export type ParentMessage =
       mode: 'inline' | 'single-line';
       locale: string;
       dir: 'ltr' | 'rtl';
+      caret?: number;
     }
   | { type: 'edit-command'; name: string; args?: Record<string, unknown> }
   | { type: 'edit-end'; commit: boolean };
@@ -47,7 +48,7 @@ export type CanvasMessage =
   | { type: 'rects'; revision: number; items: ElementRect[] }
   | { type: 'error'; code: CanvasErrorCode }
   | { type: 'pong'; n: number }
-  | { type: 'edit-request'; id: string }
+  | { type: 'edit-request'; id: string; caret?: number }
   | { type: 'edit-ready'; id: string; prop: string }
   | { type: 'edit-change'; id: string; prop: string; value: unknown }
   | {
@@ -294,7 +295,7 @@ function parseParent(data: unknown): Parsed<ParentMessage> {
       return isInt(f['n'], 0, Number.MAX_SAFE_INTEGER) ? succeed({ type, n: f['n'] }) : fail('invalid-field');
     }
     case 'edit-start': {
-      const f = readExact(data, ['type', 'id', 'prop', 'value', 'editable', 'mode', 'locale', 'dir']);
+      const f = readExact(data, ['type', 'id', 'prop', 'value', 'editable', 'mode', 'locale', 'dir'], ['caret']);
       if (f === null) return fail('malformed');
       if (
         !isElementId(f['id']) ||
@@ -304,7 +305,8 @@ function parseParent(data: unknown): Parsed<ParentMessage> {
         !['inline', 'single-line'].includes(String(f['mode'])) ||
         typeof f['locale'] !== 'string' ||
         f['locale'].length > 64 ||
-        !['ltr', 'rtl'].includes(String(f['dir']))
+        !['ltr', 'rtl'].includes(String(f['dir'])) ||
+        (f['caret'] !== undefined && !isInt(f['caret'], 0, 20_000))
       )
         return fail('invalid-field');
       return succeed({
@@ -316,6 +318,7 @@ function parseParent(data: unknown): Parsed<ParentMessage> {
         mode: f['mode'] as 'inline' | 'single-line',
         locale: f['locale'],
         dir: f['dir'] as 'ltr' | 'rtl',
+        ...(f['caret'] === undefined ? {} : { caret: f['caret'] }),
       });
     }
     case 'edit-command': {
@@ -461,11 +464,13 @@ function parseCanvas(data: unknown): Parsed<CanvasMessage> {
       return isInt(f['n'], 0, Number.MAX_SAFE_INTEGER) ? succeed({ type, n: f['n'] }) : fail('invalid-field');
     }
     case 'edit-request': {
-      const f = readExact(data, ['type', 'id']);
+      const f = readExact(data, ['type', 'id'], ['caret']);
       return f === null
         ? fail('malformed')
         : isElementId(f['id'])
-          ? succeed({ type, id: f['id'] })
+          ? f['caret'] === undefined || isInt(f['caret'], 0, 20_000)
+            ? succeed({ type, id: f['id'], ...(f['caret'] === undefined ? {} : { caret: f['caret'] }) })
+            : fail('invalid-field')
           : fail('invalid-field');
     }
     case 'edit-ready': {
