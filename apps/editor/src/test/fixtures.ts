@@ -4,6 +4,9 @@ export function makeBootstrap(overrides: Partial<EditorBootstrap> = {}): EditorB
   return {
     version: 1,
     restRoot: `${location.origin}/wp-json/blixis/v1/`,
+    wpRestRoot: `${location.origin}/wp-json/wp/v2/`,
+    maxUploadBytes: 10 * 1024 * 1024,
+    canUpload: true,
     nonce: 'abc123',
     postId: 42,
     postTitle: 'About us',

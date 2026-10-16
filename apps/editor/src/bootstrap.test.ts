@@ -72,6 +72,7 @@ describe('parseBootstrap', () => {
     ['javascript: restRoot', { restRoot: 'javascript:alert(1)' }],
     ['data: adminUrl', { adminUrl: 'data:text/html,hi' }],
     ['cross-origin restRoot', { restRoot: 'https://evil.example/wp-json/' }],
+    ['cross-origin wpRestRoot', { wpRestRoot: 'https://evil.example/wp-json/wp/v2/' }],
     ['cross-origin viewUrl', { viewUrl: 'https://evil.example/' }],
     ['credentials in URL', { adminUrl: `http://user:pw@${location.host}/wp-admin/` }],
     ['backslash trick', { adminUrl: `${ORIGIN}\\@evil.example/` }],
@@ -91,6 +92,8 @@ describe('parseBootstrap', () => {
     ['empty enabled locales', { enabledLocales: [] }],
     ['non-boolean editingEnabled', { editingEnabled: 'yes' as unknown as boolean }],
     ['bad postType', { postType: 'Page Type!' }],
+    ['negative upload size', { maxUploadBytes: -1 }],
+    ['non-boolean upload permission', { canUpload: 'yes' as unknown as boolean }],
   ])('refuses %s', (_name, override) => {
     expect(parseBootstrap(makeBootstrap(override), ORIGIN).ok).toBe(false);
   });

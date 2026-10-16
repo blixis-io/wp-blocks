@@ -9,6 +9,7 @@ import { axeViolations } from './test/axe';
 import { makeBootstrap } from './test/fixtures';
 import { el, fakeClient, makeDocument, makeStore, ok, streamsOf } from './test/state-helpers';
 import type { EditorBootstrap } from './bootstrap';
+import type { MediaClient, MediaItem } from './api/types';
 
 beforeEach(() => {
   sessionStorage.clear();
@@ -361,6 +362,87 @@ describe('redesigned editor header', () => {
 });
 
 describe('schema driven inspector', () => {
+  const mediaFixture: MediaItem = {
+    id: 891,
+    url: `${location.origin}/uploads/picker.png`,
+    thumbUrl: `${location.origin}/uploads/picker-thumb.png`,
+    alt: 'Picker alt text',
+    title: 'Picker image',
+    width: 24,
+    height: 24,
+    mime: 'image/png',
+  };
+  const mediaClient = (): MediaClient => ({
+    get: () => Promise.resolve({ ok: true, value: mediaFixture }),
+    list: () => Promise.resolve({ ok: true, value: { items: [mediaFixture], total: 1, totalPages: 1 } }),
+    upload: () => Promise.resolve({ ok: true, value: mediaFixture }),
+  });
+
+  it('writes a chosen media item and resolved preview into the page settings draft', async () => {
+    const user = userEvent.setup();
+    const { store } = makeStore();
+    render(<EditorApp bootstrap={makeBootstrap()} store={store} mediaClient={mediaClient()} />);
+    await waitFor(() => {
+      expect(store.getState().pageSettingsStatus).toBe('ready');
+    });
+    const chooseButtons = screen.getAllByRole('button', { name: 'Choose image' });
+    const chooseFeatured = chooseButtons[0];
+    if (!chooseFeatured) throw new Error('featured media picker button is missing');
+    await user.click(chooseFeatured);
+    await user.click(await screen.findByRole('option', { name: 'Picker image' }));
+    await user.click(screen.getByRole('button', { name: 'Use image' }));
+    expect(store.getState().pageSettings?.featuredImage).toMatchObject({
+      id: mediaFixture.id,
+      url: mediaFixture.url,
+      alt: mediaFixture.alt,
+      width: 24,
+      height: 24,
+    });
+  });
+
+  it('writes a chosen Open Graph image id and resolved preview into the current locale draft', async () => {
+    const user = userEvent.setup();
+    const { store } = makeStore();
+    render(<EditorApp bootstrap={makeBootstrap()} store={store} mediaClient={mediaClient()} />);
+    await waitFor(() => {
+      expect(store.getState().pageSettingsStatus).toBe('ready');
+    });
+    await user.click(screen.getByRole('button', { name: 'Toggle Social' }));
+    const chooseButtons = screen.getAllByRole('button', { name: 'Choose image' });
+    const chooseOpenGraph = chooseButtons[1];
+    if (!chooseOpenGraph) throw new Error('Open Graph media picker button is missing');
+    await user.click(chooseOpenGraph);
+    await user.click(await screen.findByRole('option', { name: 'Picker image' }));
+    await user.click(screen.getByRole('button', { name: 'Use image' }));
+    expect(store.getState().pageSettings?.seo['fr_FR']?.ogImageId).toBe(mediaFixture.id);
+    expect(screen.getByText('Picker image')).toBeTruthy();
+  });
+
+  it('sets the Image element media prop and fills its empty translatable alt from the attachment', async () => {
+    const imageDocument = makeDocument();
+    const firstRoot = imageDocument.root[0];
+    const firstContainer = firstRoot?.children[0];
+    if (!firstContainer) throw new Error('image fixture container is missing');
+    firstContainer.children.push(el('media-target', 'blixis/image'));
+    const user = userEvent.setup();
+    const { store } = makeStore({ document: imageDocument });
+    render(<EditorApp bootstrap={makeBootstrap()} store={store} mediaClient={mediaClient()} />);
+    await waitFor(() => {
+      expect(store.getState().document).not.toBeNull();
+    });
+    act(() => {
+      store.getState().select('media-target');
+    });
+    await user.click(screen.getByRole('button', { name: 'Choose image' }));
+    await user.click(await screen.findByRole('option', { name: 'Picker image' }));
+    await user.click(screen.getByRole('button', { name: 'Use image' }));
+    const mediaElement = store
+      .getState()
+      .document?.root[0]?.children[0]?.children.find((node) => node.id === 'media-target');
+    expect(mediaElement?.props['attachmentId']).toBe(mediaFixture.id);
+    expect(store.getState().document?.translations['fr_FR']?.['media-target']?.values['alt']).toBe(mediaFixture.alt);
+  });
+
   it('provides media library guidance and alt editor, a missing-alt warning, and accessible tabs', async () => {
     const imageDocument = makeDocument();
     const section = imageDocument.root[0];

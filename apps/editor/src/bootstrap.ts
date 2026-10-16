@@ -55,6 +55,9 @@ export function createBootstrapSchema(origin: string) {
   return z.strictObject({
     version: z.literal(1),
     restRoot: url,
+    wpRestRoot: url,
+    maxUploadBytes: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
+    canUpload: z.boolean(),
     nonce: z.string().min(1).max(128),
     postId: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
     postTitle: z.string().max(2000),

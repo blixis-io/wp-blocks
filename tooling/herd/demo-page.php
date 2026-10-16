@@ -246,6 +246,13 @@ $nl      = [
 	'alt'    => 'Een blauwe kleurverloop voor de demo',
 ];
 
+// The browser checks publish and save page settings several times per run; clear the per-user rate-limit windows (transients,
+// possibly in a persistent object cache) so a run is never refused by the intentional hourly publication and page limits.
+foreach ( get_users( [ 'fields' => 'ID' ] ) as $blx_user_id ) {
+	delete_transient( 'blixis_pub_' . $blx_user_id . '_' . $page_id );
+	delete_transient( 'blxpage_' . $blx_user_id . '_' . $page_id );
+}
+
 // Next snapshot number: one above anything stored for this post.
 $numbers = array_map( static fn ( string $key ): int => (int) substr( $key, (int) strrpos( $key, '_' ) + 1 ), $db->snapshot_keys( $page_id ) );
 $n       = ( [] === $numbers ? 0 : max( $numbers ) ) + 1;

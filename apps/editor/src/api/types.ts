@@ -59,6 +59,32 @@ export type PageSettingsWrite = Partial<Pick<PageSettings, 'title' | 'slug' | 'e
   seo?: Record<string, Partial<PageSeo>>;
 };
 
+export interface MediaItem {
+  id: number;
+  url: string;
+  thumbUrl: string;
+  alt: string;
+  title: string;
+  width: number;
+  height: number;
+  mime: string;
+}
+export interface MediaPage {
+  items: MediaItem[];
+  total: number;
+  totalPages: number;
+}
+export interface MediaClient {
+  get(id: number, options?: { signal?: AbortSignal }): Promise<ApiResult<MediaItem>>;
+  list(options?: {
+    search?: string;
+    page?: number;
+    perPage?: number;
+    signal?: AbortSignal;
+  }): Promise<ApiResult<MediaPage>>;
+  upload(file: File, options?: { signal?: AbortSignal }): Promise<ApiResult<MediaItem>>;
+}
+
 /** Entry of a stream's saved history. */
 export interface RevisionEntry {
   revision: number;

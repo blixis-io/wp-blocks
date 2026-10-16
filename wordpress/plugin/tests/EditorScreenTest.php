@@ -110,7 +110,27 @@ final class EditorScreenTest extends TestCase {
 				'editorLocale'  => 'en_US',
 			]
 		);
-		$this->assertSame( [ 'version', 'restRoot', 'nonce', 'postId', 'postTitle', 'postType', 'contentLocale', 'defaultLocale', 'enabledLocales', 'editorLocale', 'pluginVersion', 'themeName', 'editingEnabled', 'seoPluginActive', 'lockReason', 'adminUrl', 'canvasUrl', 'viewUrl', 'previewUrl', 'cspNonce', 'contentLocaleExplicit' ], \array_keys( $bootstrap ) );
+		$this->assertSame( [ 'version', 'restRoot', 'wpRestRoot', 'maxUploadBytes', 'canUpload', 'nonce', 'postId', 'postTitle', 'postType', 'contentLocale', 'defaultLocale', 'enabledLocales', 'editorLocale', 'pluginVersion', 'themeName', 'editingEnabled', 'seoPluginActive', 'lockReason', 'adminUrl', 'canvasUrl', 'viewUrl', 'previewUrl', 'cspNonce', 'contentLocaleExplicit' ], \array_keys( $bootstrap ) );
+		$media = EditorBootstrap::build(
+			[
+				'wpRestRoot'     => 'https://example.test/wp-json/wp/v2/',
+				'siteUrl'        => 'https://example.test/',
+				'maxUploadBytes' => 1234,
+				'canUpload'      => true,
+			]
+		);
+		$this->assertSame( 'https://example.test/wp-json/wp/v2/', $media['wpRestRoot'] );
+		$this->assertSame( 1234, $media['maxUploadBytes'] );
+		$this->assertTrue( $media['canUpload'] );
+		$this->assertSame(
+			'',
+			EditorBootstrap::build(
+				[
+					'wpRestRoot' => 'https://evil.test/wp-json/wp/v2/',
+					'siteUrl'    => 'https://example.test/',
+				]
+			)['wpRestRoot']
+		);
 		$this->assertNull( $bootstrap['previewUrl'] );
 		$this->assertSame(
 			'https://example.test/page/?blixis_preview=nonce',

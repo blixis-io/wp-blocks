@@ -32,6 +32,12 @@ const postId = execFileSync(
 assert.match(postId, /^\d+$/, 'the demo page exists (run pnpm dev:demo)');
 
 const profile = mkdtempSync(join(tmpdir(), 'blx-editor-'));
+const mediaUploadDir = mkdtempSync(join(tmpdir(), 'blx-media-check-'));
+const mediaUploadPath = join(mediaUploadDir, 'blixis-check-image.png');
+writeFileSync(
+  mediaUploadPath,
+  Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/pXcAAAAASUVORK5CYII=', 'base64'),
+);
 const chrome = spawn(
   CHROME,
   [
@@ -2946,6 +2952,9 @@ try {
   const originalPageTitle = await ev(`document.querySelector('#page-title')?.value`);
   const originalPageSlug = await ev(`document.querySelector('#page-slug')?.value`);
   const originalSeoDescription = await ev(`document.querySelector('#seo-meta-description')?.value`);
+  const originalFeaturedId = Number(
+    (await ev(`document.querySelector('.blx-page-settings .blx-media-id-disclosure input')?.value`)) ?? 0,
+  );
   assert.ok(originalPageTitle && originalPageSlug, 'the page title and slug have loaded');
   const fillPageField = async (selector, value) => {
     await ev(`document.querySelector(${JSON.stringify(selector)})?.scrollIntoView({ block: 'center' })`);
@@ -2973,6 +2982,109 @@ try {
     await clickReal(`button[aria-label=${JSON.stringify(saveName)}]`);
     await waitForSaveState('saved');
   };
+  const openFeaturedPicker = async () => {
+    await ev(`document.querySelector('.blx-page-settings .blx-media-field')?.scrollIntoView({ block: 'center' })`);
+    const action = await ev(
+      `document.querySelector('.blx-page-settings .blx-media-field .blx-media-field-actions button')?.textContent.trim()`,
+    );
+    assert.ok(action, 'the featured image picker action is visible');
+    await clickReal('.blx-page-settings .blx-media-field .blx-media-field-actions button');
+    await sleep(500);
+  };
+  const searchMedia = async (query) => {
+    await ev(`document.querySelector('#blx-media-search')?.scrollIntoView({ block: 'center' })`);
+    await clickReal('#blx-media-search');
+    await ev(`document.querySelector('#blx-media-search')?.select()`);
+    if (query) await send('Input.insertText', { text: query });
+    else await press('Backspace');
+    await sleep(1800); // debounce plus the list request
+  };
+  const selectFirstMedia = async () => {
+    const selector = '.blx-media-card';
+    const count = await ev(`document.querySelectorAll(${JSON.stringify(selector)}).length`);
+    if (count < 1) return false;
+    await ev(`document.querySelector(${JSON.stringify(selector)})?.scrollIntoView({ block: 'center' })`);
+    await clickReal(selector);
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      if ((await ev(`document.querySelector(${JSON.stringify(selector)})?.getAttribute('aria-selected')`)) === 'true')
+        break;
+      await sleep(200);
+    }
+    assert.equal(
+      await ev(`document.querySelector(${JSON.stringify(selector)})?.getAttribute('aria-selected')`),
+      'true',
+      `the existing media card is selected (${JSON.stringify(
+        await ev(
+          `(() => { const c=[...document.querySelectorAll('.blx-media-card')]; const r=c[0]?.getBoundingClientRect(); const top=r?document.elementFromPoint(r.x+r.width/2,r.y+r.height/2):null; return { n:c.length, sel:c.map(x=>x.getAttribute('aria-selected')), top: top&&(top.tagName+'.'+top.className), search: document.querySelector('#blx-media-search')?.value, dialogs: document.querySelectorAll('[role=dialog]').length, text: document.querySelector('[role=dialog]')?.textContent.slice(0,160) }; })()`,
+        ),
+      )})`,
+    );
+    await clickReal('button.ed-button-primary');
+    await sleep(500);
+    return true;
+  };
+  await openFeaturedPicker();
+  await searchMedia('image');
+  let hasExistingMedia = await selectFirstMedia();
+  if (!hasExistingMedia) {
+    await searchMedia('');
+    hasExistingMedia = await selectFirstMedia();
+  }
+  if (hasExistingMedia) await openFeaturedPicker();
+  await searchMedia('blixis-check-image'); // WordPress searches the attachment title (the file name without its extension)
+  const reusable = await ev(`document.querySelectorAll('.blx-media-card').length`);
+  if (reusable > 0) {
+    await selectFirstMedia();
+  } else {
+    await searchMedia('');
+    const uploadInput = await send('DOM.getDocument', { depth: -1, pierce: true });
+    const inputNode = await send('DOM.querySelector', {
+      nodeId: uploadInput.result.root.nodeId,
+      selector: 'input[aria-label="Upload image"]',
+    });
+    assert.ok(inputNode.result.nodeId, 'the real media upload input exists');
+    await send('DOM.setFileInputFiles', { files: [mediaUploadPath], nodeId: inputNode.result.nodeId });
+    let selectedUpload = '';
+    for (let attempt = 0; attempt < 50 && !/blixis-check-image/.test(selectedUpload); attempt += 1) {
+      await sleep(300);
+      selectedUpload = await ev(
+        `(() => { const selected=document.querySelector('.blx-media-card[aria-selected="true"]'); return selected?.querySelector('img')?.getAttribute('src') ?? ''; })()`,
+      );
+    }
+    assert.match(
+      selectedUpload,
+      /blixis-check-image/,
+      `the generated upload appears and is selected (${JSON.stringify(
+        await ev(
+          `(() => ({ cards: [...document.querySelectorAll('.blx-media-card')].map((c) => (c.getAttribute('aria-selected') ?? '') + ':' + (c.querySelector('img')?.getAttribute('src') ?? '').slice(-40)), status: [...document.querySelectorAll('[role=dialog] [role=status],[role=dialog] [role=alert],[role=dialog] .blx-media-upload')].map((e) => e.textContent.slice(0, 120)), dialog: document.querySelector('[role=dialog]')?.textContent.slice(0, 260) }))()`,
+        ),
+      )})`,
+    );
+    await clickReal('button.ed-button-primary');
+    await sleep(500);
+  }
+  const featuredIdBeforeReload = Number(
+    await ev(`document.querySelector('.blx-page-settings .blx-media-id-disclosure input')?.value`),
+  );
+  assert.ok(featuredIdBeforeReload > 0, 'a chosen featured image has an attachment ID');
+  await savePageSettings();
+  await nav(editorUrl, 2500);
+  await openPagePanel();
+  assert.equal(
+    Number(await ev(`document.querySelector('.blx-page-settings .blx-media-id-disclosure input')?.value`)),
+    featuredIdBeforeReload,
+    'the featured image persisted after reload',
+  );
+  await clickReal('.blx-page-settings .blx-media-field-actions button:last-child');
+  await savePageSettings();
+  if (originalFeaturedId > 0) {
+    await ev(`document.querySelector('.blx-page-settings .blx-media-id-disclosure summary')?.click()`);
+    const idInput = '.blx-page-settings .blx-media-id-disclosure input';
+    await clickReal(idInput);
+    await ev(`document.querySelector(${JSON.stringify(idInput)})?.select()`);
+    await send('Input.insertText', { text: String(originalFeaturedId) });
+    await savePageSettings();
+  }
   const priorRestore = restoreDemoHeading;
   restoreDemoHeading = async () => {
     await priorRestore?.();
@@ -2983,6 +3095,24 @@ try {
       await fillPageField('#page-slug', originalPageSlug);
       await fillPageField('#seo-meta-description', originalSeoDescription ?? '');
       await savePageSettings();
+      const currentFeaturedId = Number(
+        (await ev(`document.querySelector('.blx-page-settings .blx-media-id-disclosure input')?.value`)) ?? 0,
+      );
+      if (currentFeaturedId !== originalFeaturedId) {
+        const removeButton = '.blx-page-settings .blx-media-field-actions button:last-child';
+        if (await ev(`!!document.querySelector(${JSON.stringify(removeButton)})`)) {
+          await clickReal(removeButton);
+        }
+        if (originalFeaturedId > 0) {
+          const disclosure = '.blx-page-settings .blx-media-id-disclosure summary';
+          await clickReal(disclosure);
+          const idInput = '.blx-page-settings .blx-media-id-disclosure input';
+          await clickReal(idInput);
+          await ev(`document.querySelector(${JSON.stringify(idInput)})?.select()`);
+          await send('Input.insertText', { text: String(originalFeaturedId) });
+        }
+        await savePageSettings();
+      }
     } catch (error) {
       console.error(`Best effort page settings restoration failed: ${error.message}`);
     }
@@ -3091,4 +3221,5 @@ try {
   chrome.kill();
   await exited;
   rmSync(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+  rmSync(mediaUploadDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
 }

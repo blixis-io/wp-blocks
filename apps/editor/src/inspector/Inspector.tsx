@@ -16,6 +16,7 @@ import { PROPERTIES } from '@blixis/wp-style-engine';
 import { BoxModelControl } from './controls/box-model-control';
 import { PageSettingsPanel } from './PageSettingsPanel';
 import { richToPlain, type RichText } from '@blixis/wp-core';
+import type { MediaItem } from '../api/types';
 
 type Tab = InspectorTab;
 
@@ -126,6 +127,14 @@ function PropField({
       setDraft(next);
     },
     onCommit: dispatch,
+    onMediaPick: (item: MediaItem) => {
+      if (element.type === 'blixis/image' && name === 'attachmentId') {
+        const translatedAlt = store.getState().document?.translations[locale]?.[element.id]?.values['alt'];
+        const currentAlt = typeof translatedAlt === 'string' ? translatedAlt : element.props['alt'];
+        if (!currentAlt)
+          store.getState().dispatch({ type: 'set-translation', locale, elementId: element.id, set: { alt: item.alt } });
+      }
+    },
     onFocus: () => {
       setInteraction((current) => ({ ...current, focused: true }));
     },
@@ -202,11 +211,6 @@ function PropField({
       {isRichValue ? (
         <p id={`${fieldId}-rich-hint`} className="blx-inspector-hint">
           {t('inspector.richText.later')}
-        </p>
-      ) : null}
-      {definition.kind === 'media' ? (
-        <p id={`${fieldId}-hint`} className="blx-inspector-hint">
-          {t('inspector.media.later')}
         </p>
       ) : null}
       {error ? (
