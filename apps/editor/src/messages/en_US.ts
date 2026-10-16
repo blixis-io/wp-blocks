@@ -245,7 +245,7 @@ export const en_US = {
   'inspector.boxModel.padding': 'Padding',
   'inspector.boxModel.auto': 'Auto',
   'inspector.boxModel.inherited': 'Inherited',
-  'inspector.boxModel.unit': '{layer} unit',
+  'inspector.boxModel.unit': 'Unit for {layer} {side}',
   'inspector.boxModel.reset': 'Reset {layer} {side} to inherited',
   'inspector.section.effects': 'Border & Effects',
   'inspector.viewport.base': 'Desktop styles',

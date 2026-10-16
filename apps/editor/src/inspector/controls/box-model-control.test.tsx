@@ -61,11 +61,29 @@ describe('box model inspector widget', () => {
     const border = margin?.querySelector('.blx-box-model-layer-border');
     const padding = border?.querySelector('.blx-box-model-layer-padding');
     expect(padding?.querySelector('.blx-box-model-content')).toBeTruthy();
+    expect(margin?.getAttribute('aria-label')).toBe('Margin');
+    expect(border?.getAttribute('aria-label')).toBe('Border');
+    expect(padding?.getAttribute('aria-label')).toBe('Padding');
+    expect(container.querySelectorAll('.blx-box-model-caption')).toHaveLength(0);
+    expect(container.querySelectorAll('.blx-box-model-legend-dot')).toHaveLength(3);
+    expect(container.querySelector('.blx-box-model-legend')?.textContent).toContain('Border');
     expect(container.textContent).not.toContain('Position');
   });
-  it('reflects the current width and height declarations in the content box', async () => {
+  it('keeps link, unit and reset controls in the row below the diagram', async () => {
+    const { container } = await setup();
+    const diagram = container.querySelector('.blx-box-model-diagram');
+    const controls = container.querySelector('.blx-box-model-controls');
+    expect(controls).toBeTruthy();
+    expect(diagram?.contains(controls)).toBe(false);
+    expect(controls?.querySelectorAll('button[aria-pressed]')).toHaveLength(2);
+    expect(controls?.querySelector('select')?.disabled).toBe(true);
+    expect(controls?.querySelector('button:not([aria-pressed])')?.hasAttribute('disabled')).toBe(true);
+  });
+  it('shows the width and height of the element style rules, and auto when they are not set', async () => {
     const { container } = await setup('en_US', 'light', [{ declarations: { width: '240px', height: '80px' } }]);
     expect(container.querySelector('.blx-box-model-content')?.textContent).toBe('240px × 80px');
+    const plain = await setup('en_US', 'light', []);
+    expect(plain.container.querySelector('.blx-box-model-content')?.textContent).toBe('Auto × Auto');
   });
   it('keeps the logical keyboard order top, end, bottom, start from outer to inner', async () => {
     await setup();
@@ -220,7 +238,7 @@ describe('box model inspector widget', () => {
     await setup();
     fireEvent.focus(screen.getByRole('spinbutton', { name: 'Padding Top' }));
     expect(
-      within(screen.getByRole('combobox', { name: 'Padding unit' }))
+      within(screen.getByRole('combobox', { name: 'Unit for Padding Top' }))
         .getAllByRole('option')
         .map((o) => o.textContent),
     ).toEqual(['px', 'rem', 'em', '%']);
@@ -229,7 +247,7 @@ describe('box model inspector widget', () => {
     const { store } = await setup();
     const input = screen.getByRole('spinbutton', { name: 'Padding Top' });
     fireEvent.focus(input);
-    const unit = screen.getByRole('combobox', { name: 'Padding unit' });
+    const unit = screen.getByRole('combobox', { name: 'Unit for Padding Top' });
     fireEvent.blur(input, { relatedTarget: unit });
     expect(unit.isConnected).toBe(true);
     fireEvent.change(unit, { target: { value: 'rem' } });

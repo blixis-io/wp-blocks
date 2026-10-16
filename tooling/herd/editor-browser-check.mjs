@@ -567,14 +567,30 @@ try {
     const border = margin?.querySelector(':scope > .blx-box-model-layer-border');
     const padding = border?.querySelector(':scope > .blx-box-model-layer-padding');
     const content = padding?.querySelector(':scope > .blx-box-model-content');
+    const focusedBoxInput = diagram?.querySelector('.blx-box-model-layer-padding .blx-box-model-block-start input');
+    focusedBoxInput?.focus();
     const boxRects = [margin, border, padding, content].map((item) => {
       const rect = item?.getBoundingClientRect();
-      return rect ? { x: rect.x, y: rect.y, right: rect.right, bottom: rect.bottom } : null;
+      return rect ? { x: rect.x, y: rect.y, left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom, width: rect.width, height: rect.height } : null;
     });
     const sideRects = ['block-start', 'inline-end', 'block-end', 'inline-start'].map((side) => {
-      const rect = diagram?.querySelector('.blx-box-model-layer-padding .blx-box-model-' + side + ' input')?.getBoundingClientRect();
-      return rect ? { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 } : null;
+      const value = diagram?.querySelector('.blx-box-model-layer-padding .blx-box-model-' + side);
+      const rect = value?.getBoundingClientRect();
+      return rect ? { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2, left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, width: rect.width, height: rect.height } : null;
     });
+    const allValueRects = [...(diagram?.querySelectorAll('.blx-box-model-layer') ?? [])].flatMap((layer) =>
+      [...layer.querySelectorAll(':scope > .blx-box-model-value')].map((item) => {
+        const r = item.getBoundingClientRect();
+        return {
+          layer: layer.classList.contains('blx-box-model-layer-margin') ? 'margin' : layer.classList.contains('blx-box-model-layer-border') ? 'border' : 'padding',
+          side: [...item.classList].find((name) => /^blx-box-model-(block-start|inline-end|block-end|inline-start|border-width)$/.test(name))?.replace('blx-box-model-', ''),
+          left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: r.width, height: r.height,
+        };
+      }),
+    );
+    const controls = document.querySelector('.blx-box-model-controls');
+    const controlRects = [...(controls?.querySelectorAll('button, select, .blx-box-model-legend') ?? [])].map((item) => { const r = item.getBoundingClientRect(); return { left:r.left,right:r.right,top:r.top,bottom:r.bottom }; });
+    const captions = [...(diagram?.querySelectorAll('.blx-box-model-caption') ?? [])].map((item) => { const r=item.getBoundingClientRect(); return { left:r.left,right:r.right,top:r.top,bottom:r.bottom }; });
     const segments = [...(document.querySelector('[role="radiogroup"][aria-label="Text align"]')?.querySelectorAll('[role="radio"]') ?? [])].map((item) => item.getBoundingClientRect().width);
     return label && slider && input && unit && track && thumbRect && color && panel && gradientLabel && gradientToggle ? {
       sliderWidth: slider.getBoundingClientRect().width,
@@ -589,7 +605,12 @@ try {
       colorRight: color.getBoundingClientRect().right,
       panelRight: panel.getBoundingClientRect().right,
       gradientTopDelta: Math.abs(gradientLabel.getBoundingClientRect().top - gradientToggle.getBoundingClientRect().top),
-      boxRects, sideRects,
+      boxRects, sideRects, controlRects, captions, allValueRects,
+      controlsRect: controls ? (() => { const r=controls.getBoundingClientRect(); return { top:r.top,bottom:r.bottom }; })() : null,
+      diagramRect: diagram ? (() => { const r=diagram.getBoundingClientRect(); return { left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:r.width,height:r.height }; })() : null,
+      wrapWidth: document.querySelector('.blx-box-model-wrap')?.getBoundingClientRect().width,
+      contentText: content?.textContent?.trim() ?? '',
+      focusedInput: focusedBoxInput ? (() => { const r=focusedBoxInput.getBoundingClientRect(); const s=getComputedStyle(focusedBoxInput); const rgb=(v)=>v.match(/[0-9.]+/g)?.slice(0,3).map(Number) ?? [0,0,0]; const lum=(v)=>{const c=rgb(v).map((n)=>{n/=255;return n<=0.04045?n/12.92:((n+0.055)/1.055)**2.4});return .2126*c[0]+.7152*c[1]+.0722*c[2]}; const a=lum(s.color),b=lum(s.backgroundColor); return { left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height,fontSize:parseFloat(s.fontSize),color:s.color,background:s.backgroundColor,contrast:(Math.max(a,b)+.05)/(Math.min(a,b)+.05) }; })() : null,
       segmentWidths: segments,
       stickyTabs: getComputedStyle(document.querySelector('.blx-inspector-tabs [role="tablist"]')).position,
       layoutExpanded: document.querySelector('button[aria-label="Toggle Layout"]')?.getAttribute('aria-expanded'),
@@ -628,23 +649,137 @@ try {
   assert.ok(inspectorLayout.gradientTopDelta <= 8, 'gradient toggle and label share a row');
   assert.equal(inspectorLayout.boxRects.length, 4, 'box model has margin, border, padding and content rectangles');
   assert.ok(inspectorLayout.boxRects.every(Boolean), 'all box model layer rectangles are measurable');
-  for (let index = 0; index < inspectorLayout.boxRects.length - 1; index += 1) {
+  assert.ok(Math.abs(inspectorLayout.diagramRect.height - 228) <= 2, 'box model diagram is 228px tall');
+  assert.ok(Math.abs(inspectorLayout.boxRects[0].height - 228) <= 1, 'margin fills the diagram height');
+  assert.ok(
+    Math.abs(inspectorLayout.boxRects[0].width - inspectorLayout.diagramRect.width) <= 1,
+    'margin fills diagram width',
+  );
+  assert.ok(
+    Math.abs(inspectorLayout.diagramRect.width - inspectorLayout.wrapWidth) <= 1,
+    'diagram equals panel inner width',
+  );
+  for (let index = 0; index < 3; index += 1) {
     const outer = inspectorLayout.boxRects[index];
     const inner = inspectorLayout.boxRects[index + 1];
-    assert.ok(
-      inner.x >= outer.x && inner.y >= outer.y && inner.right <= outer.right && inner.bottom <= outer.bottom,
-      `box model layer ${index + 1} is inside layer ${index}`,
-    );
+    for (const inset of [
+      inner.left - outer.left,
+      outer.right - inner.right,
+      inner.top - outer.top,
+      outer.bottom - inner.bottom,
+    ]) {
+      assert.ok(Math.abs(inset - 32) <= 1, `box model band ${index + 1} is 32px on each side (${inset})`);
+    }
   }
   assert.equal(inspectorLayout.sideRects.length, 4, 'padding exposes four logical side values');
   assert.ok(inspectorLayout.sideRects.every(Boolean), 'all four side value positions are measurable');
+  for (const rect of inspectorLayout.sideRects) assert.ok(Math.abs(rect.height - 24) <= 1, 'side cells are 24px high');
   assert.ok(
-    inspectorLayout.sideRects[0].y < inspectorLayout.sideRects[2].y,
-    'top and bottom values straddle the content area',
+    Math.abs(inspectorLayout.sideRects[0].width - 44) <= 1 && Math.abs(inspectorLayout.sideRects[2].width - 44) <= 1,
+    'top and bottom cells are 44px wide',
   );
   assert.ok(
-    inspectorLayout.sideRects[3].x < inspectorLayout.sideRects[1].x,
-    'start and end values straddle the content area',
+    inspectorLayout.sideRects[1].width >= 28 &&
+      inspectorLayout.sideRects[1].width <= 36 &&
+      inspectorLayout.sideRects[3].width >= 28 &&
+      inspectorLayout.sideRects[3].width <= 36,
+    'start and end cells are 28–36px wide',
+  );
+  assert.ok(
+    inspectorLayout.focusedInput.width >= 52 &&
+      Math.abs(inspectorLayout.focusedInput.height - 28) <= 1 &&
+      inspectorLayout.focusedInput.fontSize >= 13,
+    'focused input is 52px minimum, 28px high and 13px text',
+  );
+  assert.ok(inspectorLayout.focusedInput.contrast >= 4.5, 'focused input text contrast is at least 4.5:1');
+  assert.ok(
+    inspectorLayout.focusedInput.left >= inspectorLayout.boxRects[0].left &&
+      inspectorLayout.focusedInput.right <= inspectorLayout.boxRects[0].right &&
+      inspectorLayout.focusedInput.top >= inspectorLayout.boxRects[0].top &&
+      inspectorLayout.focusedInput.bottom <= inspectorLayout.boxRects[0].bottom,
+    'editing input stays inside the margin layer rect',
+  );
+  for (const cell of inspectorLayout.allValueRects) {
+    const layer = inspectorLayout.boxRects[cell.layer === 'margin' ? 0 : cell.layer === 'border' ? 1 : 2];
+    const band =
+      cell.side === 'block-start' || cell.side === 'border-width'
+        ? { left: layer.left, right: layer.right, top: layer.top, bottom: layer.top + 32 }
+        : cell.side === 'block-end'
+          ? { left: layer.left, right: layer.right, top: layer.bottom - 32, bottom: layer.bottom }
+          : cell.side === 'inline-end'
+            ? { left: layer.right - 32, right: layer.right, top: layer.top, bottom: layer.bottom }
+            : { left: layer.left, right: layer.left + 32, top: layer.top, bottom: layer.bottom };
+    const clearance = cell.side === 'inline-start' || cell.side === 'inline-end' ? 2 : 3;
+    assert.ok(
+      Math.abs(cell.height - 24) <= 1 &&
+        cell.left >= band.left + clearance &&
+        cell.right <= band.right - clearance &&
+        cell.top >= band.top + 3 &&
+        cell.bottom <= band.bottom - 3,
+      `${cell.layer} ${cell.side} cell fits its band`,
+    );
+  }
+  const paddingRect = inspectorLayout.boxRects[2];
+  for (let index = 0; index < 4; index += 1) {
+    const value = inspectorLayout.sideRects[index];
+    const band =
+      index === 0
+        ? { left: paddingRect.left, right: paddingRect.right, top: paddingRect.top, bottom: paddingRect.top + 32 }
+        : index === 1
+          ? { left: paddingRect.right - 32, right: paddingRect.right, top: paddingRect.top, bottom: paddingRect.bottom }
+          : index === 2
+            ? {
+                left: paddingRect.left,
+                right: paddingRect.right,
+                top: paddingRect.bottom - 32,
+                bottom: paddingRect.bottom,
+              }
+            : {
+                left: paddingRect.left,
+                right: paddingRect.left + 32,
+                top: paddingRect.top,
+                bottom: paddingRect.bottom,
+              };
+    const clearance = index === 1 || index === 3 ? 2 : 3;
+    assert.ok(
+      value.left >= band.left + clearance &&
+        value.right <= band.right - clearance &&
+        value.top >= band.top + 3 &&
+        value.bottom <= band.bottom - 3,
+      `side cell ${index + 1} fits its band`,
+    );
+  }
+  assert.equal(
+    inspectorLayout.boxRects[3].width >= 56 && inspectorLayout.boxRects[3].height >= 28,
+    true,
+    'content meets 56 × 28px minimum',
+  );
+  assert.ok(
+    Math.abs(
+      (inspectorLayout.boxRects[3].left + inspectorLayout.boxRects[3].right) / 2 -
+        (paddingRect.left + paddingRect.right) / 2,
+    ) <= 2,
+    'content is horizontally centered',
+  );
+  assert.ok(
+    Math.abs(
+      (inspectorLayout.boxRects[3].top + inspectorLayout.boxRects[3].bottom) / 2 -
+        (paddingRect.top + paddingRect.bottom) / 2,
+    ) <= 2,
+    'content is vertically centered',
+  );
+  assert.match(inspectorLayout.contentText, /×/, 'content displays auto dimensions');
+  assert.equal(inspectorLayout.captions.length, 0, 'diagram has no colliding captions');
+  assert.ok(
+    inspectorLayout.controlRects.every((rect, index, all) =>
+      all
+        .slice(index + 1)
+        .every(
+          (next) =>
+            rect.right <= next.left || next.right <= rect.left || rect.bottom <= next.top || next.bottom <= rect.top,
+        ),
+    ),
+    'legend and controls do not overlap',
   );
   assert.ok(
     inspectorLayout.segmentWidths.length >= 4 &&
@@ -776,15 +911,49 @@ try {
     const panel = document.querySelector('.blx-panel-right');
     const widget = document.querySelector('.blx-box-model-wrap');
     if (!panel || !widget) return null;
-    panel.style.inlineSize = '320px'; panel.style.width = '320px';
-    const rect = widget.getBoundingClientRect();
-    return { width: rect.width, scrollWidth: widget.scrollWidth, clientWidth: widget.clientWidth };
+    const layouts = [320, 380].map((width) => {
+      panel.style.inlineSize = width + 'px'; panel.style.width = width + 'px';
+      const diagram = widget.querySelector('.blx-box-model-diagram');
+      const layers = [...widget.querySelectorAll('.blx-box-model-layer-margin, .blx-box-model-layer-border, .blx-box-model-layer-padding, .blx-box-model-content')];
+      const rect = (element) => { const r=element.getBoundingClientRect(); return { left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height }; };
+      return { panelWidth: width, wrapWidth: widget.getBoundingClientRect().width, diagram: rect(diagram), layers: layers.map(rect), scrollWidth: widget.scrollWidth, clientWidth: widget.clientWidth };
+    });
+    return layouts;
   })()`);
-  assert.ok(narrowWidget, 'box model is measurable at a 320px inspector width');
-  assert.ok(
-    narrowWidget.scrollWidth <= narrowWidget.clientWidth,
-    `box model has no horizontal overflow (${JSON.stringify(narrowWidget)})`,
-  );
+  assert.ok(narrowWidget, 'box model is measurable at 260px and 320px inspector inner widths');
+  for (const [index, layout] of narrowWidget.entries()) {
+    const expectedInnerWidth = index === 0 ? 260 : 320;
+    assert.ok(Math.abs(layout.wrapWidth - expectedInnerWidth) <= 1, `panel inner width is ${expectedInnerWidth}px`);
+    assert.ok(
+      layout.scrollWidth <= layout.clientWidth,
+      `box model has no horizontal overflow at ${layout.panelWidth}px (${JSON.stringify(layout)})`,
+    );
+    assert.ok(Math.abs(layout.diagram.height - 228) <= 2, `diagram remains 228px high at ${layout.panelWidth}px`);
+    assert.ok(
+      Math.abs(layout.diagram.width - layout.wrapWidth) <= 1,
+      `diagram fills panel inner width at ${layout.panelWidth}px`,
+    );
+    assert.ok(
+      Math.abs(layout.layers[0].height - layout.diagram.height) <= 1,
+      `margin fills diagram at ${layout.panelWidth}px`,
+    );
+    assert.ok(
+      layout.layers[3].width >= 56 && layout.layers[3].height >= 28,
+      `content keeps its minimum dimensions at ${layout.panelWidth}px`,
+    );
+    for (let layer = 0; layer < 3; layer += 1) {
+      const outer = layout.layers[layer];
+      const inner = layout.layers[layer + 1];
+      for (const inset of [
+        inner.left - outer.left,
+        outer.right - inner.right,
+        inner.top - outer.top,
+        outer.bottom - inner.bottom,
+      ]) {
+        assert.ok(Math.abs(inset - 32) <= 1, `32px bands remain fixed at inner width ${expectedInnerWidth}px`);
+      }
+    }
+  }
   for (const section of ['Layout', 'Border & Effects']) {
     await ev(
       `(() => { const b = document.querySelector('button[aria-label=${JSON.stringify(`Toggle ${section}`)}]'); if (b && b.getAttribute('aria-expanded') === 'false') b.click(); })()`,

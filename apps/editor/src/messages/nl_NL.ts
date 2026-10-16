@@ -251,7 +251,7 @@ export const nl_NL: Record<MessageKey, string> = {
   'inspector.boxModel.padding': 'Binnenafstand',
   'inspector.boxModel.auto': 'Automatisch',
   'inspector.boxModel.inherited': 'Overgenomen',
-  'inspector.boxModel.unit': 'Eenheid voor {layer}',
+  'inspector.boxModel.unit': 'Eenheid voor {layer} {side}',
   'inspector.boxModel.reset': '{layer} {side} terugzetten op overgenomen',
   'inspector.viewport.base': 'Desktopstijlen',
   'inspector.viewport.desktop': 'Desktopstijlen',

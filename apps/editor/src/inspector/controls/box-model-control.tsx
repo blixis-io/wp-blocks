@@ -118,7 +118,6 @@ export function BoxModelControl({
     const raw = value === 'auto' && layer === 'margin' ? 'auto' : parsed ? String(parsed.number) : '';
     const shown = Object.hasOwn(drafts, key) ? drafts[key] : raw;
     const ariaNumber = Number(shown);
-    const isActive = focused === key;
     const isInherited = value === undefined;
     const label =
       layer === 'border'
@@ -140,7 +139,11 @@ export function BoxModelControl({
       }
     };
     return (
-      <span className={`blx-box-model-value blx-box-model-${layer === 'border' ? 'border-width' : side}`} key={key}>
+      <span
+        className={`blx-box-model-value blx-box-model-${layer === 'border' ? 'border-width' : side}`}
+        data-value={shown}
+        key={key}
+      >
         <input
           id={id}
           type="text"
@@ -163,9 +166,13 @@ export function BoxModelControl({
           readOnly={!supported}
           data-inherited={isInherited ? 'true' : undefined}
           disabled={!editable || !supported}
-          onFocus={() => {
+          onFocus={(event) => {
+            const target = event.currentTarget;
             setFocused(key);
             if (!Object.hasOwn(drafts, key)) setDrafts((current) => ({ ...current, [key]: raw }));
+            requestAnimationFrame(() => {
+              target.select();
+            });
           }}
           onClick={(event) => {
             if (event.altKey) altLinked.current.add(key);
@@ -204,6 +211,7 @@ export function BoxModelControl({
           onBlur={(event) => {
             const nextTarget = event.relatedTarget;
             if (nextTarget instanceof HTMLElement && event.currentTarget.parentElement?.contains(nextTarget)) return;
+            if (nextTarget instanceof HTMLElement && nextTarget.closest('.blx-box-model-controls')) return;
             if (cancelled.current.has(key)) cancelled.current.delete(key);
             else if (shown && shown !== 'auto') commit();
             altLinked.current.delete(key);
@@ -233,44 +241,6 @@ export function BoxModelControl({
             );
           }}
         />
-        {isActive && supported ? (
-          <>
-            {layer !== 'border' ? (
-              <select
-                aria-label={t('inspector.boxModel.unit', { layer: t(`inspector.boxModel.${layer}` as never) })}
-                value={unit}
-                onChange={(event) => {
-                  const next = event.currentTarget.value as BoxUnit;
-                  const prior = Number(shown ?? '0');
-                  setUnitsBySide((current) => ({ ...current, [key]: next }));
-                  setDrafts((current) => ({ ...current, [key]: String(prior) }));
-                  if (raw) send(layer, side, formatBoxValue(prior, next), true);
-                }}
-              >
-                {units.map((item) => (
-                  <option key={item}>{item}</option>
-                ))}
-              </select>
-            ) : null}
-            {value !== undefined ? (
-              <button
-                type="button"
-                aria-label={t('inspector.boxModel.reset', {
-                  side: t(`inspector.side.${side}` as never),
-                  layer: t(`inspector.boxModel.${layer}` as never),
-                })}
-                onMouseDown={(event) => {
-                  event.preventDefault();
-                }}
-                onClick={() => {
-                  send(layer, side, null);
-                }}
-              >
-                ↶
-              </button>
-            ) : null}
-          </>
-        ) : null}
       </span>
     );
   };
@@ -293,12 +263,9 @@ export function BoxModelControl({
         className={`blx-box-model-layer blx-box-model-layer-${layer}`}
         key={layer}
         role="group"
-        aria-labelledby={`box-model-${layer}-label`}
+        aria-label={t(`inspector.boxModel.${layer}` as never)}
       >
         <span className="blx-box-model-surface" aria-hidden="true" />
-        <span className="blx-box-model-caption" id={`box-model-${layer}-label`}>
-          {t(`inspector.boxModel.${layer}` as never)}
-        </span>
         {layer === 'border' ? input('border', 'block-start') : BOX_SIDES.map((side) => input(layer, side))}
         {diagramContents}
       </div>
@@ -326,9 +293,72 @@ export function BoxModelControl({
               setLinked((current) => ({ ...current, [layer]: !current[layer] }));
             }}
           >
-            ↔ {t(`inspector.boxModel.${layer}` as never)}
+            <span className={`blx-box-model-legend-dot blx-box-model-legend-${layer}`} aria-hidden="true" />↔{' '}
+            {t(`inspector.boxModel.${layer}` as never)}
           </button>
         ))}
+        {hasLayer('border') ? (
+          <span className="blx-box-model-legend" role="img" aria-label={t('inspector.boxModel.border')}>
+            <span className="blx-box-model-legend-dot blx-box-model-legend-border" aria-hidden="true" />
+            {t('inspector.boxModel.border')}
+          </span>
+        ) : null}
+        {focused ? (
+          (() => {
+            const [layer, side] = focused.split(':') as [BoxLayer, BoxSide];
+            const value = boxSideValue(layer, side, own);
+            const parsed = parseBoxValue(value);
+            const unit = unitsBySide[focused] ?? parsed?.unit ?? 'px';
+            const units: readonly BoxUnit[] = layer === 'border' ? ['px'] : BOX_UNITS;
+            return (
+              <>
+                <select
+                  aria-label={t('inspector.boxModel.unit', {
+                    layer: t(`inspector.boxModel.${layer}` as never),
+                    side: t(`inspector.side.${side}` as never),
+                  })}
+                  disabled={!editable}
+                  value={unit}
+                  onChange={(event) => {
+                    const next = event.currentTarget.value as BoxUnit;
+                    const prior = parsed?.number ?? 0;
+                    setUnitsBySide((current) => ({ ...current, [focused]: next }));
+                    if (value !== undefined) send(layer, side, formatBoxValue(prior, next), true);
+                  }}
+                >
+                  {units.map((item) => (
+                    <option key={item}>{item}</option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  disabled={!editable || value === undefined}
+                  aria-label={t('inspector.boxModel.reset', {
+                    side: t(`inspector.side.${side}` as never),
+                    layer: t(`inspector.boxModel.${layer}` as never),
+                  })}
+                  onMouseDown={(event) => {
+                    event.preventDefault();
+                  }}
+                  onClick={() => {
+                    send(layer, side, null);
+                  }}
+                >
+                  ↶
+                </button>
+              </>
+            );
+          })()
+        ) : (
+          <>
+            <select aria-label={t('inspector.boxModel.unit', { layer: '', side: '' })} disabled value="px">
+              <option>px</option>
+            </select>
+            <button type="button" disabled aria-label={t('inspector.boxModel.reset', { side: '', layer: '' })}>
+              ↶
+            </button>
+          </>
+        )}
       </div>
       {error ? (
         <p id={`box-model-${element.id}-error`} role="alert" className="blx-inspector-error">
