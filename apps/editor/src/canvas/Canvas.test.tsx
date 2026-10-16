@@ -1079,6 +1079,31 @@ describe('selection and hover', () => {
     expect(endpoint.sent.at(-1)).toEqual({ type: 'select', id: null });
   });
 
+  it('shows a decorative hover chip for an unselected element and hides it for selected or edited elements', async () => {
+    const s = setup();
+    await ready(s);
+    const endpoint = s.endpoints.last();
+    act(() => {
+      s.store.getState().hover('el-text-1');
+    });
+    endpoint.deliver({ type: 'rects', revision: 0, items: [{ id: 'el-text-1', x: 20, y: 80, w: 120, h: 28 }] });
+    const chip = screen.getByTestId('canvas-hover-chip');
+    expect(chip.textContent).toContain('Text');
+    expect(chip.getAttribute('aria-hidden')).toBe('true');
+    expect(chip.className).toContain('blx-hover-chip');
+    await act(async () => {
+      s.store.getState().select('el-text-1');
+      await Promise.resolve();
+    });
+    expect(screen.queryByTestId('canvas-hover-chip')).toBeNull();
+    await act(async () => {
+      s.store.getState().select(null);
+      await Promise.resolve();
+    });
+    endpoint.deliver({ type: 'edit-request', id: 'el-text-1' });
+    expect(screen.queryByTestId('canvas-hover-chip')).toBeNull();
+  });
+
   it('maps pick to selection and hover to the hovered id; unknown ids are refused by the store', async () => {
     const s = setup();
     await ready(s);
@@ -1198,7 +1223,7 @@ describe('selection and hover', () => {
     expect(document.activeElement).toBe(trigger);
   });
 
-  it('does not ask for rectangle scans on hover or when no element is selected', async () => {
+  it('requests and retains a hovered element rectangle when there is no selection', async () => {
     const s = setup();
     await ready(s);
     const endpoint = s.endpoints.last();
@@ -1207,7 +1232,11 @@ describe('selection and hover', () => {
       s.store.getState().hover('el-text-1');
     });
     await flush(20);
-    expect(endpoint.sent.filter((message) => message.type === 'request-rects')).toEqual([]);
+    expect(endpoint.sent.filter((message) => message.type === 'request-rects')).toEqual([
+      { type: 'request-rects', revision: 0 },
+    ]);
+    endpoint.deliver({ type: 'rects', revision: 0, items: [{ id: 'el-text-1', x: 5, y: 40, w: 60, h: 20 }] });
+    expect(screen.getByTestId('canvas-hover-chip').textContent).toContain('Text');
   });
 
   it('filters NaN, out-of-contract and foreign rectangle ids at the session boundary', async () => {

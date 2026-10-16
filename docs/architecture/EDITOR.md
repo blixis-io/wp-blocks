@@ -310,6 +310,11 @@ Ctrl/Cmd+S is supported when focus is inside the canvas iframe, including the Ti
 | 5xx/other | Show a generic translated failure and allow retry; never render server messages. |
 
 The header reports unsaved, saving, failed or relative last-saved status. Dirty or saving documents use the browser's standard unload prompt. EN and NL catalogs own all recovery strings.
+
+## Canvas hover chrome (BWB-152)
+
+Canvas hover chrome is drawn in the editor overlay from validated element rectangles requested for the selected and hovered IDs. A decorative, pointer-transparent chip shows the hovered element's type, label and short ID; it flips to the element's top edge when the frame has no room above and is suppressed for the selected element, inline editing, resizing, or a collision with the selection toolbar. It uses editor chrome tokens and remains independent of website preview appearance.
+
 # Inline rich text controls (BWB-135 Stage 2B)
 
 The canvas edit session reports the current text selection, marks and viewport rectangle through the existing `edit-selection` message. The editor chrome positions a formatting toolbar against that rectangle with the same frame offset, scroll, flip and clamp helpers used by the element selection toolbar. The toolbar is absent when editing is inactive or the text selection is empty. Toolbar actions use the existing validated `edit-command` message; the content model remains plain text or ADR 0014's rich inline JSON, and style marks refer to tokens rather than CSS values. The selection toolbar stays in editor chrome and does not inherit website light/dark appearance.
