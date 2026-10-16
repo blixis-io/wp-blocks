@@ -590,6 +590,20 @@ try {
     'empty canvas click clears the inspector element chip',
   );
   assert.equal(emptySelection.editingChip, false, 'empty canvas click clears the hover chip');
+  const emptyCanvasFocus = await ev(`(() => {
+    const active = document.activeElement;
+    const largeOutlined = [...document.querySelectorAll('body *')].filter((element) => {
+      const rect = element.getBoundingClientRect();
+      const style = getComputedStyle(element);
+      return rect.width > 300 && rect.height > 200 && style.outlineStyle !== 'none' && parseFloat(style.outlineWidth) > 0;
+    }).map((element) => ({ tag: element.tagName.toLowerCase(), id: element.id, className: String(element.className) }));
+    return { activeTag: active?.tagName.toLowerCase(), activeId: active?.id, largeOutlined };
+  })()`);
+  assert.deepEqual(
+    emptyCanvasFocus,
+    { activeTag: 'main', activeId: 'blx-canvas', largeOutlined: [] },
+    'empty canvas moves focus to the labeled canvas landmark without outlining any large region',
+  );
   assert.equal(
     await ev(`!!document.querySelector('nav[aria-label="Structure"] [role="treeitem"][data-on-path]')`),
     false,
@@ -636,8 +650,20 @@ try {
   );
 
   // BWB-129 palette insert updates both the tree and live canvas; undo removes the inserted element again.
+  await ev(
+    `(() => { const tab=[...document.querySelectorAll('nav[aria-label="Structure"] [role="tab"]')].find((item) => item.textContent.trim() === 'Elements'); tab?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0, ctrlKey: false })); })()`,
+  );
+  await sleep(250);
   await ev(`document.querySelector('[data-element-type="blixis/text"]')?.click()`);
   await sleep(1500);
+  // The tree is not rendered while the Elements tab is active: switch back before looking for the inserted row.
+  const showLeftTab = async (name) => {
+    await ev(
+      `(() => { const tab=[...document.querySelectorAll('nav[aria-label="Structure"] [role="tab"]')].find((item) => item.textContent.trim() === ${JSON.stringify(name)}); tab?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0, ctrlKey: false })); })()`,
+    );
+    await sleep(300);
+  };
+  await showLeftTab('Structure');
   const paletteInsert = await ev(`(() => {
     const row = [...document.querySelectorAll('nav[aria-label="Structure"] [role="treeitem"]')].find((item) => item.dataset.id?.startsWith('el-new-'));
     const id = row?.dataset.id;
@@ -656,6 +682,11 @@ try {
   })()`);
   assert.equal(paletteUndo.treeHas, false, 'undo removes the inserted element from the structure tree');
   assert.equal(paletteUndo.previewHas, false, 'undo removes the inserted element from the canvas preview');
+
+  await ev(
+    `(() => { const tab=[...document.querySelectorAll('nav[aria-label="Structure"] [role="tab"]')].find((item) => item.textContent.trim() === 'Structure'); tab?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0, ctrlKey: false })); })()`,
+  );
+  await sleep(250);
 
   await ev(
     `(() => { const input = document.querySelector('nav[aria-label="Structure"] input[placeholder="Search elements..."]'); if (!input) return false; const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set; setter?.call(input, 'hero-h1'); input.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`,
@@ -1242,8 +1273,7 @@ try {
     const topActive = document.querySelector('.blx-left-tabs[aria-label] [role="tab"][aria-selected="true"]');
     const activeStyle = topActive ? getComputedStyle(topActive) : null;
     const underline = topActive ? getComputedStyle(topActive, '::after') : null;
-    const dockActive = document.querySelector('.blx-dock-tabs .blx-left-tabs [role="tab"][aria-selected="true"]');
-    const dockUnderline = dockActive ? getComputedStyle(dockActive, '::after') : null;
+    const leftTabs = [...document.querySelectorAll('#blx-structure [role="tab"]')];
     return { top: frame?.getBoundingClientRect().top, crumbTop: a?.top, crumbBottom: a?.bottom, toggleTop: b?.top, toggleBottom: b?.bottom, crumbRight: a?.right, toggleLeft: b?.left,
       levels: levels.map((row) => row?.getAttribute('aria-level')), iconLefts: levels.map(iconLeft),
       parentIconCenter: parentIcon ? parentIcon.left + parentIcon.width / 2 : null, guideX: guideBox?.left,
@@ -1252,7 +1282,7 @@ try {
       hasPathHighlight: rows.some((row) => row.hasAttribute('data-on-path')),
       rowHeight: initialRow?.height, labelTop: initialLabel?.top,
       topUnderlineBorder: activeStyle?.borderBlockEndWidth, topUnderlineContent: underline?.content,
-      dockUnderlineBorder: dockActive ? getComputedStyle(dockActive).borderBlockEndWidth : null, dockUnderlineContent: dockUnderline?.content };
+      leftTabs: leftTabs.map((tab) => tab.textContent.trim()), selectedTab: topActive?.textContent.trim() };
   })()`);
   assert.ok(
     initialStageLayout.toggleTop < initialStageLayout.crumbBottom &&
@@ -1288,8 +1318,12 @@ try {
   assert.equal(initialStageLayout.rowHeight, 28, 'tree rows use a fixed 28px height');
   assert.equal(initialStageLayout.topUnderlineContent, 'none', 'Structure tab has no duplicate pseudo underline');
   assert.equal(initialStageLayout.topUnderlineBorder, '2px', 'Structure tab has one 2px border underline');
-  assert.equal(initialStageLayout.dockUnderlineContent, 'none', 'Add Elements tab has no duplicate pseudo underline');
-  assert.equal(initialStageLayout.dockUnderlineBorder, '2px', 'Add Elements tab has one 2px border underline');
+  assert.deepEqual(
+    initialStageLayout.leftTabs,
+    ['Structure', 'Elements'],
+    'the left sidebar has exactly Structure and Elements tabs',
+  );
+  assert.equal(initialStageLayout.selectedTab, 'Structure', 'Structure is the initial left sidebar tab');
   const rowBox = await ev(
     `(() => { const row = document.querySelector('nav[aria-label="Structure"] [role="treeitem"][aria-level="2"]'); const label = row?.querySelector('.blx-outline-label'); const r = row?.getBoundingClientRect(); const l = label?.getBoundingClientRect(); return { x: r?.x + r?.width / 2, y: r?.y + r?.height / 2, height: r?.height, labelTop: l?.top }; })()`,
   );

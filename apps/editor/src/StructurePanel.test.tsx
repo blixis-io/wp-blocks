@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { EditorApp } from './App';
 import { makeBootstrap } from './test/fixtures';
 import { makeDocument, makeStore, el } from './test/state-helpers';
@@ -9,6 +9,11 @@ import { axeViolations } from './test/axe';
 function required<T>(value: T | null | undefined): T {
   if (value === null || value === undefined) throw new Error('Expected test element to exist');
   return value;
+}
+
+async function openElements(user: ReturnType<typeof userEvent.setup>) {
+  const tab = document.querySelectorAll<HTMLElement>('#blx-structure [role="tab"]')[1];
+  await user.click(required(tab));
 }
 
 function renderEditor(
@@ -26,6 +31,9 @@ function renderEditor(
 }
 
 describe('left panel and element palette', () => {
+  beforeEach(() => {
+    sessionStorage.removeItem('blixis-left-tab');
+  });
   it('highlights only the selected tree row and never paints the ancestor guide path', async () => {
     renderEditor();
     await waitFor(() => {
@@ -61,18 +69,29 @@ describe('left panel and element palette', () => {
     expect(parentRow.querySelector('.blx-tree-guides')).toBeNull();
   });
 
-  it('renders both tab groups and registered element cards only', async () => {
+  it('renders one tab strip with Structure and Elements and shows cards on the Elements tab', async () => {
     renderEditor();
     await waitFor(() => {
       expect(screen.getByRole('tree')).toBeTruthy();
     });
     expect(screen.getByRole('tab', { name: 'Structure' })).toBeTruthy();
-    expect(screen.getAllByRole('tab', { name: 'Elements' })).toHaveLength(1);
-    expect(screen.getByRole('tab', { name: 'Add Elements' })).toBeTruthy();
+    expect(screen.getAllByRole('tab')).toHaveLength(2);
+    const user = userEvent.setup();
+    await openElements(user);
     const palette = screen.getByRole('region', { name: 'Elements' });
     for (const name of ['Section', 'Container', 'Heading', 'Text', 'Image', 'Button'])
       expect(within(palette).getByRole('button', { name })).toBeTruthy();
     expect(within(palette).getAllByRole('button')).toHaveLength(6);
+  });
+
+  it('remembers the selected left tab for the current session', async () => {
+    const user = userEvent.setup();
+    const first = renderEditor();
+    await openElements(user);
+    first.unmount();
+    renderEditor();
+    expect(screen.getByRole('tab', { name: 'Elements' }).getAttribute('aria-selected')).toBe('true');
+    expect(screen.queryByRole('tree')).toBeNull();
   });
 
   it('filters the tree by type, id and label and reports match count; Escape clears', async () => {
@@ -110,6 +129,7 @@ describe('left panel and element palette', () => {
     act(() => {
       store.getState().select('el-container-1');
     });
+    await openElements(user);
     await user.click(required(document.querySelector('[data-element-type="blixis/text"]')));
     await waitFor(() => {
       expect(store.getState().selectedId).toMatch(/^el-new-/);
@@ -138,6 +158,7 @@ describe('left panel and element palette', () => {
     act(() => {
       store.getState().select(null);
     });
+    await openElements(user);
     await user.click(required(document.querySelector('[data-element-type="blixis/text"]')));
     await waitFor(() => {
       expect(store.getState().selectedId).toMatch(/^el-new-/);
@@ -162,30 +183,33 @@ describe('left panel and element palette', () => {
     act(() => {
       store.getState().select('el-heading-x');
     });
+    await openElements(user);
     await user.click(required(document.querySelector('[data-element-type="blixis/section"]')));
     expect(
       store.getState().document?.root.some((node) => node.type === 'blixis/section' && node.id.startsWith('el-new-')),
     ).toBe(true);
   });
 
-  it('disables palette cards for locked documents and shows the translated global style placeholder', async () => {
+  it('disables palette cards for locked documents', async () => {
     const user = userEvent.setup();
     renderEditor({ editingEnabled: false, editorLocale: 'nl_NL' });
     await waitFor(() => {
       expect(screen.getByRole('tree')).toBeTruthy();
     });
+    await openElements(user);
     const textCard = required(document.querySelector('[data-element-type="blixis/text"]'));
     expect(textCard.getAttribute('aria-disabled')).toBe('true');
-    await user.click(screen.getByRole('tab', { name: 'Algemene stijl' }));
-    expect(screen.getByText(/Beschikbaar met de editor/)).toBeTruthy();
   });
 
   it('keeps the structure searchable and palette accessible in RTL chrome', async () => {
+    const user = userEvent.setup();
     const { container } = renderEditor({ editorLocale: 'ar' });
     await waitFor(() => {
       expect(screen.getByRole('tree')).toBeTruthy();
     });
     expect(screen.getByTestId('editor-root').getAttribute('dir')).toBe('rtl');
+    expect(await axeViolations(container)).toEqual([]);
+    await openElements(user);
     expect(await axeViolations(container)).toEqual([]);
   });
 
@@ -195,6 +219,7 @@ describe('left panel and element palette', () => {
     await waitFor(() => {
       expect(screen.getByRole('tree')).toBeTruthy();
     });
+    await openElements(user);
     const palette = required(document.querySelector<HTMLElement>('[data-element-type="blixis/section"]'));
     palette.focus();
     await user.keyboard('{ArrowDown}');
@@ -249,6 +274,7 @@ describe('left panel and element palette', () => {
     act(() => {
       store.getState().select('el-heading-1');
     });
+    await openElements(user);
     const textCard = required(document.querySelector('[data-element-type="blixis/text"]'));
     await user.click(textCard);
     const siblings = store.getState().document?.root[0]?.children[0]?.children ?? [];
@@ -265,15 +291,19 @@ describe('left panel and element palette', () => {
     act(() => {
       store.getState().select('el-container-1');
     });
+    await openElements(user);
     await user.click(required(document.querySelector('[data-element-type="blixis/text"]')));
     await waitFor(() => {
       expect(store.getState().expandedIds).toContain('el-container-1');
     });
   });
 
-  it('keeps palette cards disabled without a loaded document', () => {
-    const { store } = makeStore();
+  it('keeps palette cards disabled without a loaded document', async () => {
+    const { store, client } = makeStore();
+    client.readLayout = () => new Promise(() => undefined);
     const uninitialized = render(<EditorApp bootstrap={makeBootstrap()} store={store} />);
+    const user = userEvent.setup();
+    await openElements(user);
     expect(document.querySelector('[data-element-type="blixis/text"]')?.getAttribute('aria-disabled')).toBe('true');
     uninitialized.unmount();
   });
@@ -321,10 +351,12 @@ describe('left panel and element palette', () => {
     ['blixis/image', 'Image'],
     ['blixis/button', 'Button'],
   ])('exposes registered palette type %s with its editor label', async (type, label) => {
+    const user = userEvent.setup();
     renderEditor();
     await waitFor(() => {
       expect(screen.getByRole('tree')).toBeTruthy();
     });
+    await openElements(user);
     const card = document.querySelector(`[data-element-type="${type}"]`);
     expect(required(card).textContent.trim()).toBe(label);
     expect(required(card).hasAttribute('aria-disabled')).toBe(true);
@@ -347,6 +379,7 @@ describe('left panel and element palette', () => {
       act(() => {
         store.getState().select(parent);
       });
+    await openElements(user);
     await user.click(required(document.querySelector(`[data-element-type="${type}"]`)));
     const stack = [...(store.getState().document?.root ?? [])];
     let inserted: (typeof stack)[number] | undefined;
@@ -375,6 +408,7 @@ describe('left panel and element palette', () => {
     await waitFor(() => {
       expect(screen.getByRole('tree')).toBeTruthy();
     });
+    await openElements(user);
     const first = required(document.querySelector<HTMLElement>('[data-element-type="blixis/container"]'));
     first.focus();
     await user.keyboard(`{${key}}`);

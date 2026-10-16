@@ -373,10 +373,16 @@
     }
 
     .ed-focus-ring:focus-visible,
-    .blx-skip:focus-visible,
-    .blx-main:focus-visible {
+    .blx-skip:focus-visible {
       outline: 2px solid var(--ed-focus);
       outline-offset: 2px;
+    }
+    /* The canvas landmark is a programmatic focus destination, not a keyboard control. */
+    .blx-main:focus,
+    .blx-main:focus-visible,
+    .blx-main.ed-focus-ring:focus,
+    .blx-main.ed-focus-ring:focus-visible {
+      outline: none;
     }
 
     .blx-skip {
@@ -768,6 +774,8 @@
       border-block-end: 1px solid var(--ed-border);
     }
     .blx-left-main {
+      display: flex;
+      flex-direction: column;
       flex: 1 1 auto;
       min-block-size: 0;
     }
@@ -790,10 +798,10 @@
       content: none;
     }
     .blx-structure-content,
-    .blx-top-elements,
-    .blx-dock-content {
+    .blx-top-elements {
       display: flex;
       flex-direction: column;
+      flex: 1 1 auto;
       min-block-size: 0;
       padding: 0;
     }
@@ -896,17 +904,6 @@
     .blx-search-match {
       color: inherit;
       background: color-mix(in srgb, var(--ed-primary) 22%, transparent);
-    }
-    .blx-element-dock {
-      flex: 0 0 42%;
-      min-block-size: 200px;
-      border-block-start: 1px solid var(--ed-border);
-    }
-    .blx-dock-tabs {
-      block-size: 100%;
-    }
-    .blx-dock-content {
-      overflow: auto;
     }
     .blx-element-grid {
       display: grid;
@@ -2696,8 +2693,7 @@
 
     @media (forced-colors: active) {
       .ed-focus-ring:focus-visible,
-      .blx-skip:focus-visible,
-      .blx-main:focus-visible {
+      .blx-skip:focus-visible {
         outline-color: Highlight;
       }
       .blx-chip,

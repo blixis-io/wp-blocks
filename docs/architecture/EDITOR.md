@@ -36,11 +36,11 @@ The editor fills the viewport (`position: fixed; inset: 0`, CSS grid, no page sc
 | Skip link | `a.blx-skip` | First in tab order, targets `#blx-canvas`. |
 | Header | `header[role=banner]` containing `role=toolbar` | One roving tab stop (Arrow keys, Home, End). Back to admin, structure toggle, title and content-locale chip, Undo/Redo, viewport group (sizes the preview frame), Preview, Save, Publish, keyboard shortcuts, editor appearance group, editor language chip, inspector toggle. |
 | Lock banner | `div[role=status]` | Shown when `editingEnabled` is false; shows `lockReason`. |
-| Structure | `nav[aria-label=Structure]#blx-structure` | Placeholder with empty state. Collapsible. |
+| Left panel | `nav[aria-label=Structure]#blx-structure` | One full-height tabbed panel with exactly Structure (tree + search) and Elements (palette + search). The selected tab is remembered for the browser session in `sessionStorage` key `blixis-left-tab`. Collapsible. |
 | Canvas | `main#blx-canvas` | `tabindex=-1`: it is reached through the skip link (the link moves focus here); Tab does not stop on it. Contains the "Preview appearance" group, the load/connection/preview statuses and the preview iframe (see "Canvas (BWB-051)"). Without `canvasUrl` it shows the placeholder "Canvas arrives with the canvas protocol." and the content locale. |
 | Inspector | `aside[aria-label=Inspector]#blx-inspector` | Tabs Content / Style / Advanced with empty states. Collapsible. |
 
-Panel toggles have a fixed accessible name ("Structure panel", "Inspector panel"); `aria-expanded` alone carries the state, so it is not announced twice. They also carry `aria-controls`; collapsed panels get `hidden`. State is remembered in `localStorage` key `blixis-editor-panels` (every access is wrapped in try/catch). Undo, Redo, Save and Publish are disabled placeholders (`aria-disabled`, still focusable so their tooltip explains why); the document store and save arrive with BWB-050 and BWB-055.
+Panel toggles have a fixed accessible name ("Structure panel", "Inspector panel"); `aria-expanded` alone carries the state, so it is not announced twice. They also carry `aria-controls`; collapsed panels get `hidden`. State is remembered in `localStorage` key `blixis-editor-panels` (every access is wrapped in try/catch). The canvas landmark is focused programmatically when focus leaves the preview iframe; it retains its accessible region name and `tabindex=-1`, with no outline because it is not an interactive control. Undo, Redo, Save and Publish are disabled placeholders (`aria-disabled`, still focusable so their tooltip explains why); the document store and save arrive with BWB-050 and BWB-055.
 
 ## Bootstrap contract v1
 
