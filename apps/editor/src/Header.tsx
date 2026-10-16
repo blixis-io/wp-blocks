@@ -14,6 +14,7 @@ import {
 } from '@blixis/wp-editor-ui';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { EditorBootstrap } from './bootstrap';
+import type { PublicationState } from './api/types';
 import { CHROME_PREFERENCES, type ChromePreference } from './chrome-theme';
 import type { MessageKey } from './i18n';
 import { useI18n } from './i18n-react';
@@ -85,6 +86,10 @@ function relativeSaved(now: number, saved: number, locale: string): string {
   );
   return text;
 }
+function hasPublicationPending(state: PublicationState | null): boolean {
+  if (state === null) return true;
+  return state.layout.state !== 'published' || Object.values(state.locales).some((item) => item.state !== 'published');
+}
 
 export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppearance }: HeaderProps) {
   const { t, locale } = useI18n();
@@ -98,6 +103,10 @@ export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppeara
   const saveError = useEditorStore((state) => state.saveError);
   const saveErrorKey = useEditorStore((state) => state.saveErrorKey);
   const retryAfterMs = useEditorStore((state) => state.retryAfterMs);
+  const publication = useEditorStore((state) => state.publication);
+  const publicationStatus = useEditorStore((state) => state.publicationStatus);
+  const publicationError = useEditorStore((state) => state.publicationError);
+  const publicationSuccess = useEditorStore((state) => state.publicationSuccess);
   const saveLocked = useEditorStore((state) => state.saveLocked);
   const savedAt = useEditorStore((state) => state.lastSavedAt);
   const [conflictOpen, setConflictOpen] = useState(false);
@@ -113,7 +122,46 @@ export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppeara
       : 0;
   const [width, setWidth] = useState(() => (typeof window === 'undefined' ? 1200 : window.innerWidth));
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [publishOpen, setPublishOpen] = useState(false);
+  const [publicationAction, setPublicationAction] = useState<'publish' | 'rollback'>('publish');
+  const [selectedLocales, setSelectedLocales] = useState<string[]>([]);
   const hasDirty = dirty.layout || Object.values(dirty.content).some(Boolean);
+  const publishPending = hasDirty || hasPublicationPending(publication);
+  const publishDisabled =
+    !bootstrap.editingEnabled || saveLocked || publicationStatus === 'publishing' || !publishPending;
+  const publishLabel =
+    publication &&
+    (publication.layout.state !== 'unpublished' ||
+      Object.values(publication.locales).some((item) => item.state !== 'unpublished'))
+      ? t('header.publishChanges')
+      : t('header.publish');
+  const publishHint =
+    !bootstrap.editingEnabled || saveLocked
+      ? t('publication.lockedHint')
+      : publicationStatus === 'publishing'
+        ? t('publication.publishing')
+        : publishPending
+          ? publishLabel
+          : t('publication.nothingToPublish');
+  const publicationStreams = publication ? [publication.layout, ...Object.values(publication.locales)] : [];
+  const hasLivePublication = publicationStreams.some((item) => item.state !== 'unpublished');
+  const hasPublicationChanges = publicationStreams.some((item) => item.state !== 'published');
+  const publicationStatusLabel = !hasLivePublication
+    ? t('publication.notPublished')
+    : hasDirty || hasPublicationChanges
+      ? t('publication.pendingChanges')
+      : t('publication.published');
+  const openPublish = () => {
+    setPublicationAction('publish');
+    const state = store.getState().publication;
+    const current = store.getState();
+    setSelectedLocales(
+      bootstrap.enabledLocales.filter(
+        (item) => current.dirty.content[item] === true || state?.locales[item]?.state !== 'published',
+      ),
+    );
+    setPublishOpen(true);
+  };
   useEffect(() => {
     const resize = () => {
       setWidth(window.innerWidth);
@@ -278,10 +326,11 @@ export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppeara
             onSelect: () => void store.getState().saveDraft(),
           },
           {
-            label: t('header.publish'),
-            disabled: true,
+            label: publishLabel,
+            disabled: !bootstrap.editingEnabled || saveLocked || publicationStatus === 'publishing' || !publishPending,
             describedBy: 'blx-publish-hint',
             icon: <Icon name="publish" size={15} />,
+            onSelect: openPublish,
           },
         ]
       : []),
@@ -375,6 +424,17 @@ export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppeara
               )}
             </span>
           </span>
+          <span
+            className="blx-publication-chip"
+            aria-label={`${t('publication.statusLabel')}: ${publicationStatusLabel}`}
+          >
+            {publicationStatusLabel}
+          </span>
+          {publicationSuccess && (
+            <span className="blx-publication-success" aria-live="polite">
+              {t('publication.success')}
+            </span>
+          )}
         </div>
         <ToolbarToggleGroup
           type="single"
@@ -471,6 +531,12 @@ export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppeara
                     saveStatus === 'saving' ||
                     (!dirty.layout && !Object.values(dirty.content).some(Boolean))
                   }
+                  aria-disabled={
+                    !bootstrap.editingEnabled ||
+                    saveLocked ||
+                    saveStatus === 'saving' ||
+                    (!dirty.layout && !Object.values(dirty.content).some(Boolean))
+                  }
                   aria-busy={saveStatus === 'saving'}
                   aria-label={t('header.saveDraft')}
                   aria-describedby="blx-save-hint"
@@ -480,24 +546,42 @@ export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppeara
                   <span>{saveStatus === 'saving' ? t('save.saving') : t('header.saveDraft')}</span>
                 </ToolbarButton>
               </Hint>
-              <Hint text={t('header.publish.hint')}>
+              <Hint text={publishHint}>
                 <ToolbarButton
                   className="blx-header-secondary"
                   variant="default"
-                  disabled
-                  aria-label={t('header.publish')}
+                  aria-disabled={publishDisabled}
+                  aria-label={publishLabel}
                   aria-describedby="blx-publish-hint"
+                  onClick={() => {
+                    if (!publishDisabled) openPublish();
+                  }}
                 >
                   <Icon name="publish" className={icon} />
-                  <span>{t('header.publish')}</span>
+                  <span>{publishLabel}</span>
                 </ToolbarButton>
               </Hint>
               <Menu
                 label={t('header.publishMenu')}
                 items={[
-                  { label: t('header.publish'), disabled: true, describedBy: 'blx-publish-hint' },
+                  {
+                    label: publishLabel,
+                    disabled:
+                      !bootstrap.editingEnabled || saveLocked || publicationStatus === 'publishing' || !publishPending,
+                    describedBy: 'blx-publish-hint',
+                    onSelect: openPublish,
+                  },
                   { label: t('header.schedule'), disabled: true },
-                  { label: t('header.unpublish'), disabled: true },
+                  { label: t('header.unpublish'), disabled: true, describedBy: 'blx-unpublish-hint' },
+                  {
+                    label: t('publication.rollback'),
+                    disabled:
+                      !publication || publication.layout.state === 'unpublished' || publication.layout.snapshot < 2,
+                    onSelect: () => {
+                      setPublicationAction('rollback');
+                      setPublishOpen(true);
+                    },
+                  },
                 ]}
                 className="blx-menu-control blx-publish-split"
                 toolbarTrigger
@@ -517,7 +601,10 @@ export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppeara
           {t('header.save.hint')}
         </span>
         <span id="blx-publish-hint" className="sr-only">
-          {t('header.publish.hint')}
+          {publishHint}
+        </span>
+        <span id="blx-unpublish-hint" className="sr-only">
+          {t('publication.unpublishUnavailable')}
         </span>
         <span id="blx-undo-hint" className="sr-only">
           {t('header.undo.hint')}
@@ -537,6 +624,100 @@ export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppeara
             });
         }}
       />
+      <Dialog open={publishOpen} onOpenChange={setPublishOpen}>
+        <DialogContent
+          title={t(publicationAction === 'rollback' ? 'publication.rollbackTitle' : 'publication.confirmTitle')}
+          description={t(
+            publicationAction === 'rollback' ? 'publication.rollbackDescription' : 'publication.confirmDescription',
+          )}
+          closeLabel={t('dialog.close')}
+        >
+          {publicationAction === 'publish' && (
+            <div className="blx-publication-summary">
+              <p>
+                {t('publication.layout')}: {t(`publication.state.${publication?.layout.state ?? 'unpublished'}`)}
+              </p>
+              <fieldset>
+                <legend>{t('publication.locales')}</legend>
+                {bootstrap.enabledLocales.map((item) => {
+                  const state = publication?.locales[item]?.state ?? 'unpublished';
+                  return (
+                    <label key={item}>
+                      <input
+                        type="checkbox"
+                        className="accent-ed-primary"
+                        checked={selectedLocales.includes(item)}
+                        onChange={(event) => {
+                          setSelectedLocales((current) =>
+                            event.target.checked ? [...current, item] : current.filter((localeId) => localeId !== item),
+                          );
+                        }}
+                      />{' '}
+                      {item} — {t(`publication.state.${state}`)}
+                    </label>
+                  );
+                })}
+              </fieldset>
+            </div>
+          )}
+          {publicationError && (
+            <div role="alert" className="blx-save-alert">
+              {publicationError.message ?? t('publication.error')}
+              {publicationError.status === 429 && (
+                <span>
+                  {t('publication.retryAfter', {
+                    seconds: publicationError.retryAfter ?? Number(publicationError.data?.['retryAfter'] ?? 1),
+                  })}
+                </span>
+              )}
+              {publicationError.status === 409 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    void store.getState().refreshPublication();
+                  }}
+                >
+                  {t('publication.reloadState')}
+                </button>
+              )}
+            </div>
+          )}
+          <div className="flex gap-2">
+            <button
+              type="button"
+              className="ed-focus-ring rounded-md bg-ed-primary px-3 py-2 text-ed-primary-fg hover:bg-ed-primary-hover"
+              disabled={
+                publicationStatus === 'publishing' ||
+                (publicationAction === 'publish' &&
+                  !selectedLocales.length &&
+                  publication?.layout.state === 'published')
+              }
+              onClick={() => {
+                const action =
+                  publicationAction === 'rollback'
+                    ? store.getState().rollback()
+                    : store.getState().publish(selectedLocales);
+                void action.then(() => {
+                  if (store.getState().publicationStatus === 'idle') setPublishOpen(false);
+                });
+              }}
+            >
+              {publicationStatus === 'publishing'
+                ? t('publication.publishing')
+                : t(publicationAction === 'rollback' ? 'publication.rollbackConfirm' : 'header.publish')}
+            </button>
+            <button
+              type="button"
+              className="ed-focus-ring rounded-md bg-ed-surface-2 px-3 py-2 text-ed-fg hover:bg-ed-surface-hover"
+              onClick={() => {
+                setPublishOpen(false);
+              }}
+            >
+              {t('save.conflict.cancel')}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
       {saveError !== null && (
         <div role="alert" className="blx-save-alert">
           <span>{t((saveErrorKey ?? 'save.error.server') as MessageKey)}</span>

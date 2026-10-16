@@ -70,6 +70,12 @@ Pages contains All pages (derived from the validated same-origin admin URL) and 
 
 Preview opens only a validated same-origin `bootstrap.viewUrl` in a new tab with `noopener noreferrer`; absent or invalid URLs produce a disabled control with a hint. Save Draft and Publish stay disabled and explain that persistence is not wired yet. BWB-055 will wire save/publish state, error recovery and real status timestamps; BWB-057 will wire viewport behavior and locale-specific preview URLs. The visible saved-relative-time placeholder is derived from current dirty state and formatted in the editor locale, independent of website translation locale.
 
+### Publication controls (BWB-055 / #55 part b)
+
+The header reads `GET /documents/{id}/published` on document load and after publish or rollback. Publishing first saves a dirty draft, then confirms the working layout state and each enabled locale; selected locale requests are sent in sequence with the returned pointer revision in a quoted `If-Match` header. A layout publish is combined with the first selected locale when possible. The header chip describes publication state independently of the saved-draft indicator and uses the editor interface catalog, never the content locale. A `409` keeps the dialog open and offers a publication-state refresh; `429` displays the server retry delay. The server's `blixis_*` error message and structured validation data remain available to the dialog.
+
+The REST API currently has no unpublish route, so Unpublish stays disabled and explains that it is unavailable. Publication state exposes the current snapshot but does not enumerate snapshot history. Rollback therefore offers the previous numbered snapshot when the current snapshot is at least 2; a missing/pruned snapshot is reported by the server. Scheduling remains disabled because no schedule endpoint exists.
+
 ## Four independent settings
 
 | Setting | Where it lives | Applied to | Never derived from |

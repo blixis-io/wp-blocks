@@ -88,7 +88,12 @@ export function fakeClient(streams: {
     writeLayout: unsupported,
     writeContent: unsupported,
     listRevisions: unsupported,
-    readPublication: unsupported,
+    readPublication: () =>
+      Promise.resolve(
+        ok({ pointerRevision: 0, layout: { state: 'unpublished', snapshot: 0, workingRevision: 0 }, locales: {} }),
+      ),
+    publish: unsupported,
+    rollback: unsupported,
     preview: unsupported,
   };
   return client;

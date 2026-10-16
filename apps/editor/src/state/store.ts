@@ -7,6 +7,7 @@ import { createHistorySlice, type HistorySlice } from './history-slice';
 import { createSelectionSlice, type SelectionSlice } from './selection-slice';
 import { createSettingsSlice, type SettingsSlice } from './settings-slice';
 import { createStructureSlice, type StructureSlice } from './structure-slice';
+import { createPublicationSlice, type PublicationSlice } from './publication-slice';
 
 /** Everything the editor state holds. The slices are separate files; the bridge slice carries the only write path. */
 export type EditorState = DocumentSlice &
@@ -15,6 +16,7 @@ export type EditorState = DocumentSlice &
   SettingsSlice &
   BridgeSlice &
   StructureSlice &
+  PublicationSlice &
   Pick<ResolvedDeps, 'registry' | 'breakpoints'>;
 export type EditorStore = StoreApi<EditorState>;
 
@@ -33,6 +35,7 @@ export function createEditorStore(deps: EditorStoreDeps): EditorStore {
     ...createHistorySlice(...args),
     ...createSettingsSlice(resolved)(...args),
     ...createStructureSlice(resolved)(...args),
+    ...createPublicationSlice(resolved)(...args),
     ...createBridgeSlice(resolved, emitter)(...args),
   }));
 }

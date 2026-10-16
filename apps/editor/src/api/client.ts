@@ -1,9 +1,12 @@
 import type {
   ApiResult,
   PreviewRequestBody,
+  PublishOptions,
+  PublicationResult,
   PreviewResult,
   PublicationState,
   RestClient,
+  RollbackOptions,
   RevisionEntry,
   StreamRead,
   StreamWritten,
@@ -215,7 +218,7 @@ export function createRestClient({
           return invalid<T>();
         }
       }
-      if (method === 'PUT') {
+      if (expectedRevision !== undefined) {
         headers.set('If-Match', `"${String(expectedRevision)}"`);
       }
       const response = await fetchImpl(url, {
@@ -249,9 +252,20 @@ export function createRestClient({
           return invalid<T>();
         const data = cleanData(parsed['data'], nonce);
         if (!data) return invalid<T>();
+        const retryHeader = response.headers.get('Retry-After');
+        const retryAfter = retryHeader !== null && /^\d{1,6}$/.test(retryHeader) ? Number(retryHeader) : undefined;
         return {
           ok: false,
-          error: { kind: 'http', status: response.status, code: parsed['code'], data },
+          error: {
+            kind: 'http',
+            status: response.status,
+            code: parsed['code'],
+            data,
+            ...(nonce.length === 0 || !parsed['message'].includes(nonce)
+              ? { message: parsed['message'].slice(0, 1000) }
+              : {}),
+            ...(retryAfter !== undefined ? { retryAfter } : {}),
+          },
         };
       }
       const value = validate?.(parsed);
@@ -297,6 +311,19 @@ export function createRestClient({
         : null,
     );
   };
+  const publicationResult = (value: unknown): PublicationResult | null => {
+    if (!isObject(value) || !keysAre(value, ['pointerRevision', 'layoutSnapshot', 'contentSnapshot', 'pinnedLocales']))
+      return null;
+    if (
+      !safeInteger(value['pointerRevision']) ||
+      (value['layoutSnapshot'] !== null && !safeInteger(value['layoutSnapshot'])) ||
+      (value['contentSnapshot'] !== null && !safeInteger(value['contentSnapshot'])) ||
+      !Array.isArray(value['pinnedLocales']) ||
+      !value['pinnedLocales'].every(validLocale)
+    )
+      return null;
+    return value as unknown as PublicationResult;
+  };
   return {
     readLayout: (options) => readStream(null, options),
     readContent: (locale, options) => readStream(locale, options),
@@ -335,6 +362,32 @@ export function createRestClient({
         options?.signal,
         (value) => publication(value),
       ),
+    publish: (options: PublishOptions, requestOptions) => {
+      if (!safeInteger(options.pointerRevision) || (options.locale !== undefined && !validLocale(options.locale)))
+        return Promise.resolve({ ok: false, error: { kind: 'http', status: 400, code: 'blixis_invalid_document' } });
+      const { pointerRevision, ...body } = options;
+      return request<PublicationResult>(
+        `documents/${String(postId)}/publish`,
+        'POST',
+        body,
+        pointerRevision,
+        requestOptions?.signal,
+        publicationResult,
+      );
+    },
+    rollback: (options: RollbackOptions, requestOptions) => {
+      if (!safeInteger(options.pointerRevision) || ('locale' in options && !validLocale(options.locale)))
+        return Promise.resolve({ ok: false, error: { kind: 'http', status: 400, code: 'blixis_invalid_document' } });
+      const { pointerRevision, ...body } = options;
+      return request<PublicationResult>(
+        `documents/${String(postId)}/rollback`,
+        'POST',
+        body,
+        pointerRevision,
+        requestOptions?.signal,
+        publicationResult,
+      );
+    },
     preview: (body: PreviewRequestBody, options) => {
       if (body.locale !== undefined && !validLocale(body.locale))
         return Promise.resolve({ ok: false, error: { kind: 'http', status: 400, code: 'blixis_invalid_locale' } });

@@ -14,6 +14,63 @@ function client(
 }
 
 describe('REST client requests', () => {
+  it('publishes and rolls back with the pointer revision in If-Match', async () => {
+    const calls: RequestInit[] = [];
+    const fetchMock = vi.fn((_input: RequestInfo | URL, init?: RequestInit) => {
+      if (init) calls.push(init);
+      return Promise.resolve(
+        response({ pointerRevision: 3, layoutSnapshot: 2, contentSnapshot: 4, pinnedLocales: [] }),
+      );
+    });
+    const api = client(fetchMock);
+    expect(await api.publish({ pointerRevision: 2, layout: true, locale: 'nl_NL' })).toMatchObject({
+      ok: true,
+      value: { pointerRevision: 3 },
+    });
+    expect(await api.rollback({ pointerRevision: 3, locale: 'nl_NL', contentSnapshot: 1 })).toMatchObject({ ok: true });
+    expect(calls.map((call) => [call.method, headersFor(call).get('If-Match'), call.body])).toEqual([
+      ['POST', '"2"', JSON.stringify({ layout: true, locale: 'nl_NL' })],
+      ['POST', '"3"', JSON.stringify({ locale: 'nl_NL', contentSnapshot: 1 })],
+    ]);
+  });
+
+  it('preserves publication conflict details, retry-after and rejects malformed success bodies', async () => {
+    const conflict = await client(
+      vi.fn(() =>
+        Promise.resolve(
+          new Response(
+            JSON.stringify({
+              code: 'blixis_conflict',
+              message: 'Changed elsewhere',
+              data: { status: 409, currentRevision: 8, expectedRevision: 2 },
+            }),
+            { status: 409 },
+          ),
+        ),
+      ),
+    ).publish({ pointerRevision: 2, layout: true });
+    expect(conflict).toMatchObject({
+      ok: false,
+      error: { status: 409, message: 'Changed elsewhere', data: { currentRevision: 8 } },
+    });
+    const limited = await client(
+      vi.fn(() =>
+        Promise.resolve(
+          new Response(
+            JSON.stringify({ code: 'blixis_rate_limited', message: 'Wait', data: { status: 429, retryAfter: 7 } }),
+            { status: 429, headers: { 'Retry-After': '7' } },
+          ),
+        ),
+      ),
+    ).publish({ pointerRevision: 2, layout: true });
+    expect(limited).toMatchObject({ ok: false, error: { status: 429, retryAfter: 7 } });
+    expect(
+      await client(vi.fn(() => Promise.resolve(response({ pointerRevision: 3 })))).publish({
+        pointerRevision: 2,
+        layout: true,
+      }),
+    ).toEqual({ ok: false, error: { kind: 'invalid-response' } });
+  });
   it.each([
     ['readLayout', ['documents/42/layout', 'GET']],
     ['readContent', ['documents/42/content/nl_NL', 'GET']],

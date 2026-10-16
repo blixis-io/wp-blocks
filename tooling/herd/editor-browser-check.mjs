@@ -2197,9 +2197,27 @@ try {
         assert.ok(button, 'Save Draft button is available for restoring the original heading');
         await clickReal(`button[aria-label=${JSON.stringify(button)}]`);
         await waitForSaveState('saved');
-        await nav(editorUrl, 2500);
       }
+      const publishControl = await ev(
+        `(() => [...document.querySelectorAll('.blx-header button')].find((item) => /Publish|Publiceren/.test(item.getAttribute('aria-label') ?? ''))?.getAttribute('aria-label'))()`,
+      );
+      const publishDisabled = await ev(
+        `(() => [...document.querySelectorAll('.blx-header button')].find((item) => /Publish|Publiceren/.test(item.getAttribute('aria-label') ?? ''))?.getAttribute('aria-disabled'))()`,
+      );
+      if (publishControl && publishDisabled !== 'true') {
+        await clickReal(`button[aria-label=${JSON.stringify(publishControl)}]`);
+        if (await ev(`!!document.querySelector('[role="dialog"]')`)) {
+          await clickReal(`[role="dialog"] button:not([aria-label])`);
+          for (let attempt = 0; attempt < 80; attempt += 1) {
+            if (!(await ev(`!!document.querySelector('[role="dialog"]')`))) break;
+            await sleep(250);
+          }
+        }
+      }
+      await nav(editorUrl, 2500);
       assert.equal(await headingText(), originalHeading, 'cleanup restores the original stored demo heading');
+      const published = execFileSync('curl', ['-sk', `${SITE}/builder-demo/`], { encoding: 'utf8' });
+      assert.ok(published.includes(originalHeading), 'cleanup restores the original anonymous published page');
       demoRestoreNeeded = false;
     } catch (error) {
       console.error(`Best effort demo heading restoration failed: ${error.message}`);
@@ -2800,22 +2818,57 @@ try {
     anonymousPublishedText.includes(originalHeading) && !anonymousPublishedText.includes('Preview smoke heading'),
     'the anonymous published permalink keeps the prior published heading and does not expose working draft text',
   );
+
+  // Publish through the editor UI, then restore the original live heading through the same UI.
+  const publishHeading = async (value) => {
+    await replaceHeadingInline(value);
+    const buttonName = await ev(
+      `(() => [...document.querySelectorAll('.blx-header button')].find((item) => /Publish|Publiceren/.test(item.getAttribute('aria-label') ?? ''))?.getAttribute('aria-label'))()`,
+    );
+    assert.ok(buttonName, 'the header Publish action is available');
+    await clickReal(`button[aria-label=${JSON.stringify(buttonName)}]`);
+    assert.ok(await ev(`!!document.querySelector('[role="dialog"]')`), 'publish opens its confirmation dialog');
+    const dialogButton = await ev(
+      `(() => [...document.querySelectorAll('[role="dialog"] button')].find((item) => /^(Publish|Publiceren)$/.test(item.textContent.trim()))?.textContent.trim())()`,
+    );
+    assert.ok(dialogButton, 'the confirmation dialog has a Publish action');
+    await clickReal(`[role="dialog"] button:not([aria-label])`);
+    for (let attempt = 0; attempt < 80; attempt += 1) {
+      if (!(await ev(`!!document.querySelector('[role="dialog"]')`))) break;
+      await sleep(250);
+    }
+    assert.equal(
+      await ev(`document.querySelector('.blx-publication-chip')?.textContent.trim()`),
+      'Published',
+      'the header reports the published state',
+    );
+    const raw = execFileSync('curl', ['-sk', '-w', '\n%{http_code}', `${SITE}/builder-demo/`], { encoding: 'utf8' });
+    const status = raw.slice(raw.lastIndexOf('\n') + 1);
+    const body = raw.slice(0, raw.lastIndexOf('\n'));
+    assert.equal(status, '200', 'the anonymous published URL returns 200');
+    assert.ok(body.includes(value), `the anonymous published URL contains ${value}`);
+  };
+  await publishHeading('Publish smoke heading');
+  await publishHeading(originalHeading);
   previewWs.close();
   await fetch(`http://127.0.0.1:9334/json/close/${previewTarget.id}`);
 
-  await replaceHeadingInline(originalHeading);
-  await waitForSaveState('dirty');
-  const restoreButton = await ev(
-    `(() => [...document.querySelectorAll('button')].find((item) => /^(Save Draft|Concept opslaan)$/.test(item.getAttribute('aria-label') ?? ''))?.getAttribute('aria-label'))()`,
-  );
-  assert.ok(restoreButton, 'the header Save Draft action is available for restoration');
-  await clickReal(`button[aria-label=${JSON.stringify(restoreButton)}]`);
-  await waitForSaveState('saved');
-  assert.equal(
-    await ev(`document.querySelector('.blx-saved')?.dataset.saveState`),
-    'saved',
-    'no Saving or Save failed state remains after restoration',
-  );
+  // The publish round trip already restored the original heading; only repair the draft if it drifted.
+  if ((await headingText()) !== originalHeading) {
+    await replaceHeadingInline(originalHeading);
+    await waitForSaveState('dirty');
+    const restoreButton = await ev(
+      `(() => [...document.querySelectorAll('button')].find((item) => /^(Save Draft|Concept opslaan)$/.test(item.getAttribute('aria-label') ?? ''))?.getAttribute('aria-label'))()`,
+    );
+    assert.ok(restoreButton, 'the header Save Draft action is available for restoration');
+    await clickReal(`button[aria-label=${JSON.stringify(restoreButton)}]`);
+    await waitForSaveState('saved');
+    assert.equal(
+      await ev(`document.querySelector('.blx-saved')?.dataset.saveState`),
+      'saved',
+      'no Saving or Save failed state remains after restoration',
+    );
+  }
   await nav(editorUrl, 2500);
   assert.equal(await headingText(), originalHeading, 'the final stored demo heading equals the original value');
   demoRestoreNeeded = false;

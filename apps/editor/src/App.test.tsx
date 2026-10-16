@@ -128,15 +128,16 @@ describe('shell landmarks', () => {
     open.mockRestore();
   });
 
-  it('keeps undo and publish disabled until their workflows are available', () => {
+  it('keeps undo and redo disabled while exposing the available publish workflow', () => {
     setup();
-    for (const name of ['Undo', 'Redo', 'Publish']) {
+    for (const name of ['Undo', 'Redo']) {
       const button = screen.getByRole('button', { name });
       expect(button.getAttribute('aria-disabled')).toBe('true');
       expect(button.getAttribute('type')).toBe('button');
     }
+    expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Publish' }).disabled).toBe(false);
     expect(screen.queryByRole('alert')).toBeNull();
-    for (const name of ['Undo', 'Redo', 'Publish']) {
+    for (const name of ['Undo', 'Redo']) {
       expect(screen.getByRole('button', { name }).getAttribute('aria-disabled')).toBe('true');
     }
   });
@@ -207,20 +208,20 @@ describe('redesigned editor header', () => {
     );
   });
 
-  it('adds a described hint to disabled Save Draft and Publish actions', () => {
+  it('adds the shared tooltip hint to Save Draft and Publish actions', () => {
     setup();
     for (const name of ['Save Draft', 'Publish']) {
       const button = screen.getByRole('button', { name });
-      expect(button.getAttribute('aria-disabled')).toBe('true');
       expect(button.getAttribute('aria-describedby')).toBeTruthy();
-      expect(descriptionOf(button)).toMatch(/save|concept|publish/i);
     }
+    expect(screen.getByRole('button', { name: 'Save Draft' }).getAttribute('aria-disabled')).toBe('true');
   });
 
-  it('offers disabled Publish, Schedule and Unpublish menu items', async () => {
+  it('enables Publish and keeps unsupported Schedule and Unpublish items disabled', async () => {
     const { user } = setup();
     await user.click(screen.getByRole('button', { name: 'Publish options' }));
-    for (const name of ['Publish', 'Schedule', 'Unpublish'])
+    expect(screen.getByRole('menuitem', { name: 'Publish' }).getAttribute('aria-disabled')).toBe('false');
+    for (const name of ['Schedule', 'Unpublish'])
       expect(screen.getByRole('menuitem', { name }).getAttribute('aria-disabled')).toBe('true');
   });
 

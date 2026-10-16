@@ -250,6 +250,20 @@ $nl      = [
 $numbers = array_map( static fn ( string $key ): int => (int) substr( $key, (int) strrpos( $key, '_' ) + 1 ), $db->snapshot_keys( $page_id ) );
 $n       = ( [] === $numbers ? 0 : max( $numbers ) ) + 1;
 
+// The demo is republished by every dev run and every browser check; keep the newest few snapshots so it never reaches the
+// publication snapshot limit (200) and the editor's own Publish keeps working.
+if ( [] !== $numbers ) {
+	$keep_from = max( $numbers ) - 4;
+	foreach ( $db->snapshot_keys( $page_id ) as $key ) {
+		if ( (int) substr( $key, (int) strrpos( $key, '_' ) + 1 ) >= $keep_from ) {
+			continue;
+		}
+		foreach ( $db->rows( $page_id, $key ) as $row ) {
+			$db->delete( $page_id, $key, (int) $row['id'] );
+		}
+	}
+}
+
 $content_json = static fn ( int $rev, array $texts ): string => wp_json_encode(
 	[
 		'schemaVersion'   => 1,

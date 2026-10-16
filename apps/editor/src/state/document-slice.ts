@@ -112,7 +112,8 @@ export const createDocumentSlice =
           locales.map(async (locale) => ({ locale, result: await deps.client.readContent(locale, { signal }) })),
         ),
       ]);
-      return { layout, contents };
+      const publication = await deps.client.readPublication({ signal });
+      return { layout, contents, publication };
     };
     let activeSave: Promise<void> | null = null;
     let saveAbortController: AbortController | null = null;
@@ -270,7 +271,7 @@ export const createDocumentSlice =
         else external?.addEventListener('abort', onExternalAbort, { once: true });
         set({ status: 'loading' });
         try {
-          const { layout, contents } = await readAll(controller.signal);
+          const { layout, contents, publication } = await readAll(controller.signal);
           if (!isCurrent(id)) return; // superseded: a newer load owns the state now
           const failure = [layout, ...contents.map((c) => c.result)].find((r) => !r.ok);
           if (failure !== undefined) {
@@ -318,6 +319,9 @@ export const createDocumentSlice =
             savedDocument: document,
             revisions: { layout: layout.value.revision, content: contentRevisions },
             dirty: computeDirty(document, document),
+            ...(publication.ok
+              ? { publication: publication.value, publicationStatus: 'idle' as const, publicationError: null }
+              : {}),
             saveLocked: false,
             lastSavedAt: deps.now(),
             history: createHistory(document, deps.historyLimit),
