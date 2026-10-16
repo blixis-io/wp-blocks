@@ -1100,6 +1100,118 @@ try {
     overlay.toolbarAbove && overlay.toolbarInside,
     `the toolbar sits above selection inside frame (${JSON.stringify(overlay)})`,
   );
+  const resizeId = 'hero-con';
+  await ev(`document.querySelector('[role="treeitem"][data-id="${resizeId}"]')?.click()`);
+  await sleep(450);
+  const layoutExpanded = await ev(
+    `document.querySelector('[aria-label="Toggle Layout"]')?.getAttribute('aria-expanded')`,
+  );
+  if (layoutExpanded === 'false') await ev(`document.querySelector('[aria-label="Toggle Layout"]')?.click()`);
+  const resizeStart = await ev(`(() => {
+    const frame = document.querySelector('main iframe');
+    const element = frame.contentDocument.querySelector('[data-blx-id="' + ${JSON.stringify(resizeId)} + '"]');
+    const handle = document.querySelector('[data-testid="selection-handles"] [data-handle="e"]');
+    const r = handle?.getBoundingClientRect();
+    return element && r ? { width: parseFloat(getComputedStyle(element).width), x: r.left + r.width / 2, y: r.top + r.height / 2 } : null;
+  })()`);
+  assert.ok(
+    resizeStart && Number.isFinite(resizeStart.width),
+    'the selected interactive demo element has a measurable width handle',
+  );
+  await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: resizeStart.x, y: resizeStart.y });
+  await send('Input.dispatchMouseEvent', {
+    type: 'mousePressed',
+    x: resizeStart.x,
+    y: resizeStart.y,
+    button: 'left',
+    clickCount: 1,
+  });
+  for (let step = 1; step <= 8; step += 1) {
+    await send('Input.dispatchMouseEvent', {
+      type: 'mouseMoved',
+      x: resizeStart.x + step * 10,
+      y: resizeStart.y,
+      button: 'left',
+      buttons: 1,
+    });
+  }
+  await send('Input.dispatchMouseEvent', {
+    type: 'mouseReleased',
+    x: resizeStart.x + 80,
+    y: resizeStart.y,
+    button: 'left',
+    clickCount: 1,
+  });
+  await sleep(1900);
+  const resizedWidth = await ev(
+    `parseFloat(getComputedStyle(document.querySelector('main iframe').contentDocument.querySelector('[data-blx-id="' + ${JSON.stringify(resizeId)} + '"]')).width)`,
+  );
+  assert.ok(
+    Math.abs(resizedWidth - resizeStart.width - 80) <= 2,
+    `a real 80px canvas drag changes computed width by 80px (${resizeStart.width} -> ${resizedWidth})`,
+  );
+  await ev(
+    `(() => { const tab = [...document.querySelectorAll('aside[aria-label="Inspector"] [role=tab]')].find((item) => item.textContent.trim() === 'Style'); tab?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0, ctrlKey: false })); })()`,
+  );
+  await sleep(400);
+  await ev(
+    `(() => { const b = document.querySelector('button[aria-label="Toggle Layout"]'); if (b && b.getAttribute('aria-expanded') === 'false') b.click(); })()`,
+  );
+  await sleep(400);
+  assert.equal(
+    await ev(`document.querySelector('#style-${resizeId}-width-custom')?.value`),
+    String(Math.round(resizedWidth)),
+    'the inspector Width control follows the resized custom value',
+  );
+  assert.ok(
+    (await ev(`document.querySelector('.blx-box-model-content')?.textContent`)).startsWith(
+      `${String(Math.round(resizedWidth))}px ×`,
+    ),
+    'the box model content follows the resized width',
+  );
+  await clickReal('button[aria-label="Undo"]');
+  await sleep(1900);
+  const undoneWidth = await ev(
+    `parseFloat(getComputedStyle(document.querySelector('main iframe').contentDocument.querySelector('[data-blx-id="' + ${JSON.stringify(resizeId)} + '"]')).width)`,
+  );
+  assert.ok(
+    Math.abs(undoneWidth - resizeStart.width) <= 2,
+    `one Undo restores the original width (${resizeStart.width} -> ${undoneWidth})`,
+  );
+  const cancelStart = await ev(
+    `(() => { const h = document.querySelector('[data-testid="selection-handles"] [data-handle="e"]')?.getBoundingClientRect(); return h ? { x: h.left + h.width / 2, y: h.top + h.height / 2 } : null; })()`,
+  );
+  assert.ok(cancelStart, 'the width handle remains available after undo');
+  await send('Input.dispatchMouseEvent', {
+    type: 'mousePressed',
+    x: cancelStart.x,
+    y: cancelStart.y,
+    button: 'left',
+    clickCount: 1,
+  });
+  await send('Input.dispatchMouseEvent', {
+    type: 'mouseMoved',
+    x: cancelStart.x + 45,
+    y: cancelStart.y,
+    button: 'left',
+    buttons: 1,
+  });
+  await press('Escape');
+  await send('Input.dispatchMouseEvent', {
+    type: 'mouseReleased',
+    x: cancelStart.x + 45,
+    y: cancelStart.y,
+    button: 'left',
+    clickCount: 1,
+  });
+  await sleep(400);
+  const cancelledWidth = await ev(
+    `parseFloat(getComputedStyle(document.querySelector('main iframe').contentDocument.querySelector('[data-blx-id="' + ${JSON.stringify(resizeId)} + '"]')).width)`,
+  );
+  assert.ok(
+    Math.abs(cancelledWidth - resizeStart.width) <= 2,
+    'Escape cancels a resize preview without changing the element',
+  );
   const iframeTopBeforeDuplicate = await ev(`document.querySelector('main iframe').getBoundingClientRect().top`);
   const treeRows = `[...document.querySelectorAll('nav[aria-label="Structure"] [role="treeitem"]')].map((row) => row.dataset.id)`;
   const treeBeforeDuplicate = await ev(treeRows);

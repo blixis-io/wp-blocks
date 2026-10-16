@@ -31,6 +31,7 @@ const styleLabels: Readonly<Record<string, string>> = {
   color: 'Color',
   'background-color': 'Background color',
   width: 'Width',
+  height: 'Height',
   'text-align': 'Text align',
   display: 'Display',
   'border-radius': 'Border radius',
@@ -100,6 +101,127 @@ async function mount(
 }
 
 describe('Inspector controls', () => {
+  it.each(['width', 'height'] as const)('%s custom input is shown only while Custom is selected', async (property) => {
+    await mount('blixis/heading', { tab: 'style' });
+    const select = screen.getByRole<HTMLSelectElement>('combobox', { name: property === 'width' ? 'Width' : 'Height' });
+    expect(document.getElementById(`style-target-${property}-custom`)).toBeNull();
+    fireEvent.change(select, { target: { value: 'custom' } });
+    expect(document.getElementById(`style-target-${property}-custom`)).toBeTruthy();
+    fireEvent.change(select, { target: { value: 'auto' } });
+    expect(document.getElementById(`style-target-${property}-custom`)).toBeNull();
+  });
+
+  it.each([
+    ['width', '736px'],
+    ['height', '184px'],
+    ['width', '2.5rem'],
+    ['height', '45%'],
+  ] as const)('shows the active rule value and unit after resize style command: %s=%s', async (property, size) => {
+    const { store } = await mount('blixis/heading', { tab: 'style' });
+    const selector = { breakpoint: 'mobile' };
+    act(() => {
+      store.getState().setViewport('mobile');
+      store.getState().dispatch({ type: 'set-style-rule', id: 'target', selector, declarations: { [property]: size } });
+    });
+    const field = screen.getByRole<HTMLInputElement>('spinbutton', {
+      name: property === 'width' ? 'Custom width' : 'Custom height',
+    });
+    const unit = /[a-z%]+$/i.exec(size)?.[0] ?? '';
+    expect(field.value).toBe(size.slice(0, -unit.length));
+    expect(
+      screen.getByRole<HTMLSelectElement>('combobox', {
+        name: `${property === 'width' ? 'Custom width' : 'Custom height'} unit`,
+      }).value,
+    ).toBe(unit);
+  });
+
+  it.each(['width', 'height'] as const)('edits %s at the active responsive breakpoint', async (property) => {
+    const { store } = await mount('blixis/heading', { tab: 'style' });
+    act(() => {
+      store.getState().setViewport('tablet');
+    });
+    fireEvent.change(screen.getByRole('combobox', { name: property === 'width' ? 'Width' : 'Height' }), {
+      target: { value: 'custom' },
+    });
+    fireEvent.change(
+      screen.getByRole('spinbutton', { name: property === 'width' ? 'Custom width' : 'Custom height' }),
+      {
+        target: { value: '432' },
+      },
+    );
+    expect(store.getState().document?.root[0]?.style).toContainEqual({
+      breakpoint: 'tablet',
+      declarations: { [property]: '432px' },
+    });
+  });
+
+  it.each(['width', 'height'] as const)('converts %s when its unit changes', async (property) => {
+    const { store } = await mount('blixis/heading', {
+      tab: 'style',
+      style: [{ declarations: { [property]: '32px' } }],
+    });
+    fireEvent.change(screen.getByRole('combobox', { name: property === 'width' ? 'Width' : 'Height' }), {
+      target: { value: 'custom' },
+    });
+    fireEvent.change(
+      screen.getByRole('combobox', { name: `${property === 'width' ? 'Custom width' : 'Custom height'} unit` }),
+      {
+        target: { value: 'rem' },
+      },
+    );
+    expect(store.getState().document?.root[0]?.style?.[0]?.declarations[property]).toBe('2rem');
+  });
+
+  it('keeps an invalid custom dimension draft and announces validation', async () => {
+    await mount('blixis/heading', { tab: 'style' });
+    fireEvent.change(screen.getByRole('combobox', { name: 'Width' }), { target: { value: 'custom' } });
+    const field = screen.getByRole<HTMLInputElement>('spinbutton', { name: 'Custom width' });
+    fireEvent.change(field, { target: { value: '6000' } });
+    expect(field.value).toBe('6000');
+    expect(screen.getByRole('alert').textContent).toBe('This value does not meet the requirements for this field.');
+  });
+
+  it.each([
+    ['en_US', 'Width', 'Height', 'Custom width', 'Custom height'],
+    ['nl_NL', 'Breedte', 'Hoogte', 'Aangepaste breedte', 'Aangepaste hoogte'],
+  ] as const)(
+    'labels both custom dimensions in %s',
+    async (editorLocale, widthSelect, heightSelect, widthLabel, heightLabel) => {
+      await mount('blixis/heading', { tab: 'style', editorLocale });
+      for (const [property, label] of [
+        ['width', widthLabel],
+        ['height', heightLabel],
+      ] as const) {
+        fireEvent.change(screen.getByRole('combobox', { name: property === 'width' ? widthSelect : heightSelect }), {
+          target: { value: 'custom' },
+        });
+        expect(screen.getByRole('spinbutton', { name: label })).toBeTruthy();
+      }
+    },
+  );
+
+  it('has no axe violations with custom dimensions visible and supports RTL direction inheritance', async () => {
+    const { container } = await mount('blixis/heading', { tab: 'style', editorLocale: 'nl_NL' });
+    container.setAttribute('dir', 'rtl');
+    fireEvent.change(screen.getByRole('combobox', { name: 'Breedte' }), { target: { value: 'custom' } });
+    fireEvent.change(screen.getByRole('combobox', { name: 'Hoogte' }), { target: { value: 'custom' } });
+    expect(await axeViolations(container)).toEqual([]);
+    expect(container.querySelector('#style-target-width-custom')?.closest('[dir="rtl"]')).toBe(container);
+  });
+
+  it('coalesces a burst of custom width typing into one undo step', async () => {
+    const { store } = await mount('blixis/heading', { tab: 'style' });
+    fireEvent.change(screen.getByRole('combobox', { name: 'Width' }), { target: { value: 'custom' } });
+    const field = screen.getByRole('spinbutton', { name: 'Custom width' });
+    fireEvent.change(field, { target: { value: '7' } });
+    fireEvent.change(field, { target: { value: '73' } });
+    fireEvent.change(field, { target: { value: '736' } });
+    act(() => {
+      store.getState().undo();
+    });
+    expect(store.getState().document?.root[0]?.style).toBeUndefined();
+  });
+
   it('opens Typography and Color by default and collapses Layout and Border & Effects', async () => {
     await mount('blixis/heading', { tab: 'style', preserveSectionDefaults: true });
     for (const [name, state] of [
@@ -666,6 +788,7 @@ describe('Inspector controls', () => {
         color: 'var(--blx-color-primary)',
         'background-color': 'var(--blx-color-primary)',
         width: '100%',
+        height: '120',
         'text-align': 'right',
         display: 'inline-block',
         'border-radius': '18',
@@ -684,6 +807,9 @@ describe('Inspector controls', () => {
         ['color', 'background-color', 'border-color', 'text-transform', 'width', 'display'].includes(property)
       ) {
         fireEvent.change(screen.getByRole('combobox', { name: label }), { target: { value: next } });
+      } else if (property === 'height') {
+        fireEvent.change(screen.getByRole('combobox', { name: label }), { target: { value: 'custom' } });
+        fireEvent.change(screen.getByRole('spinbutton', { name: 'Custom height' }), { target: { value: next } });
       } else {
         const radioGroup = within(screen.getByRole('radiogroup', { name: label }));
         const accessibleName =
@@ -703,6 +829,7 @@ describe('Inspector controls', () => {
       const expected =
         property === 'font-size' ||
         property === 'letter-spacing' ||
+        property === 'height' ||
         property === 'border-radius' ||
         property === 'border-width'
           ? `${next}px`

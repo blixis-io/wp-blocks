@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 export interface NumberWithUnitProps {
   id: string;
   label: string;
@@ -33,6 +35,8 @@ export function NumberWithUnit({
   onValueChange,
   onInvalid,
 }: NumberWithUnitProps) {
+  const [draftState, setDraftState] = useState<{ value: number; unit: string; text: string } | null>(null);
+  const draft = draftState?.value === value && draftState.unit === unit ? draftState.text : formatCssNumber(value);
   return (
     <div className="blx-number-unit">
       <input
@@ -49,9 +53,10 @@ export function NumberWithUnit({
         max={max}
         step={step}
         disabled={disabled}
-        value={formatCssNumber(value)}
+        value={draft}
         onChange={(event) => {
           const draft = event.target.value;
+          setDraftState({ value, unit, text: draft });
           const next = Number(draft);
           if (/^-?(?:\d+(?:\.\d{0,2})?|\.\d{1,2})$/.test(draft) && Number.isFinite(next) && next >= min && next <= max)
             onValueChange(next, unit);

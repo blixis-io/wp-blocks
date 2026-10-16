@@ -394,7 +394,7 @@ describe('viewport and preview appearance', () => {
 });
 
 describe('selection and hover', () => {
-  it('renders eight decorative handles and toolbar actions from the selected rectangle', async () => {
+  it('renders eight accessible resize handles and toolbar actions from the selected rectangle', async () => {
     const s = setup();
     await ready(s);
     s.pending[0]?.resolve(previewResult('<p data-blx-id="el-text-1">x</p>'));
@@ -411,7 +411,14 @@ describe('selection and hover', () => {
       .deliver({ type: 'rects', revision: 1, items: [{ id: 'el-text-1', x: 20, y: 80, w: 120, h: 28 }] });
     expect(screen.getAllByTestId('selection-overlay')).toHaveLength(1);
     expect(screen.getByTestId('selection-handles').querySelectorAll('[data-handle]')).toHaveLength(8);
+    const handles = [...screen.getByTestId('selection-handles').querySelectorAll<HTMLButtonElement>('[data-handle]')];
+    expect(handles.every((handle) => handle.getAttribute('aria-label')?.includes('Use arrow keys'))).toBe(true);
+    expect(screen.getByRole('button', { name: /Resize from right edge/ }).getAttribute('aria-disabled')).toBe('false');
+    expect(screen.getByRole('button', { name: /Resize from top edge/ }).getAttribute('aria-disabled')).toBe('false');
     const toolbar = screen.getByRole('toolbar', { name: 'Selected element actions' });
+    expect(
+      toolbar.compareDocumentPosition(screen.getByTestId('selection-handles')) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
     expect(within(toolbar).getByRole<HTMLButtonElement>('button', { name: 'Duplicate' }).disabled).toBe(false);
     expect(within(toolbar).getByRole<HTMLButtonElement>('button', { name: 'Delete' }).disabled).toBe(false);
     vi.useRealTimers();
@@ -422,6 +429,80 @@ describe('selection and hover', () => {
     expect(await axeViolations(editorRoot)).toEqual([]);
     vi.useFakeTimers();
   }, 15000);
+
+  it('captures a pointer resize, dispatches responsive width, and cancels on Escape', async () => {
+    const s = setup();
+    await ready(s);
+    act(() => {
+      s.store.getState().select('el-text-1');
+    });
+    await flush(20);
+    s.endpoints
+      .last()
+      .deliver({ type: 'rects', revision: 0, items: [{ id: 'el-text-1', x: 20, y: 50, w: 120, h: 28 }] });
+    const handle = screen.getByRole('button', { name: /Resize from right edge/ });
+    const capture = vi.fn();
+    Object.defineProperty(handle, 'setPointerCapture', { value: capture });
+    Object.defineProperty(handle, 'hasPointerCapture', { value: () => false });
+    fireEvent.pointerDown(handle, { pointerId: 7, clientX: 100, clientY: 50 });
+    expect(capture).toHaveBeenCalledWith(7);
+    fireEvent.pointerMove(handle, { pointerId: 7, clientX: 160, clientY: 50 });
+    await flush(20);
+    expect(screen.getByRole('status').textContent).toBe('180 × 28');
+    fireEvent.pointerUp(handle, { pointerId: 7, clientX: 160, clientY: 50 });
+    expect(s.store.getState().document?.root[0]?.children[0]?.children[1]?.style?.[0]?.declarations).toMatchObject({
+      width: '180px',
+    });
+    expect(s.store.getState().history?.past).toHaveLength(1);
+    expect(s.store.getState().undo().ok).toBe(true);
+    expect(s.store.getState().document?.root[0]?.children[0]?.children[1]?.style).toBeUndefined();
+    fireEvent.pointerDown(handle, { pointerId: 8, clientX: 100, clientY: 50 });
+    fireEvent.pointerMove(handle, { pointerId: 8, clientX: 145, clientY: 50 });
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(screen.queryByText('165 × 28')).toBeNull();
+    expect(s.store.getState().history?.past).toHaveLength(0);
+    fireEvent.pointerDown(handle, { pointerId: 10, clientX: 100, clientY: 50 });
+    fireEvent.pointerMove(handle, { pointerId: 10, clientX: 140, clientY: 50 });
+    fireEvent.pointerCancel(handle, { pointerId: 10 });
+    expect(s.store.getState().history?.past).toHaveLength(0);
+  });
+
+  it('resizes from keyboard in one debounced undo step and leaves locked handles inert', async () => {
+    const s = setup();
+    await ready(s);
+    act(() => {
+      s.store.getState().select('el-text-1');
+    });
+    await flush(20);
+    s.endpoints
+      .last()
+      .deliver({ type: 'rects', revision: 0, items: [{ id: 'el-text-1', x: 20, y: 50, w: 120, h: 28 }] });
+    const right = screen.getByRole('button', { name: /Resize from right edge/ });
+    right.focus();
+    fireEvent.keyDown(right, { key: 'ArrowRight' });
+    await flush(301);
+    expect(s.store.getState().document?.root[0]?.children[0]?.children[1]?.style?.[0]?.declarations).toMatchObject({
+      width: '121px',
+    });
+    expect(s.store.getState().history?.past).toHaveLength(1);
+    s.view.unmount();
+
+    const locked = setup({ editingEnabled: false });
+    await ready(locked);
+    act(() => {
+      locked.store.getState().select('el-text-1');
+    });
+    await flush(20);
+    locked.endpoints
+      .last()
+      .deliver({ type: 'rects', revision: 0, items: [{ id: 'el-text-1', x: 20, y: 50, w: 120, h: 28 }] });
+    const inert = screen.getByRole('button', { name: /Resize from right edge/ });
+    expect(inert.getAttribute('aria-disabled')).toBe('true');
+    const capture = vi.fn();
+    Object.defineProperty(inert, 'setPointerCapture', { value: capture });
+    fireEvent.pointerDown(inert, { pointerId: 9, clientX: 100, clientY: 50 });
+    expect(capture).not.toHaveBeenCalled();
+  });
 
   it('duplicates through one atomic insert command and Undo removes the copy; Delete removes the selected element', async () => {
     const s = setup();

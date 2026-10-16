@@ -140,8 +140,11 @@ export function StyleControl({
     const translated = t(key as never);
     return translated === key ? humanizeTokenName(name, locale === 'nl_NL' ? 'nl_NL' : 'en_US') : translated;
   };
+  const isDimension = field.id === 'width' || field.id === 'height';
+  const dimensionUnit = typeof value === 'string' ? (/([a-z%]+)$/i.exec(value)?.[1] ?? 'px') : 'px';
+  const dimensionRange = styleSliderRange(field.id, dimensionUnit) ?? { min: 0, max: 5000, step: 1 };
   const selectedCustomWidth =
-    customWidth || (field.id === 'width' && typeof value === 'string' && !['auto', '100%'].includes(value));
+    customWidth || (isDimension && typeof value === 'string' && !['auto', '100%'].includes(value));
   const nextViewport = viewport === 'desktop' ? 'tablet' : viewport === 'tablet' ? 'mobile' : 'desktop';
   const update = (next: string | null, coalesceWindowMs?: number) => {
     const declarations =
@@ -179,6 +182,7 @@ export function StyleControl({
     'text-transform': ['capitalize', 'uppercase', 'lowercase', 'none'],
     'text-align': ['left', 'center', 'right', 'justify'],
     width: ['auto', '100%', 'custom'],
+    height: ['auto', 'custom'],
     display: ['block', 'inline', 'inline-block'],
     'border-style': ['none', 'solid', 'dashed', 'dotted'],
     'box-shadow': ['none', 'var(--blx-shadow-card)'],
@@ -192,9 +196,9 @@ export function StyleControl({
     return t(key as never);
   };
   const choices = selectValues[field.id] ?? [];
-  const useNativeSelect = shouldUseSelect(
-    field.id === 'text-align' ? ['Left', 'Center', 'Right', 'Justify'] : choices.map(choiceLabel),
-  );
+  const useNativeSelect =
+    isDimension ||
+    shouldUseSelect(field.id === 'text-align' ? ['Left', 'Center', 'Right', 'Justify'] : choices.map(choiceLabel));
   const sliderUnits: Readonly<Record<string, readonly string[]>> = {
     'font-size': ['px', 'rem', 'em', '%'],
     'line-height': [''],
@@ -286,27 +290,50 @@ export function StyleControl({
         </select>
       </div>
     ) : field.kind === 'select' && useNativeSelect ? (
-      <select
-        id={id}
-        aria-label={fieldLabel}
-        aria-describedby={describedBy}
-        value={field.id === 'width' && selectedCustomWidth ? 'custom' : (value ?? choices[0] ?? '')}
-        disabled={!editable}
-        onChange={(event) => {
-          const choice = event.target.value;
-          if (field.id === 'width' && choice === 'custom') setCustomWidth(true);
-          else {
-            setCustomWidth(false);
-            update(choice);
-          }
-        }}
-      >
-        {choices.map((choice) => (
-          <option key={choice} value={choice}>
-            {choiceLabel(choice)}
-          </option>
-        ))}
-      </select>
+      <>
+        <select
+          id={id}
+          aria-label={fieldLabel}
+          aria-describedby={describedBy}
+          value={isDimension && selectedCustomWidth ? 'custom' : (value ?? choices[0] ?? '')}
+          disabled={!editable}
+          onChange={(event) => {
+            const choice = event.target.value;
+            if (isDimension && choice === 'custom') setCustomWidth(true);
+            else {
+              setCustomWidth(false);
+              update(isDimension && choice === 'auto' ? null : choice);
+            }
+          }}
+        >
+          {choices.map((choice) => (
+            <option key={choice} value={choice}>
+              {choiceLabel(choice)}
+            </option>
+          ))}
+        </select>
+        {isDimension && selectedCustomWidth ? (
+          <NumberWithUnit
+            id={`${id}-custom`}
+            label={t(field.id === 'width' ? 'inspector.style.customWidth' : 'inspector.style.customHeight')}
+            value={typeof value === 'string' ? Number.parseFloat(value) || 0 : 0}
+            unit={dimensionUnit}
+            units={['px', 'rem', 'em', '%', 'vw']}
+            min={dimensionRange.min}
+            max={dimensionRange.max}
+            step={dimensionRange.step}
+            disabled={!editable}
+            describedBy={describedBy}
+            onValueChange={(next, unit) => {
+              const converted = unit === dimensionUnit ? next : convertStyleUnit(next, dimensionUnit, unit);
+              update(`${String(Number(converted.toFixed(2)))}${unit}`);
+            }}
+            onInvalid={() => {
+              setError(t('inspector.error.invalid'));
+            }}
+          />
+        ) : null}
+      </>
     ) : field.kind === 'select' ? (
       <div id={id} className="blx-segmented" role="radiogroup" aria-label={fieldLabel} aria-describedby={describedBy}>
         {(selectValues[field.id] ?? []).map((choice, index) => (
@@ -315,12 +342,12 @@ export function StyleControl({
             type="button"
             role="radio"
             aria-checked={
-              field.id === 'width' && choice === 'custom'
+              isDimension && choice === 'custom'
                 ? selectedCustomWidth
                 : value === choice || (value === undefined && index === 0)
             }
             tabIndex={
-              field.id === 'width' && choice === 'custom'
+              isDimension && choice === 'custom'
                 ? selectedCustomWidth
                   ? 0
                   : -1
@@ -331,7 +358,7 @@ export function StyleControl({
             aria-label={choiceLabel(choice)}
             data-choice={choice}
             className={
-              field.id === 'width' && choice === 'custom'
+              isDimension && choice === 'custom'
                 ? selectedCustomWidth
                   ? 'is-active'
                   : undefined
@@ -341,10 +368,10 @@ export function StyleControl({
             }
             disabled={!editable}
             onClick={() => {
-              if (field.id === 'width' && choice === 'custom') setCustomWidth(true);
+              if (isDimension && choice === 'custom') setCustomWidth(true);
               else {
                 setCustomWidth(false);
-                update(choice);
+                update(isDimension && choice === 'auto' ? null : choice);
               }
             }}
             onKeyDown={(event) => {
@@ -354,10 +381,10 @@ export function StyleControl({
                 const nextIndex = (index + (event.key === 'ArrowRight' ? 1 : -1) + values.length) % values.length;
                 const next = values[nextIndex];
                 if (next) {
-                  if (field.id === 'width' && next === 'custom') setCustomWidth(true);
+                  if (isDimension && next === 'custom') setCustomWidth(true);
                   else {
                     setCustomWidth(false);
-                    update(next);
+                    update(isDimension && next === 'auto' ? null : next);
                   }
                   event.currentTarget.parentElement
                     ?.querySelectorAll<HTMLButtonElement>('[role="radio"]')
@@ -379,24 +406,6 @@ export function StyleControl({
             )}
           </button>
         ))}
-        {field.id === 'width' && selectedCustomWidth ? (
-          <NumberWithUnit
-            id={`${id}-custom`}
-            label={t('inspector.style.width')}
-            value={typeof value === 'string' ? Number.parseFloat(value) || 960 : 960}
-            unit={typeof value === 'string' ? (/([a-z%]+)$/i.exec(value)?.[1] ?? 'px') : 'px'}
-            units={['px', 'rem', '%', 'vw']}
-            min={1}
-            max={5000}
-            disabled={!editable}
-            onValueChange={(next, unit) => {
-              update(`${String(next)}${unit}`);
-            }}
-            onInvalid={() => {
-              setError(t('inspector.error.invalid'));
-            }}
-          />
-        ) : null}
       </div>
     ) : field.kind === 'spacing' ? (
       <fieldset className="blx-spacing">

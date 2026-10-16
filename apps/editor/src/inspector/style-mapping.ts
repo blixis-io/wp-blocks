@@ -10,6 +10,7 @@ export const STYLE_FIELDS = [
   { id: 'margin', key: 'inspector.style.spacing', kind: 'spacing' },
   { id: 'padding', key: 'inspector.style.padding', kind: 'spacing' },
   { id: 'width', key: 'inspector.style.width', kind: 'select' },
+  { id: 'height', key: 'inspector.style.height', kind: 'select' },
   { id: 'text-align', key: 'inspector.style.textAlign', kind: 'select' },
   { id: 'display', key: 'inspector.style.display', kind: 'select' },
   { id: 'border-radius', key: 'inspector.style.borderRadius', kind: 'token' },

@@ -24,6 +24,13 @@ export function styleSliderRange(property: string, unit: string): StyleSliderRan
     return { min: 0, max: 64, step: 1 };
   }
   if (property === 'border-width') return { min: 0, max: 20, step: 1 };
+  if (property === 'width' || property === 'height') {
+    if (unit === 'rem') return { min: 0, max: 300, step: 0.05 };
+    if (unit === '%') return { min: 0, max: 100, step: 1 };
+    if (unit === 'em') return { min: 0, max: 300, step: 0.05 };
+    if (unit === 'vw') return { min: 0, max: 100, step: 1 };
+    return { min: 0, max: 5000, step: 1 };
+  }
   return undefined;
 }
 

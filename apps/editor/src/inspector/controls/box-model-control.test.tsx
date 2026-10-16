@@ -63,6 +63,10 @@ describe('box model inspector widget', () => {
     expect(padding?.querySelector('.blx-box-model-content')).toBeTruthy();
     expect(container.textContent).not.toContain('Position');
   });
+  it('reflects the current width and height declarations in the content box', async () => {
+    const { container } = await setup('en_US', 'light', [{ declarations: { width: '240px', height: '80px' } }]);
+    expect(container.querySelector('.blx-box-model-content')?.textContent).toBe('240px × 80px');
+  });
   it('keeps the logical keyboard order top, end, bottom, start from outer to inner', async () => {
     await setup();
     expect(screen.getAllByRole('spinbutton').map((input) => input.getAttribute('aria-label'))).toEqual([
