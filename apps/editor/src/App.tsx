@@ -9,6 +9,7 @@ import {
 } from '@blixis/wp-editor-ui';
 import { Icon } from '@blixis/wp-editor-ui';
 import type { RestClient } from './api/types';
+import type { CanvasMessage } from '@blixis/wp-canvas-bridge';
 import { Canvas, PreviewAppearance, type CanvasTestOptions } from './canvas/Canvas';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { findPath, nodeAt, type ElementNode, type RichText } from '@blixis/wp-core';
@@ -65,6 +66,26 @@ function Shell({
     status: 'loading' | 'ready';
     value?: string | RichText;
   } | null>(null);
+  // The Selected Text section and the Text Formatting row live on the Content tab: show it while an edit session runs
+  // unless the user picks another tab during that session (the remembered tab preference is left untouched).
+  const editingId = editTarget?.id;
+  const [tabPickedDuringEdit, setTabPickedDuringEdit] = useState<string | null>(null);
+  const shownTab = editingId !== undefined && tabPickedDuringEdit !== editingId ? 'content' : inspectorTab;
+  const [inlineEditing, setInlineEditing] = useState(() => readSessionStorage('blixis-inline-editing') !== 'false');
+  const [editSelection, setEditSelection] = useState<Extract<CanvasMessage, { type: 'edit-selection' }> | null>(null);
+  const [tokenColors, setTokenColors] = useState<Partial<Record<'light' | 'dark', Readonly<Record<string, string>>>>>(
+    {},
+  );
+  const [sendEditCommand, setSendEditCommand] = useState<(name: string, args?: Record<string, unknown>) => void>(
+    () => () => undefined,
+  );
+  const [startEdit, setStartEdit] = useState<(id: string, prop: string) => void>(() => () => undefined);
+  const registerEditCommand = useCallback((send: (name: string, args?: Record<string, unknown>) => void) => {
+    setSendEditCommand(() => send);
+  }, []);
+  const registerEditStart = useCallback((start: (id: string, prop: string) => void) => {
+    setStartEdit(() => start);
+  }, []);
   const store = useEditorStoreApi();
   const panels = useEditorStore((state) => state.panels);
   const togglePanel = useEditorStore((state) => state.togglePanel);
@@ -175,7 +196,12 @@ function Shell({
                 client={client}
                 selected={selected}
                 editingEnabled={bootstrap.editingEnabled}
+                inlineEditing={inlineEditing}
                 onEditSessionChange={setEditTarget}
+                onEditSelectionChange={setEditSelection}
+                onTokenColorsChange={setTokenColors}
+                onEditCommandApiChange={registerEditCommand}
+                onEditStartApiChange={registerEditStart}
                 {...canvas}
               />
             </>
@@ -214,10 +240,11 @@ function Shell({
             )}
           </p>
           <Tabs
-            value={inspectorTab}
+            value={shownTab}
             onValueChange={(value) => {
               if (value === 'content' || value === 'style' || value === 'advanced') {
                 setInspectorTab(value);
+                setTabPickedDuringEdit(editingId ?? null);
                 writeSessionStorage('blixis-inspector-tab', value);
               }
             }}
@@ -234,6 +261,18 @@ function Shell({
                 tab="content"
                 editingEnabled={bootstrap.editingEnabled}
                 editTarget={editTarget}
+                editSelection={editSelection}
+                tokenColors={tokenColors}
+                sendEditCommand={sendEditCommand}
+                inlineEditing={inlineEditing}
+                onInlineEditingChange={(value) => {
+                  setInlineEditing(value);
+                  writeSessionStorage('blixis-inline-editing', String(value));
+                }}
+                startEdit={(id, prop) => {
+                  setInspectorTab('content');
+                  startEdit(id, prop);
+                }}
               />
             </TabsContent>
             <TabsContent value="style">

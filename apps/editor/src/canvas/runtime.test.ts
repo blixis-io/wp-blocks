@@ -126,6 +126,7 @@ function need<T>(value: T | null): T {
 }
 
 let current: Harness | null = null;
+let restoreTokenColorSpy: (() => void) | null = null;
 const begin = (options?: Parameters<typeof start>[0]): Harness => {
   current = start(options);
   return current;
@@ -139,6 +140,8 @@ beforeEach(() => {
   mountDocument();
 });
 afterEach(() => {
+  restoreTokenColorSpy?.();
+  restoreTokenColorSpy = null;
   current?.runtime.close();
   current = null;
   document.head.innerHTML = '';
@@ -294,6 +297,52 @@ describe('lazy rich text asset loading', () => {
 });
 
 describe('render', () => {
+  it('sends only resolved active token colors after render and again when preview appearance changes', () => {
+    const view = document.defaultView;
+    if (!view) throw new Error('missing jsdom window');
+    const native = view.getComputedStyle.bind(view);
+    const styleSpy = vi.spyOn(view, 'getComputedStyle').mockImplementation((element: Element) => {
+      const result = native(element);
+      if (element === document.documentElement) {
+        const values: Record<string, string> = {
+          '--blx-color-primary': document.documentElement.getAttribute('data-theme') === 'dark' ? '#112233' : '#abcdef',
+        };
+        const mocked = Object.create(result) as CSSStyleDeclaration;
+        Object.defineProperty(mocked, 'getPropertyValue', { value: (name: string) => values[name] ?? '' });
+        return mocked;
+      }
+      return result;
+    });
+    restoreTokenColorSpy = () => {
+      styleSpy.mockRestore();
+    };
+    const h = start();
+    render(
+      h,
+      '<p data-blx-id="el-text-1"><span class="blx-mc-color-primary">Hello</span></p>',
+      '.blx-mc-color-primary{color:var(--blx-color-primary)}',
+      7,
+    );
+    expect(document.getElementById('blx-canvas-style')?.textContent).toContain('.blx-mc-color-primary');
+    expect(document.querySelector('#blx-canvas-root .blx-mc-color-primary')).not.toBeNull();
+    expect(view.getComputedStyle(document.documentElement).getPropertyValue('--blx-color-primary')).toBe('#abcdef');
+    expect(h.sent.find((message) => message.type === 'token-colors')).toEqual({
+      type: 'token-colors',
+      mode: 'light',
+      revision: 7,
+      colors: [{ id: 'color-primary', value: '#abcdef' }],
+    });
+    h.deliver({ type: 'mode', mode: 'dark' });
+    expect(h.sent.filter((message) => message.type === 'token-colors').at(-1)).toEqual({
+      type: 'token-colors',
+      mode: 'dark',
+      revision: 7,
+      colors: [{ id: 'color-primary', value: '#112233' }],
+    });
+    h.runtime.close();
+    restoreTokenColorSpy();
+    restoreTokenColorSpy = null;
+  });
   it('inserts the fragment into the root, the css into one nonce style, and reports rendered', () => {
     const h = begin();
     render(h, PAGE, '.a{color:red}', 3);

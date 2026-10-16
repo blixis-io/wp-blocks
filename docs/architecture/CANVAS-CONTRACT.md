@@ -22,6 +22,8 @@ The canvas preserves content `lang` and `dir` on `html`, website `data-theme` ap
 
 ## Canvas iframe protocol (BWB-051)
 
+The canvas sends `token-colors` after each successful render and whenever website preview appearance changes. The message contains `mode: light|dark`, an optional render revision, and at most 64 `{ id, value }` entries for active color tokens. The runtime resolves values from its own document element custom properties and transmits only strict hex, numeric `rgb(a)`, or numeric `hsl(a)` strings up to 40 characters. Invalid values are omitted. The parent validates the same contract and retains latest values per website appearance for editor swatches; editor chrome appearance and content locale remain independent.
+
 This section amends the first T6 design (an iframe with `sandbox="allow-same-origin"` and no scripts). That design could not report clicks, sizes or element positions to the editor without running editor code inside the content origin, and any "no scripts" scheme leaves the editor blind. The amended design keeps the guarantee that **document data cannot run code**, but moves it from the sandbox flags to a Content Security Policy and to a trusted runtime that is ours.
 
 ### Components
@@ -103,6 +105,8 @@ Parent to canvas:
 | `ping` | `n` non-negative safe integer |
 | `edit-start` | `id`, inline `prop`, bounded string/rich `value`, `editable: true`, `mode`, content `locale` and `dir`; only one active session |
 | `edit-command` | allow-listed command `name` plus bounded `args`; content is never HTML |
+
+The edit-command allow-list includes `toggle-mark`, `set-link`, `clear-link`, `set-style`, `clear-marks`, `select-all`, and `collapse-selection`. `collapse-selection` has no arguments and places the caret at the end of the active text selection. `apply-to-all` accepts only an allow-listed nested edit command and its validated arguments; the runtime temporarily selects the textblock, applies the operation, restores the previous selection, and focuses the canvas editor. Style fields accept only token ids or an enumerated weight; `null` clears the selected color/highlight value. Link URLs use the shared safe URL validator. Both protocol boundaries validate these commands before dispatch.
 | `edit-end` | `commit` boolean |
 
 Canvas to parent:

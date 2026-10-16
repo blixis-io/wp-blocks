@@ -14,6 +14,12 @@ import { axeViolations } from '../test/axe';
 import { makeBootstrap } from '../test/fixtures';
 import { fakeClient, makeDocument, makeStore, streamsOf } from '../test/state-helpers';
 
+const linkForm = (): HTMLFormElement => {
+  const form = screen.getByLabelText('URL').closest('form');
+  if (!form) throw new Error('missing link popover form');
+  return form;
+};
+
 const CANVAS_URL = `${location.origin}/wp-admin/admin.php?page=blixis-canvas&post=42&locale=fr_FR`;
 
 interface FakeEndpoint extends ParentEndpoint {
@@ -250,6 +256,424 @@ describe('handshake wiring', () => {
 });
 
 describe('preview requests', () => {
+  it.each([
+    ['Italic', 'toggle-mark', { mark: 'italic' }],
+    ['Underline', 'toggle-mark', { mark: 'underline' }],
+    ['Strikethrough', 'toggle-mark', { mark: 'strike' }],
+  ])('dispatches the exact %s toolbar command', async (label, name, args) => {
+    const s = setup();
+    await ready(s);
+    const endpoint = s.endpoints.last();
+    endpoint.deliver({ type: 'edit-request', id: 'el-heading-1' });
+    endpoint.deliver({
+      type: 'edit-selection',
+      id: 'el-heading-1',
+      empty: false,
+      marks: {},
+      text: 'Hello',
+      rect: { x: 30, y: 20, w: 30, h: 24 },
+    });
+    fireEvent.click(
+      within(screen.getByRole('toolbar', { name: 'Text formatting' })).getByRole('button', { name: label }),
+    );
+    expect(endpoint.sent).toContainEqual({ type: 'edit-command', name, args });
+  });
+
+  it.each([
+    ['Text color', 'Primary', 'set-style', { color: 'color-primary' }],
+    ['Text color', 'Default', 'set-style', { color: null }],
+    ['Background highlight', 'Surface', 'set-style', { highlight: 'color-surface' }],
+    ['Background highlight', 'None', 'set-style', { highlight: null }],
+  ])('dispatches exact %s option %s command', async (triggerLabel, optionLabel, name, args) => {
+    const s = setup();
+    await ready(s);
+    const endpoint = s.endpoints.last();
+    endpoint.deliver({ type: 'edit-request', id: 'el-heading-1' });
+    endpoint.deliver({
+      type: 'edit-selection',
+      id: 'el-heading-1',
+      empty: false,
+      marks: {},
+      text: 'Hello',
+      rect: { x: 30, y: 20, w: 30, h: 24 },
+    });
+    fireEvent.click(screen.getByRole('button', { name: triggerLabel }));
+    fireEvent.click(screen.getByRole('menuitemradio', { name: optionLabel }));
+    expect(endpoint.sent).toContainEqual({ type: 'edit-command', name, args });
+  });
+
+  it.each(['code', 'span'])('maps the Span menu choice %s to the code mark command', async (choice) => {
+    const s = setup();
+    await ready(s);
+    const endpoint = s.endpoints.last();
+    endpoint.deliver({ type: 'edit-request', id: 'el-heading-1' });
+    endpoint.deliver({
+      type: 'edit-selection',
+      id: 'el-heading-1',
+      empty: false,
+      marks: {},
+      text: 'Hello',
+      rect: { x: 30, y: 20, w: 30, h: 24 },
+    });
+    fireEvent.change(within(screen.getByTestId('format-toolbar')).getByRole('combobox', { name: 'Inline style' }), {
+      target: { value: choice },
+    });
+    expect(endpoint.sent).toContainEqual({ type: 'edit-command', name: 'toggle-mark', args: { mark: 'code' } });
+  });
+
+  it('renders resolved swatches from the selected website appearance without exposing token ids', async () => {
+    const s = setup();
+    await ready(s);
+    const endpoint = s.endpoints.last();
+    endpoint.deliver({ type: 'token-colors', mode: 'light', colors: [{ id: 'color-primary', value: '#112233' }] });
+    endpoint.deliver({ type: 'token-colors', mode: 'dark', colors: [{ id: 'color-primary', value: '#abcdef' }] });
+    endpoint.deliver({ type: 'edit-request', id: 'el-heading-1' });
+    endpoint.deliver({
+      type: 'edit-selection',
+      id: 'el-heading-1',
+      empty: false,
+      marks: {},
+      text: 'Hello',
+      rect: { x: 30, y: 20, w: 30, h: 24 },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Text color' }));
+    const primary = screen.getByRole('menuitemradio', { name: 'Primary' });
+    expect(primary.textContent).not.toContain('color-primary');
+    expect(primary.querySelector('.blx-format-swatch')).toBeTruthy();
+    expect(primary.getAttribute('aria-checked')).toBe('false');
+    expect(primary.querySelector('.blx-format-swatch')?.getAttribute('style')).toContain('#112233');
+    vi.useRealTimers();
+    expect(await axeViolations(screen.getByRole('toolbar', { name: 'Text formatting' }))).toEqual([]);
+    expect(await axeViolations(screen.getByRole('menu', { name: 'Text color' }))).toEqual([]);
+    fireEvent.click(screen.getByRole('button', { name: 'Text color' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Background highlight' }));
+    expect(await axeViolations(screen.getByRole('menu', { name: 'Background highlight' }))).toEqual([]);
+    fireEvent.click(screen.getByRole('button', { name: 'Background highlight' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Link' }));
+    expect(await axeViolations(linkForm())).toEqual([]);
+    fireEvent.click(screen.getByRole('button', { name: 'Link' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Text color' }));
+    act(() => {
+      s.store.getState().setPreviewMode('dark');
+    });
+    expect(
+      screen.getByRole('menuitemradio', { name: 'Primary' }).querySelector('.blx-format-swatch')?.getAttribute('style'),
+    ).toContain('#abcdef');
+    expect(await axeViolations(screen.getByRole('toolbar', { name: 'Text formatting' }))).toEqual([]);
+    expect(await axeViolations(screen.getByRole('menu', { name: 'Text color' }))).toEqual([]);
+    fireEvent.click(screen.getByRole('button', { name: 'Text color' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Background highlight' }));
+    expect(await axeViolations(screen.getByRole('menu', { name: 'Background highlight' }))).toEqual([]);
+    fireEvent.click(screen.getByRole('button', { name: 'Background highlight' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Link' }));
+    expect(await axeViolations(linkForm())).toEqual([]);
+  });
+  it('shows the inline toolbar only for a non-empty edit selection and dispatches mark commands', async () => {
+    const s = setup();
+    await ready(s);
+    const endpoint = s.endpoints.last();
+    endpoint.deliver({ type: 'edit-request', id: 'el-heading-1' });
+    expect(screen.queryByRole('toolbar', { name: 'Text formatting' })).toBeNull();
+    endpoint.deliver({
+      type: 'edit-selection',
+      id: 'el-heading-1',
+      empty: false,
+      marks: { strong: false },
+      text: 'Hello',
+      rect: { x: 30, y: 20, w: 0, h: 24 },
+    });
+    const toolbar = screen.getByRole('toolbar', { name: 'Text formatting' });
+    expect(toolbar).toBeTruthy();
+    expect(within(toolbar).getByRole('button', { name: 'Bold' }).getAttribute('aria-pressed')).toBe('false');
+    const activeBeforeMouseDown = document.activeElement;
+    fireEvent.mouseDown(toolbar);
+    expect(document.activeElement).toBe(activeBeforeMouseDown);
+    fireEvent.click(within(toolbar).getByRole('button', { name: 'Bold' }));
+    expect(endpoint.sent).toContainEqual({ type: 'edit-command', name: 'toggle-mark', args: { mark: 'bold' } });
+    endpoint.deliver({ type: 'edit-selection', id: 'el-heading-1', empty: true, marks: {}, text: '' });
+    expect(screen.queryByRole('toolbar', { name: 'Text formatting' })).toBeNull();
+  });
+
+  it('shows Selected Text only for a non-empty selection in an active edit session', async () => {
+    const s = setup();
+    await ready(s);
+    const endpoint = s.endpoints.last();
+    expect(screen.queryByRole('region', { name: 'Selected Text' })).toBeNull();
+    endpoint.deliver({ type: 'edit-request', id: 'el-heading-1' });
+    endpoint.deliver({ type: 'edit-selection', id: 'el-heading-1', empty: false, marks: {}, text: 'Selected' });
+    expect(screen.getByRole('region', { name: 'Selected Text' })).toBeTruthy();
+    endpoint.deliver({ type: 'edit-selection', id: 'el-heading-1', empty: true, marks: {}, text: '' });
+    expect(screen.queryByRole('region', { name: 'Selected Text' })).toBeNull();
+  });
+
+  it('truncates and escapes selected text in the info card and preview', async () => {
+    const s = setup();
+    await ready(s);
+    const endpoint = s.endpoints.last();
+    const hostile = '<img onerror=alert(1)>' + 'x'.repeat(50);
+    endpoint.deliver({ type: 'edit-request', id: 'el-heading-1' });
+    endpoint.deliver({ type: 'edit-selection', id: 'el-heading-1', empty: false, marks: {}, text: hostile });
+    const section = screen.getByRole('region', { name: 'Selected Text' });
+    expect(section.querySelector('.blx-selected-info')?.textContent).toContain(hostile.slice(0, 40));
+    expect(section.querySelector('img')).toBeNull();
+    expect(section.querySelector('.blx-format-preview')?.textContent).toBe(hostile);
+  });
+
+  it.each([
+    ['strong', { strong: true }],
+    ['em', { em: true }],
+    ['u', { u: true }],
+    ['s', { s: true }],
+    ['code', { code: true }],
+  ])('renders the selected text %s mark in the preview', async (tag, marks) => {
+    const s = setup();
+    await ready(s);
+    const endpoint = s.endpoints.last();
+    endpoint.deliver({ type: 'edit-request', id: 'el-heading-1' });
+    endpoint.deliver({ type: 'edit-selection', id: 'el-heading-1', empty: false, marks, text: 'Marked' });
+    const preview = screen.getByText('Marked').closest('.blx-format-preview');
+    expect(preview?.querySelector(tag)?.textContent).toBe('Marked');
+  });
+
+  it.each([
+    ['Text color', 'Primary', 'set-style', { color: 'color-primary' }],
+    ['Text color', 'Default', 'set-style', { color: null }],
+    ['Background highlight', 'Surface', 'set-style', { highlight: 'color-surface' }],
+    ['Background highlight', 'None', 'set-style', { highlight: null }],
+  ])('dispatches Selected Text %s %s exactly', async (control, value, name, args) => {
+    const s = setup();
+    await ready(s);
+    const endpoint = s.endpoints.last();
+    endpoint.deliver({ type: 'edit-request', id: 'el-heading-1' });
+    endpoint.deliver({ type: 'edit-selection', id: 'el-heading-1', empty: false, marks: {}, text: 'Hello' });
+    const section = screen.getByRole('region', { name: 'Selected Text' });
+    fireEvent.change(within(section).getByRole('combobox', { name: control }), {
+      target: {
+        value: value === 'Default' || value === 'None' ? '' : value === 'Primary' ? 'color-primary' : 'color-surface',
+      },
+    });
+    expect(endpoint.sent).toContainEqual({ type: 'edit-command', name, args });
+  });
+
+  it('uses resolved token colors in CSSOM swatches and keeps token ids out of visible text', async () => {
+    const s = setup();
+    await ready(s);
+    const endpoint = s.endpoints.last();
+    endpoint.deliver({ type: 'token-colors', mode: 'light', colors: [{ id: 'color-primary', value: '#112233' }] });
+    endpoint.deliver({ type: 'edit-request', id: 'el-heading-1' });
+    endpoint.deliver({
+      type: 'edit-selection',
+      id: 'el-heading-1',
+      empty: false,
+      marks: { style: { color: 'color-primary', highlight: 'color-primary' } },
+      text: 'Hello',
+    });
+    const section = screen.getByRole('region', { name: 'Selected Text' });
+    const preview = section.querySelector<HTMLElement>('.blx-format-preview');
+    const swatch = section.querySelector<HTMLElement>('.blx-selected-token-swatch');
+    expect(preview?.style.getPropertyValue('--blx-selected-text-color')).toBe('#112233');
+    expect(preview?.style.getPropertyValue('--blx-selected-text-highlight')).toBe('#112233');
+    expect(swatch?.style.getPropertyValue('--blx-selected-token-swatch')).toBe('#112233');
+    const visibleText = [...section.querySelectorAll<HTMLElement>('*')]
+      .filter((node) => node.childElementCount === 0)
+      .map((node) => node.textContent)
+      .join(' ');
+    expect(visibleText).not.toContain('color-primary');
+  });
+
+  it('wraps Selected Text commands atomically when Apply to is Whole element', async () => {
+    const s = setup();
+    await ready(s);
+    const endpoint = s.endpoints.last();
+    endpoint.deliver({ type: 'edit-request', id: 'el-heading-1' });
+    endpoint.deliver({ type: 'edit-selection', id: 'el-heading-1', empty: false, marks: {}, text: 'Hello' });
+    const section = screen.getByRole('region', { name: 'Selected Text' });
+    fireEvent.change(within(section).getByRole('combobox', { name: 'Apply to' }), { target: { value: 'whole' } });
+    fireEvent.change(within(section).getByRole('combobox', { name: 'Text color' }), {
+      target: { value: 'color-primary' },
+    });
+    expect(endpoint.sent).toContainEqual({
+      type: 'edit-command',
+      name: 'apply-to-all',
+      args: { name: 'set-style', args: { color: 'color-primary' } },
+    });
+  });
+
+  it('clears selection through collapse-selection', async () => {
+    const s = setup();
+    await ready(s);
+    const endpoint = s.endpoints.last();
+    endpoint.deliver({ type: 'edit-request', id: 'el-heading-1' });
+    endpoint.deliver({ type: 'edit-selection', id: 'el-heading-1', empty: false, marks: {}, text: 'Hello' });
+    fireEvent.click(
+      within(screen.getByRole('region', { name: 'Selected Text' })).getByRole('button', { name: 'Clear selection' }),
+    );
+    expect(endpoint.sent).toContainEqual({ type: 'edit-command', name: 'collapse-selection' });
+  });
+
+  it.each(['en_US', 'nl_NL'] as const)('keeps Selected Text labels translated in %s', async (locale) => {
+    const s = setup({ editorLocale: locale });
+    await ready(s);
+    const endpoint = s.endpoints.last();
+    endpoint.deliver({ type: 'edit-request', id: 'el-heading-1' });
+    endpoint.deliver({ type: 'edit-selection', id: 'el-heading-1', empty: false, marks: {}, text: 'Hello' });
+    const title = locale === 'en_US' ? 'Selected Text' : 'Geselecteerde tekst';
+    expect(screen.getByRole('region', { name: title })).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: locale === 'en_US' ? 'Clear selection' : 'Selectie wissen' }),
+    ).toBeTruthy();
+  });
+
+  it.each([
+    ['javascript:', false],
+    ['data:text/html,x', false],
+    ['vbscript:msgbox(1)', false],
+    ['', false],
+    ['x'.repeat(2049), false],
+    ['https://example.test/', true],
+    ['http://example.test/', true],
+    ['mailto:hello@example.test', true],
+    ['tel:+31201234567', true],
+    ['/relative/path', true],
+    ['relative/path', true],
+    ['?query=1', true],
+    ['#section', true],
+    ['https://example.test/\u0001bad', false],
+  ])('validates link draft %j and dispatches only safe URLs', async (href, safe) => {
+    const s = setup();
+    await ready(s);
+    const endpoint = s.endpoints.last();
+    endpoint.deliver({ type: 'edit-request', id: 'el-heading-1' });
+    endpoint.deliver({
+      type: 'edit-selection',
+      id: 'el-heading-1',
+      empty: false,
+      marks: {},
+      text: 'Hello',
+      rect: { x: 30, y: 20, w: 30, h: 24 },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Link' }));
+    const input = screen.getByRole<HTMLInputElement>('textbox', { name: 'URL' });
+    fireEvent.change(input, { target: { value: href } });
+    fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    if (safe) {
+      expect(endpoint.sent).toContainEqual({ type: 'edit-command', name: 'set-link', args: { href, newTab: false } });
+      expect(screen.queryByRole('alert')).toBeNull();
+    } else {
+      expect(endpoint.sent.some((message) => message.type === 'edit-command' && message.name === 'set-link')).toBe(
+        false,
+      );
+      expect(screen.getByRole('alert').textContent).toBe(
+        'Enter a safe link using http, https, mailto, tel, or a relative address.',
+      );
+      expect(input.getAttribute('aria-describedby')).toBe('blx-rich-link-error');
+      expect(input.value).toBe(href);
+    }
+  });
+
+  it.each([false, true])('prefills active link and applies newTab=%s', async (newTab) => {
+    const s = setup();
+    await ready(s);
+    const endpoint = s.endpoints.last();
+    endpoint.deliver({ type: 'edit-request', id: 'el-heading-1' });
+    endpoint.deliver({
+      type: 'edit-selection',
+      id: 'el-heading-1',
+      empty: false,
+      marks: { link: { href: 'https://example.test/', newTab } },
+      text: 'Hello',
+      rect: { x: 30, y: 20, w: 30, h: 24 },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Link' }));
+    expect(screen.getByRole<HTMLInputElement>('textbox', { name: 'URL' }).value).toBe('https://example.test/');
+    expect(within(linkForm()).getByRole<HTMLInputElement>('checkbox', { name: 'Open in new tab' }).checked).toBe(
+      newTab,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
+    expect(endpoint.sent).toContainEqual({
+      type: 'edit-command',
+      name: 'set-link',
+      args: { href: 'https://example.test/', newTab },
+    });
+  });
+
+  it('removes an active link and exposes no remove action when none is selected', async () => {
+    const s = setup();
+    await ready(s);
+    const endpoint = s.endpoints.last();
+    endpoint.deliver({ type: 'edit-request', id: 'el-heading-1' });
+    endpoint.deliver({
+      type: 'edit-selection',
+      id: 'el-heading-1',
+      empty: false,
+      marks: { link: { href: 'https://example.test/' } },
+      text: 'Hello',
+      rect: { x: 30, y: 20, w: 30, h: 24 },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Link' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Remove' }));
+    expect(endpoint.sent).toContainEqual({ type: 'edit-command', name: 'clear-link' });
+  });
+
+  it('uses the popover radio menu keyboard model and sends a token style command', async () => {
+    const s = setup();
+    await ready(s);
+    const endpoint = s.endpoints.last();
+    endpoint.deliver({ type: 'edit-request', id: 'el-heading-1' });
+    endpoint.deliver({
+      type: 'edit-selection',
+      id: 'el-heading-1',
+      empty: false,
+      marks: { style: { color: 'color-primary' } },
+      text: 'Hello',
+      rect: { x: 30, y: 20, w: 30, h: 24 },
+    });
+    const trigger = screen.getByRole('button', { name: 'Text color' });
+    fireEvent.click(trigger);
+    const menu = screen.getByRole('menu', { name: 'Text color' });
+    expect(within(menu).getByRole('menuitemradio', { name: 'Primary' }).getAttribute('aria-checked')).toBe('true');
+    const first = within(menu).getByRole('menuitemradio', { name: 'Default' });
+    first.focus();
+    fireEvent.keyDown(first, { key: 'ArrowDown' });
+    expect(document.activeElement).toBe(within(menu).getByRole('menuitemradio', { name: 'Primary' }));
+    fireEvent.keyDown(document.activeElement as HTMLElement, { key: 'Escape' });
+    expect(screen.queryByRole('menu', { name: 'Text color' })).toBeNull();
+    expect(document.activeElement).toBe(trigger);
+    fireEvent.click(trigger);
+    fireEvent.click(screen.getByRole('menuitemradio', { name: 'Default' }));
+    expect(endpoint.sent).toContainEqual({ type: 'edit-command', name: 'set-style', args: { color: null } });
+  });
+
+  it('runs overflow clear formatting and clear link commands with disabled state', async () => {
+    const s = setup();
+    await ready(s);
+    const endpoint = s.endpoints.last();
+    endpoint.deliver({ type: 'edit-request', id: 'el-heading-1' });
+    endpoint.deliver({
+      type: 'edit-selection',
+      id: 'el-heading-1',
+      empty: false,
+      marks: {},
+      text: 'Hello',
+      rect: { x: 30, y: 20, w: 30, h: 24 },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'More formatting options' }));
+    expect(screen.getByRole('menuitem', { name: 'Clear link' }).hasAttribute('disabled')).toBe(true);
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Clear formatting' }));
+    expect(endpoint.sent).toContainEqual({ type: 'edit-command', name: 'clear-marks' });
+    endpoint.deliver({
+      type: 'edit-selection',
+      id: 'el-heading-1',
+      empty: false,
+      marks: { link: { href: 'https://example.test/' } },
+      text: 'Hello',
+      rect: { x: 30, y: 20, w: 30, h: 24 },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'More formatting options' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Clear link' }));
+    expect(endpoint.sent).toContainEqual({ type: 'edit-command', name: 'clear-link' });
+  });
+
   it('keeps one active inline edit, ignores stale changes and commits the final value as one undo step', async () => {
     const s = setup();
     await ready(s);

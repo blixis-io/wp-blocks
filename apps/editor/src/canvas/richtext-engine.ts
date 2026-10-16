@@ -13,6 +13,10 @@ import { keymap } from '@tiptap/pm/keymap';
 import { fromModel, toModel } from './richtext-mapper';
 import { isSafeUrl } from '@blixis/wp-core';
 
+const boundedCoordinate = (value: number): number =>
+  Math.max(-1_000_000, Math.min(1_000_000, Number.isFinite(value) ? value : 0));
+const boundedSize = (value: number): number => Math.max(0, Math.min(1_000_000, Number.isFinite(value) ? value : 0));
+
 const Style = Mark.create({
   name: 'blxStyle',
   inclusive: false,
@@ -109,6 +113,42 @@ export function mountRichText(
   const original = element.innerHTML;
   const mount = element.ownerDocument.createElement('div');
   const initialValue = host.multiline ? value : singleLineValue(value);
+  const emitSelection = (editor: Editor): void => {
+    const { from, to } = editor.state.selection;
+    let rect: { left: number; top: number; width: number; height: number } | undefined;
+    try {
+      const selection = editor.view.dom.ownerDocument.getSelection();
+      const range = selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+      const rangeRect = range?.getBoundingClientRect();
+      if (rangeRect && (rangeRect.width > 0 || rangeRect.height > 0)) rect = rangeRect;
+      else {
+        const caret = editor.view.coordsAtPos(from);
+        rect = {
+          left: caret.left,
+          top: caret.top,
+          width: caret.right - caret.left,
+          height: caret.bottom - caret.top,
+        };
+      }
+    } catch {
+      rect = undefined;
+    }
+    host.onSelection({
+      empty: from === to,
+      text: editor.state.doc.textBetween(from, to, ' ').slice(0, 200),
+      marks: selectionMarks(editor),
+      ...(rect === undefined
+        ? {}
+        : {
+            rect: {
+              x: boundedCoordinate(rect.left),
+              y: boundedCoordinate(rect.top),
+              w: boundedSize(rect.width),
+              h: boundedSize(rect.height),
+            },
+          }),
+    });
+  };
   const editor = new Editor({
     element: mount,
     // Tiptap's default base CSS is injected as an un-nonced <style>, which the canvas CSP blocks: the rules live in the runtime's nonced chrome style instead.
@@ -160,29 +200,14 @@ export function mountRichText(
     },
     onUpdate: ({ editor }) => {
       if (!editor.view.composing) host.onChange(toModel(editor.getJSON(), host.tokens));
+      emitSelection(editor);
     },
     onSelectionUpdate: ({ editor }) => {
-      const { from, to } = editor.state.selection;
-      let rect: { left: number; top: number; bottom: number } | undefined;
-      try {
-        rect = editor.view.coordsAtPos(from);
-      } catch {
-        rect = undefined;
-      }
-      host.onSelection({
-        empty: from === to,
-        text: editor.state.doc.textBetween(from, to, ' ').slice(0, 200),
-        marks: {
-          strong: editor.isActive('bold'),
-          em: editor.isActive('italic'),
-          u: editor.isActive('underline'),
-          s: editor.isActive('strike'),
-          code: editor.isActive('code'),
-          link: editor.getAttributes('link'),
-          style: editor.getAttributes('blxStyle'),
-        },
-        ...(rect === undefined ? {} : { rect: { x: rect.left, y: rect.top, w: 0, h: rect.bottom - rect.top } }),
-      });
+      emitSelection(editor);
+    },
+    // Toggling a mark changes the active marks without moving the selection, so the toolbar and inspector state would go stale.
+    onTransaction: ({ editor, transaction }) => {
+      if (transaction.storedMarksSet) emitSelection(editor);
     },
   });
   element.replaceChildren(mount);
@@ -207,4 +232,30 @@ export function mountRichText(
       element.innerHTML = original;
     },
   };
+}
+/**
+ * The active marks in exactly the shape the `edit-selection` message validator accepts. Tiptap reports attributes with
+ * `null` members (`{ color: "x", highlight: null }`) and extra link attributes (`target`, `rel`, `class`); sending those
+ * raw makes the strict validator drop EVERY later selection message, freezing the toolbar and inspector state.
+ */
+export function selectionMarks(editor: Editor): Record<string, unknown> {
+  const marks: Record<string, unknown> = {
+    strong: editor.isActive('bold'),
+    em: editor.isActive('italic'),
+    u: editor.isActive('underline'),
+    s: editor.isActive('strike'),
+    code: editor.isActive('code'),
+  };
+  const link = editor.getAttributes('link') as Record<string, unknown>;
+  if (typeof link['href'] === 'string' && link['href'] !== '') {
+    marks['link'] = { href: link['href'], ...(link['target'] === '_blank' ? { newTab: true } : {}) };
+  }
+  const attrs = editor.getAttributes('blxStyle') as Record<string, unknown>;
+  const style: Record<string, string> = {};
+  for (const key of ['color', 'highlight', 'weight']) {
+    const value = attrs[key];
+    if (typeof value === 'string' && value !== '') style[key] = value;
+  }
+  if (Object.keys(style).length > 0) marks['style'] = style;
+  return marks;
 }

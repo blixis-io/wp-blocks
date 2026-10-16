@@ -39,6 +39,14 @@ import undoLeft from '@iconify-icons/solar/undo-left-linear';
 import undoRight from '@iconify-icons/solar/undo-right-linear';
 import upload from '@iconify-icons/solar/upload-linear';
 import widget from '@iconify-icons/solar/widget-3-linear';
+import bold from '@iconify-icons/solar/text-bold-linear';
+import italic from '@iconify-icons/solar/text-italic-linear';
+import underline from '@iconify-icons/solar/text-underline-linear';
+import strikethrough from '@iconify-icons/solar/text-cross-linear';
+import palette from '@iconify-icons/solar/palette-linear';
+import highlighter from '@iconify-icons/solar/paint-roller-linear';
+import code from '@iconify-icons/solar/code-linear';
+import clearFormatting from '@iconify-icons/solar/eraser-linear';
 import type { ElementDefinition } from '@blixis/wp-element-registry';
 
 interface SolarIconData {
@@ -57,6 +65,14 @@ export const ICONS = {
   chevronDown: altArrowDown,
   chevronUp: altArrowUp,
   link,
+  bold,
+  italic,
+  underline,
+  strikethrough,
+  textColor: palette,
+  highlighter,
+  code,
+  clearFormatting,
   alignLeft,
   alignCenter,
   alignRight,

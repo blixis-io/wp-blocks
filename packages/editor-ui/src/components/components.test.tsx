@@ -50,6 +50,14 @@ describe('Icon', () => {
     chevronDown: 'alt-arrow-down-linear',
     chevronUp: 'alt-arrow-up-linear',
     link: 'link-linear',
+    bold: 'text-bold-linear',
+    italic: 'text-italic-linear',
+    underline: 'text-underline-linear',
+    strikethrough: 'text-cross-linear',
+    textColor: 'palette-linear',
+    highlighter: 'paint-roller-linear',
+    code: 'code-linear',
+    clearFormatting: 'eraser-linear',
     check: 'check-linear',
     checkLinear: 'check-linear',
     preview: 'eye-linear',
@@ -156,6 +164,36 @@ describe('Icon', () => {
       mobile: 'mobile',
     });
     for (const name of Object.values(inspectorIcons)) expect(ICONS[name]).toBeDefined();
+  });
+
+  it('maps rich text toolbar actions to explicit Solar icons', () => {
+    const richTextIcons = {
+      bold: 'bold',
+      italic: 'italic',
+      underline: 'underline',
+      strikethrough: 'strikethrough',
+      link: 'link',
+      textColor: 'textColor',
+      highlighter: 'highlighter',
+      code: 'code',
+      clearFormatting: 'clearFormatting',
+      more: 'more',
+      close: 'close',
+    } as const;
+    expect(richTextIcons).toEqual({
+      bold: 'bold',
+      italic: 'italic',
+      underline: 'underline',
+      strikethrough: 'strikethrough',
+      link: 'link',
+      textColor: 'textColor',
+      highlighter: 'highlighter',
+      code: 'code',
+      clearFormatting: 'clearFormatting',
+      more: 'more',
+      close: 'close',
+    });
+    for (const name of Object.values(richTextIcons)) expect(ICONS[name]).toBeDefined();
   });
 
   it.each([

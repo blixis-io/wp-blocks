@@ -128,6 +128,19 @@ describe('structure tree layout contract', () => {
 });
 
 describe('editor polish CSS contracts', () => {
+  it('uses shared inspector row variables and keeps rich text controls in flow', () => {
+    expect(source).toMatch(
+      /\.blx-selected-text-controls\s*\{[^}]*--blx-inspector-label-column:\s*84px;[^}]*--blx-inspector-control-gap:/,
+    );
+    expect(source).toContain('grid-template-columns: var(--blx-inspector-label-column) minmax(0, 1fr)');
+    expect(source).toMatch(/\.blx-format-popover\s*\{[^}]*position:\s*static;/);
+    const richRules =
+      source.match(
+        /[^{}]*\.blx-(?:selected-text-controls|selected-link-field|selected-color-field|rich-weight-segments|rich-text-style|text-formatting-controls)[^{}]*\{[^}]*\}/g,
+      ) ?? [];
+    expect(richRules.join('\n')).not.toMatch(/position:\s*absolute/);
+  });
+
   it('keeps tooltip background, foreground, and border on explicit tokens', () => {
     expect(source).toMatch(/--ed-tooltip-bg:\s*#[0-9a-f]{6}/i);
     expect(source).toMatch(/--ed-tooltip-fg:\s*#[0-9a-f]{6}/i);
