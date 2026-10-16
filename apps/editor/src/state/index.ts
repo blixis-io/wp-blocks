@@ -49,3 +49,4 @@ export { VIEW_STORAGE_PREFIX, readPersistedView, viewStorageKey, type SettingsSl
 export { createEditorStore, type EditorState, type EditorStore } from './store';
 export type { StructureSlice } from './structure-slice';
 export type { PublicationSlice } from './publication-slice';
+export { createPageSettingsSlice, type PageSettingsSlice } from './page-settings-slice';

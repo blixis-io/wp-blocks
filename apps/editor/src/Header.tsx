@@ -36,6 +36,7 @@ interface HeaderProps {
   onTogglePanel: (side: keyof PanelState) => void;
   appearance: ChromePreference;
   onAppearance: (next: ChromePreference) => void;
+  onPageSettings: () => void;
 }
 function Hint({
   text,
@@ -91,7 +92,7 @@ function hasPublicationPending(state: PublicationState | null): boolean {
   return state.layout.state !== 'published' || Object.values(state.locales).some((item) => item.state !== 'published');
 }
 
-export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppearance }: HeaderProps) {
+export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppearance, onPageSettings }: HeaderProps) {
   const { t, locale } = useI18n();
   const store = useEditorStoreApi();
   const viewport = useEditorStore((state) => state.viewport);
@@ -99,6 +100,8 @@ export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppeara
   const canUndo = useEditorStore((state) => state.canUndo);
   const canRedo = useEditorStore((state) => state.canRedo);
   const dirty = useEditorStore((state) => state.dirty);
+  const pageSettingsDirty = useEditorStore((state) => state.pageSettingsDirty);
+  const pageSettingsTitle = useEditorStore((state) => state.pageSettingsSaved?.title);
   const saveStatus = useEditorStore((state) => state.saveStatus);
   const saveError = useEditorStore((state) => state.saveError);
   const saveErrorKey = useEditorStore((state) => state.saveErrorKey);
@@ -106,7 +109,6 @@ export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppeara
   const publication = useEditorStore((state) => state.publication);
   const publicationStatus = useEditorStore((state) => state.publicationStatus);
   const publicationError = useEditorStore((state) => state.publicationError);
-  const publicationSuccess = useEditorStore((state) => state.publicationSuccess);
   const saveLocked = useEditorStore((state) => state.saveLocked);
   const savedAt = useEditorStore((state) => state.lastSavedAt);
   const [conflictOpen, setConflictOpen] = useState(false);
@@ -125,7 +127,7 @@ export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppeara
   const [publishOpen, setPublishOpen] = useState(false);
   const [publicationAction, setPublicationAction] = useState<'publish' | 'rollback'>('publish');
   const [selectedLocales, setSelectedLocales] = useState<string[]>([]);
-  const hasDirty = dirty.layout || Object.values(dirty.content).some(Boolean);
+  const hasDirty = dirty.layout || Object.values(dirty.content).some(Boolean) || pageSettingsDirty;
   const publishPending = hasDirty || hasPublicationPending(publication);
   const publishDisabled =
     !bootstrap.editingEnabled || saveLocked || publicationStatus === 'publishing' || !publishPending;
@@ -255,14 +257,21 @@ export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppeara
     if (hasDirty) {
       await store.getState().saveDraft();
       const state = store.getState();
-      if (state.saveError || state.dirty.layout || Object.values(state.dirty.content).some(Boolean)) return;
+      if (
+        state.saveError ||
+        state.dirty.layout ||
+        Object.values(state.dirty.content).some(Boolean) ||
+        state.pageSettingsDirty
+      )
+        return;
     }
     const target = `blixis-preview-${String(bootstrap.postId)}`;
     const opened = window.open(previewUrl, target);
     if (opened) opened.opener = null;
   };
   const pagesUrl = validLocalUrl(new URL('edit.php', bootstrap.adminUrl).href);
-  const title = bootstrap.postTitle.trim() === '' ? t('header.untitled') : bootstrap.postTitle;
+  const headerTitle = pageSettingsTitle ?? bootstrap.postTitle;
+  const title = headerTitle.trim() === '' ? t('header.untitled') : headerTitle;
   const icon = 'size-4';
   const appearanceItems = CHROME_PREFERENCES.map((preference) => ({
     label: t(`appearance.${preference}`),
@@ -316,11 +325,7 @@ export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppeara
           },
           {
             label: t('header.saveDraft'),
-            disabled:
-              !bootstrap.editingEnabled ||
-              saveLocked ||
-              saveStatus === 'saving' ||
-              (!dirty.layout && !Object.values(dirty.content).some(Boolean)),
+            disabled: !bootstrap.editingEnabled || saveLocked || saveStatus === 'saving' || !hasDirty,
             describedBy: 'blx-save-hint',
             icon: <Icon name="save" size={15} />,
             onSelect: () => void store.getState().saveDraft(),
@@ -379,6 +384,7 @@ export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppeara
             label={t('header.pages')}
             items={[
               { label: t('header.allPages'), href: pagesUrl ?? undefined, disabled: pagesUrl === null },
+              { label: t('header.pageSettings'), onSelect: onPageSettings },
               { label: t('header.back'), href: bootstrap.adminUrl },
             ]}
             className="blx-menu-control"
@@ -392,17 +398,13 @@ export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppeara
           </Menu>
           <ToolbarSeparator />
           <span className="blx-header-title">
-            <strong className="blx-title-text">{title}</strong>
+            <button type="button" className="blx-title-text" onClick={onPageSettings}>
+              {title}
+            </button>
             <span
               className="blx-saved"
               data-save-state={
-                saveStatus === 'saving'
-                  ? 'saving'
-                  : saveStatus === 'failed'
-                    ? 'failed'
-                    : dirty.layout || Object.values(dirty.content).some(Boolean)
-                      ? 'dirty'
-                      : 'saved'
+                saveStatus === 'saving' ? 'saving' : saveStatus === 'failed' ? 'failed' : hasDirty ? 'dirty' : 'saved'
               }
               role="status"
               aria-live="polite"
@@ -417,7 +419,7 @@ export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppeara
                     {t('save.retry')}
                   </button>
                 </>
-              ) : dirty.layout || Object.values(dirty.content).some(Boolean) ? (
+              ) : hasDirty ? (
                 t('header.unsaved')
               ) : (
                 t('header.saved', { time: relative })
@@ -430,11 +432,6 @@ export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppeara
           >
             {publicationStatusLabel}
           </span>
-          {publicationSuccess && (
-            <span className="blx-publication-success" aria-live="polite">
-              {t('publication.success')}
-            </span>
-          )}
         </div>
         <ToolbarToggleGroup
           type="single"
@@ -525,18 +522,8 @@ export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppeara
                 <ToolbarButton
                   className="blx-header-secondary"
                   variant="outline"
-                  disabled={
-                    !bootstrap.editingEnabled ||
-                    saveLocked ||
-                    saveStatus === 'saving' ||
-                    (!dirty.layout && !Object.values(dirty.content).some(Boolean))
-                  }
-                  aria-disabled={
-                    !bootstrap.editingEnabled ||
-                    saveLocked ||
-                    saveStatus === 'saving' ||
-                    (!dirty.layout && !Object.values(dirty.content).some(Boolean))
-                  }
+                  disabled={!bootstrap.editingEnabled || saveLocked || saveStatus === 'saving' || !hasDirty}
+                  aria-disabled={!bootstrap.editingEnabled || saveLocked || saveStatus === 'saving' || !hasDirty}
                   aria-busy={saveStatus === 'saving'}
                   aria-label={t('header.saveDraft')}
                   aria-describedby="blx-save-hint"

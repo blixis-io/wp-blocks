@@ -45,6 +45,7 @@ final class EditorBootstrap {
 			'pluginVersion'         => (string) ( $values['pluginVersion'] ?? '' ),
 			'themeName'             => (string) ( $values['themeName'] ?? '' ),
 			'editingEnabled'        => (bool) ( $values['editingEnabled'] ?? false ),
+			'seoPluginActive'       => (bool) ( $values['seoPluginActive'] ?? false ),
 			'lockReason'            => \is_string( $values['lockReason'] ?? null ) ? $values['lockReason'] : null,
 			'adminUrl'              => (string) ( $values['adminUrl'] ?? '' ),
 			'canvasUrl'             => \is_string( $values['canvasUrl'] ?? null ) ? $values['canvasUrl'] : null,

@@ -14,6 +14,69 @@ function client(
 }
 
 describe('REST client requests', () => {
+  it('reads and partially writes page settings with the opaque version and validates errors', async () => {
+    const page = {
+      title: 'About',
+      slug: 'about',
+      status: 'publish',
+      excerpt: '',
+      featuredImage: null,
+      seo: {
+        en_US: {
+          metaTitle: '',
+          metaDescription: '',
+          ogTitle: '',
+          ogDescription: '',
+          ogImageId: null,
+          noindex: false,
+          nofollow: false,
+          canonical: '',
+        },
+      },
+      locales: ['en_US'],
+      version: '1111111111111111111111111111111111111111',
+    };
+    const calls: RequestInit[] = [];
+    const fetchMock = vi.fn((_input: RequestInfo | URL, init?: RequestInit) => {
+      if (init) calls.push(init);
+      return Promise.resolve(
+        response(init?.method === 'PUT' ? { version: '2222222222222222222222222222222222222222' } : page),
+      );
+    });
+    const api = client(fetchMock);
+    expect(await api.readPage()).toMatchObject({
+      ok: true,
+      value: { title: 'About', version: '1111111111111111111111111111111111111111' },
+    });
+    expect(await api.writePage({ title: 'Updated' }, '1111111111111111111111111111111111111111')).toMatchObject({
+      ok: true,
+      value: { version: '2222222222222222222222222222222222222222' },
+    });
+    expect(calls[1]?.method).toBe('PUT');
+    expect(headersFor(calls[1] ?? {}).get('If-Match')).toBe('"1111111111111111111111111111111111111111"');
+    expect(calls[1]?.body).toBe('{"title":"Updated"}');
+    expect(await client(vi.fn(() => Promise.resolve(response({ ...page, version: 'invalid' })))).readPage()).toEqual({
+      ok: false,
+      error: { kind: 'invalid-response' },
+    });
+  });
+  it.each([400, 409, 428, 429])('preserves page settings HTTP %i', async (status) => {
+    const result = await client(
+      vi.fn(() =>
+        Promise.resolve(
+          response(
+            {
+              code: 'blixis_invalid_page_settings',
+              message: 'Page settings are invalid',
+              data: { errors: [{ field: 'title', code: 'too_long', message: 'Too long' }] },
+            },
+            status,
+          ),
+        ),
+      ),
+    ).writePage({ title: 'x' }, '1111111111111111111111111111111111111111');
+    expect(result).toMatchObject({ ok: false, error: { kind: 'http', status } });
+  });
   it('publishes and rolls back with the pointer revision in If-Match', async () => {
     const calls: RequestInit[] = [];
     const fetchMock = vi.fn((_input: RequestInfo | URL, init?: RequestInit) => {

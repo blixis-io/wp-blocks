@@ -7,6 +7,7 @@ import type { Emitter } from './events';
 import { repairSelection } from './selection-slice';
 import { persistExpanded } from './structure-slice';
 import type { EditorState } from './store';
+import { changedPageSettings } from './page-settings-slice';
 
 export type LoadError = { type: 'api'; error: ApiError } | { type: 'invalid'; error: ComposeError };
 class SaveFailure extends Error {
@@ -91,7 +92,9 @@ export function computeDirty(
 }
 
 export const isDirty = (state: Pick<EditorState, 'dirty'>): boolean =>
-  state.dirty.layout || Object.values(state.dirty.content).some(Boolean);
+  state.dirty.layout ||
+  Object.values(state.dirty.content).some(Boolean) ||
+  ('pageSettingsDirty' in state && state.pageSettingsDirty === true);
 
 const unreadable = (error: ApiError): LoadError => ({ type: 'api', error });
 
@@ -151,6 +154,39 @@ export const createDocumentSlice =
         get().markSaved({ content: { [locale]: result.value.revision }, document: snapshot });
       }
       set({ saveStatus: 'idle', saveError: null, saveErrorKey: null, retryAfterMs: null, lastSavedAt: deps.now() });
+      const page = get().pageSettings;
+      const pageSaved = get().pageSettingsSaved;
+      if (page && pageSaved && get().pageSettingsDirty) {
+        const body = changedPageSettings(page, pageSaved);
+        const result = await deps.client.writePage(body, page.version, { signal });
+        if (!result.ok) {
+          if (result.error.status === 409) {
+            const fresh = await deps.client.readPage({ signal });
+            if (fresh.ok)
+              set({ pageSettingsSaved: fresh.value, pageSettings: { ...page, version: fresh.value.version } });
+          }
+          if (result.error.status === 400 && Array.isArray(result.error.data?.['errors'])) {
+            const errors = result.error.data['errors'] as { field?: unknown; message?: unknown }[];
+            set({
+              pageSettingsFieldErrors: Object.fromEntries(
+                errors
+                  .filter((item) => typeof item.field === 'string' && typeof item.message === 'string')
+                  .map((item) => [item.field as string, item.message as string]),
+              ),
+            });
+          }
+          throw new SaveFailure(result.error);
+        }
+        const latest = get().pageSettings;
+        const saved = { ...page, version: result.value.version };
+        const stillDirty = latest ? Object.keys(changedPageSettings(latest, saved)).length > 0 : false;
+        set({
+          pageSettingsSaved: saved,
+          ...(latest ? { pageSettings: { ...latest, version: result.value.version } } : {}),
+          pageSettingsDirty: stillDirty,
+          pageSettingsFieldErrors: {},
+        });
+      }
     };
 
     return {
@@ -233,6 +269,15 @@ export const createDocumentSlice =
         conflictSnapshot = null;
         if (choice === 'reload') {
           await get().loadDocument();
+          const page = await deps.client.readPage();
+          if (page.ok)
+            set({
+              pageSettings: page.value,
+              pageSettingsSaved: page.value,
+              pageSettingsDirty: false,
+              pageSettingsFieldErrors: {},
+              pageSettingsStatus: 'ready',
+            });
           set({ saveStatus: 'idle', saveError: null });
           return;
         }

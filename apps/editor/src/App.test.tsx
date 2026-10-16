@@ -48,8 +48,15 @@ function mockSystemDark(dark: boolean) {
 }
 
 describe('shell landmarks', () => {
-  it('renders banner, toolbar, navigation, main and complementary landmarks', () => {
-    setup();
+  it('renders banner, toolbar, navigation, main and complementary landmarks', async () => {
+    const { store } = setup();
+    await waitFor(() => {
+      expect(store.getState().document).not.toBeNull();
+    });
+    expect(store.getState().document).not.toBeNull();
+    act(() => {
+      store.getState().select('el-heading-1');
+    });
     const banner = screen.getByRole('banner');
     expect(within(banner).getByRole('toolbar', { name: 'Editor toolbar' })).toBeTruthy();
     expect(screen.getByRole('navigation', { name: 'Structure' })).toBeTruthy();
@@ -58,6 +65,28 @@ describe('shell landmarks', () => {
     expect(screen.getByRole('tab', { name: 'Content' }).getAttribute('aria-selected')).toBe('true');
     expect(screen.getByRole('tab', { name: 'Style' })).toBeTruthy();
     expect(screen.getByRole('tab', { name: 'Advanced' })).toBeTruthy();
+  });
+
+  it('shows a dedicated Page settings inspector without element tabs when selection is empty', async () => {
+    const { store } = setup();
+    await waitFor(() => {
+      expect(store.getState().pageSettingsStatus).toBe('ready');
+    });
+    await waitFor(() => {
+      expect(store.getState().document).not.toBeNull();
+    });
+    act(() => {
+      store.getState().select(null);
+    });
+    expect(screen.getByRole('heading', { name: /Page settings/ })).toBeTruthy();
+    expect(screen.queryByRole('tab', { name: 'Content' })).toBeNull();
+    expect(screen.queryByRole('tab', { name: 'Style' })).toBeNull();
+    expect(screen.queryByRole('tab', { name: 'Advanced' })).toBeNull();
+    expect(document.querySelector('#inspector-section-page-settings-heading')).toBeTruthy();
+    act(() => {
+      store.getState().select('el-heading-1');
+    });
+    expect(await screen.findByRole('tab', { name: 'Content' })).toBeTruthy();
   });
 
   it('puts the skip link first in the tab order and it targets the canvas', async () => {
@@ -379,7 +408,7 @@ describe('schema driven inspector', () => {
       expect(store.getState().select(id)).toBe(true);
       const tabs = ['Content', 'Style', 'Advanced'];
       for (const tab of tabs) {
-        await user.click(screen.getByRole('tab', { name: tab }));
+        await user.click(await screen.findByRole('tab', { name: tab }));
         expect(await axeViolations(root)).toEqual([]);
       }
     }
@@ -491,7 +520,13 @@ describe('RTL mirroring', () => {
     ['ar', 'rtl', '{ArrowLeft}', '{ArrowRight}'],
     ['en_US', 'ltr', '{ArrowRight}', '{ArrowLeft}'],
   ] as const)('tablist in %s carries dir=%s; %s moves forward, %s back', async (locale, dir, forward, back) => {
-    const { user } = setup({ editorLocale: locale });
+    const { user, store } = setup({ editorLocale: locale });
+    await waitFor(() => {
+      expect(store.getState().document).not.toBeNull();
+    });
+    act(() => {
+      store.getState().select('el-heading-1');
+    });
     const list = screen.getByRole('tablist', { name: 'Inspector sections' });
     expect(list.parentElement?.getAttribute('dir')).toBe(dir); // the Tabs root, which Radix sets from the provider
     const tabs = within(list).getAllByRole('tab');
@@ -624,9 +659,15 @@ describe('side panels', () => {
   });
 
   it('switches inspector tabs', async () => {
-    const { user } = setup();
-    await user.click(screen.getByRole('tab', { name: 'Style' }));
-    expect(screen.getByText('Select an element to edit its style.').closest('[hidden]')).toBeNull();
+    const { user, store } = setup();
+    await waitFor(() => {
+      expect(store.getState().document).not.toBeNull();
+    });
+    act(() => {
+      store.getState().select('el-heading-1');
+    });
+    await user.click(await screen.findByRole('tab', { name: 'Style' }));
+    expect(screen.getByRole('tab', { name: 'Style' }).getAttribute('aria-selected')).toBe('true');
   });
 });
 

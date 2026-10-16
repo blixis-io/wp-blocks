@@ -34,6 +34,31 @@ export interface StreamWritten {
   revision: number;
 }
 
+export interface PageSeo {
+  metaTitle: string;
+  metaDescription: string;
+  ogTitle: string;
+  ogDescription: string;
+  ogImageId: number | null;
+  noindex: boolean;
+  nofollow: boolean;
+  canonical: string;
+}
+export interface PageSettings {
+  title: string;
+  slug: string;
+  status: string;
+  excerpt: string;
+  featuredImage: null | { id: number; url: string; alt: string; width: number; height: number };
+  seo: Record<string, PageSeo>;
+  locales: string[];
+  version: string;
+}
+export type PageSettingsWrite = Partial<Pick<PageSettings, 'title' | 'slug' | 'excerpt'>> & {
+  featuredImageId?: number | null;
+  seo?: Record<string, Partial<PageSeo>>;
+};
+
 /** Entry of a stream's saved history. */
 export interface RevisionEntry {
   revision: number;
@@ -96,6 +121,12 @@ export interface PreviewResult {
  */
 export interface RestClient {
   readLayout(options?: { signal?: AbortSignal }): Promise<ApiResult<StreamRead>>;
+  readPage(options?: { signal?: AbortSignal }): Promise<ApiResult<PageSettings>>;
+  writePage(
+    body: PageSettingsWrite,
+    version: string,
+    options?: { signal?: AbortSignal },
+  ): Promise<ApiResult<{ version: string }>>;
   readContent(locale: string, options?: { signal?: AbortSignal }): Promise<ApiResult<StreamRead>>;
   /** `If-Match: "<expectedRevision>"`; a stale revision is `{ ok: false, error: { kind: 'http', status: 409, code: 'blixis_conflict', data: { currentRevision, expectedRevision, locale? } } }`. */
   writeLayout(

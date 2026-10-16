@@ -24,6 +24,59 @@ const deferred = <T>() => {
 };
 
 describe('document slice: loading', () => {
+  it('loads page settings lazily and includes a partial page write after layout and content', async () => {
+    const { store, client } = await makeLoadedStore();
+    const writes: string[] = [];
+    client.writeLayout = (_document, revision) => {
+      writes.push('layout');
+      return Promise.resolve(ok({ revision: revision + 1 }));
+    };
+    client.writeContent = (_locale, _document, revision) => {
+      writes.push('content');
+      return Promise.resolve(ok({ revision: revision + 1 }));
+    };
+    client.writePage = (body) => {
+      writes.push(`page:${JSON.stringify(body)}`);
+      return Promise.resolve(ok({ version: '2222222222222222222222222222222222222222' }));
+    };
+    expect(store.getState().pageSettings).toBeNull();
+    await store.getState().loadPageSettings();
+    expect(store.getState().pageSettingsStatus).toBe('ready');
+    store.getState().updatePageSettings({ title: 'Updated title' });
+    store.getState().dispatch({ type: 'update-props', id: 'el-heading-1', set: { level: 3 } });
+    store.getState().dispatch({
+      type: 'set-translation',
+      locale: 'en_US',
+      elementId: 'el-heading-1',
+      set: { text: 'Updated content' },
+    });
+    expect(isDirty(store.getState())).toBe(true);
+    await store.getState().saveDraft();
+    expect(writes.map((item) => item.split(':')[0])).toEqual(['layout', 'content', 'page']);
+    expect(writes[2]).toBe('page:{"title":"Updated title"}');
+    expect(store.getState().pageSettingsDirty).toBe(false);
+  });
+
+  it('keeps local page edits on a 409 and reloads the server values only after the conflict choice', async () => {
+    const { store, client } = await makeLoadedStore();
+    await store.getState().loadPageSettings();
+    store.getState().updatePageSettings({ title: 'Local title' });
+    client.writePage = () =>
+      Promise.resolve({ ok: false, error: { kind: 'http', status: 409, code: 'blixis_conflict' } });
+    await store.getState().saveDraft();
+    expect(store.getState()).toMatchObject({
+      saveStatus: 'failed',
+      saveErrorKey: 'save.error.conflict',
+      pageSettings: { title: 'Local title' },
+      pageSettingsDirty: true,
+    });
+    await store.getState().resolveConflict('reload');
+    expect(store.getState()).toMatchObject({
+      pageSettings: { title: 'About us' },
+      pageSettingsDirty: false,
+      saveStatus: 'idle',
+    });
+  });
   it('defaults to two expanded levels and remembers an intentionally collapsed-all tree across reloads', async () => {
     const { store } = await makeLoadedStore();
     expect(new Set(store.getState().expandedIds)).toEqual(new Set(['el-section-1', 'el-section-2', 'el-container-1']));

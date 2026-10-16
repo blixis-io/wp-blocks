@@ -87,6 +87,20 @@ export function fakeClient(streams: {
     },
     writeLayout: unsupported,
     writeContent: unsupported,
+    readPage: () =>
+      Promise.resolve(
+        ok({
+          title: 'About us',
+          slug: 'about-us',
+          status: 'publish',
+          excerpt: '',
+          featuredImage: null,
+          seo: {},
+          locales: ['en_US', 'fr_FR'],
+          version: '1111111111111111111111111111111111111111',
+        }),
+      ),
+    writePage: () => Promise.resolve(ok({ version: '2222222222222222222222222222222222222222' })),
     listRevisions: unsupported,
     readPublication: () =>
       Promise.resolve(

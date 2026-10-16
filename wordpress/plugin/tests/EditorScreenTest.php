@@ -110,7 +110,7 @@ final class EditorScreenTest extends TestCase {
 				'editorLocale'  => 'en_US',
 			]
 		);
-		$this->assertSame( [ 'version', 'restRoot', 'nonce', 'postId', 'postTitle', 'postType', 'contentLocale', 'defaultLocale', 'enabledLocales', 'editorLocale', 'pluginVersion', 'themeName', 'editingEnabled', 'lockReason', 'adminUrl', 'canvasUrl', 'viewUrl', 'previewUrl', 'cspNonce', 'contentLocaleExplicit' ], \array_keys( $bootstrap ) );
+		$this->assertSame( [ 'version', 'restRoot', 'nonce', 'postId', 'postTitle', 'postType', 'contentLocale', 'defaultLocale', 'enabledLocales', 'editorLocale', 'pluginVersion', 'themeName', 'editingEnabled', 'seoPluginActive', 'lockReason', 'adminUrl', 'canvasUrl', 'viewUrl', 'previewUrl', 'cspNonce', 'contentLocaleExplicit' ], \array_keys( $bootstrap ) );
 		$this->assertNull( $bootstrap['previewUrl'] );
 		$this->assertSame(
 			'https://example.test/page/?blixis_preview=nonce',
@@ -220,6 +220,8 @@ final class EditorScreenTest extends TestCase {
 		}
 		$this->assertFalse( EditorBootstrap::build( [ 'contentLocaleExplicit' => 'yes' ] )['contentLocaleExplicit'], 'only a real boolean true counts' );
 		$this->assertTrue( EditorBootstrap::build( [ 'contentLocaleExplicit' => true ] )['contentLocaleExplicit'] );
+		$this->assertFalse( EditorBootstrap::build( [] )['seoPluginActive'] );
+		$this->assertTrue( EditorBootstrap::build( [ 'seoPluginActive' => true ] )['seoPluginActive'] );
 	}
 
 	/** Headers use the exact restrictive policy; only a per-response nonce (no inline allowance) opens style injection. */

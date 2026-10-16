@@ -15,6 +15,7 @@ export function makeBootstrap(overrides: Partial<EditorBootstrap> = {}): EditorB
     pluginVersion: '0.1.0',
     themeName: 'Blixis',
     editingEnabled: true,
+    seoPluginActive: false,
     lockReason: null,
     adminUrl: `${location.origin}/wp-admin/`,
     viewUrl: `${location.origin}/about/`,

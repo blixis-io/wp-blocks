@@ -68,6 +68,7 @@ export function createBootstrapSchema(origin: string) {
     pluginVersion: z.string().min(1).max(64),
     themeName: z.string().max(200),
     editingEnabled: z.boolean(),
+    seoPluginActive: z.boolean(),
     lockReason: z.string().max(1000).nullable(),
     adminUrl: url,
     viewUrl: url.nullable(),
