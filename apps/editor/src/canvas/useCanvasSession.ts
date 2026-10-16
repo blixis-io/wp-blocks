@@ -103,7 +103,8 @@ export interface CanvasSession {
   editSession: { id: string; prop: string; status: 'loading' | 'ready'; value?: string | RichText } | null;
   editSelection: Extract<CanvasMessage, { type: 'edit-selection' }> | null;
   tokenColors: Partial<Record<'light' | 'dark', Readonly<Record<string, string>>>>;
-  startEdit: (id: string, prop: string) => void;
+  startEdit: (id: string, prop: string, focus?: boolean) => void;
+  setEditText: (text: string) => void;
   endEdit: (commit: boolean) => void;
   sendEditCommand: (name: string, args?: Record<string, unknown>) => void;
 }
@@ -127,10 +128,11 @@ export function useCanvasSession(options: CanvasSessionOptions): CanvasSession {
   }>({ owner: null, values: {} });
   const tokenColors = tokenColorSnapshot.owner === frame ? tokenColorSnapshot.values : EMPTY_TOKEN_COLORS;
   const controls = useRef<{
-    start: (id: string, prop: string) => void;
+    start: (id: string, prop: string, focus?: boolean) => void;
     end: (commit: boolean) => void;
     command: (name: string, args?: Record<string, unknown>) => void;
-  }>({ start: () => undefined, end: () => undefined, command: () => undefined });
+    text: (text: string) => void;
+  }>({ start: () => undefined, end: () => undefined, command: () => undefined, text: () => undefined });
   const current = snapshot.owner === frame ? snapshot : INITIAL;
   const refreshRef = useRef<() => void>(() => undefined);
   const refresh = useCallback(() => {
@@ -167,14 +169,23 @@ export function useCanvasSession(options: CanvasSessionOptions): CanvasSession {
     let counter = 0;
     let timer: ReturnType<typeof setTimeout> | null = null;
     let controller: AbortController | null = null;
-    let editing: { id: string; prop: string; last: unknown; sessionId: string } | null = null;
+    let editing: {
+      id: string;
+      prop: string;
+      last: unknown;
+      sessionId: string;
+      queuedText?: string;
+      ready?: boolean;
+    } | null = null;
+    let textFrame: number | null = null;
+    let pendingText: string | null = null;
     let saveAfterEditCommit = false;
     const registry = createCoreRegistry();
-    const startEdit = (id: string, prop: string, caret?: number) => {
+    const startEdit = (id: string, prop: string, caret?: number, focus = true) => {
       const state = store.getState();
       if (
         options.editingEnabled === false ||
-        options.inlineEditing === false ||
+        (options.inlineEditing === false && focus) ||
         state.document === null ||
         editing !== null
       )
@@ -199,16 +210,39 @@ export function useCanvasSession(options: CanvasSessionOptions): CanvasSession {
         locale: state.contentLocale,
         dir: directionOf(state.contentLocale),
         ...(caret === undefined ? {} : { caret }),
+        ...(focus ? {} : { focus: false }),
       });
     };
     const endEdit = (commit: boolean) => {
-      if (editing) endpoint.send({ type: 'edit-end', commit });
+      if (!editing) return;
+      if (textFrame !== null) frames.cancel(textFrame);
+      textFrame = null;
+      if (pendingText !== null) {
+        if (editing.ready) endpoint.send({ type: 'edit-command', name: 'set-text', args: { text: pendingText } });
+        else editing.queuedText = pendingText;
+        pendingText = null;
+      }
+      endpoint.send({ type: 'edit-end', commit });
     };
     controls.current = {
-      start: startEdit,
+      start: (id, prop, focus) => {
+        startEdit(id, prop, undefined, focus);
+      },
       end: endEdit,
       command: (name, args) => {
         if (editing) endpoint.send({ type: 'edit-command', name, ...(args === undefined ? {} : { args }) });
+      },
+      text: (text) => {
+        if (!editing) return;
+        pendingText = text;
+        if (textFrame !== null) frames.cancel(textFrame);
+        textFrame = frames.request(() => {
+          textFrame = null;
+          if (!editing || pendingText === null) return;
+          if (editing.ready) endpoint.send({ type: 'edit-command', name: 'set-text', args: { text: pendingText } });
+          else editing.queuedText = pendingText;
+          pendingText = null;
+        });
       },
     };
 
@@ -339,8 +373,14 @@ export function useCanvasSession(options: CanvasSessionOptions): CanvasSession {
           break;
         }
         case 'edit-ready':
-          if (editing?.id === message.id && editing.prop === message.prop)
+          if (editing?.id === message.id && editing.prop === message.prop) {
+            editing.ready = true;
             setEditSession({ id: message.id, prop: message.prop, status: 'ready' });
+            if (editing.queuedText !== undefined) {
+              endpoint.send({ type: 'edit-command', name: 'set-text', args: { text: editing.queuedText } });
+              delete editing.queuedText;
+            }
+          }
           break;
         case 'edit-selection':
           if (editing?.id === message.id) setEditSelection(message);
@@ -527,6 +567,20 @@ export function useCanvasSession(options: CanvasSessionOptions): CanvasSession {
     };
   }, [frame, store, client, src, attempt, create, debounceMs, options.editingEnabled, options.inlineEditing]);
 
+  // Stable identities: parents register these callbacks in effects, and a new function every render would loop.
+  const startEdit = useCallback((id: string, prop: string, focus = true) => {
+    controls.current.start(id, prop, focus);
+  }, []);
+  const setEditText = useCallback((text: string) => {
+    controls.current.text(text);
+  }, []);
+  const endEdit = useCallback((commit: boolean) => {
+    controls.current.end(commit);
+  }, []);
+  const sendEditCommand = useCallback((name: string, args?: Record<string, unknown>) => {
+    controls.current.command(name, args);
+  }, []);
+
   return {
     status: current.status,
     problem: current.problem,
@@ -537,15 +591,10 @@ export function useCanvasSession(options: CanvasSessionOptions): CanvasSession {
     editSession,
     editSelection,
     tokenColors,
-    startEdit: (id, prop) => {
-      controls.current.start(id, prop);
-    },
-    endEdit: (commit) => {
-      controls.current.end(commit);
-    },
-    sendEditCommand: (name, args) => {
-      controls.current.command(name, args);
-    },
+    startEdit,
+    setEditText,
+    endEdit,
+    sendEditCommand,
   };
 }
 

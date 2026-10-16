@@ -26,6 +26,8 @@ function PropField({
   locale,
   editTarget,
   startEdit,
+  setEditText,
+  endEdit,
 }: {
   element: ElementNode;
   name: string;
@@ -33,10 +35,16 @@ function PropField({
   editable: boolean;
   locale: string;
   editTarget?: { id: string; prop: string; value?: string | RichText } | null | undefined;
-  startEdit: (id: string, prop: string) => void;
+  startEdit: (id: string, prop: string, focus?: boolean) => void;
+  setEditText: (text: string) => void;
+  endEdit: (commit: boolean) => void;
 }) {
   const { t } = useI18n();
   const store = useEditorStoreApi();
+  const inspectorEditStarted = useRef(false);
+  // The field owns what is typed until it blurs: the canvas session answers asynchronously, and a controlled value that
+  // snapped back to the stored text on the first keystroke would swallow the input.
+  const [localText, setLocalText] = useState<string | null>(null);
   const translated = definition.classification !== 'invariant';
   const storedValue = useEditorStore((s) =>
     translated ? s.document?.translations[locale]?.[element.id]?.values[name] : element.props[name],
@@ -125,13 +133,41 @@ function PropField({
       if (definition.kind === 'url') dispatch(draft);
     },
   };
+  const richTextDraft = !isRichValue
+    ? ''
+    : isCanvasEditing && Object.hasOwn(editTarget, 'value')
+      ? typeof value === 'string'
+        ? value
+        : richToPlain(value as unknown as RichText)
+      : richToPlain((storedValue ?? value) as RichText);
   const control = isRichValue ? (
     <textarea
       id={fieldId}
       aria-label={label}
-      value={richToPlain(value as unknown as RichText)}
-      readOnly
+      value={localText ?? richTextDraft}
+      disabled={!editable}
       aria-describedby={`${fieldId}-rich-hint`}
+      onChange={(event) => {
+        if (!isCanvasEditing && !inspectorEditStarted.current) {
+          inspectorEditStarted.current = true;
+          startEdit(element.id, name, false);
+        }
+        setLocalText(event.target.value);
+        setEditText(event.target.value);
+      }}
+      onBlur={() => {
+        if (inspectorEditStarted.current || isCanvasEditing) endEdit(true);
+        inspectorEditStarted.current = false;
+        setLocalText(null);
+      }}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape' && isCanvasEditing) {
+          event.preventDefault();
+          inspectorEditStarted.current = false;
+          setLocalText(null);
+          endEdit(false);
+        }
+      }}
     />
   ) : name === 'level' ? (
     <select
@@ -163,20 +199,9 @@ function PropField({
       <label htmlFor={fieldId}>{label}</label>
       {control}
       {isRichValue ? (
-        <>
-          <p id={`${fieldId}-rich-hint`} className="blx-inspector-hint">
-            {t('inspector.richText.later')}
-          </p>
-          <button
-            type="button"
-            disabled={!editable}
-            onClick={() => {
-              startEdit(element.id, name);
-            }}
-          >
-            {t('rich.editInCanvas')}
-          </button>
-        </>
+        <p id={`${fieldId}-rich-hint`} className="blx-inspector-hint">
+          {t('inspector.richText.later')}
+        </p>
       ) : null}
       {definition.kind === 'media' ? (
         <p id={`${fieldId}-hint`} className="blx-inspector-hint">
@@ -203,6 +228,8 @@ export function Inspector({
   inlineEditing = true,
   onInlineEditingChange = () => undefined,
   startEdit = () => undefined,
+  setEditText = () => undefined,
+  endEdit = () => undefined,
 }: {
   element: ElementNode | null;
   tab: Tab;
@@ -213,7 +240,9 @@ export function Inspector({
   sendEditCommand?: (name: string, args?: Record<string, unknown>) => void;
   inlineEditing?: boolean;
   onInlineEditingChange?: (value: boolean) => void;
-  startEdit?: (id: string, prop: string) => void;
+  startEdit?: (id: string, prop: string, focus?: boolean) => void;
+  setEditText?: (text: string) => void;
+  endEdit?: (commit: boolean) => void;
 }) {
   const { t } = useI18n();
   const locale = useEditorStore((s) => s.contentLocale);
@@ -319,6 +348,8 @@ export function Inspector({
               locale={locale}
               editTarget={editTarget}
               startEdit={startEdit}
+              setEditText={setEditText}
+              endEdit={endEdit}
             />
           ))}
           {element.type === 'blixis/image' && element.props['decorative'] !== true && !altValue ? (

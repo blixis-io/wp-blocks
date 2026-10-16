@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { mountRichText, selectionMarks } from './richtext-engine';
+import { mountRichText, replacePlainText, selectionMarks } from './richtext-engine';
+import { toModel } from './richtext-mapper';
 
 // jsdom has no layout: ProseMirror scrolls the caret into view after a focus and needs these measuring APIs.
 const noRects = (): DOMRectList => [] as unknown as DOMRectList;
@@ -118,6 +119,77 @@ describe('lazy canvas rich text engine', () => {
     editor.commands.selectTextblockEnd();
     editor.commands.insertContent(' world');
     expect(onChange.mock.lastCall?.[0]).toBe('Hello world');
+  });
+  it.each([
+    ['insert at start', 'abc', 'Xabc'],
+    ['insert in middle', 'abc', 'aXbc'],
+    ['insert at end', 'abc', 'abcX'],
+    ['delete', 'abc', 'ac'],
+    ['replace in middle', 'abcdef', 'abXYef'],
+    ['replace all', 'abc', 'xyz'],
+  ])('minimally replaces plain text: %s', (_case, previous, next) => {
+    const { editor } = mount(previous);
+    editor.commands.selectAll();
+    editor.commands.toggleBold();
+    replacePlainText(editor, next, true);
+    expect(editor.state.doc.textBetween(0, editor.state.doc.content.size, '\n')).toBe(next);
+    expect(toModel(editor.getJSON())).toMatchObject({ v: 1, inline: [{ t: 'text', s: next, m: ['strong'] }] });
+  });
+  it('preserves marks on both sides of an interior replacement boundary', () => {
+    const value = {
+      v: 1,
+      inline: [
+        { t: 'text', s: 'bold', m: ['strong'] },
+        { t: 'text', s: ' plain' },
+      ],
+    };
+    const { editor } = mount(value);
+    replacePlainText(editor, 'bold new plain', true);
+    expect(toModel(editor.getJSON())).toEqual({
+      v: 1,
+      inline: [
+        { t: 'text', s: 'bold', m: ['strong'] },
+        { t: 'text', s: ' new plain' },
+      ],
+    });
+  });
+  it('inherits the mark at the changed-range start when inserting at a mark boundary', () => {
+    const value = {
+      v: 1,
+      inline: [
+        { t: 'text', s: 'bold', m: ['strong'] },
+        { t: 'text', s: ' plain' },
+      ],
+    };
+    const { editor } = mount(value);
+    replacePlainText(editor, 'boldX plain', true);
+    expect(toModel(editor.getJSON())).toEqual({
+      v: 1,
+      inline: [
+        { t: 'text', s: 'boldX', m: ['strong'] },
+        { t: 'text', s: ' plain' },
+      ],
+    });
+  });
+  it('maps newlines to hard breaks for multiline and spaces for single-line elements', () => {
+    const multiline = mount('ab', true);
+    replacePlainText(multiline.editor, 'a\nb', true);
+    expect(toModel(multiline.editor.getJSON())).toEqual({
+      v: 1,
+      inline: [{ t: 'text', s: 'a' }, { t: 'br' }, { t: 'text', s: 'b' }],
+    });
+    const singleLine = mount('ab', false);
+    replacePlainText(singleLine.editor, 'a\nb', false);
+    expect(singleLine.editor.state.doc.textBetween(0, singleLine.editor.state.doc.content.size, '\n')).toBe('a b');
+  });
+  it('does not apply inspector text commands during IME composition or beyond the size limit', () => {
+    const { editor } = mount('existing');
+    Object.defineProperty(editor.view, 'composing', { configurable: true, value: true });
+    replacePlainText(editor, 'composing', true);
+    expect(editor.state.doc.textBetween(0, editor.state.doc.content.size)).toBe('existing');
+    Object.defineProperty(editor.view, 'composing', { configurable: true, value: false });
+    replacePlainText(editor, 'x'.repeat(20_001), true);
+    expect(editor.state.doc.textBetween(0, editor.state.doc.content.size)).toBe('existing');
   });
   it('Escape requests cancellation', () => {
     const { el, onEnd } = mount();

@@ -69,6 +69,8 @@ async function mount(
     selectedText?: { text: string; marks?: Record<string, unknown> };
     sendEditCommand?: (name: string, args?: Record<string, unknown>) => void;
     startEdit?: (id: string, prop: string) => void;
+    setEditText?: (text: string) => void;
+    endEdit?: (commit: boolean) => void;
   } = {},
 ) {
   const target = el('target', type);
@@ -124,6 +126,8 @@ async function mount(
               }
               {...(options.sendEditCommand ? { sendEditCommand: options.sendEditCommand } : {})}
               {...(options.startEdit ? { startEdit: options.startEdit } : {})}
+              {...(options.setEditText ? { setEditText: options.setEditText } : {})}
+              {...(options.endEdit ? { endEdit: options.endEdit } : {})}
             />
           ) : (
             <ReactiveInspector tab={options.tab ?? 'content'} editable={options.editable ?? true} />
@@ -329,14 +333,16 @@ describe('Inspector controls', () => {
     expect(panel?.querySelector('.blx-inspector-hint')).toBeTruthy();
   });
 
-  it('shows rich values as read-only plain text and starts their canvas edit session', async () => {
+  it('starts a non-focusing canvas edit session when a rich value is edited', async () => {
     const startEdit = vi.fn();
-    await mount('blixis/heading', { richValue: true, reactive: false, startEdit });
+    const setEditText = vi.fn();
+    await mount('blixis/heading', { richValue: true, reactive: false, startEdit, setEditText });
     const field = screen.getByRole<HTMLTextAreaElement>('textbox', { name: 'Text' });
     expect(field.value).toBe('Rich text');
-    expect(field.readOnly).toBe(true);
-    fireEvent.click(screen.getByRole('button', { name: 'Edit text in canvas' }));
-    expect(startEdit).toHaveBeenCalledWith('target', 'text');
+    expect(field.readOnly).toBe(false);
+    fireEvent.change(field, { target: { value: 'Rich edited text' } });
+    expect(startEdit).toHaveBeenCalledWith('target', 'text', false);
+    expect(setEditText).toHaveBeenCalledWith('Rich edited text');
   });
 
   it.each([
@@ -752,15 +758,22 @@ describe('Inspector controls', () => {
     expect(screen.getByRole('textbox', { name: 'Text' }).tagName).toBe('TEXTAREA');
   });
 
-  it('shows rich text as read-only plain text and does not dispatch edits', async () => {
-    const { store } = await mount('blixis/heading', { richValue: true });
+  it('keeps rich text editable while locked and cancels the edit session with Escape', async () => {
+    await mount('blixis/heading', { richValue: true, editable: false, reactive: false, formatSession: true });
     const field = screen.getByRole<HTMLTextAreaElement>('textbox', { name: 'Text' });
     expect(field.value).toBe('Rich text');
-    expect(field.readOnly).toBe(true);
-    expect(screen.getByText('Edit rich text directly in the canvas.')).toBeTruthy();
-    const before = store.getState().document;
-    fireEvent.change(field, { target: { value: 'replacement' } });
-    expect(store.getState().document).toEqual(before);
+    expect(field.disabled).toBe(true);
+    expect(screen.getByText('Text edits keep the existing formatting. Press Escape to cancel.')).toBeTruthy();
+  });
+
+  it('commits a rich inspector edit on blur and cancels it on Escape', async () => {
+    const endEdit = vi.fn();
+    await mount('blixis/heading', { richValue: true, reactive: false, formatSession: true, endEdit });
+    const field = screen.getByRole<HTMLTextAreaElement>('textbox', { name: 'Text' });
+    fireEvent.keyDown(field, { key: 'Escape' });
+    expect(endEdit).toHaveBeenCalledWith(false);
+    fireEvent.blur(field);
+    expect(endEdit).toHaveBeenLastCalledWith(true);
   });
 
   it('renders the schema-backed heading tag control', async () => {

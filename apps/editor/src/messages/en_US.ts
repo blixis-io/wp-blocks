@@ -170,7 +170,7 @@ export const en_US = {
   'inspector.style.empty': 'Select an element to edit its style.',
   'inspector.settings.empty': 'Select an element to edit its settings.',
   'inspector.prop.text': 'Text',
-  'inspector.richText.later': 'Edit rich text directly in the canvas.',
+  'inspector.richText.later': 'Text edits keep the existing formatting. Press Escape to cancel.',
   'inspector.prop.level': 'Heading level',
   'inspector.prop.label': 'Label',
   'inspector.prop.href': 'Link',

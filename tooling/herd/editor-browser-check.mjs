@@ -2635,6 +2635,42 @@ try {
     'the committed rich value renders a strong element in the canvas preview',
   );
   assert.equal(await headingText(), 'Rich heading text', 'the committed text replaces the heading');
+  await ev(
+    `[...document.querySelectorAll('nav[aria-label="Structure"] [role="treeitem"]')].find((row) => row.dataset.id === 'hero-h1')?.click()`,
+  );
+  await sleep(1200);
+  await ev(
+    `(() => { const tab = [...document.querySelectorAll('aside[aria-label="Inspector"] [role=tab]')].find((item) => item.textContent.trim() === 'Content'); tab?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0, ctrlKey: false })); })()`,
+  );
+  await sleep(500);
+  const richInspector = await ev(`document.querySelector('textarea[aria-label="Text"]')?.value`);
+  assert.equal(richInspector, 'Rich heading text', 'the Content field shows the rich value as editable plain text');
+  await ev(`document.querySelector('textarea[aria-label="Text"]')?.scrollIntoView({ block: 'center' })`);
+  await sleep(300);
+  await clickReal('textarea[aria-label="Text"]');
+  await ev(`document.querySelector('textarea[aria-label="Text"]')?.select()`);
+  await send('Input.insertText', { text: 'Inspector preserves bold' });
+  await sleep(400);
+  await clickReal('nav[aria-label="Structure"] [role="treeitem"][data-id="hero-txt"]');
+  await sleep(1800);
+  assert.equal(await headingText(), 'Inspector preserves bold', 'the inspector text edit updates the canvas');
+  assert.equal(
+    await ev(
+      `document.querySelector('main iframe').contentDocument.querySelector('[data-blx-id="hero-h1"] strong')?.textContent`,
+    ),
+    'Inspector preserves bold',
+    'the inspector text edit preserves the strong mark',
+  );
+  await clickReal('button[aria-label="Undo"]');
+  await sleep(1500);
+  assert.equal(await headingText(), 'Rich heading text', 'one Undo restores the rich value after the inspector edit');
+  assert.equal(
+    await ev(
+      `document.querySelector('main iframe').contentDocument.querySelector('[data-blx-id="hero-h1"] strong')?.textContent`,
+    ),
+    'Rich heading text',
+    'one Undo restores the strong-marked text',
+  );
   await ev(`document.querySelector('button[aria-label="Undo"]')?.click()`);
   await sleep(2000);
   assert.equal(await headingText(), originalHeading, 'one Undo restores the heading after the whole edit session');
