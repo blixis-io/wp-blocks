@@ -431,7 +431,7 @@ try {
   const reflow = await ev(`(() => {
     const doc = document.documentElement;
     const root = document.querySelector('.blx-editor');
-    const heading = [...document.querySelectorAll('h2')].find((h) => /inspector/i.test(h.textContent));
+    const heading = [...document.querySelectorAll('h2')].find((h) => /inspector|page settings/i.test(h.textContent));
     const scroller = (() => { for (let el = heading?.parentElement; el; el = el.parentElement) { if (el.scrollHeight > el.clientHeight + 1 && /(auto|scroll)/.test(getComputedStyle(el).overflowY)) return el; } return null; })();
     const before = scroller ? scroller.scrollTop : null;
     heading?.scrollIntoView({ block: 'center' });
@@ -2902,6 +2902,144 @@ try {
   };
   await publishHeading('Publish smoke heading');
   await publishHeading(originalHeading);
+
+  // Page settings are loaded on the empty-selection inspector and saved independently of undo history.
+  await ev(
+    `(() => {
+    const frame=document.querySelector('main iframe'), doc=frame?.contentDocument, fr=frame?.getBoundingClientRect();
+    if (!frame || !doc || !fr) return false;
+    doc.querySelector('#blx-canvas-root')?.scrollIntoView({block:'start'});
+    for (const [x,y] of [[doc.documentElement.clientWidth-12,80],[12,80],[doc.documentElement.clientWidth-12,doc.documentElement.clientHeight-20],[12,doc.documentElement.clientHeight-20]]) {
+      const target=doc.elementFromPoint(x,y);
+      if (target && !target.closest('[data-blx-id]')) return {x:fr.left+frame.clientLeft+x,y:fr.top+frame.clientTop+y};
+    }
+    return false;
+  })()`,
+  ).then(async (point) => {
+    assert.ok(point, 'the canvas frame is available for empty-space deselection');
+    await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: point.x, y: point.y });
+    await send('Input.dispatchMouseEvent', {
+      type: 'mousePressed',
+      x: point.x,
+      y: point.y,
+      button: 'left',
+      clickCount: 1,
+    });
+    await send('Input.dispatchMouseEvent', {
+      type: 'mouseReleased',
+      x: point.x,
+      y: point.y,
+      button: 'left',
+      clickCount: 1,
+    });
+  });
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    if (await ev(`!!document.querySelector('#inspector-section-page-settings-heading')`)) break;
+    await sleep(250);
+  }
+  assert.ok(
+    await ev(`!!document.querySelector('#inspector-section-page-settings-heading')`),
+    'empty canvas selection shows the Page panel',
+  );
+  for (let attempt = 0; attempt < 40 && !(await ev(`!!document.querySelector('#page-title')`)); attempt += 1)
+    await sleep(150);
+  const originalPageTitle = await ev(`document.querySelector('#page-title')?.value`);
+  const originalPageSlug = await ev(`document.querySelector('#page-slug')?.value`);
+  const originalSeoDescription = await ev(`document.querySelector('#seo-meta-description')?.value`);
+  assert.ok(originalPageTitle && originalPageSlug, 'the page title and slug have loaded');
+  const fillPageField = async (selector, value) => {
+    await ev(`document.querySelector(${JSON.stringify(selector)})?.scrollIntoView({ block: 'center' })`);
+    await clickReal(selector);
+    await ev(`document.querySelector(${JSON.stringify(selector)})?.select()`);
+    await send('Input.insertText', { text: value });
+    await sleep(200);
+  };
+  const openPagePanel = async () => {
+    await clickReal('.blx-title-text');
+    for (let attempt = 0; attempt < 40; attempt += 1) {
+      if (await ev(`!!document.querySelector('#page-title')`)) break;
+      await sleep(250);
+    }
+    await sleep(300);
+  };
+  const savePageSettings = async () => {
+    const saveName = await ev(
+      `(() => [...document.querySelectorAll('.blx-header button')].find((item) => /^(Save Draft|Concept opslaan)$/.test(item.getAttribute('aria-label') ?? ''))?.getAttribute('aria-label'))()`,
+    );
+    assert.ok(saveName, 'Save Draft is available for page settings');
+    await ev(
+      `document.querySelector(${JSON.stringify(`button[aria-label=${JSON.stringify(saveName)}]`)})?.scrollIntoView({ block: 'center' })`,
+    );
+    await clickReal(`button[aria-label=${JSON.stringify(saveName)}]`);
+    await waitForSaveState('saved');
+  };
+  const priorRestore = restoreDemoHeading;
+  restoreDemoHeading = async () => {
+    await priorRestore?.();
+    try {
+      await nav(editorUrl, 2500);
+      await openPagePanel();
+      await fillPageField('#page-title', originalPageTitle);
+      await fillPageField('#page-slug', originalPageSlug);
+      await fillPageField('#seo-meta-description', originalSeoDescription ?? '');
+      await savePageSettings();
+    } catch (error) {
+      console.error(`Best effort page settings restoration failed: ${error.message}`);
+    }
+  };
+  const changedTitle = `${originalPageTitle} SEO check`;
+  const changedSlug = `bwb-252-check-${Date.now()}`;
+  const changedDescription = 'Page settings SEO description from the browser check.';
+  await fillPageField('#page-title', changedTitle);
+  await fillPageField('#page-slug', changedSlug);
+  await fillPageField('#seo-meta-description', changedDescription);
+  await savePageSettings();
+  await nav(editorUrl, 2500);
+  await openPagePanel();
+  assert.equal(await ev(`document.querySelector('#page-title')?.value`), changedTitle, 'the saved page title reloads');
+  assert.equal(await ev(`document.querySelector('#page-slug')?.value`), changedSlug, 'the saved slug reloads');
+  assert.equal(
+    await ev(`document.querySelector('#seo-meta-description')?.value`),
+    changedDescription,
+    'the SEO description reloads',
+  );
+  // Return the slug before the existing publication round-trip so its known public test URL remains valid.
+  await fillPageField('#page-slug', originalPageSlug);
+  await savePageSettings();
+  await publishHeading('SEO settings publication check');
+  await publishHeading(originalHeading);
+  const publishedSeoRaw = execFileSync('curl', ['-sk', '-w', '\n%{http_code}', `${SITE}/${originalPageSlug}/`], {
+    encoding: 'utf8',
+  });
+  const publishedSeoStatus = publishedSeoRaw.slice(publishedSeoRaw.lastIndexOf('\n') + 1);
+  const publishedSeoHtml = publishedSeoRaw.slice(0, publishedSeoRaw.lastIndexOf('\n'));
+  assert.equal(publishedSeoStatus, '200', 'the published page remains available after its SEO update');
+  assert.ok(
+    publishedSeoHtml.includes(`<meta name="description" content="${changedDescription}">`),
+    'published page HTML contains the edited SEO description',
+  );
+  await ev(`document.querySelector('.blx-title-text')?.scrollIntoView({ block: 'center' })`);
+  await clickReal('.blx-title-text');
+  await fillPageField('#page-title', originalPageTitle);
+  await fillPageField('#page-slug', originalPageSlug);
+  await fillPageField('#seo-meta-description', originalSeoDescription ?? '');
+  await savePageSettings();
+  assert.equal(
+    await ev(`document.querySelector('#page-title')?.value`),
+    originalPageTitle,
+    'page settings cleanup restores the original title through the UI',
+  );
+  assert.equal(
+    await ev(`document.querySelector('#page-slug')?.value`),
+    originalPageSlug,
+    'page settings cleanup restores the original slug through the UI',
+  );
+  assert.equal(
+    await ev(`document.querySelector('#seo-meta-description')?.value`),
+    originalSeoDescription ?? '',
+    'page settings cleanup restores the original SEO description through the UI',
+  );
+
   previewWs.close();
   await fetch(`http://127.0.0.1:9334/json/close/${previewTarget.id}`);
 

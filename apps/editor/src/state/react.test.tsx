@@ -59,6 +59,23 @@ describe('React glue', () => {
 });
 
 describe('Structure panel and inspector header', () => {
+  it('counts page settings as unsaved and opens the empty-selection Page panel from the title', async () => {
+    const { user, store } = mount();
+    await ready();
+    await act(async () => store.getState().loadPageSettings());
+    act(() => {
+      store.getState().updatePageSettings({ title: 'A changed title' });
+    });
+    expect(screen.getByText('Unsaved changes')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Save Draft' }).getAttribute('aria-disabled')).toBe('false');
+    await user.click(screen.getByRole('button', { name: 'About us' }));
+    expect(store.getState().selectedId).toBeNull();
+    expect(screen.getByRole('region', { name: 'Page' })).toBeTruthy();
+    store.getState().select('el-heading-1');
+    await user.click(screen.getByRole('button', { name: 'Pages' }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Page settings' }));
+    expect(store.getState().selectedId).toBeNull();
+  });
   it('shows a loading state, then a nested outline of the document', async () => {
     const { store } = makeStore();
     render(<EditorApp bootstrap={makeBootstrap()} store={store} />);

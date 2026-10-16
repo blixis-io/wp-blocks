@@ -111,6 +111,7 @@ function Shell({
   };
   const contentLocale = useEditorStore((state) => state.contentLocale);
   const selectedId = useEditorStore((state) => state.selectedId);
+  const pageTitle = useEditorStore((state) => state.pageSettings?.title);
   const document = useEditorStore((state) => state.document);
   const selected = useMemo(
     () => (selectedId === null ? null : findElement(document?.root, selectedId)),
@@ -127,6 +128,17 @@ function Shell({
   }, [selectedId, document]);
   const saveLocked = useEditorStore((state) => state.saveLocked);
   const locked = !bootstrap.editingEnabled || saveLocked;
+  const openPageSettings = () => {
+    store.getState().clearSelection();
+    setInspectorTab('content');
+    if (!panels.right) {
+      setVisiblePanels((visible) => ({ ...visible, right: true }));
+      togglePanel('right');
+    }
+    window.requestAnimationFrame(() =>
+      globalThis.document.querySelector<HTMLButtonElement>('#inspector-section-page-settings-heading button')?.focus(),
+    );
+  };
   return (
     <>
       <a className="blx-skip" href={`#${CANVAS_ID}`}>
@@ -139,6 +151,7 @@ function Shell({
           onTogglePanel={handleTogglePanel}
           appearance={preference}
           onAppearance={onPreference}
+          onPageSettings={openPageSettings}
         />
         {locked ? (
           <div role="status" className="blx-banner" data-testid="lock-banner">
@@ -240,7 +253,10 @@ function Shell({
             }
           }}
         >
-          <h2 className="blx-panel-title">{t('panel.inspector')}</h2>
+          <h2 className="blx-panel-title">
+            {selected === null ? t('header.pageSettings') : t('panel.inspector')}
+            {selected === null && pageTitle ? <span className="blx-panel-subtitle">{pageTitle}</span> : null}
+          </h2>
           <p className="blx-inspector-selection" data-testid="inspector-selection" aria-live="polite">
             {selected === null ? (
               t('inspector.noSelection')
@@ -252,51 +268,57 @@ function Shell({
               </>
             )}
           </p>
-          <Tabs
-            value={shownTab}
-            onValueChange={(value) => {
-              if (value === 'content' || value === 'style' || value === 'advanced') {
-                setInspectorTab(value);
-                setTabPickedDuringEdit(editingId ?? null);
-                writeSessionStorage('blixis-inspector-tab', value);
-              }
-            }}
-            className="blx-inspector-tabs min-h-0 flex-1"
-          >
-            <TabsList aria-label={t('inspector.tabs')}>
-              <TabsTrigger value="content">{t('inspector.content')}</TabsTrigger>
-              <TabsTrigger value="style">{t('inspector.style')}</TabsTrigger>
-              <TabsTrigger value="advanced">{t('inspector.advanced')}</TabsTrigger>
-            </TabsList>
-            <TabsContent value="content">
-              <Inspector
-                element={selected}
-                tab="content"
-                editingEnabled={!locked}
-                editTarget={editTarget}
-                editSelection={editSelection}
-                tokenColors={tokenColors}
-                sendEditCommand={sendEditCommand}
-                setEditText={setEditText}
-                endEdit={endEdit}
-                inlineEditing={inlineEditing}
-                onInlineEditingChange={(value) => {
-                  setInlineEditing(value);
-                  writeSessionStorage('blixis-inline-editing', String(value));
-                }}
-                startEdit={(id, prop, focus) => {
-                  setInspectorTab('content');
-                  startEdit(id, prop, focus);
-                }}
-              />
-            </TabsContent>
-            <TabsContent value="style">
-              <Inspector element={selected} tab="style" editingEnabled={!locked} />
-            </TabsContent>
-            <TabsContent value="advanced">
-              <Inspector element={selected} tab="advanced" editingEnabled={!locked} />
-            </TabsContent>
-          </Tabs>
+          {selected === null ? (
+            <div className="blx-page-inspector-body">
+              <Inspector element={null} tab="content" editingEnabled={!locked} />
+            </div>
+          ) : (
+            <Tabs
+              value={shownTab}
+              onValueChange={(value) => {
+                if (value === 'content' || value === 'style' || value === 'advanced') {
+                  setInspectorTab(value);
+                  setTabPickedDuringEdit(editingId ?? null);
+                  writeSessionStorage('blixis-inspector-tab', value);
+                }
+              }}
+              className="blx-inspector-tabs min-h-0 flex-1"
+            >
+              <TabsList aria-label={t('inspector.tabs')}>
+                <TabsTrigger value="content">{t('inspector.content')}</TabsTrigger>
+                <TabsTrigger value="style">{t('inspector.style')}</TabsTrigger>
+                <TabsTrigger value="advanced">{t('inspector.advanced')}</TabsTrigger>
+              </TabsList>
+              <TabsContent value="content">
+                <Inspector
+                  element={selected}
+                  tab="content"
+                  editingEnabled={!locked}
+                  editTarget={editTarget}
+                  editSelection={editSelection}
+                  tokenColors={tokenColors}
+                  sendEditCommand={sendEditCommand}
+                  setEditText={setEditText}
+                  endEdit={endEdit}
+                  inlineEditing={inlineEditing}
+                  onInlineEditingChange={(value) => {
+                    setInlineEditing(value);
+                    writeSessionStorage('blixis-inline-editing', String(value));
+                  }}
+                  startEdit={(id, prop, focus) => {
+                    setInspectorTab('content');
+                    startEdit(id, prop, focus);
+                  }}
+                />
+              </TabsContent>
+              <TabsContent value="style">
+                <Inspector element={selected} tab="style" editingEnabled={!locked} />
+              </TabsContent>
+              <TabsContent value="advanced">
+                <Inspector element={selected} tab="advanced" editingEnabled={!locked} />
+              </TabsContent>
+            </Tabs>
+          )}
         </aside>
       </div>
     </>

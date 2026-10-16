@@ -31,6 +31,10 @@ describe('parseBootstrap', () => {
       parseBootstrap(makeBootstrap({ viewUrl: null, editingEnabled: false, lockReason: 'Locked' }), ORIGIN).ok,
     ).toBe(true);
   });
+  it('requires a boolean SEO plugin flag', () => {
+    expect(parseBootstrap(makeBootstrap({ seoPluginActive: true }), ORIGIN).ok).toBe(true);
+    expect(parseBootstrap({ ...makeBootstrap(), seoPluginActive: 'yes' }, ORIGIN).ok).toBe(false);
+  });
 
   it.each([
     ['cross-origin previewUrl', { previewUrl: 'https://evil.example/?blixis_preview=x' }],

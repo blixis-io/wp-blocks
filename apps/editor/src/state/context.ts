@@ -37,6 +37,8 @@ export interface StoreBootstrap {
   pluginVersion: string;
   /** `false` when the document is locked: commands are refused. Defaults to `true`. */
   editingEnabled?: boolean;
+  viewUrl?: string | null;
+  seoPluginActive?: boolean;
 }
 
 export interface EditorStoreDeps {

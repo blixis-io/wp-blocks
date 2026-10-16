@@ -147,6 +147,117 @@ async function mount(
 }
 
 describe('Inspector controls', () => {
+  it.each([
+    ['en_US', 'Title'],
+    ['nl_NL', 'Titel'],
+  ])('renders accessible page settings in %s when selection is empty', async (editorLocale, titleLabel) => {
+    const { store } = await makeLoadedStore();
+    store.getState().setContentLocale('en_US');
+    render(
+      <StoreProvider store={store}>
+        <I18nProvider editorLocale={editorLocale}>
+          <div className="blx-editor" data-editor-theme="light">
+            <Inspector element={null} tab="content" editingEnabled />
+          </div>
+        </I18nProvider>
+      </StoreProvider>,
+    );
+    expect(await screen.findByLabelText(titleLabel)).toBeTruthy();
+    expect(document.querySelector('#inspector-section-page-settings-panel')).toBeTruthy();
+    expect(document.querySelector('#inspector-section-page-seo-panel')).toBeTruthy();
+    expect(document.querySelector('#inspector-section-page-social-panel')?.getAttribute('aria-hidden')).toBe('true');
+    expect(
+      screen.getByText(
+        editorLocale === 'nl_NL' ? 'Bewerken: en_US · Engels (Verenigde Staten)' : 'Editing en_US · American English',
+      ),
+    ).toBeTruthy();
+    expect(screen.getByText(/8\/200/)).toBeTruthy();
+    expect(screen.getByText(/0\/320/)).toBeTruthy();
+    expect(screen.getByRole('note').textContent).toContain(
+      editorLocale === 'nl_NL' ? 'Wijzig de inhoudstaal in de kop' : 'Switch the content language in the header',
+    );
+    expect(
+      screen.getByRole('switch', {
+        name: new RegExp(
+          editorLocale === 'nl_NL' ? 'Vraag zoekmachines deze pagina niet' : 'Ask search engines not to show',
+        ),
+      }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole('switch', {
+        name: new RegExp(editorLocale === 'nl_NL' ? 'Vraag zoekmachines links' : 'Ask search engines not to follow'),
+      }),
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        editorLocale === 'nl_NL'
+          ? 'Nog geen beschrijving — zoekmachines halen tekst van de pagina op.'
+          : 'No description yet — search engines will pick text from the page.',
+      ),
+    ).toBeTruthy();
+    expect(
+      screen.getAllByText(editorLocale === 'nl_NL' ? 'Geen uitgelichte afbeelding' : 'No featured image'),
+    ).toHaveLength(2);
+    expect(
+      screen.getAllByText(editorLocale === 'nl_NL' ? 'Een bijlage-ID gebruiken' : 'Use an attachment ID'),
+    ).toHaveLength(2);
+    expect(screen.getByText(editorLocale === 'nl_NL' ? 'Gepubliceerd' : 'Published')).toBeTruthy();
+    expect(screen.getAllByText('About us')).toHaveLength(2);
+    expect(screen.getByText(/› about-us$/)).toBeTruthy();
+    expect(
+      screen.queryByText(
+        editorLocale === 'nl_NL'
+          ? 'Als je deze slug wijzigt, verandert de openbare URL.'
+          : 'Changing this slug changes the public URL.',
+      ),
+    ).toBeNull();
+    fireEvent.change(screen.getByLabelText(editorLocale === 'nl_NL' ? 'Slug' : 'Slug'), {
+      target: { value: 'new-slug' },
+    });
+    expect(
+      screen.getByText(
+        editorLocale === 'nl_NL'
+          ? 'Als je deze slug wijzigt, verandert de openbare URL.'
+          : 'Changing this slug changes the public URL.',
+      ),
+    ).toBeTruthy();
+  });
+
+  it('shows the SEO plugin note and disables SEO controls', async () => {
+    const { store } = await makeLoadedStore({ bootstrap: { seoPluginActive: true } });
+    render(
+      <StoreProvider store={store}>
+        <I18nProvider editorLocale="en_US">
+          <div className="blx-editor" data-editor-theme="light">
+            <Inspector element={null} tab="content" editingEnabled />
+          </div>
+        </I18nProvider>
+      </StoreProvider>,
+    );
+    expect(await screen.findByText(/SEO tags are managed by an active SEO plugin/)).toBeTruthy();
+    expect(screen.getByLabelText('Meta title')).toHaveProperty('disabled', true);
+    expect(screen.getByLabelText('Title')).toHaveProperty('disabled', false);
+  });
+
+  it('truncates long search result title and description previews to the display bounds', async () => {
+    const { store } = await makeLoadedStore();
+    render(
+      <StoreProvider store={store}>
+        <I18nProvider editorLocale="en_US">
+          <div className="blx-editor" data-editor-theme="light">
+            <Inspector element={null} tab="content" editingEnabled />
+          </div>
+        </I18nProvider>
+      </StoreProvider>,
+    );
+    const title = 'T'.repeat(70);
+    const description = 'D'.repeat(190);
+    fireEvent.change(await screen.findByLabelText('Meta title'), { target: { value: title } });
+    fireEvent.change(screen.getByLabelText('Meta description'), { target: { value: description } });
+    expect(screen.getAllByText(`${'T'.repeat(59)}…`).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(`${'D'.repeat(159)}…`).length).toBeGreaterThan(0);
+  });
+
   const selectedOptions = (sendEditCommand: (name: string, args?: Record<string, unknown>) => void) => ({
     reactive: false,
     selectedText: { text: 'Selected words' },

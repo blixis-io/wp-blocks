@@ -10,6 +10,9 @@ import type {
   RevisionEntry,
   StreamRead,
   StreamWritten,
+  PageSettings,
+  PageSeo,
+  PageSettingsWrite,
 } from './types';
 
 const LOCALE = /^[a-z]{2,3}(?:_[A-Za-z0-9]{2,8})*$/;
@@ -68,7 +71,7 @@ function safeTree(value: unknown, maxValues: number): boolean {
   }
   return true;
 }
-function cleanData(value: unknown, nonce: string): Record<string, unknown> | undefined {
+function cleanData(value: unknown, nonce: string, includeFieldMessages = false): Record<string, unknown> | undefined {
   if (!isObject(value)) return undefined;
   let count = 0;
   const invalidData = new Error('Invalid REST error data');
@@ -92,7 +95,7 @@ function cleanData(value: unknown, nonce: string): Record<string, unknown> | und
       if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
         throw invalidData;
       }
-      if (key !== 'message') cloned[key] = copy(nested, depth + 1);
+      if (key !== 'message' || includeFieldMessages) cloned[key] = copy(nested, depth + 1);
     }
     return cloned;
   };
@@ -146,6 +149,72 @@ function publication(value: unknown): PublicationState | null {
   for (const [locale, item] of Object.entries(value['locales'])) if (!validLocale(locale) || !stream(item)) return null;
   return value as unknown as PublicationState;
 }
+function pageSeo(value: unknown): PageSeo | null {
+  if (
+    !isObject(value) ||
+    !keysAre(value, [
+      'metaTitle',
+      'metaDescription',
+      'ogTitle',
+      'ogDescription',
+      'ogImageId',
+      'noindex',
+      'nofollow',
+      'canonical',
+    ])
+  )
+    return null;
+  return typeof value['metaTitle'] === 'string' &&
+    value['metaTitle'].length <= 120 &&
+    typeof value['metaDescription'] === 'string' &&
+    value['metaDescription'].length <= 320 &&
+    typeof value['ogTitle'] === 'string' &&
+    value['ogTitle'].length <= 120 &&
+    typeof value['ogDescription'] === 'string' &&
+    value['ogDescription'].length <= 320 &&
+    (value['ogImageId'] === null || safeInteger(value['ogImageId'])) &&
+    typeof value['noindex'] === 'boolean' &&
+    typeof value['nofollow'] === 'boolean' &&
+    typeof value['canonical'] === 'string'
+    ? (value as unknown as PageSeo)
+    : null;
+}
+function pageSettings(value: unknown): PageSettings | null {
+  if (
+    !isObject(value) ||
+    !keysAre(value, ['title', 'slug', 'status', 'excerpt', 'featuredImage', 'seo', 'locales', 'version'])
+  )
+    return null;
+  const image = value['featuredImage'];
+  if (
+    image !== null &&
+    (!isObject(image) ||
+      !keysAre(image, ['id', 'url', 'alt', 'width', 'height']) ||
+      !safeInteger(image['id']) ||
+      typeof image['url'] !== 'string' ||
+      typeof image['alt'] !== 'string' ||
+      !safeInteger(image['width']) ||
+      !safeInteger(image['height']))
+  )
+    return null;
+  if (
+    typeof value['title'] !== 'string' ||
+    value['title'].length > 200 ||
+    typeof value['slug'] !== 'string' ||
+    value['slug'].length > 200 ||
+    typeof value['status'] !== 'string' ||
+    typeof value['excerpt'] !== 'string' ||
+    value['excerpt'].length > 1000 ||
+    typeof value['version'] !== 'string' ||
+    !/^[a-f0-9]{40}$/.test(value['version']) ||
+    !Array.isArray(value['locales']) ||
+    !value['locales'].every(validLocale) ||
+    !isObject(value['seo'])
+  )
+    return null;
+  for (const [locale, seo] of Object.entries(value['seo'])) if (!validLocale(locale) || !pageSeo(seo)) return null;
+  return value as unknown as PageSettings;
+}
 
 /** Creates an isolated, non-throwing REST client for one WordPress editor session. */
 export function createRestClient({
@@ -184,7 +253,7 @@ export function createRestClient({
     path: string,
     method: 'GET' | 'PUT' | 'POST',
     body: unknown,
-    expectedRevision: number | undefined,
+    expectedRevision: number | string | undefined,
     external?: AbortSignal,
     validate?: (parsed: unknown) => T | null,
     responseCap = maxResponseBytes,
@@ -193,7 +262,13 @@ export function createRestClient({
     if (!Number.isSafeInteger(postId) || postId <= 0) return { ok: false, error: { kind: 'network' } };
     const url = urlFor(path);
     if (!url) return { ok: false, error: { kind: 'network' } };
-    if (expectedRevision !== undefined && !safeInteger(expectedRevision))
+    if (
+      expectedRevision !== undefined &&
+      !(
+        safeInteger(expectedRevision) ||
+        (typeof expectedRevision === 'string' && /^[a-f0-9]{40}$/.test(expectedRevision))
+      )
+    )
       return { ok: false, error: { kind: 'http', status: 400, code: 'blixis_invalid_revision' } };
     const controller = new AbortController();
     const timer = setTimeout(() => {
@@ -250,7 +325,7 @@ export function createRestClient({
           typeof parsed['message'] !== 'string'
         )
           return invalid<T>();
-        const data = cleanData(parsed['data'], nonce);
+        const data = cleanData(parsed['data'], nonce, parsed['code'] === 'blixis_invalid_page_settings');
         if (!data) return invalid<T>();
         const retryHeader = response.headers.get('Retry-After');
         const retryAfter = retryHeader !== null && /^\d{1,6}$/.test(retryHeader) ? Number(retryHeader) : undefined;
@@ -325,6 +400,30 @@ export function createRestClient({
     return value as unknown as PublicationResult;
   };
   return {
+    readPage: (options) =>
+      request<PageSettings>(
+        `documents/${String(postId)}/page`,
+        'GET',
+        undefined,
+        undefined,
+        options?.signal,
+        pageSettings,
+      ),
+    writePage: (body: PageSettingsWrite, version, options) =>
+      request<{ version: string }>(
+        `documents/${String(postId)}/page`,
+        'PUT',
+        body,
+        version,
+        options?.signal,
+        (value) =>
+          isObject(value) &&
+          keysAre(value, ['version']) &&
+          typeof value['version'] === 'string' &&
+          /^[a-f0-9]{40}$/.test(value['version'])
+            ? { version: value['version'] }
+            : null,
+      ),
     readLayout: (options) => readStream(null, options),
     readContent: (locale, options) => readStream(locale, options),
     writeLayout: (document, revision, options) => writeStream(null, document, revision, options),

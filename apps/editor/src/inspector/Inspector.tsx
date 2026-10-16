@@ -14,6 +14,7 @@ import { MediaControl } from './controls/media-control';
 import { InspectorSection } from './InspectorSection';
 import { PROPERTIES } from '@blixis/wp-style-engine';
 import { BoxModelControl } from './controls/box-model-control';
+import { PageSettingsPanel } from './PageSettingsPanel';
 import { richToPlain, type RichText } from '@blixis/wp-core';
 
 type Tab = InspectorTab;
@@ -255,6 +256,7 @@ export function Inspector({
   );
   const definition = useMemo(() => (element === null ? undefined : registry.get(element.type)), [element, registry]);
   const editable = editingEnabled && definition !== undefined;
+  if (element === null && tab === 'content') return <PageSettingsPanel editingEnabled={editingEnabled} />;
   if (element === null || definition === undefined)
     return (
       <p className="blx-empty">

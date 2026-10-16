@@ -200,6 +200,7 @@ final class EditorScreen {
 				'pluginVersion'         => \Blixis\Builder\VERSION,
 				'themeName'             => $theme->theme,
 				'editingEnabled'        => EditorAccessResult::ALLOWED === $access->state,
+				'seoPluginActive'       => \defined( 'WPSEO_VERSION' ) || \defined( 'RANK_MATH_VERSION' ) || \defined( 'SEOPRESS_VERSION' ) || \defined( 'AIOSEO_VERSION' ),
 				'lockReason'            => EditorAccessResult::THEME_LOCKED === $access->state ? $access->lock_reason : null,
 				'adminUrl'              => $admin_url,
 				'canvasUrl'             => '' !== $canvas_url ? $canvas_url : null,

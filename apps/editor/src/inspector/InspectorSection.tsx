@@ -19,11 +19,13 @@ function readCollapsed(id: string, defaultCollapsed: boolean): boolean {
 export function InspectorSection({
   id,
   title,
+  badge,
   children,
   defaultCollapsed = false,
 }: {
   id: string;
   title: string;
+  badge?: string;
   children: React.ReactNode;
   defaultCollapsed?: boolean;
 }) {
@@ -68,6 +70,7 @@ export function InspectorSection({
         >
           <Icon name="chevronDown" size={14} />
           <span>{title}</span>
+          {badge ? <span className="blx-inspector-section-badge">{badge}</span> : null}
         </button>
       </h3>
       <div
