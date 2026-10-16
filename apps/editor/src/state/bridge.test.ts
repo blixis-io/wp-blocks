@@ -480,6 +480,28 @@ describe('coalescing', () => {
     expect(store.getState().document).toEqual(post);
   });
 
+  it('keeps style coalescing isolated by property and responsive breakpoint', async () => {
+    const { store, clock } = await makeLoadedStore();
+    const edit = (property: string, breakpoint: string, value: string) =>
+      store.getState().dispatch(
+        {
+          type: 'set-style-rule',
+          id: 'el-heading-1',
+          selector: breakpoint === 'base' ? {} : { breakpoint },
+          declarations: { [property]: value },
+        },
+        { coalesceKey: `style:el-heading-1:${breakpoint}:${property}` },
+      );
+    edit('width', 'base', '200px');
+    clock.advance(20);
+    edit('width', 'base', '240px');
+    clock.advance(20);
+    edit('height', 'base', '80px');
+    clock.advance(20);
+    edit('width', 'mobile', '160px');
+    expect(store.getState().history?.past).toHaveLength(3);
+  });
+
   it('ignores a coalesce key on commands that cannot merge', async () => {
     const { store } = await makeLoadedStore();
     store.getState().dispatch({ type: 'remove', id: 'el-text-1' }, { coalesceKey: 'x' });

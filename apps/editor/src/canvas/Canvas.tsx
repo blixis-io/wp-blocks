@@ -15,11 +15,22 @@ import {
 } from '@blixis/wp-editor-ui';
 import { languageName } from './language-name';
 import { elementIconName } from '@blixis/wp-editor-ui';
-import { HANDLE_POSITIONS, placeSelectionToolbar } from './selection-chrome';
+import { placeSelectionToolbar } from './selection-chrome';
 import { findPath, nodeAt, type ElementNode } from '@blixis/wp-core';
 import { elementLabel } from '../element-label';
 import { ElementId } from '../ElementId';
 import { FRAME_WIDTHS, useCanvasSession, type CanvasSessionOptions, type PreviewProblem } from './useCanvasSession';
+import {
+  rectAtScroll,
+  resizeCssValue,
+  resizeFromDelta,
+  RESIZE_HANDLES,
+  resizeDimensions,
+  type ResizeHandle,
+  type ResizeRect,
+} from './resize';
+import { styleSelector } from '../inspector/style-mapping';
+import { PROPERTIES } from '@blixis/wp-style-engine';
 
 const PREVIEW_MODES = [
   { id: 'light', label: 'canvas.appearance.light', icon: <Icon name="light" /> },
@@ -132,6 +143,22 @@ export function Canvas({
   const [toolbarSize, setToolbarSize] = useState({ width: 250, height: 36 });
   const [toolbar, setToolbar] = useState<HTMLDivElement | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [resizePreview, setResizePreview] = useState<ResizeRect | null>(null);
+  const [resizeError, setResizeError] = useState(false);
+  const resizeRef = useRef<{
+    handle: ResizeHandle;
+    pointerId: number;
+    x: number;
+    y: number;
+    rect: ResizeRect;
+    shift: boolean;
+    alt: boolean;
+    snap: boolean;
+    capture: HTMLButtonElement;
+  } | null>(null);
+  const resizeFrame = useRef<number | null>(null);
+  const pendingResize = useRef<ResizeRect | null>(null);
+  const keyboardResize = useRef<{ rect: ResizeRect; timer: ReturnType<typeof setTimeout> } | null>(null);
   const menuItem = useRef<HTMLButtonElement>(null);
   const canvasRegion = useRef<HTMLDivElement>(null);
   const src = canvasSrc(canvasUrl, contentLocale);
@@ -166,6 +193,100 @@ export function Canvas({
     return () => observer?.disconnect();
   }, [frame, stage]);
   const selectedRect = selectedId === null ? undefined : session.rects.find((rect) => rect.id === selectedId);
+  const selectedDefinition = selected ? store.getState().registry.get(selected.type) : undefined;
+  const locked = selected?.['locked'] === true;
+  const canResizeWidth =
+    selectedDefinition?.styleProperties.includes('width') === true &&
+    PROPERTIES.has('width') &&
+    !locked &&
+    editingEnabled;
+  const canResizeHeight =
+    selectedDefinition?.styleProperties.includes('height') === true &&
+    PROPERTIES.has('height') &&
+    !locked &&
+    editingEnabled;
+  const commitResize = useCallback(
+    (rect: ResizeRect): void => {
+      if (!selected || !editingEnabled) return;
+      const state = store.getState();
+      const breakpoint = state.breakpointId;
+      const declarations: Record<string, string> = Object.fromEntries(
+        Object.entries(
+          selected.style?.find(
+            (item) => (item.breakpoint ?? 'base') === breakpoint && item.mode === undefined && item.state === undefined,
+          )?.declarations ?? {},
+        ).filter((entry): entry is [string, string] => typeof entry[1] === 'string'),
+      );
+      const changed: string[] = [];
+      for (const property of ['width', 'height'] as const) {
+        const allowed = property === 'width' ? canResizeWidth : canResizeHeight;
+        const px = property === 'width' ? rect.w : rect.h;
+        const startPx = property === 'width' ? (selectedRect?.w ?? px) : (selectedRect?.h ?? px);
+        if (!allowed || Math.round(px) === Math.round(startPx)) continue;
+        const parent = selected['parentId']
+          ? session.rects.find((item) => item.id === selected['parentId'])
+          : undefined;
+        const parentPx =
+          property === 'width' ? (parent?.w ?? overlayBox?.width ?? 1) : (parent?.h ?? overlayBox?.height ?? 1);
+        const rule = selected.style?.find(
+          (item) => (item.breakpoint ?? 'base') === breakpoint && item.mode === undefined && item.state === undefined,
+        );
+        const declared = rule?.declarations[property];
+        const value = resizeCssValue(
+          px,
+          typeof declared === 'string' ? declared : undefined,
+          parentPx,
+          overlayBox?.width ?? parentPx,
+        );
+        declarations[property] = value;
+        changed.push(property);
+      }
+      if (changed.length) {
+        const result = state.dispatch(
+          { type: 'set-style-rule', id: selected.id, selector: styleSelector(breakpoint), declarations },
+          { coalesceKey: `style:${selected.id}:${breakpoint}:${changed.sort().join(',')}`, coalesceWindowMs: 60_000 },
+        );
+        setResizeError(!result.ok);
+      }
+    },
+    [selected, editingEnabled, store, canResizeWidth, canResizeHeight, selectedRect, session.rects, overlayBox],
+  );
+  const finishResize = useCallback(
+    (commit: boolean): void => {
+      const active = resizeRef.current;
+      if (!active) return;
+      resizeRef.current = null;
+      if (resizeFrame.current !== null) cancelAnimationFrame(resizeFrame.current);
+      resizeFrame.current = null;
+      const preview = pendingResize.current;
+      pendingResize.current = null;
+      setResizePreview(null);
+      if (active.capture.hasPointerCapture(active.pointerId)) active.capture.releasePointerCapture(active.pointerId);
+      if (commit && preview) commitResize(preview);
+    },
+    [commitResize],
+  );
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && resizeRef.current) {
+        event.preventDefault();
+        finishResize(false);
+        canvasRegion.current?.focus();
+      }
+      if (event.key === 'Escape' && keyboardResize.current) {
+        clearTimeout(keyboardResize.current.timer);
+        keyboardResize.current = null;
+        event.preventDefault();
+        canvasRegion.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      if (keyboardResize.current) clearTimeout(keyboardResize.current.timer);
+      if (resizeFrame.current !== null) cancelAnimationFrame(resizeFrame.current);
+    };
+  }, [finishResize]);
   useLayoutEffect(() => {
     if (!toolbar || typeof ResizeObserver !== 'function') return;
     const observer = new ResizeObserver(() => {
@@ -314,46 +435,6 @@ export function Canvas({
         data-session={session.status}
         style={width === null ? undefined : ({ '--blx-frame-width': `${String(width)}px` } as CSSProperties)}
       />
-      {frame && overlayBox && selectedId !== null ? (
-        <div
-          className="blx-overlay-viewport"
-          data-testid="canvas-overlay-viewport"
-          aria-hidden="true"
-          style={overlayBox}
-        >
-          {session.rects
-            .filter((rect) => rect.id === selectedId)
-            .map((rect) => (
-              <div
-                key={rect.id}
-                data-testid="selection-overlay"
-                className="blx-selection-overlay"
-                style={{
-                  left: rect.x - session.scroll.x,
-                  top: rect.y - session.scroll.y,
-                  width: rect.w,
-                  height: rect.h,
-                }}
-              />
-            ))}
-          {selectedRect ? (
-            <div
-              className="blx-selection-handles"
-              data-testid="selection-handles"
-              style={{
-                left: selectedRect.x - session.scroll.x,
-                top: selectedRect.y - session.scroll.y,
-                width: selectedRect.w,
-                height: selectedRect.h,
-              }}
-            >
-              {HANDLE_POSITIONS.map((position) => (
-                <span key={position} data-handle={position} className={`blx-selection-handle is-${position}`} />
-              ))}
-            </div>
-          ) : null}
-        </div>
-      ) : null}
       {selected && selectedRect && overlayBox ? (
         <div
           ref={attachToolbar}
@@ -445,6 +526,165 @@ export function Canvas({
               {t('canvas.selection.parent')}
             </button>
           </div>
+        </div>
+      ) : null}
+      {frame && overlayBox && selectedId !== null ? (
+        <div className="blx-overlay-viewport" data-testid="canvas-overlay-viewport" style={overlayBox}>
+          {session.rects
+            .filter((rect) => rect.id === selectedId)
+            .map((rect) => (
+              <div
+                key={rect.id}
+                data-testid="selection-overlay"
+                className="blx-selection-overlay"
+                style={{
+                  left: rectAtScroll(resizePreview ?? rect, session.scroll).x,
+                  top: rectAtScroll(resizePreview ?? rect, session.scroll).y,
+                  width: resizePreview?.w ?? rect.w,
+                  height: resizePreview?.h ?? rect.h,
+                }}
+              />
+            ))}
+          {selectedRect ? (
+            <div
+              className="blx-selection-handles"
+              data-testid="selection-handles"
+              style={{
+                left: rectAtScroll(resizePreview ?? selectedRect, session.scroll).x,
+                top: rectAtScroll(resizePreview ?? selectedRect, session.scroll).y,
+                width: resizePreview?.w ?? selectedRect.w,
+                height: resizePreview?.h ?? selectedRect.h,
+              }}
+            >
+              {RESIZE_HANDLES.map((position) => {
+                const dims = resizeDimensions(position);
+                const enabled =
+                  (!dims.width || canResizeWidth) && (!dims.height || canResizeHeight) && editingEnabled && !locked;
+                const reason = !editingEnabled || locked ? t('canvas.resize.disabled') : t('canvas.resize.unsupported');
+                const edge =
+                  position === 'e'
+                    ? dir === 'rtl'
+                      ? 'left'
+                      : 'right'
+                    : position === 'w'
+                      ? dir === 'rtl'
+                        ? 'right'
+                        : 'left'
+                      : position === 'n'
+                        ? 'top'
+                        : position === 's'
+                          ? 'bottom'
+                          : `top-${position.includes('w') !== (dir === 'rtl') ? 'left' : 'right'}`;
+                return (
+                  <button
+                    key={position}
+                    type="button"
+                    data-handle={position}
+                    className={`blx-selection-handle is-${position} ed-focus-ring`}
+                    aria-label={t('canvas.resize.handle', { edge })}
+                    aria-disabled={!enabled}
+                    title={!enabled ? reason : undefined}
+                    tabIndex={0}
+                    onPointerDown={(event) => {
+                      if (!enabled) return;
+                      event.preventDefault();
+                      event.currentTarget.setPointerCapture(event.pointerId);
+                      resizeRef.current = {
+                        handle: position,
+                        pointerId: event.pointerId,
+                        x: event.clientX,
+                        y: event.clientY,
+                        rect: { x: selectedRect.x, y: selectedRect.y, w: selectedRect.w, h: selectedRect.h },
+                        shift: event.shiftKey || selected?.type === 'blixis/image',
+                        alt: event.altKey,
+                        snap: event.ctrlKey || event.metaKey,
+                        capture: event.currentTarget,
+                      };
+                    }}
+                    onPointerMove={(event) => {
+                      const active = resizeRef.current;
+                      if (active?.pointerId !== event.pointerId) return;
+                      pendingResize.current = resizeFromDelta(
+                        active.rect,
+                        active.handle,
+                        event.clientX - active.x,
+                        event.clientY - active.y,
+                        {
+                          shift: event.shiftKey || active.shift,
+                          alt: event.altKey || active.alt,
+                          snap: event.ctrlKey || event.metaKey || active.snap,
+                          rtl: dir === 'rtl',
+                        },
+                      );
+                      resizeFrame.current ??= requestAnimationFrame(() => {
+                        resizeFrame.current = null;
+                        setResizePreview(pendingResize.current);
+                      });
+                    }}
+                    onPointerUp={() => {
+                      finishResize(true);
+                    }}
+                    onPointerCancel={() => {
+                      finishResize(false);
+                    }}
+                    onLostPointerCapture={() => {
+                      finishResize(false);
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Escape') {
+                        finishResize(false);
+                        if (keyboardResize.current) clearTimeout(keyboardResize.current.timer);
+                        keyboardResize.current = null;
+                        canvasRegion.current?.focus();
+                        return;
+                      }
+                      if (!event.key.startsWith('Arrow') || !enabled) return;
+                      event.preventDefault();
+                      const dx =
+                        event.key === 'ArrowRight'
+                          ? (dir === 'rtl' ? -1 : 1) * (event.altKey ? 1.6 : event.shiftKey ? 10 : 1)
+                          : event.key === 'ArrowLeft'
+                            ? (dir === 'rtl' ? 1 : -1) * (event.altKey ? 1.6 : event.shiftKey ? 10 : 1)
+                            : 0;
+                      const dy =
+                        event.key === 'ArrowDown'
+                          ? event.shiftKey
+                            ? 10
+                            : event.altKey
+                              ? 1.6
+                              : 1
+                          : event.key === 'ArrowUp'
+                            ? -(event.altKey ? 1.6 : event.shiftKey ? 10 : 1)
+                            : 0;
+                      const starting = keyboardResize.current?.rect ?? {
+                        x: selectedRect.x,
+                        y: selectedRect.y,
+                        w: selectedRect.w,
+                        h: selectedRect.h,
+                      };
+                      const next = resizeFromDelta(starting, position, dx, dy, { rtl: dir === 'rtl' });
+                      if (keyboardResize.current) clearTimeout(keyboardResize.current.timer);
+                      const timer = setTimeout(() => {
+                        keyboardResize.current = null;
+                        commitResize(next);
+                      }, 300);
+                      keyboardResize.current = { rect: next, timer };
+                    }}
+                  />
+                );
+              })}
+              {resizePreview ? (
+                <span className="blx-resize-badge" role="status">
+                  {Math.round(resizePreview.w)} × {Math.round(resizePreview.h)}
+                </span>
+              ) : null}
+              {resizeError ? (
+                <span className="sr-only" role="alert">
+                  {t('inspector.error.invalid')}
+                </span>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       ) : null}
     </div>

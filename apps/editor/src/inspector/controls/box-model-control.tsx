@@ -283,7 +283,7 @@ export function BoxModelControl({
   const hasInherited = Object.keys(inherited).some((key) => /^(margin|padding)(-|$)|^border-width$/.test(key));
   let diagramContents: ReactNode = (
     <div className="blx-box-model-content" aria-hidden="true">
-      <span>auto</span>
+      <span>{`${own['width'] ?? inherited['width'] ?? t('inspector.boxModel.auto')} × ${own['height'] ?? inherited['height'] ?? t('inspector.boxModel.auto')}`}</span>
     </div>
   );
   for (const layer of [...LAYERS].reverse()) {

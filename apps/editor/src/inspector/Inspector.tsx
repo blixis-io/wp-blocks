@@ -200,7 +200,7 @@ export function Inspector({
             typography: ['font-family', 'font-weight', 'font-size', 'line-height', 'letter-spacing', 'text-transform'],
             color: ['color', 'background-color'],
             boxModel: [],
-            layout: ['width', 'text-align', 'display'],
+            layout: ['width', 'height', 'text-align', 'display'],
             effects: ['border-radius', 'border-style', 'border-color', 'box-shadow'],
           };
           const fields = STYLE_FIELDS.filter(
