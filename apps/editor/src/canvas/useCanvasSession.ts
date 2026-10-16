@@ -12,7 +12,7 @@ import type { ApiError, RestClient } from '../api/types';
 import { directionOf } from '../i18n';
 import { createCoreRegistry } from '@blixis/wp-element-registry';
 import { findPath, nodeAt, validateRichText, type Json, type RichText } from '@blixis/wp-core';
-import type { EditorStore, Viewport } from '../state';
+import { isDirty, type EditorStore, type Viewport } from '../state';
 
 /** Debounce between the last document change and the preview request. */
 export const PREVIEW_DEBOUNCE_MS = 150;
@@ -168,6 +168,7 @@ export function useCanvasSession(options: CanvasSessionOptions): CanvasSession {
     let timer: ReturnType<typeof setTimeout> | null = null;
     let controller: AbortController | null = null;
     let editing: { id: string; prop: string; last: unknown; sessionId: string } | null = null;
+    let saveAfterEditCommit = false;
     const registry = createCoreRegistry();
     const startEdit = (id: string, prop: string) => {
       const state = store.getState();
@@ -273,6 +274,16 @@ export function useCanvasSession(options: CanvasSessionOptions): CanvasSession {
     const onMessage = (message: CanvasMessage): void => {
       if (disposed) return;
       switch (message.type) {
+        case 'shortcut':
+          if (options.editingEnabled !== false && store.getState().saveStatus !== 'saving') {
+            if (editing) {
+              saveAfterEditCommit = true;
+              endEdit(true);
+            } else if (isDirty(store.getState())) {
+              void store.getState().saveDraft();
+            }
+          }
+          break;
         case 'ready': {
           ready = true;
           const state = store.getState();
@@ -371,6 +382,11 @@ export function useCanvasSession(options: CanvasSessionOptions): CanvasSession {
             setEditSession(null);
             setEditSelection(null);
             requestRects();
+            if (saveAfterEditCommit) {
+              saveAfterEditCommit = false;
+              if (store.getState().saveStatus !== 'saving' && isDirty(store.getState()))
+                void store.getState().saveDraft();
+            }
           }
           break;
         case 'edit-error':

@@ -1,6 +1,6 @@
-import { createHistory, type BuilderDocument } from '@blixis/wp-core';
+import { createHistory, validateDocument, type BuilderDocument } from '@blixis/wp-core';
 import type { StateCreator } from 'zustand/vanilla';
-import { composeDocument, deepEqual, type ComposeError } from './compose';
+import { composeDocument, deepEqual, splitDocument, type ComposeError } from './compose';
 import type { ResolvedDeps } from './context';
 import type { ApiError, StreamRead } from './deps';
 import type { Emitter } from './events';
@@ -9,6 +9,11 @@ import { persistExpanded } from './structure-slice';
 import type { EditorState } from './store';
 
 export type LoadError = { type: 'api'; error: ApiError } | { type: 'invalid'; error: ComposeError };
+class SaveFailure extends Error {
+  constructor(readonly apiError: ApiError) {
+    super('save-failed');
+  }
+}
 
 export interface StreamRevisions {
   layout: number;
@@ -38,6 +43,16 @@ export interface DocumentSlice {
   /** Last loaded or saved snapshot (per stream); `dirty` compares against it. */
   savedDocument: BuilderDocument | null;
   dirty: DirtyState;
+  saveStatus: 'idle' | 'saving' | 'failed';
+  saveError: ApiError | { kind: 'invalid-document' } | null;
+  saveErrorKey: string | null;
+  retryAfterMs: number | null;
+  saveLocked: boolean;
+  lastSavedAt: number | null;
+  saveDraft: (options?: { signal?: AbortSignal }) => Promise<void>;
+  cancelSave: () => void;
+  resolveConflict: (choice: 'reload' | 'overwrite') => Promise<void>;
+  dismissSaveError: () => void;
   loadDocument: (options?: { signal?: AbortSignal }) => Promise<void>;
   markSaved: (saved: SavedStreams) => void;
 }
@@ -99,6 +114,43 @@ export const createDocumentSlice =
       ]);
       return { layout, contents };
     };
+    let activeSave: Promise<void> | null = null;
+    let saveAbortController: AbortController | null = null;
+    let conflictSnapshot: BuilderDocument | null = null;
+    const writeSnapshot = async (snapshot: BuilderDocument, signal: AbortSignal, overwrite = false) => {
+      const dirty = get().dirty;
+      const split = splitDocument(snapshot, get().revisions.content);
+      const revisions: { layout?: number; content: Record<string, number> } = { content: {} };
+      if (overwrite) {
+        if (dirty.layout) {
+          const read = await deps.client.readLayout({ signal });
+          if (!read.ok) throw new SaveFailure(read.error);
+          revisions.layout = read.value.revision;
+        }
+        for (const locale of Object.keys(dirty.content)
+          .filter((key) => dirty.content[key])
+          .sort()) {
+          const read = await deps.client.readContent(locale, { signal });
+          if (!read.ok) throw new SaveFailure(read.error);
+          revisions.content[locale] = read.value.revision;
+        }
+      }
+      if (dirty.layout) {
+        const revision = revisions.layout ?? get().revisions.layout;
+        const result = await deps.client.writeLayout(split.layout, revision, { signal });
+        if (!result.ok) throw new SaveFailure(result.error);
+        get().markSaved({ layout: result.value.revision, document: snapshot });
+      }
+      for (const locale of Object.keys(dirty.content)
+        .filter((key) => dirty.content[key])
+        .sort()) {
+        const revision = revisions.content[locale] ?? get().revisions.content[locale] ?? 0;
+        const result = await deps.client.writeContent(locale, split.contents[locale], revision, { signal });
+        if (!result.ok) throw new SaveFailure(result.error);
+        get().markSaved({ content: { [locale]: result.value.revision }, document: snapshot });
+      }
+      set({ saveStatus: 'idle', saveError: null, saveErrorKey: null, retryAfterMs: null, lastSavedAt: deps.now() });
+    };
 
     return {
       status: 'idle',
@@ -107,6 +159,103 @@ export const createDocumentSlice =
       revisions: NO_REVISIONS,
       savedDocument: null,
       dirty: NO_DIRTY,
+      saveStatus: 'idle',
+      saveError: null,
+      saveErrorKey: null,
+      retryAfterMs: null,
+      saveLocked: false,
+      lastSavedAt: null,
+      saveDraft(options = {}) {
+        if (activeSave) return activeSave;
+        const snapshot = get().document;
+        if (!snapshot || !deps.editingEnabled || get().saveLocked || !isDirty(get())) return Promise.resolve();
+        if (!validateDocument(snapshot).ok) {
+          set({ saveStatus: 'failed', saveError: { kind: 'invalid-document' }, saveErrorKey: 'save.error.invalid' });
+          return Promise.resolve();
+        }
+        const controller = new AbortController();
+        saveAbortController = controller;
+        const abort = () => {
+          controller.abort();
+        };
+        options.signal?.addEventListener('abort', abort, { once: true });
+        if (options.signal?.aborted) controller.abort();
+        set({ saveStatus: 'saving', saveError: null, saveErrorKey: null, retryAfterMs: null });
+        activeSave = (async () => {
+          try {
+            await writeSnapshot(snapshot, controller.signal);
+          } catch (error) {
+            const api = error instanceof SaveFailure ? error.apiError : { kind: 'network' as const };
+            if (api.kind === 'aborted') set({ saveStatus: 'idle', saveError: null, saveErrorKey: null });
+            else {
+              if (api.status === 409) conflictSnapshot = snapshot;
+              const key =
+                api.kind === 'network'
+                  ? 'save.error.offline'
+                  : api.status === 409
+                    ? 'save.error.conflict'
+                    : api.status === 401 || api.status === 403
+                      ? 'save.error.auth'
+                      : api.status === 423
+                        ? 'save.error.locked'
+                        : api.status === 413 || api.kind === 'too-large'
+                          ? 'save.error.large'
+                          : api.status === 422
+                            ? 'save.error.validation'
+                            : api.status === 429
+                              ? 'save.error.rate'
+                              : 'save.error.server';
+              const seconds = api.data?.['retryAfter'];
+              const retryAfterMs =
+                api.status === 429 && typeof seconds === 'number' && Number.isFinite(seconds)
+                  ? Math.min(30, Math.max(0, seconds)) * 1000
+                  : api.status === 429
+                    ? 5000
+                    : null;
+              set({ saveStatus: 'failed', saveError: api, saveErrorKey: key, retryAfterMs });
+              if (api.status === 423) set({ saveLocked: true });
+            }
+          } finally {
+            options.signal?.removeEventListener('abort', abort);
+            activeSave = null;
+            if (saveAbortController === controller) saveAbortController = null;
+          }
+        })();
+        return activeSave;
+      },
+      cancelSave() {
+        saveAbortController?.abort();
+      },
+      async resolveConflict(choice) {
+        const snapshot = conflictSnapshot;
+        if (!snapshot) return;
+        conflictSnapshot = null;
+        if (choice === 'reload') {
+          await get().loadDocument();
+          set({ saveStatus: 'idle', saveError: null });
+          return;
+        }
+        set({ saveStatus: 'saving', saveError: null, saveErrorKey: null });
+        try {
+          await writeSnapshot(snapshot, new AbortController().signal, true);
+        } catch (error) {
+          const api = error instanceof SaveFailure ? error.apiError : { kind: 'network' as const };
+          if (api.status === 409) conflictSnapshot = snapshot;
+          set({
+            saveStatus: 'failed',
+            saveError: api,
+            saveErrorKey:
+              api.status === 409
+                ? 'save.error.conflict'
+                : api.kind === 'network'
+                  ? 'save.error.offline'
+                  : 'save.error.server',
+          });
+        }
+      },
+      dismissSaveError() {
+        set({ saveStatus: 'idle', saveError: null, saveErrorKey: null, retryAfterMs: null });
+      },
 
       async loadDocument(options = {}) {
         loads.current?.controller.abort();
@@ -169,6 +318,8 @@ export const createDocumentSlice =
             savedDocument: document,
             revisions: { layout: layout.value.revision, content: contentRevisions },
             dirty: computeDirty(document, document),
+            saveLocked: false,
+            lastSavedAt: deps.now(),
             history: createHistory(document, deps.historyLimit),
             canUndo: false,
             canRedo: false,

@@ -12,13 +12,14 @@ import {
   ToolbarToggleItem,
   type IconName,
 } from '@blixis/wp-editor-ui';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { EditorBootstrap } from './bootstrap';
 import { CHROME_PREFERENCES, type ChromePreference } from './chrome-theme';
 import type { MessageKey } from './i18n';
 import { useI18n } from './i18n-react';
 import type { PanelState } from './panels';
 import { ShortcutsDialog } from './ShortcutsDialog';
+import { Dialog, DialogContent } from '@blixis/wp-editor-ui';
 import { VIEWPORTS as VIEWPORT_IDS, useEditorStore, useEditorStoreApi, type Viewport } from './state';
 
 const APPEARANCE_ICONS: Record<ChromePreference, IconName> = { system: 'system', light: 'light', dark: 'dark' };
@@ -79,10 +80,26 @@ export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppeara
   const canUndo = useEditorStore((state) => state.canUndo);
   const canRedo = useEditorStore((state) => state.canRedo);
   const dirty = useEditorStore((state) => state.dirty);
-  const [savedAt, setSavedAt] = useState(0);
+  const saveStatus = useEditorStore((state) => state.saveStatus);
+  const saveError = useEditorStore((state) => state.saveError);
+  const saveErrorKey = useEditorStore((state) => state.saveErrorKey);
+  const retryAfterMs = useEditorStore((state) => state.retryAfterMs);
+  const saveLocked = useEditorStore((state) => state.saveLocked);
+  const savedAt = useEditorStore((state) => state.lastSavedAt);
+  const [conflictOpen, setConflictOpen] = useState(false);
+  const [conflictConfirm, setConflictConfirm] = useState<'reload' | 'overwrite' | null>(null);
+  const rateRetryUsed = useRef(false);
   const [now, setNow] = useState(0);
+  const [rateCountdown, setRateCountdown] = useState<{ delay: number; seconds: number } | null>(null);
+  const rateSeconds =
+    saveErrorKey === 'save.error.rate' && retryAfterMs !== null
+      ? rateCountdown?.delay === retryAfterMs
+        ? rateCountdown.seconds
+        : Math.ceil(retryAfterMs / 1000)
+      : 0;
   const [width, setWidth] = useState(() => (typeof window === 'undefined' ? 1200 : window.innerWidth));
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const hasDirty = dirty.layout || Object.values(dirty.content).some(Boolean);
   useEffect(() => {
     const resize = () => {
       setWidth(window.innerWidth);
@@ -93,16 +110,69 @@ export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppeara
     };
   }, []);
   useEffect(() => {
-    const unsubscribe = store.subscribe((state, previous) => {
-      const clean = !state.dirty.layout && !Object.values(state.dirty.content).some(Boolean);
-      const loaded = state.status === 'ready' && previous.status !== 'ready';
-      const saved = state.savedDocument !== previous.savedDocument;
-      if (clean && (loaded || saved)) setSavedAt(Date.now());
+    const unsubscribe = store.subscribe((state) => {
+      if (state.saveError?.kind === 'http' && state.saveError.status === 409) setConflictOpen(true);
     });
     return () => {
       unsubscribe();
     };
   }, [store]);
+  useEffect(() => {
+    const handler = (event: KeyboardEvent) => {
+      if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== 's') return;
+      event.preventDefault();
+      void store.getState().saveDraft();
+    };
+    window.addEventListener('keydown', handler);
+    return () => {
+      window.removeEventListener('keydown', handler);
+    };
+  }, [store]);
+  useEffect(
+    () => () => {
+      store.getState().cancelSave();
+    },
+    [store],
+  );
+  useEffect(() => {
+    if (saveStatus !== 'saving' && !hasDirty) return;
+    const handler = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => {
+      window.removeEventListener('beforeunload', handler);
+    };
+  }, [hasDirty, saveStatus]);
+  useEffect(() => {
+    if (saveError?.kind !== 'network') return;
+    const retry = () => {
+      void store.getState().saveDraft();
+    };
+    window.addEventListener('online', retry);
+    return () => {
+      window.removeEventListener('online', retry);
+    };
+  }, [saveError, store]);
+  useEffect(() => {
+    if (saveErrorKey !== 'save.error.rate' || retryAfterMs === null || rateRetryUsed.current) return;
+    rateRetryUsed.current = true;
+    const timer = window.setTimeout(() => void store.getState().saveDraft(), retryAfterMs);
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [saveErrorKey, retryAfterMs, store]);
+  useEffect(() => {
+    if (saveErrorKey !== 'save.error.rate' || retryAfterMs === null) return;
+    let seconds = Math.ceil(retryAfterMs / 1000);
+    const interval = window.setInterval(() => {
+      seconds = Math.max(0, seconds - 1);
+      setRateCountdown({ delay: retryAfterMs, seconds });
+    }, 1000);
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, [saveErrorKey, retryAfterMs]);
   useEffect(() => {
     const timer = window.setInterval(() => {
       setNow(Date.now());
@@ -112,7 +182,7 @@ export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppeara
     };
   }, []);
   const relative = useMemo(
-    () => (savedAt === 0 ? t('header.time.now') : relativeSaved(now, savedAt, locale)),
+    () => (savedAt === null ? t('header.time.now') : relativeSaved(now, savedAt, locale)),
     [now, savedAt, locale, t],
   );
   const viewUrl = validLocalUrl(bootstrap.viewUrl);
@@ -165,9 +235,14 @@ export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppeara
           },
           {
             label: t('header.saveDraft'),
-            disabled: true,
+            disabled:
+              !bootstrap.editingEnabled ||
+              saveLocked ||
+              saveStatus === 'saving' ||
+              (!dirty.layout && !Object.values(dirty.content).some(Boolean)),
             describedBy: 'blx-save-hint',
             icon: <Icon name="save" size={15} />,
+            onSelect: () => void store.getState().saveDraft(),
           },
           {
             label: t('header.publish'),
@@ -235,11 +310,35 @@ export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppeara
           <ToolbarSeparator />
           <span className="blx-header-title">
             <strong className="blx-title-text">{title}</strong>
-            <span className="blx-saved">
+            <span
+              className="blx-saved"
+              data-save-state={
+                saveStatus === 'saving'
+                  ? 'saving'
+                  : saveStatus === 'failed'
+                    ? 'failed'
+                    : dirty.layout || Object.values(dirty.content).some(Boolean)
+                      ? 'dirty'
+                      : 'saved'
+              }
+              role="status"
+              aria-live="polite"
+            >
               <i aria-hidden="true" />
-              {dirty.layout || Object.values(dirty.content).some(Boolean)
-                ? t('header.unsaved')
-                : t('header.saved', { time: relative })}
+              {saveStatus === 'saving' ? (
+                t('save.saving')
+              ) : saveStatus === 'failed' ? (
+                <>
+                  <span>{t('save.failed')}</span>{' '}
+                  <button type="button" aria-label={t('save.retry')} onClick={() => void store.getState().saveDraft()}>
+                    {t('save.retry')}
+                  </button>
+                </>
+              ) : dirty.layout || Object.values(dirty.content).some(Boolean) ? (
+                t('header.unsaved')
+              ) : (
+                t('header.saved', { time: relative })
+              )}
             </span>
           </span>
         </div>
@@ -318,12 +417,19 @@ export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppeara
                 <ToolbarButton
                   className="blx-header-secondary"
                   variant="outline"
-                  disabled
+                  disabled={
+                    !bootstrap.editingEnabled ||
+                    saveLocked ||
+                    saveStatus === 'saving' ||
+                    (!dirty.layout && !Object.values(dirty.content).some(Boolean))
+                  }
+                  aria-busy={saveStatus === 'saving'}
                   aria-label={t('header.saveDraft')}
                   aria-describedby="blx-save-hint"
+                  onClick={() => void store.getState().saveDraft()}
                 >
                   <Icon name="save" className={icon} />
-                  <span>{t('header.saveDraft')}</span>
+                  <span>{saveStatus === 'saving' ? t('save.saving') : t('header.saveDraft')}</span>
                 </ToolbarButton>
               </Hint>
               <Hint text={t('header.publish.hint')}>
@@ -383,6 +489,119 @@ export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppeara
             });
         }}
       />
+      {saveError !== null && (
+        <div role="alert" className="blx-save-alert">
+          <span>{t((saveErrorKey ?? 'save.error.server') as MessageKey)}</span>
+          {saveErrorKey === 'save.error.rate' && rateSeconds > 0 && (
+            <span>{t('save.error.rateCountdown', { seconds: rateSeconds })}</span>
+          )}
+          {saveError.kind !== 'invalid-document' &&
+            saveError.status === 423 &&
+            typeof saveError.data?.['reason'] === 'string' && <span>{saveError.data['reason']}</span>}
+          {saveError.kind !== 'invalid-document' && (saveError.status === 401 || saveError.status === 403) ? (
+            <a href={new URL('../wp-login.php', bootstrap.adminUrl).href} target="_blank" rel="noopener noreferrer">
+              {t('save.signIn')}
+            </a>
+          ) : null}
+          {saveError.kind !== 'invalid-document' && saveError.status !== 423 && saveError.status !== 409 ? (
+            <button
+              type="button"
+              onClick={() => {
+                rateRetryUsed.current = true;
+                void store.getState().saveDraft();
+              }}
+            >
+              {t('save.retry')}
+            </button>
+          ) : null}
+          <button
+            type="button"
+            onClick={() => {
+              store.getState().dismissSaveError();
+            }}
+          >
+            {t('dialog.close')}
+          </button>
+        </div>
+      )}
+      <Dialog
+        open={conflictOpen}
+        onOpenChange={(next) => {
+          setConflictOpen(next);
+          if (!next) setConflictConfirm(null);
+        }}
+      >
+        <DialogContent
+          dir={bootstrap.editorLocale === 'ar' || bootstrap.editorLocale.startsWith('ar_') ? 'rtl' : 'ltr'}
+          title={t(
+            conflictConfirm
+              ? conflictConfirm === 'reload'
+                ? 'save.conflict.confirmReloadTitle'
+                : 'save.conflict.confirmOverwriteTitle'
+              : 'save.conflict.title',
+          )}
+          description={t(
+            conflictConfirm
+              ? conflictConfirm === 'reload'
+                ? 'save.conflict.confirmReloadBody'
+                : 'save.conflict.confirmOverwriteBody'
+              : 'save.conflict.body',
+          )}
+          closeLabel={t('dialog.close')}
+        >
+          {!conflictConfirm && (
+            <button
+              type="button"
+              onClick={() => {
+                setConflictConfirm('reload');
+              }}
+            >
+              {t('save.conflict.reload')}
+            </button>
+          )}
+          {!conflictConfirm && (
+            <button
+              type="button"
+              onClick={() => {
+                setConflictConfirm('overwrite');
+              }}
+            >
+              {t('save.conflict.overwrite')}
+            </button>
+          )}
+          {conflictConfirm && (
+            <button
+              type="button"
+              onClick={() => {
+                const choice = conflictConfirm;
+                setConflictConfirm(null);
+                if (choice === 'reload') setConflictOpen(false);
+                void store.getState().resolveConflict(choice);
+              }}
+            >
+              {t('save.conflict.confirm')}
+            </button>
+          )}
+          {conflictConfirm && (
+            <button
+              type="button"
+              onClick={() => {
+                setConflictConfirm(null);
+              }}
+            >
+              {t('save.conflict.cancel')}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              setConflictOpen(false);
+            }}
+          >
+            {t('save.conflict.keep')}
+          </button>
+        </DialogContent>
+      </Dialog>
     </header>
   );
 }

@@ -59,6 +59,7 @@ export type CanvasMessage =
       rect?: { x: number; y: number; w: number; h: number };
     }
   | { type: 'edit-ended'; id: string; reason: 'commit' | 'cancel' }
+  | { type: 'shortcut'; name: 'save' }
   | { type: 'edit-error'; code: string };
 
 const ID = new RegExp(ELEMENT_ID_PATTERN);
@@ -521,6 +522,14 @@ function parseCanvas(data: unknown): Parsed<CanvasMessage> {
         ? fail('malformed')
         : isElementId(f['id']) && ['commit', 'cancel'].includes(String(f['reason']))
           ? succeed({ type, id: f['id'], reason: f['reason'] as 'commit' | 'cancel' })
+          : fail('invalid-field');
+    }
+    case 'shortcut': {
+      const f = readExact(data, ['type', 'name']);
+      return f === null || typeof f['name'] !== 'string' || f['name'].length > LIMITS.shortcutNameMax
+        ? fail('malformed')
+        : f['name'] === 'save'
+          ? succeed({ type, name: 'save' })
           : fail('invalid-field');
     }
     case 'edit-error': {

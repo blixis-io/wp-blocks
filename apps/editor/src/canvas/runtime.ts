@@ -515,12 +515,24 @@ export function startRuntime(env: RuntimeEnv = { document, window }): Runtime | 
   };
   const onKeyboard = (event: KeyboardEvent): void => {
     if (activeEdit?.element.contains(event.target as Node)) return;
+    if ((event.ctrlKey || event.metaKey) && (event.key === 's' || event.key === 'S')) return;
     const editable = closestElement(event.target, 'input,textarea,select,option,[contenteditable="true"]');
     const activation =
       (event.key === 'Enter' || event.key === ' ') && closestElement(event.target, ACTIVATABLE) !== null;
     if (editable !== null || activation) {
       stop(event);
       if (activation && event.type === 'keydown') pick(event as unknown as MouseEvent);
+    }
+  };
+  const onShortcut = (event: KeyboardEvent): void => {
+    if (
+      (event.ctrlKey || event.metaKey) &&
+      !event.shiftKey &&
+      !event.altKey &&
+      (event.key === 's' || event.key === 'S')
+    ) {
+      event.preventDefault();
+      if (!event.repeat) send({ type: 'shortcut', name: 'save' });
     }
   };
   const onPointerActivation = (event: Event): void => {
@@ -591,6 +603,7 @@ export function startRuntime(env: RuntimeEnv = { document, window }): Runtime | 
   doc.addEventListener('submit', onSubmit, true);
   doc.addEventListener('reset', onSubmit, true);
   for (const type of ['keydown', 'keyup', 'keypress']) doc.addEventListener(type, onKeyboard as EventListener, true);
+  doc.addEventListener('keydown', onShortcut, true);
   for (const type of ['pointerdown', 'mousedown', 'dragstart', 'drop', 'touchstart']) {
     doc.addEventListener(type, onPointerActivation, true);
   }
@@ -613,6 +626,7 @@ export function startRuntime(env: RuntimeEnv = { document, window }): Runtime | 
     doc.removeEventListener('reset', onSubmit, true);
     for (const type of ['keydown', 'keyup', 'keypress'])
       doc.removeEventListener(type, onKeyboard as EventListener, true);
+    doc.removeEventListener('keydown', onShortcut, true);
     for (const type of ['pointerdown', 'mousedown', 'dragstart', 'drop', 'touchstart']) {
       doc.removeEventListener(type, onPointerActivation, true);
     }

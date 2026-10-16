@@ -219,6 +219,26 @@ describe('meta and startup', () => {
   });
 });
 
+describe('save shortcut forwarding', () => {
+  it('forwards Ctrl/Cmd+S once, prevents browser save, and ignores repeats and modified variants', () => {
+    const h = begin();
+    const target = document.body;
+    const event = (init: KeyboardEventInit) => {
+      const key = new KeyboardEvent('keydown', { key: 's', bubbles: true, cancelable: true, ...init });
+      target.dispatchEvent(key);
+      return key;
+    };
+    const save = event({ ctrlKey: true });
+    expect(save.defaultPrevented).toBe(true);
+    expect(h.sent.filter((message) => message.type === 'shortcut')).toEqual([{ type: 'shortcut', name: 'save' }]);
+    expect(event({ metaKey: true, repeat: true }).defaultPrevented).toBe(true);
+    expect(event({ ctrlKey: true, key: 'x' }).defaultPrevented).toBe(false);
+    expect(event({ ctrlKey: true, shiftKey: true }).defaultPrevented).toBe(false);
+    expect(event({ ctrlKey: true, altKey: true }).defaultPrevented).toBe(false);
+    expect(h.sent.filter((message) => message.type === 'shortcut')).toHaveLength(1);
+  });
+});
+
 describe('lazy rich text asset loading', () => {
   it('loads the same-origin sibling once with the canvas nonce on the first edit', async () => {
     const script = document.createElement('script');

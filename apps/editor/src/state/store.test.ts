@@ -223,6 +223,256 @@ describe('document slice: loading', () => {
   });
 });
 
+describe('document slice: draft saving', () => {
+  it('writes only a dirty layout with its known revision and records the returned revision', async () => {
+    const { store, client } = await makeLoadedStore();
+    const write = vi.fn().mockResolvedValue(ok({ revision: 9 }));
+    client.writeLayout = write;
+    store.getState().dispatch({ type: 'update-props', id: 'el-heading-1', set: { level: 3 } });
+    await store.getState().saveDraft();
+    expect(write).toHaveBeenCalledTimes(1);
+    expect(write.mock.calls[0]?.[1]).toBe(5);
+    expect(store.getState().revisions.layout).toBe(9);
+    expect(store.getState().dirty.layout).toBe(false);
+  });
+
+  it('coalesces concurrent save requests and leaves edits made in flight dirty', async () => {
+    const { store, client } = await makeLoadedStore();
+    let finish!: (value: ReturnType<typeof ok<{ revision: number }>>) => void;
+    const write = vi.fn(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+    );
+    client.writeLayout = write as never;
+    store.getState().dispatch({ type: 'update-props', id: 'el-heading-1', set: { level: 3 } });
+    const one = store.getState().saveDraft();
+    const two = store.getState().saveDraft();
+    expect(two).toBe(one);
+    store.getState().dispatch({ type: 'update-props', id: 'el-heading-1', set: { level: 4 } });
+    finish(ok({ revision: 6 }));
+    await one;
+    expect(store.getState().dirty.layout).toBe(true);
+  });
+
+  it('writes dirty streams in layout then lexical locale order with their If-Match revisions', async () => {
+    const { store, client } = await makeLoadedStore();
+    const calls: string[] = [];
+    client.writeLayout = vi.fn((_doc: unknown, revision: number) => {
+      calls.push(`layout:${String(revision)}`);
+      return Promise.resolve(ok({ revision: 6 }));
+    });
+    client.writeContent = vi.fn((locale: string, _doc: unknown, revision: number) => {
+      calls.push(`${locale}:${String(revision)}`);
+      return Promise.resolve(ok({ revision: 3 }));
+    });
+    store.getState().dispatch({ type: 'update-props', id: 'el-heading-1', set: { level: 3 } });
+    store
+      .getState()
+      .dispatch({ type: 'set-translation', locale: 'fr_FR', elementId: 'el-heading-1', set: { text: 'Salut' } });
+    store
+      .getState()
+      .dispatch({ type: 'set-translation', locale: 'en_US', elementId: 'el-heading-1', set: { text: 'Hi' } });
+    await store.getState().saveDraft();
+    expect(calls).toEqual(['layout:5', 'en_US:2', 'fr_FR:2']);
+    expect(store.getState().dirty).toEqual({ layout: false, content: { en_US: false, fr_FR: false } });
+  });
+
+  it('preserves only the failed and unsent content streams after a partial save', async () => {
+    const { store, client } = await makeLoadedStore();
+    client.writeLayout = vi.fn(() => Promise.resolve(ok({ revision: 6 })));
+    client.writeContent = vi.fn((locale: string) =>
+      Promise.resolve(
+        (locale === 'en_US' ? ok({ revision: 3 }) : { ok: false, error: { kind: 'http', status: 500 } }) as never,
+      ),
+    );
+    store.getState().dispatch({ type: 'update-props', id: 'el-heading-1', set: { level: 3 } });
+    store
+      .getState()
+      .dispatch({ type: 'set-translation', locale: 'en_US', elementId: 'el-heading-1', set: { text: 'Hi' } });
+    store
+      .getState()
+      .dispatch({ type: 'set-translation', locale: 'fr_FR', elementId: 'el-heading-1', set: { text: 'Salut' } });
+    await store.getState().saveDraft();
+    expect(store.getState().dirty).toEqual({ layout: false, content: { en_US: false, fr_FR: true } });
+    expect(store.getState().revisions).toEqual({ layout: 6, content: { en_US: 3, fr_FR: 2 } });
+  });
+
+  it('aborts the active request when the caller signal aborts', async () => {
+    const { store, client } = await makeLoadedStore();
+    const controller = new AbortController();
+    let signal: AbortSignal | undefined;
+    client.writeLayout = vi.fn((_doc: unknown, _revision: number, options?: { signal?: AbortSignal }) => {
+      signal = options?.signal;
+      return new Promise((resolve) => {
+        options?.signal?.addEventListener(
+          'abort',
+          () => {
+            resolve({ ok: false, error: { kind: 'aborted' } });
+          },
+          { once: true },
+        );
+      });
+    }) as never;
+    store.getState().dispatch({ type: 'update-props', id: 'el-heading-1', set: { level: 3 } });
+    const pending = store.getState().saveDraft({ signal: controller.signal });
+    controller.abort();
+    expect(signal?.aborted).toBe(true);
+    store.getState().cancelSave();
+    await pending;
+    expect(store.getState().saveStatus).toBe('idle');
+  });
+
+  it.each([
+    [{ kind: 'http', status: 409, code: 'blixis_conflict' }, 'save.error.conflict'],
+    [{ kind: 'http', status: 401 }, 'save.error.auth'],
+    [{ kind: 'http', status: 403 }, 'save.error.auth'],
+    [{ kind: 'http', status: 423, code: 'blixis_theme_locked' }, 'save.error.locked'],
+    [{ kind: 'http', status: 413 }, 'save.error.large'],
+    [{ kind: 'http', status: 422 }, 'save.error.validation'],
+    [{ kind: 'http', status: 429 }, 'save.error.rate'],
+    [{ kind: 'network' }, 'save.error.offline'],
+    [{ kind: 'http', status: 503, data: { message: 'private raw server detail' } }, 'save.error.server'],
+  ] as const)('maps API error %j to stable translated state', async (error, key) => {
+    const { store, client } = await makeLoadedStore();
+    client.writeLayout = vi.fn(() => Promise.resolve({ ok: false, error }) as never);
+    store.getState().dispatch({ type: 'update-props', id: 'el-heading-1', set: { level: 3 } });
+    await store.getState().saveDraft();
+    expect(store.getState()).toMatchObject({ saveStatus: 'failed', saveError: error, saveErrorKey: key });
+    expect(store.getState().dirty.layout).toBe(true);
+  });
+
+  const recoveryErrorCases = [
+    [{ kind: 'http', status: 409, code: 'blixis_conflict' }, 'save.error.conflict'],
+    [{ kind: 'http', status: 401 }, 'save.error.auth'],
+    [{ kind: 'http', status: 403 }, 'save.error.auth'],
+    [{ kind: 'http', status: 423, code: 'blixis_theme_locked' }, 'save.error.locked'],
+    [{ kind: 'http', status: 413 }, 'save.error.large'],
+    [{ kind: 'http', status: 422 }, 'save.error.validation'],
+    [{ kind: 'http', status: 429 }, 'save.error.rate'],
+    [{ kind: 'network' }, 'save.error.offline'],
+    [{ kind: 'http', status: 503 }, 'save.error.server'],
+  ] as const;
+  const dirtyScenarios = ['layout', 'english', 'french', 'layout-english', 'both-locales', 'all-streams'] as const;
+  const recoveryMatrix = recoveryErrorCases.flatMap(([error, key]) =>
+    dirtyScenarios.map((scenario) => ({ error, key, scenario })),
+  );
+  it.each(recoveryMatrix)(
+    'keeps $scenario edits dirty when $error.kind/$error.status fails',
+    async ({ error, key, scenario }) => {
+      const { store, client } = await makeLoadedStore();
+      const edit = (locale: 'en_US' | 'fr_FR') =>
+        store.getState().dispatch({
+          type: 'set-translation',
+          locale,
+          elementId: 'el-heading-1',
+          set: { text: `changed-${locale}` },
+        });
+      if (scenario.includes('layout') || scenario === 'all-streams') {
+        store.getState().dispatch({ type: 'update-props', id: 'el-heading-1', set: { level: 3 } });
+      }
+      if (scenario.includes('english') || scenario === 'both-locales' || scenario === 'all-streams') edit('en_US');
+      if (scenario.includes('french') || scenario === 'both-locales' || scenario === 'all-streams') edit('fr_FR');
+      client.writeLayout = vi.fn(() => Promise.resolve(ok({ revision: 6 })));
+      client.writeContent = vi.fn(() => Promise.resolve({ ok: false, error }) as never);
+      if (scenario.includes('layout') || scenario === 'all-streams') {
+        client.writeLayout = vi.fn(() => Promise.resolve({ ok: false, error }) as never);
+      }
+      await store.getState().saveDraft();
+      const dirty = store.getState().dirty;
+      expect(store.getState()).toMatchObject({ saveStatus: 'failed', saveErrorKey: key });
+      if (scenario.includes('layout') || scenario === 'all-streams') expect(dirty.layout).toBe(true);
+      else expect(dirty.layout).toBe(false);
+      if (scenario.includes('english') || scenario === 'both-locales' || scenario === 'all-streams')
+        expect(dirty.content['en_US']).toBe(true);
+      if (scenario.includes('french') || scenario === 'both-locales' || scenario === 'all-streams')
+        expect(dirty.content['fr_FR']).toBe(true);
+    },
+  );
+
+  it('uses the fallback five second rate retry delay', async () => {
+    const { store, client } = await makeLoadedStore();
+    client.writeLayout = vi.fn(() => Promise.resolve({ ok: false, error: { kind: 'http', status: 429 } }) as never);
+    store.getState().dispatch({ type: 'update-props', id: 'el-heading-1', set: { level: 3 } });
+    await store.getState().saveDraft();
+    expect(store.getState().retryAfterMs).toBe(5000);
+  });
+
+  it('makes editing read-only after a theme-guard 423 while preserving the dirty draft', async () => {
+    const { store, client } = await makeLoadedStore();
+    client.writeLayout = vi.fn(
+      () =>
+        Promise.resolve({
+          ok: false,
+          error: { kind: 'http', status: 423, code: 'blixis_theme_incompatible' },
+        }) as never,
+    );
+    store.getState().dispatch({ type: 'update-props', id: 'el-heading-1', set: { level: 3 } });
+    await store.getState().saveDraft();
+    expect(store.getState().saveLocked).toBe(true);
+    expect(store.getState().dirty.layout).toBe(true);
+    expect(store.getState().dispatch({ type: 'update-props', id: 'el-heading-1', set: { level: 4 } })).toMatchObject({
+      ok: false,
+      error: { code: 'read-only' },
+    });
+  });
+
+  it.each([
+    [1, 1000],
+    [30, 30000],
+    [31, 30000],
+    [120, 30000],
+    [-2, 0],
+  ])('bounds Retry-After %s seconds to %s milliseconds', async (seconds, expected) => {
+    const { store, client } = await makeLoadedStore();
+    client.writeLayout = vi.fn(() =>
+      Promise.resolve({
+        ok: false,
+        error: { kind: 'http', status: 429, data: { retryAfter: seconds } },
+      } as never),
+    );
+    store.getState().dispatch({ type: 'update-props', id: 'el-heading-1', set: { level: 3 } });
+    await store.getState().saveDraft();
+    expect(store.getState().retryAfterMs).toBe(expected);
+  });
+
+  it('re-reads all dirty revisions before overwrite writes, and retries only once', async () => {
+    const { store, client } = await makeLoadedStore();
+    const order: string[] = [];
+    client.readLayout = vi.fn(() => {
+      order.push('read-layout');
+      return Promise.resolve(ok({ revision: 8, locale: null, document: null }));
+    });
+    client.readContent = vi.fn((locale: string) => {
+      order.push(`read-${locale}`);
+      return Promise.resolve(ok({ revision: 9, locale, document: null }));
+    });
+    let writes = 0;
+    client.writeLayout = vi.fn((_doc: unknown, revision: number) => {
+      order.push(`write-layout-${String(revision)}`);
+      writes += 1;
+      return Promise.resolve(
+        writes === 1
+          ? { ok: false, error: { kind: 'http', status: 409, code: 'blixis_conflict' } }
+          : ok({ revision: 10 }),
+      );
+    }) as never;
+    client.writeContent = vi.fn((locale: string, _doc: unknown, revision: number) => {
+      order.push(`write-${locale}-${String(revision)}`);
+      return Promise.resolve(ok({ revision: 11 }));
+    });
+    store.getState().dispatch({ type: 'update-props', id: 'el-heading-1', set: { level: 3 } });
+    store
+      .getState()
+      .dispatch({ type: 'set-translation', locale: 'en_US', elementId: 'el-heading-1', set: { text: 'Hi' } });
+    await store.getState().saveDraft();
+    await store.getState().resolveConflict('overwrite');
+    expect(order).toEqual(['write-layout-5', 'read-layout', 'read-en_US', 'write-layout-8', 'write-en_US-9']);
+    expect(store.getState().dirty).toEqual({ layout: false, content: { en_US: false, fr_FR: false } });
+  });
+});
+
 describe('document slice: dirty tracking and markSaved', () => {
   const heading = { type: 'update-props', id: 'el-heading-1', set: { level: 3 } } as const;
   const translate = {

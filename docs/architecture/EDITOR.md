@@ -286,6 +286,24 @@ Landmarks are unique and named; disabled placeholders use `aria-disabled` and st
 | BWB-059 | Inspector tabs and drag and drop. |
 | BWB-055 | Save/Publish through `restRoot` + `nonce`; lock handling. |
 | BWB-056..058 | Shortcuts, content-locale switcher, translation status. |
+
+## Draft saving (BWB-055 part A)
+
+Save Draft writes only streams marked dirty, with the known stream revision in `If-Match`. The layout is written first, followed by dirty locale streams in stable lexical order. Each successful stream advances its revision and saved snapshot immediately, so a later failure keeps completed writes while leaving the failed and unsent streams dirty. The save captures one composed document at start; edits made during the request remain dirty against that snapshot. Only one request may run at a time, and the header aborts it when the editor unmounts. Autosave and publication actions are outside part A.
+
+Ctrl/Cmd+S is supported when focus is inside the canvas iframe, including the Tiptap rich text editor. The canvas capture listener prevents the browser save dialog, ignores auto-repeat and Shift/Alt variants, and forwards the strict `shortcut { name: 'save' }` protocol message. Tiptap does not bind Mod-S. The parent routes the message through the same `saveDraft()` action as Save Draft; an active inline edit is ended with commit and acknowledged before the save starts. Read-only, clean and already-saving states follow the store's normal guards. See the [canvas protocol contract](CANVAS-CONTRACT.md#canvas-iframe-protocol-bwb-051).
+
+| Failure | Recovery |
+|---|---|
+| 409 conflict | Keep editing, reload the latest server document after confirmation, or explicitly confirm overwriting after re-reading current stream revisions. |
+| 401/403 | Explain session or permission failure; keep the editor open and retry after signing in. |
+| 423 | Show the existing lock explanation; preserve local edits. |
+| 413/422 or invalid client document | Explain the size or validation problem; preserve local edits. |
+| 429 | Explain rate limiting and allow retry. |
+| Network/offline | Explain offline state, retry manually, or retry when the browser reports online. |
+| 5xx/other | Show a generic translated failure and allow retry; never render server messages. |
+
+The header reports unsaved, saving, failed or relative last-saved status. Dirty or saving documents use the browser's standard unload prompt. EN and NL catalogs own all recovery strings.
 # Inline rich text controls (BWB-135 Stage 2B)
 
 The canvas edit session reports the current text selection, marks and viewport rectangle through the existing `edit-selection` message. The editor chrome positions a formatting toolbar against that rectangle with the same frame offset, scroll, flip and clamp helpers used by the element selection toolbar. The toolbar is absent when editing is inactive or the text selection is empty. Toolbar actions use the existing validated `edit-command` message; the content model remains plain text or ADR 0014's rich inline JSON, and style marks refer to tokens rather than CSS values. The selection toolbar stays in editor chrome and does not inherit website light/dark appearance.
