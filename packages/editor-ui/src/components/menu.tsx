@@ -21,12 +21,14 @@ export function Menu({
   label,
   items = [],
   className,
+  triggerClassName,
   children,
   toolbarTrigger = false,
 }: {
   label: string;
   items?: readonly MenuItem[];
   className?: string;
+  triggerClassName?: string;
   children?: ReactNode;
   /** Use the editor toolbar's roving-tabindex button when this menu is in a Toolbar. */
   toolbarTrigger?: boolean;
@@ -210,7 +212,7 @@ export function Menu({
   const triggerProps = {
     ref: trigger,
     type: 'button' as const,
-    className: 'ed-menu-trigger',
+    className: cn('ed-menu-trigger', triggerClassName),
     'aria-label': label,
     'aria-haspopup': 'menu' as const,
     'aria-expanded': open,

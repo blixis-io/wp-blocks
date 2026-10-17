@@ -36,9 +36,13 @@ import {
   ELEMENT_ICONS,
   elementIconName,
   ICONS,
+  panelToggleIcon,
+  DIRECTIONAL_ICONS,
   TEXT_ALIGN_ICONS,
 } from '../index';
 import { CORE_ELEMENTS } from '@blixis/wp-element-registry';
+import sidebarCloseData from '@iconify-icons/solar/sidebar-close-line-duotone';
+import sidebarOpenData from '@iconify-icons/solar/sidebar-open-line-duotone';
 
 describe('Icon', () => {
   const SOLAR_EXPORTS = {
@@ -75,6 +79,8 @@ describe('Icon', () => {
     appearance: 'sun-linear',
     panelLeft: 'panel-left-linear',
     panelRight: 'panel-right-linear',
+    sidebarClose: 'sidebar-close-line-duotone',
+    sidebarOpen: 'sidebar-open-line-duotone',
     text: 'text-linear',
     add: 'add-linear',
     section: 'widget-3-linear',
@@ -215,6 +221,32 @@ describe('Icon', () => {
     });
   });
 
+  it('treats sidebar controls as directional glyphs', () => {
+    expect(DIRECTIONAL_ICONS.has('sidebarClose')).toBe(false);
+    expect(DIRECTIONAL_ICONS.has('sidebarOpen')).toBe(false);
+  });
+
+  it.each([
+    ['start', true, 'ltr', 'sidebarClose', true],
+    ['start', false, 'ltr', 'sidebarOpen', true],
+    ['end', true, 'ltr', 'sidebarClose', false],
+    ['end', false, 'ltr', 'sidebarOpen', false],
+    ['start', true, 'rtl', 'sidebarClose', false],
+    ['start', false, 'rtl', 'sidebarOpen', false],
+    ['end', true, 'rtl', 'sidebarClose', true],
+    ['end', false, 'rtl', 'sidebarOpen', true],
+  ] as const)('maps panel toggle side=%s open=%s dir=%s', (side, open, dir, name, flipX) => {
+    expect(panelToggleIcon(side, open, dir)).toEqual({ name, flipX });
+  });
+
+  it('uses Solar sidebar glyphs with their divider at x=15 before logical-side flipping', () => {
+    for (const icon of [sidebarCloseData, sidebarOpenData]) {
+      const stripPath = /<path d="([^"]+)" opacity="\.5"/u.exec(icon.body)?.[1];
+      expect(stripPath).toBeDefined();
+      expect(stripPath).toMatch(/M15 21L15 3/u);
+    }
+  });
+
   it('renders every registered icon with a viewBox and a non-empty SVG path', () => {
     for (const name of Object.keys(ICONS) as (keyof typeof ICONS)[]) {
       const { container, unmount } = render(<Icon name={name} />);
@@ -272,16 +304,16 @@ describe('Icon', () => {
 
   it('adds an RTL mirror utility only for directional icons when requested', () => {
     const { container, rerender } = render(<Icon name="back" mirrorInRtl />);
-    expect(container.querySelector('svg')?.getAttribute('class')).toContain('rtl:-scale-x-100');
+    expect(container.querySelector('svg')?.getAttribute('class')).toContain('blx-icon-mirror-rtl');
     rerender(<Icon name="back" />);
-    expect(container.querySelector('svg')?.getAttribute('class') ?? '').not.toContain('rtl:-scale-x-100');
+    expect(container.querySelector('svg')?.getAttribute('class') ?? '').not.toContain('blx-icon-mirror-rtl');
     for (const name of ['home', 'light', 'dark', 'appearance', 'system'] as const) {
       const { container: nonDirectional } = render(<Icon name={name} mirrorInRtl />);
-      expect(nonDirectional.querySelector('svg')?.getAttribute('class') ?? '').not.toContain('rtl:-scale-x-100');
+      expect(nonDirectional.querySelector('svg')?.getAttribute('class') ?? '').not.toContain('blx-icon-mirror-rtl');
     }
     for (const name of ['alignLeft', 'alignRight'] as const) {
       const { container: directional } = render(<Icon name={name} mirrorInRtl />);
-      expect(directional.querySelector('svg')?.getAttribute('class')).toContain('rtl:-scale-x-100');
+      expect(directional.querySelector('svg')?.getAttribute('class')).toContain('blx-icon-mirror-rtl');
     }
   });
 

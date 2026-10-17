@@ -1,5 +1,18 @@
 export { Icon, type IconProps } from './components/icon';
-export { ICONS, ELEMENT_ICONS, TEXT_ALIGN_ICONS, elementIconName, type IconName } from './icons/registry';
+export {
+  PanelToggleIcon,
+  panelToggleIcon,
+  type LayoutDirection,
+  type PanelLogicalSide,
+} from './components/panel-toggle-icon';
+export {
+  ICONS,
+  ELEMENT_ICONS,
+  TEXT_ALIGN_ICONS,
+  DIRECTIONAL_ICONS,
+  elementIconName,
+  type IconName,
+} from './icons/registry';
 export { cn } from './lib/cn';
 export { PortalContainerProvider } from './lib/portal';
 export { DirectionProvider } from '@radix-ui/react-direction';

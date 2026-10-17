@@ -358,6 +358,19 @@ try {
   assert.equal(dark.html, htmlBefore, 'the document element is not touched by the editor chrome theme');
   assert.equal(dark.stored, 'dark', 'the choice is stored under its own key');
   assert.equal(dark.site, null, 'the website appearance preference is untouched');
+  const assertPublishContrast = async (theme) => {
+    const contrast = await ev(`(() => {
+      const button=document.querySelector('.blx-publish-button');
+      if (!button) return null;
+      const style=getComputedStyle(button);
+      const channels=(value)=>value.match(/[\\d.]+/g)?.slice(0,3).map(Number) ?? [];
+      const luminance=(value)=>{const [r,g,b]=channels(value).map((v)=>v/255).map((v)=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4);return .2126*r+.7152*g+.0722*b;};
+      const a=luminance(style.color), b=luminance(style.backgroundColor);
+      return {color:style.color, background:style.backgroundColor, ratio:(Math.max(a,b)+.05)/(Math.min(a,b)+.05)};
+    })()`);
+    assert.ok(contrast?.ratio >= 4.5, `${theme} Publish contrast passes (${JSON.stringify(contrast)})`);
+  };
+  await assertPublishContrast('dark');
   await checkUndoTooltip('dark');
   const bgDark = await ev(`getComputedStyle(document.querySelector('.blx-editor')).backgroundColor`);
   const tooltipTrigger = await ev(
@@ -384,6 +397,7 @@ try {
   await clickReal('button[aria-label="More options"]');
   await ev(`${buttonByText('Editor appearance: Light')}.click()`);
   await sleep(300);
+  await assertPublishContrast('light');
   await checkUndoTooltip('light');
   const bgLight = await ev(`getComputedStyle(document.querySelector('.blx-editor')).backgroundColor`);
   assert.notEqual(bgDark, bgLight, 'light and dark chrome render different backgrounds');
@@ -577,6 +591,63 @@ try {
     true,
     'the selected element shows its toolbar before the background-click check',
   );
+  // Text elements start an inline edit on click (which hides the selection toolbar), so the toolbar menu is checked on a button and an image.
+  for (const { id, edge, width } of [
+    { id: 'hero-btn', edge: 'start' },
+    { id: 'body-img', edge: 'end' },
+    { id: 'hero-btn', edge: 'start', width: 768 },
+    { id: 'hero-btn', edge: 'start', width: 375 },
+  ]) {
+    if (width)
+      await send('Emulation.setDeviceMetricsOverride', { width, height: 900, deviceScaleFactor: 1, mobile: false });
+    const point = await ev(`(() => {
+      const frame=document.querySelector('main iframe'), target=frame?.contentDocument?.querySelector('[data-blx-id="${id}"]');
+      if (!frame || !target) return null;
+      target.scrollIntoView({block:'${edge}', inline:'center'});
+      const r=target.getBoundingClientRect(), f=frame.getBoundingClientRect();
+      return {x:f.left+frame.clientLeft+Math.max(1,Math.min(r.left+r.width/2,frame.clientWidth-1)), y:f.top+frame.clientTop+Math.max(1,Math.min(r.top+r.height/2,frame.clientHeight-1))};
+    })()`);
+    assert.ok(point, `the ${edge === 'start' ? 'top' : 'bottom'} edge selection target exists`);
+    await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: point.x, y: point.y });
+    await send('Input.dispatchMouseEvent', {
+      type: 'mousePressed',
+      x: point.x,
+      y: point.y,
+      button: 'left',
+      clickCount: 1,
+    });
+    await send('Input.dispatchMouseEvent', {
+      type: 'mouseReleased',
+      x: point.x,
+      y: point.y,
+      button: 'left',
+      clickCount: 1,
+    });
+    await sleep(350);
+    assert.equal(
+      await ev(`document.querySelector('[data-testid="selection-toolbar"]') !== null`),
+      true,
+      `selection toolbar appears for the ${edge} edge element`,
+    );
+    await clickReal('button[aria-label="More element actions"]');
+    const menu = await ev(`(() => {
+      const element=document.querySelector('[role="menu"][aria-label="More element actions"]');
+      if (!element || getComputedStyle(element).display === 'none') return null;
+      const r=element.getBoundingClientRect();
+      return {inside:r.left>=0 && r.top>=0 && r.right<=innerWidth && r.bottom<=innerHeight, items:element.querySelectorAll('[role="menuitem"]').length};
+    })()`);
+    assert.ok(
+      menu?.inside && menu.items > 0,
+      `the ${edge} edge More menu is visible, inside the viewport and has menu items (${JSON.stringify(menu)})`,
+    );
+    await press('Escape');
+    assert.equal(
+      await ev(`document.querySelector('[role="menu"][aria-label="More element actions"]') === null`),
+      true,
+      `Escape closes the ${edge} edge More menu`,
+    );
+  }
+  await send('Emulation.clearDeviceMetricsOverride');
   const emptyCanvasPoint = await ev(`(() => {
     const frame=document.querySelector('main iframe'), doc=frame?.contentDocument, fr=frame?.getBoundingClientRect();
     if (!frame || !doc || !fr) return null;

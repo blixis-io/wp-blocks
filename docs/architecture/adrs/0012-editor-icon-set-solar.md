@@ -11,7 +11,7 @@ The editor requires local, tree-shaken icon assets under its strict CSP. Owner s
 
 ## Decision
 
-Use Solar Linear glyphs from individual `@iconify-icons/solar/<icon>-linear` imports, rendered as inline SVG data by the shared Icon wrapper. There is no runtime Iconify API or CDN. Solar icons are included unmodified. Build-generated `assets/editor/NOTICE.txt` includes the CC BY 4.0 credit, licence URL, source Figma community URL, and modification status; packaging requires NOTICE in the plugin zip.
+Use Solar glyphs from individual `@iconify-icons/solar/<icon>-linear` imports, rendered as inline SVG data by the shared Icon wrapper. The `sidebarClose` and `sidebarOpen` panel controls use the named `sidebar-close-line-duotone` and `sidebar-open-line-duotone` exports as a deliberate duotone exception to the otherwise Linear set. There is no runtime Iconify API or CDN. Solar icons are included unmodified. Build-generated `assets/editor/NOTICE.txt` includes the CC BY 4.0 credit, licence URL, source Figma community URL, and modification status; packaging requires NOTICE in the plugin zip.
 
 Add one exact exception for `npm:@iconify-icons/solar`, version 2.0.4, licence CC-BY-4.0, reason and this ADR reference. It does not change the general distributed allowlist. A package version or declared licence change fails until reviewed.
 

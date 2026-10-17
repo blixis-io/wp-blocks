@@ -1,5 +1,6 @@
 import {
   Icon,
+  PanelToggleIcon,
   ScrollArea,
   Tabs,
   TabsContent,
@@ -431,7 +432,7 @@ export function StructurePanel({
                 aria-expanded={panelExpanded}
                 onClick={onCollapse}
               >
-                <Icon name="caretLeft" size={14} mirrorInRtl />
+                <PanelToggleIcon side="start" open dir={dir} />
               </button>
             </TooltipTrigger>
             <TooltipContent>{t('panel.collapse')}</TooltipContent>

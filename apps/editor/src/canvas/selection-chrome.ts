@@ -23,6 +23,20 @@ export function placeSelectionToolbar(
   return { left, top };
 }
 
+/** Place the selection action menu in the stage overlay, flipping and shifting around the visible frame. */
+export function placeSelectionMenu(frame: Box, anchor: Box, size: { width: number; height: number }, gap = 4) {
+  const left = Math.max(
+    frame.left,
+    Math.min(anchor.left + anchor.width - size.width, frame.left + frame.width - size.width),
+  );
+  const below = anchor.top + anchor.height + gap;
+  const top = below + size.height <= frame.top + frame.height ? below : anchor.top - size.height - gap;
+  return {
+    left,
+    top: Math.max(frame.top, Math.min(top, frame.top + frame.height - size.height)),
+  };
+}
+
 /** Place the decorative hover chip above the element, or on its top edge when the frame leaves no room. */
 export function placeHoverChip(frame: Box, element: Box, size: { width: number; height: number }, gap = 4) {
   const left = Math.max(frame.left, Math.min(element.left, frame.left + frame.width - size.width));
