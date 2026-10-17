@@ -45,6 +45,9 @@ final class TokenDraft {
 		if ( 'custom' !== $preset && ( $data['id'] ?? null ) !== $preset ) {
 			return null;
 		}
+		if ( 'custom' !== $preset && ( ! \is_string( $data['category'] ?? null ) || ! \in_array( $data['category'], [ 'business', 'blog', 'portfolio', 'ecommerce' ], true ) ) ) {
+			return null;
+		}
 		$tokens        = [];
 		$allowed_names = [ 'color-bg', 'color-surface', 'color-text', 'color-muted', 'color-link', 'color-primary', 'color-on-primary', 'color-line', 'font-body', 'font-heading', 'text-sm', 'text-base', 'text-lg', 'text-xl', 'text-2xl', 'space-1', 'space-2', 'space-3', 'space-4', 'space-6', 'space-8', 'radius-sm', 'radius-md', 'container-content', 'container-wide', 'shadow-card' ];
 		foreach ( $data['tokens'] as $token ) {

@@ -21,9 +21,33 @@ require_once \dirname( __DIR__ ) . '/src/TokenDraft.php';
 final class TokenDraftTest extends TestCase {
 	/** Every bundled choice must pass draft validation. */
 	public function test_bundled_seeds(): void {
+		$categories = [
+			'ocean'   => 'business',
+			'forest'  => 'blog',
+			'sunset'  => 'portfolio',
+			'minimal' => 'ecommerce',
+		];
 		foreach ( [ 'custom', 'ocean', 'forest', 'sunset', 'minimal' ] as $preset ) {
 			$path = \dirname( __DIR__ ) . '/design/' . ( 'custom' === $preset ? 'default-tokens.json' : 'presets/' . $preset . '.json' );
 			$this->assertNotNull( TokenDraft::seed( $path, $preset ), $preset );
+			if ( 'custom' !== $preset ) {
+				$data = \json_decode( (string) \file_get_contents( $path ), true );
+				$this->assertSame( $categories[ $preset ], $data['category'] );
+			}
+		}
+	}
+
+	/** Preset categories are restricted to the categories used by the setup filters. */
+	public function test_preset_category_allowlist(): void {
+		$data             = \json_decode( (string) \file_get_contents( \dirname( __DIR__ ) . '/design/presets/ocean.json' ), true );
+		$data['category'] = 'saas';
+		$path             = \tempnam( \sys_get_temp_dir(), 'blx-preset-' );
+		$this->assertNotFalse( $path );
+		try {
+			\file_put_contents( $path, \json_encode( $data ) );
+			$this->assertNull( TokenDraft::seed( $path, 'ocean' ) );
+		} finally {
+			\unlink( $path );
 		}
 	}
 

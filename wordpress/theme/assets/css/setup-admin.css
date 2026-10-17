@@ -1,0 +1,312 @@
+.blixis-setup {
+  max-width: 78rem;
+  margin-block: 2rem;
+  padding: clamp(1rem, 3vw, 2.5rem);
+  background: #fff;
+  border: 1px solid #dcdcde;
+  border-radius: 12px;
+  color: #1d2327;
+}
+.blx-setup-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-block-end: 1rem;
+}
+.blx-setup-mark {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  aspect-ratio: 1;
+  border-radius: 0.5rem;
+  background: #0878e8;
+  color: #fff;
+}
+.blixis-setup > h1 {
+  font-size: clamp(2rem, 4vw, 3rem);
+  margin-block: 0.5rem;
+}
+.blx-setup-intro {
+  max-width: 55rem;
+  font-size: 1.1rem;
+  color: #50575e;
+}
+.blx-stepper ol {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  list-style: none;
+  padding: 0;
+  margin: 2rem 0;
+  counter-reset: steps;
+}
+.blx-stepper li {
+  display: grid;
+  justify-items: center;
+  gap: 0.4rem;
+  text-align: center;
+  color: #50575e;
+}
+.blx-stepper li span {
+  display: grid;
+  place-items: center;
+  width: 2.4rem;
+  aspect-ratio: 1;
+  border: 2px solid #c3c4c7;
+  border-radius: 50%;
+  font-weight: 700;
+  background: #fff;
+}
+.blx-stepper li[aria-current='step'] {
+  color: #0757d9;
+  font-weight: 700;
+}
+.blx-stepper li[aria-current='step'] span {
+  background: #0757d9;
+  color: #fff;
+  border-color: #0757d9;
+}
+.blx-category-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-block: 1.25rem;
+}
+.blx-category-chip {
+  display: inline-block;
+  border: 1px solid #8c8f94;
+  border-radius: 999px;
+  padding: 0.45rem 0.85rem;
+  color: #1d2327;
+  text-decoration: none;
+}
+.blx-category-chip:hover,
+.blx-category-chip:focus-visible,
+.blx-category-chip.is-active {
+  border-color: #0757d9;
+  color: #0757d9;
+  box-shadow: inset 0 0 0 1px #0757d9;
+}
+.blx-preset-grid {
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.blx-preset-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 1rem;
+}
+.blx-preset-card {
+  position: relative;
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.5rem;
+  border: 2px solid #dcdcde;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.blx-preset-card:has(input:checked) {
+  border-color: #0757d9;
+  box-shadow: 0 0 0 1px #0757d9;
+}
+.blx-preset-card input {
+  position: absolute;
+  inset-block-start: 0.75rem;
+  inset-inline-start: 0.75rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  z-index: 1;
+}
+.blx-preset-card:focus-within {
+  outline: 3px solid #0757d9;
+  outline-offset: 2px;
+}
+.blx-preset-preview {
+  display: grid;
+  align-content: end;
+  gap: 0.35rem;
+  min-height: 9rem;
+  padding: 1rem;
+  border-radius: 6px;
+  color: #fff;
+  background: linear-gradient(145deg, #102a43, #0757a6);
+}
+.blx-preset-preview strong {
+  font-size: 1.2rem;
+}
+.blx-preset-preview small {
+  font-size: 0.9rem;
+}
+.blx-preset-swatch {
+  display: flex;
+  gap: 0.3rem;
+}
+.blx-preset-swatch:before,
+.blx-preset-swatch:after {
+  content: '';
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  background: #fff;
+}
+.blx-preset-preview--ocean {
+  background: linear-gradient(145deg, #102a43, #0757a6);
+}
+.blx-preset-preview--forest {
+  background: linear-gradient(145deg, #163c32, #32805f);
+}
+.blx-preset-preview--sunset {
+  background: linear-gradient(145deg, #702a38, #de6b56);
+}
+.blx-preset-preview--minimal {
+  background: linear-gradient(145deg, #202833, #818b99);
+}
+.blx-preset-title {
+  font-weight: 700;
+}
+.blx-preset-category,
+.blixis-setup .description {
+  color: #50575e;
+}
+.blx-selected {
+  display: none;
+  position: absolute;
+  inset-block-start: 0.55rem;
+  inset-inline-end: 0.55rem;
+  padding: 0.2rem 0.45rem;
+  background: #0757d9;
+  color: #fff;
+  border-radius: 50%;
+}
+.blx-preset-card:has(input:checked) .blx-selected {
+  display: block;
+}
+.blixis-setup fieldset:not(.blx-preset-grid) {
+  max-width: 60rem;
+  border: 1px solid #c3c4c7;
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 1rem 0;
+}
+.blixis-setup legend {
+  font-weight: 700;
+}
+.blixis-setup label {
+  margin: 0.5rem 0;
+}
+.blixis-setup input[type='text'] {
+  width: 10rem;
+}
+.blixis-setup :focus-visible {
+  outline: 3px solid #0757d9;
+  outline-offset: 2px;
+}
+.blixis-preview {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 1rem;
+}
+.blixis-preview > section {
+  background: var(--blx-color-bg);
+  color: var(--blx-color-text);
+  padding: 1.5rem;
+  border: 2px solid var(--blx-color-line);
+}
+.blixis-preview a {
+  color: var(--blx-color-link);
+}
+.blixis-preview strong {
+  background: var(--blx-color-primary);
+  color: var(--blx-color-on-primary);
+  padding: 0.5rem;
+  display: inline-block;
+}
+.blx-content-later,
+.blx-finish-summary {
+  padding: 1rem;
+  border-inline-start: 4px solid #0757d9;
+  background: #f0f6fc;
+  margin-block: 1rem;
+}
+@media (max-width: 700px) {
+  .blixis-setup {
+    margin-inline: -0.5rem;
+  }
+  .blx-stepper ol {
+    gap: 0.35rem;
+  }
+  .blx-stepper li {
+    font-size: 0.8rem;
+  }
+  .blx-stepper li span {
+    width: 2rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .blixis-setup * {
+    scroll-behavior: auto;
+  }
+}
+.blx-font-choices {
+  margin-block: 1rem;
+}
+.blx-font-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 0.75rem;
+}
+.blx-font-card {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  border: 1px solid #8c8f94;
+  border-radius: 8px;
+  padding: 0.8rem;
+  overflow-wrap: anywhere;
+}
+.blx-font-card:has(input:checked) {
+  border: 2px solid #0757d9;
+}
+.blx-font-card strong {
+  font-size: 1.35rem;
+}
+.blx-setup-action-form {
+  display: inline-block;
+  margin-block-end: 1rem;
+  margin-inline-end: 1rem;
+}
+.blx-preset-preview--forest {
+  background: linear-gradient(145deg, #163c32, #166534);
+}
+.blx-preset-preview--sunset {
+  background: linear-gradient(145deg, #702a38, #9a3412);
+}
+.blx-preset-preview--minimal {
+  background: linear-gradient(145deg, #202020, #6b7280);
+}
+.blx-preset-preview--ocean .blx-preset-swatch:before {
+  background: #f8fbff;
+}
+.blx-preset-preview--ocean .blx-preset-swatch:after {
+  background: #0757a6;
+}
+.blx-preset-preview--forest .blx-preset-swatch:before {
+  background: #fafcf8;
+}
+.blx-preset-preview--forest .blx-preset-swatch:after {
+  background: #166534;
+}
+.blx-preset-preview--sunset .blx-preset-swatch:before {
+  background: #fffaf5;
+}
+.blx-preset-preview--sunset .blx-preset-swatch:after {
+  background: #9a3412;
+}
+.blx-preset-preview--minimal .blx-preset-swatch:before {
+  background: #fff;
+}
+.blx-preset-preview--minimal .blx-preset-swatch:after {
+  background: #202020;
+}

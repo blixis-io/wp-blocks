@@ -17,6 +17,7 @@ if ( ! \defined( 'ABSPATH' ) ) {
 	define( 'ABSPATH', dirname( __DIR__ ) . '/' ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound -- Stands in for WordPress.
 }
 require_once dirname( __DIR__ ) . '/src/SetupState.php';
+require_once dirname( __DIR__ ) . '/src/TokenDraft.php';
 
 /**
  * Validation and entry action transitions without WordPress.
@@ -58,7 +59,7 @@ final class SetupStateTest extends TestCase {
 	#[DataProvider( 'invalid_values' )]
 	public function test_rejects_invalid_values( mixed $value ): void {
 		$this->assertNull( SetupState::normalize( $value ) );
-		$this->assertNull( SetupState::transition( $value, 'start', self::NOW ) );
+		$this->assertNull( SetupState::transition( $value, 'dismiss', self::NOW ) );
 	}
 
 	/**
@@ -67,6 +68,25 @@ final class SetupStateTest extends TestCase {
 	public function test_normalizes_valid_state(): void {
 		$state = array_merge( SetupState::initial( self::NOW ), [ 'preset' => 'forest' ] );
 		$this->assertSame( $state, SetupState::normalize( $state ) );
+	}
+
+	/** The production start transition and the WP-CLI millisecond timestamp shape round-trip through the page reader. */
+	public function test_start_and_cli_option_shapes_round_trip(): void {
+		$started = SetupState::transition( SetupState::initial( self::NOW ), 'start', self::NOW );
+		$this->assertNotNull( $started );
+		$this->assertSame( 'in_progress', $started['status'] );
+		$this->assertSame( $started, SetupState::read( $started ) );
+		$cli_state = array_merge( $started, [ 'updated_at' => '2026-10-14T10:00:00.000Z' ] );
+		$this->assertSame( $cli_state, SetupState::read( json_encode( $cli_state ) ) );
+	}
+
+	/** Malformed legacy data is shown as not started and can be recovered by starting again. */
+	public function test_invalid_state_can_restart(): void {
+		$started = SetupState::transition( '{"status":"broken"}', 'start', self::NOW );
+		$this->assertNotNull( $started );
+		$this->assertSame( 'in_progress', $started['status'] );
+		$this->assertNull( SetupState::normalize( '{"status":"broken"}' ) );
+		$this->assertSame( 'not_started', SetupState::read( '{"status":"broken"}' )['status'] );
 	}
 
 	/**
@@ -111,5 +131,29 @@ final class SetupStateTest extends TestCase {
 				]
 			)
 		);
+	}
+
+	/** Going forward then back retains the complete selected preset draft for resume. */
+	public function test_draft_round_trip_through_next_back_and_resume(): void {
+		$seed = \Blixis\Theme\TokenDraft::seed( dirname( __DIR__ ) . '/design/presets/ocean.json', 'ocean' );
+		$this->assertNotNull( $seed );
+		$draft  = [
+			'preset'     => 'ocean',
+			'tokens'     => $seed,
+			'appearance' => 'dark',
+		];
+		$stored = json_encode( $draft );
+		$this->assertIsString( $stored );
+
+		$next = SetupState::next_step( 1, 'next' );
+		$this->assertSame( 2, $next );
+		$resume = SetupState::normalize_ui( [ 'resume_step' => $next ] );
+		$this->assertSame( [ 'resume_step' => 2 ], $resume );
+		$back = SetupState::next_step( $resume['resume_step'], 'back' );
+		$this->assertSame( 1, $back );
+		$resumed_draft = json_decode( $stored, true );
+		$this->assertSame( 'ocean', $resumed_draft['preset'] );
+		$this->assertSame( 'dark', $resumed_draft['appearance'] );
+		$this->assertSame( $seed, $resumed_draft['tokens'] );
 	}
 }

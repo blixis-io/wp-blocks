@@ -19,12 +19,12 @@ final class SetupAdmin {
 	private const NONCE_ACTION = 'blixis_setup_action';
 	private const DRAFT_META   = 'blixis_setup_draft';
 	private const STEP_NAMES   = [
-		1 => 'Choose preset',
-		2 => 'Colors',
-		3 => 'Typography',
-		4 => 'Spacing, radius and layout',
-		5 => 'Preview',
-		6 => 'Apply',
+		1 => 'Theme',
+		2 => 'Style',
+		3 => 'Style',
+		4 => 'Style',
+		5 => 'Style',
+		6 => 'Finish',
 	];
 	private const PRESETS      = [
 		'ocean'   => 'Ocean',
@@ -37,9 +37,21 @@ final class SetupAdmin {
 	/** Register admin hooks. */
 	public static function register(): void {
 		add_action( 'admin_menu', [ self::class, 'menu' ] );
+		add_action( 'admin_enqueue_scripts', [ self::class, 'assets' ] );
 		add_action( 'admin_notices', [ self::class, 'notice' ] );
 		foreach ( [ 'start', 'dismiss', 'wizard', 'rollback' ] as $action ) {
 			add_action( 'admin_post_blixis_setup_' . $action, [ self::class, $action ] );
+		}
+	}
+
+	/**
+	 * Load the setup page stylesheet without inline styles.
+	 *
+	 * @param string $hook Admin page hook.
+	 */
+	public static function assets( string $hook ): void {
+		if ( 'appearance_page_blixis-setup' === $hook ) {
+			wp_enqueue_style( 'blixis-setup-admin', get_template_directory_uri() . '/assets/css/setup-admin.css', [], (string) filemtime( get_template_directory() . '/assets/css/setup-admin.css' ) );
 		}
 	}
 
@@ -54,7 +66,7 @@ final class SetupAdmin {
 			return;
 		}
 		$state = SetupState::get();
-		if ( null === $state || ! \in_array( $state['status'], [ 'not_started', 'in_progress' ], true ) ) {
+		if ( ! \in_array( $state['status'], [ 'not_started', 'in_progress' ], true ) ) {
 			return;
 		}
 		?>
@@ -95,18 +107,28 @@ final class SetupAdmin {
 			}
 		}
 		?>
-		<div class="wrap blixis-setup"><h1><?php echo esc_html__( 'Blixis setup', 'blixis' ); ?></h1>
+		<div class="wrap blixis-setup"><header class="blx-setup-brand"><span class="blx-setup-mark" aria-hidden="true">B</span><span>Blixis</span></header><h1><?php echo esc_html__( 'Welcome to Blixis', 'blixis' ); ?></h1>
+		<p class="blx-setup-intro"><?php echo esc_html__( 'Choose a starter design and customize its style. You can always change this later.', 'blixis' ); ?></p>
 		<?php self::saved_panel(); ?>
-		<?php if ( null === $state ) : ?>
-			<p><?php echo esc_html__( 'Setup status is unavailable.', 'blixis' ); ?></p>
-		<?php else : ?>
-			<p><?php echo esc_html__( 'Current status:', 'blixis' ); ?> <strong><?php echo esc_html( $state['status'] ); ?></strong></p>
-			<nav aria-label="<?php echo esc_attr__( 'Setup steps', 'blixis' ); ?>"><ol>
-			<?php foreach ( self::STEP_NAMES as $number => $title ) : ?>
-				<li <?php echo $number === $step ? 'aria-current="step"' : ''; ?>><?php echo esc_html( $number . '. ' . $title ); ?></li>
+			<nav class="blx-stepper" aria-label="<?php echo esc_attr__( 'Setup steps', 'blixis' ); ?>"><ol aria-live="polite">
+			<?php
+			foreach ( [
+				1 => __( 'Welcome', 'blixis' ),
+				2 => __( 'Theme', 'blixis' ),
+				3 => __( 'Style', 'blixis' ),
+				4 => __( 'Content', 'blixis' ),
+				5 => __( 'Finish', 'blixis' ),
+			] as $number => $title ) :
+													$current = ( 2 === $number && 1 === $step ) || ( 3 === $number && $step >= 2 && $step <= 4 ) || ( 4 === $number && 5 === $step ) || ( 5 === $number && 6 === $step );
+				?>
+				<li <?php echo $current ? 'aria-current="step"' : ''; ?>><span><?php echo esc_html( (string) $number ); ?></span><?php echo esc_html( $title ); ?></li>
 			<?php endforeach; ?>
 			</ol></nav>
-			<h2><?php echo esc_html( self::STEP_NAMES[ $step ] ); ?></h2>
+			<h2><?php echo esc_html( 1 === $step ? __( 'Choose a starter design', 'blixis' ) : ( 6 === $step ? __( 'Finish setup', 'blixis' ) : __( 'Make it yours', 'blixis' ) ) ); ?></h2>
+			<?php
+			if ( 5 === $step ) :
+				?>
+				<section class="blx-content-later"><h3><?php echo esc_html__( 'Content', 'blixis' ); ?></h3><p><?php echo esc_html__( 'Starter pages and template imports are not part of this setup yet. Choose later from WordPress Pages when you are ready.', 'blixis' ); ?></p></section><?php endif; ?>
 			<?php
 			if ( $errors ) :
 				?>
@@ -119,7 +141,7 @@ final class SetupAdmin {
 			<?php
 			if ( 6 === $step ) :
 				?>
-				<p><?php echo esc_html__( 'Applying saves this design system for the whole site. Every page changes at once; you can restore the previous version afterwards.', 'blixis' ); ?></p><?php endif; ?>
+				<p><?php echo esc_html__( 'Applying saves this design system for the whole site. Every page changes at once; you can restore the previous version afterwards.', 'blixis' ); ?></p><section class="blx-finish-summary"><h3><?php echo esc_html__( 'Your choices', 'blixis' ); ?></h3><p><?php echo esc_html( self::PRESETS[ $preset ] ?? '' ); ?> · <?php echo esc_html( ucfirst( $appearance ) ); ?></p></section><?php endif; ?>
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 				<input type="hidden" name="action" value="blixis_setup_wizard"><input type="hidden" name="step" value="<?php echo esc_attr( (string) $step ); ?>">
 				<?php wp_nonce_field( 'blixis_setup_step_' . $step, 'blixis_setup_nonce_wizard' ); ?>
@@ -132,17 +154,15 @@ final class SetupAdmin {
 				<?php
 				if ( $step < 6 ) :
 					?>
-					<button class="button button-primary" type="submit" name="direction" value="next"><?php echo esc_html__( 'Next', 'blixis' ); ?></button>
+					<button class="button button-primary" type="submit" name="direction" value="next"><?php echo esc_html__( 'Continue', 'blixis' ); ?> <span aria-hidden="true">→</span></button>
 					<?php
 else :
 	?>
 					<button class="button button-primary" type="submit" name="direction" value="apply"><?php echo esc_html__( 'Apply', 'blixis' ); ?></button><?php endif; ?>
-				<button class="button" type="submit" name="direction" value="cancel"><?php echo esc_html__( 'Cancel', 'blixis' ); ?></button>
+				<button class="button" type="submit" name="direction" value="cancel"><?php echo esc_html__( 'Skip Setup', 'blixis' ); ?></button>
 				</p>
 			</form>
-		<?php endif; ?>
 		</div>
-		<style>.blixis-setup fieldset{max-width:55rem;border:1px solid #8c8f94;padding:1rem;margin:1rem 0}.blixis-setup legend{font-weight:700}.blixis-setup label{display:block;margin:.5rem 0}.blixis-setup input[type=text]{width:9rem}.blixis-setup :focus-visible{outline:3px solid #2271b1;outline-offset:2px}.blixis-preview{display:grid;grid-template-columns:repeat(auto-fit,minmax(16rem,1fr));gap:1rem}.blixis-preview>section{background:var(--blx-color-bg);color:var(--blx-color-text);padding:1.5rem;border:2px solid var(--blx-color-line)}.blixis-preview a{color:var(--blx-color-link)}.blixis-preview strong{background:var(--blx-color-primary);color:var(--blx-color-on-primary);padding:.5rem;display:inline-block}</style>
 		<?php
 	}
 
@@ -156,11 +176,56 @@ else :
 	 */
 	private static function fields( int $step, string $preset, array $tokens, string $appearance ): void {
 		if ( 1 === $step ) {
-			echo '<fieldset><legend>' . esc_html__( 'Choose a starting design', 'blixis' ) . '</legend>';
-			foreach ( self::PRESETS as $id => $label ) {
-				printf( '<label><input type="radio" name="preset" value="%s" %s> %s</label>', esc_attr( $id ), checked( $preset, $id, false ), esc_html( $label ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Each substitution is escaped.
+			$categories = [];
+			foreach ( array_keys( self::PRESETS ) as $id ) {
+				if ( 'custom' !== $id ) {
+					$path = get_template_directory() . '/design/presets/' . $id . '.json';
+					$data = is_readable( $path ) ? json_decode( (string) file_get_contents( $path ), true ) : null; // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Local bundled preset.
+					if ( is_array( $data ) && is_string( $data['category'] ?? null ) && in_array( $data['category'], [ 'business', 'blog', 'portfolio', 'ecommerce' ], true ) ) {
+						$categories[ $id ] = $data['category'];
+					}
+				}
 			}
-			echo '</fieldset>';
+			$filter          = isset( $_GET['category'] ) ? sanitize_key( wp_unslash( $_GET['category'] ) ) : 'all'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only filter.
+			$category_labels = [
+				'all'       => __( 'All Templates', 'blixis' ),
+				'business'  => __( 'Business', 'blixis' ),
+				'blog'      => __( 'Blog', 'blixis' ),
+				'portfolio' => __( 'Portfolio', 'blixis' ),
+				'ecommerce' => __( 'eCommerce', 'blixis' ),
+				'saas'      => __( 'SaaS', 'blixis' ),
+			];
+			$preset_labels   = [
+				'ocean'   => __( 'Ocean', 'blixis' ),
+				'forest'  => __( 'Forest', 'blixis' ),
+				'sunset'  => __( 'Sunset', 'blixis' ),
+				'minimal' => __( 'Minimal', 'blixis' ),
+				'custom'  => __( 'Custom', 'blixis' ),
+			];
+			echo '<nav class="blx-category-filters" aria-label="' . esc_attr__( 'Filter starter designs', 'blixis' ) . '">';
+			foreach ( $category_labels as $slug => $label ) {
+				if ( 'all' !== $slug && ! in_array( $slug, $categories, true ) ) {
+					continue;
+				}
+				$url = add_query_arg(
+					[
+						'page'     => 'blixis-setup',
+						'step'     => 1,
+						'category' => $slug,
+					],
+					admin_url( 'themes.php' )
+				);
+				printf( '<a class="%s" href="%s"%s>%s</a>', 'blx-category-chip' . ( $filter === $slug ? ' is-active' : '' ), esc_url( $url ), $filter === $slug ? ' aria-current="true"' : '', esc_html( $label ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped values.
+			}
+			echo '</nav><fieldset class="blx-preset-grid"><legend class="screen-reader-text">' . esc_html__( 'Choose a starter design', 'blixis' ) . '</legend><div class="blx-preset-cards" role="radiogroup" aria-label="' . esc_attr__( 'Starter designs', 'blixis' ) . '">';
+			foreach ( self::PRESETS as $id => $label ) {
+				$category = $categories[ $id ] ?? '';
+				if ( 'all' !== $filter && $category !== $filter ) {
+					continue;
+				}
+				printf( '<label class="blx-preset-card%s"><input type="radio" name="preset" value="%s" %s><span class="blx-preset-preview blx-preset-preview--%s"><span class="blx-preset-swatch" aria-hidden="true"></span><strong>%s</strong><small>%s</small></span><span class="blx-preset-title">%s</span><span class="blx-preset-category">%s</span><span class="blx-selected" aria-hidden="true">✓</span></label>', checked( $preset, $id, false ) ? ' is-selected' : '', esc_attr( $id ), checked( $preset, $id, false ), esc_attr( $id ), esc_html__( 'Aa', 'blixis' ), esc_html__( 'A thoughtful design for your site', 'blixis' ), esc_html( $preset_labels[ $id ] ), esc_html( isset( $category_labels[ $category ] ) ? $category_labels[ $category ] : __( 'Custom', 'blixis' ) ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped values.
+			}
+			echo '</div></fieldset><p class="description">' . esc_html__( 'You can always change this later.', 'blixis' ) . '</p>';
 		} elseif ( \in_array( $step, [ 2, 3, 4 ], true ) ) {
 			echo '<fieldset><legend>' . esc_html( self::STEP_NAMES[ $step ] ) . '</legend>';
 			foreach ( $tokens as $name => $entry ) {
@@ -168,6 +233,23 @@ else :
 					continue;
 				}
 				if ( ( 2 === $step && ! str_starts_with( $name, 'color-' ) ) || ( 3 === $step && ! \in_array( $name, [ 'font-body', 'font-heading', 'text-base' ], true ) ) || ( 4 === $step && ! ( str_starts_with( $name, 'space-' ) || str_starts_with( $name, 'radius-' ) || str_starts_with( $name, 'container-' ) ) ) ) {
+					continue;
+				}
+				if ( 3 === $step && str_starts_with( $name, 'font-' ) ) {
+					$legend = 'font-body' === $name ? __( 'Body font', 'blixis' ) : __( 'Heading font', 'blixis' );
+					echo '<fieldset class="blx-font-choices"><legend>' . esc_html( $legend ) . '</legend><div class="blx-font-cards">';
+					foreach ( TokenDraft::options( $name, $entry['value'], FontLibrary::allowed_stacks() ) as $font ) {
+						$font_label = $font;
+						foreach ( FontLibrary::installed() as $family ) {
+							if ( FontLibrary::css_stack( $family['css_family'], 'sans-serif' ) === $font ) {
+								$variants   = array_map( static fn ( array $face ): string => $face['weight'] . ' ' . $face['style'], $family['faces'] );
+								$font_label = $family['name'] . ( $variants ? ' (' . implode( ', ', $variants ) . ')' : '' );
+								break;
+							}
+						}
+						printf( '<label class="blx-font-card"><input type="radio" name="tokens[%s][value]" value="%s" %s><strong aria-hidden="true">Aa</strong><span>%s</span></label>', esc_attr( $name ), esc_attr( $font ), checked( $entry['value'], $font, false ), esc_html( $font_label ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped values.
+					}
+					echo '</div></fieldset>';
 					continue;
 				}
 				foreach ( str_starts_with( $name, 'color-' ) ? [ 'value', 'dark' ] : [ 'value' ] as $mode ) {
@@ -327,6 +409,10 @@ else :
 		}
 		$direction = isset( $_POST['direction'] ) ? sanitize_key( wp_unslash( $_POST['direction'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Checked above.
 		if ( 'cancel' === $direction ) {
+			$state = SetupState::transition( get_option( SetupState::OPTION, false ), 'dismiss', gmdate( DATE_ATOM ) );
+			if ( null !== $state ) {
+				update_option( SetupState::OPTION, $state, false );
+			}
 			wp_safe_redirect( admin_url( 'themes.php' ) );
 			exit;
 		}
@@ -510,7 +596,7 @@ else :
 	 */
 	private static function action_form( string $action, string $label ): void {
 		?>
-		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline-block;margin:0 1em 1em 0"><input type="hidden" name="action" value="<?php echo esc_attr( 'blixis_setup_' . $action ); ?>"><?php wp_nonce_field( self::NONCE_ACTION, 'blixis_setup_nonce_' . $action ); ?><button class="button button-secondary" type="submit"><?php echo esc_html( $label ); ?></button></form>
+		<form class="blx-setup-action-form" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>"><input type="hidden" name="action" value="<?php echo esc_attr( 'blixis_setup_' . $action ); ?>"><?php wp_nonce_field( self::NONCE_ACTION, 'blixis_setup_nonce_' . $action ); ?><button class="button button-secondary" type="submit"><?php echo esc_html( $label ); ?></button></form>
 		<?php
 	}
 
