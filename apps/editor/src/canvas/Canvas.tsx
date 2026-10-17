@@ -1,5 +1,6 @@
 import { Icon, Menu } from '@blixis/wp-editor-ui';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
+import { createPortal } from 'react-dom';
 import type { RestClient } from '../api/types';
 import type { MessageKey } from '../i18n';
 import { useI18n } from '../i18n-react';
@@ -15,7 +16,7 @@ import {
 } from '@blixis/wp-editor-ui';
 import { languageName } from './language-name';
 import { elementIconName } from '@blixis/wp-editor-ui';
-import { boxesOverlap, placeHoverChip, placeSelectionToolbar } from './selection-chrome';
+import { boxesOverlap, placeHoverChip, placeSelectionMenu, placeSelectionToolbar } from './selection-chrome';
 import { findPath, nodeAt, type ElementNode } from '@blixis/wp-core';
 import { elementLabel } from '../element-label';
 import { ElementId } from '../ElementId';
@@ -192,7 +193,8 @@ export function Canvas({
   );
   const [toolbarSize, setToolbarSize] = useState({ width: 250, height: 36 });
   const [toolbar, setToolbar] = useState<HTMLDivElement | null>(null);
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuOpenFor, setMenuOpenFor] = useState<string | null>(null);
+  const menuOpen = menuOpenFor !== null && menuOpenFor === selectedId;
   const [mediaOpen, setMediaOpen] = useState(false);
   const [formatMenu, setFormatMenu] = useState<'color' | 'highlight' | 'link' | null>(null);
   const formatPopover = useRef<HTMLDivElement>(null);
@@ -217,6 +219,8 @@ export function Canvas({
   const pendingResize = useRef<ResizeRect | null>(null);
   const keyboardResize = useRef<{ rect: ResizeRect; timer: ReturnType<typeof setTimeout> } | null>(null);
   const menuItem = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const menuTrigger = useRef<HTMLButtonElement>(null);
   const canvasRegion = useRef<HTMLDivElement>(null);
   const attachStage = useCallback((node: HTMLDivElement | null) => {
     setStage(node);
@@ -425,6 +429,14 @@ export function Canvas({
           dir,
         )
       : null;
+  const menuPosition =
+    menuOpen && overlayBox && toolbarPosition
+      ? placeSelectionMenu(
+          overlayBox,
+          { ...toolbarPosition, width: toolbarSize.width, height: toolbarSize.height },
+          { width: 184, height: 280 },
+        )
+      : null;
   const focusToolbar = useCallback((): void => {
     toolbar?.querySelector<HTMLElement>('button:not(:disabled)')?.focus();
   }, [toolbar]);
@@ -449,6 +461,26 @@ export function Canvas({
   useEffect(() => {
     if (menuOpen) menuItem.current?.focus();
   }, [menuOpen]);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const closeOutside = (event: PointerEvent): void => {
+      const target = event.target;
+      if (!(target instanceof Node) || menuRef.current?.contains(target) || menuTrigger.current?.contains(target))
+        return;
+      setMenuOpenFor(null);
+    };
+    document.addEventListener('pointerdown', closeOutside, true);
+    return () => {
+      document.removeEventListener('pointerdown', closeOutside, true);
+    };
+  }, [menuOpen]);
+  useEffect(
+    () =>
+      store.subscribe((next, previous) => {
+        if (next.selectedId !== previous.selectedId) setMenuOpenFor(null);
+      }),
+    [store],
+  );
   useEffect(() => {
     if (formatMenu === 'color' || formatMenu === 'highlight')
       formatPopover.current?.querySelector<HTMLButtonElement>('[role="menuitemradio"]')?.focus();
@@ -630,7 +662,7 @@ export function Canvas({
               label={t('canvas.selection.headingLevel')}
               icon="heading"
               onClick={() => {
-                setMenuOpen((open) => !open);
+                setMenuOpenFor((openFor) => (openFor === selectedId ? null : selectedId));
               }}
             />
           ) : null}
@@ -686,13 +718,20 @@ export function Canvas({
           <Tooltip>
             <TooltipTrigger asChild>
               <button
+                ref={menuTrigger}
                 type="button"
                 tabIndex={-1}
                 aria-label={t('canvas.selection.more')}
                 aria-haspopup="menu"
                 aria-expanded={menuOpen}
                 onClick={() => {
-                  setMenuOpen((open) => !open);
+                  setMenuOpenFor((openFor) => (openFor === selectedId ? null : selectedId));
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'ArrowDown') {
+                    event.preventDefault();
+                    setMenuOpenFor(selectedId);
+                  }
                 }}
               >
                 <Icon name="menuDots" size={14} />
@@ -700,76 +739,89 @@ export function Canvas({
             </TooltipTrigger>
             <TooltipContent>{t('canvas.selection.more')}</TooltipContent>
           </Tooltip>
-          <div
-            role="menu"
-            tabIndex={-1}
-            aria-label={t('canvas.selection.more')}
-            className="blx-selection-menu"
-            hidden={!menuOpen}
-            onKeyDown={(event) => {
-              if (event.key === 'Escape') {
-                event.preventDefault();
-                event.stopPropagation();
-                setMenuOpen(false);
-                toolbar?.querySelector<HTMLButtonElement>('[aria-haspopup="menu"]')?.focus();
-              }
-            }}
-          >
-            {selectedPath && selectedPath.length > 1 ? (
+        </div>
+      ) : null}
+      {menuOpen && menuPosition && stage && selected
+        ? createPortal(
+            <div
+              ref={menuRef}
+              role="menu"
+              tabIndex={-1}
+              aria-label={t('canvas.selection.more')}
+              className="blx-selection-menu"
+              style={menuPosition}
+              onKeyDown={(event) => {
+                if (event.key === 'Escape') {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  setMenuOpenFor(null);
+                  menuTrigger.current?.focus();
+                } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+                  event.preventDefault();
+                  const items = [...(menuRef.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]') ?? [])];
+                  const current = items.indexOf(document.activeElement as HTMLButtonElement);
+                  const next =
+                    event.key === 'ArrowDown'
+                      ? (current + 1) % items.length
+                      : (current - 1 + items.length) % items.length;
+                  items[next]?.focus();
+                }
+              }}
+            >
               <button
                 ref={menuItem}
                 type="button"
                 role="menuitem"
                 onClick={() => {
                   selectParent();
-                  setMenuOpen(false);
+                  setMenuOpenFor(null);
                 }}
               >
                 {t('canvas.selection.parent')}
               </button>
-            ) : null}
-            {canMoveUp ? (
-              <button
-                ref={!selectedPath || selectedPath.length <= 1 ? menuItem : undefined}
-                type="button"
-                role="menuitem"
-                onClick={() => {
-                  moveSelection(-1);
-                  setMenuOpen(false);
-                }}
-              >
-                {t('canvas.selection.moveUp')}
-              </button>
-            ) : null}
-            {canMoveDown ? (
-              <button
-                ref={!selectedPath || (selectedPath.length <= 1 && !canMoveUp) ? menuItem : undefined}
-                type="button"
-                role="menuitem"
-                onClick={() => {
-                  moveSelection(1);
-                  setMenuOpen(false);
-                }}
-              >
-                {t('canvas.selection.moveDown')}
-              </button>
-            ) : null}
-            {selected.type === 'blixis/heading'
-              ? [1, 2, 3, 4, 5, 6].map((level) => (
-                  <button
-                    key={level}
-                    type="button"
-                    role="menuitem"
-                    onClick={() => {
-                      store.getState().dispatch({ type: 'update-props', id: selected.id, set: { level } });
-                      setMenuOpen(false);
-                    }}
-                  >{`H${String(level)}`}</button>
-                ))
-              : null}
-          </div>
-        </div>
-      ) : null}
+              {canMoveUp ? (
+                <button
+                  ref={!selectedPath || selectedPath.length <= 1 ? menuItem : undefined}
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    moveSelection(-1);
+                    setMenuOpenFor(null);
+                  }}
+                >
+                  {t('canvas.selection.moveUp')}
+                </button>
+              ) : null}
+              {canMoveDown ? (
+                <button
+                  ref={!selectedPath || (selectedPath.length <= 1 && !canMoveUp) ? menuItem : undefined}
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    moveSelection(1);
+                    setMenuOpenFor(null);
+                  }}
+                >
+                  {t('canvas.selection.moveDown')}
+                </button>
+              ) : null}
+              {selected.type === 'blixis/heading'
+                ? [1, 2, 3, 4, 5, 6].map((level) => (
+                    <button
+                      key={level}
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        store.getState().dispatch({ type: 'update-props', id: selected.id, set: { level } });
+                        setMenuOpenFor(null);
+                      }}
+                    >{`H${String(level)}`}</button>
+                  ))
+                : null}
+            </div>,
+            stage,
+          )
+        : null}
       <MediaDialog
         open={mediaOpen}
         onOpenChange={setMediaOpen}

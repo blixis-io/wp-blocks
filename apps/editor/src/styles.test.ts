@@ -111,6 +111,49 @@ describe.each(['light', 'dark'] as const)('%s chrome contrast', (theme) => {
   it.each(ui)('UI %s against %s has 3:1', (fg, bg) => {
     expect(contrastRatio(t[fg] ?? '', t[bg] ?? '')).toBeGreaterThanOrEqual(3);
   });
+  it('keeps the enabled Publish text token at 4.5:1 against its primary fill', () => {
+    expect(contrastRatio(t['primary-fg'] ?? '', t['primary'] ?? '')).toBeGreaterThanOrEqual(4.5);
+  });
+  it('keeps the disabled Publish text token at 3:1 against its disabled fill', () => {
+    expect(contrastRatio(t['fg-muted'] ?? '', t['surface-2'] ?? '')).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe('panel and Publish controls', () => {
+  it('keeps the collapsed rails visible and gives each inspector tab half of the tab strip', () => {
+    expect(source).toMatch(/\.blx-body\[data-left='closed'\]\s*\{\s*--blx-left-width:\s*40px;/);
+    expect(source).toMatch(/\.blx-body\[data-right='closed'\]\s*\{\s*--blx-right-width:\s*40px;/);
+    expect(source).toMatch(/\.blx-reopen-panel\s*\{[^}]*inset-block:\s*0;[^}]*inline-size:\s*40px;/);
+    expect(source).toMatch(/\.blx-right-tabs-list \[role='tab'\]\s*\{[^}]*flex:\s*0 0 50%;/);
+  });
+
+  it('uses a high contrast primary Publish button and preserves disabled label contrast without opacity', () => {
+    expect(source).toMatch(
+      /\.blx-header-primary\s*\{[^}]*background:\s*var\(--ed-primary\);[^}]*color:\s*var\(--ed-primary-fg\);/,
+    );
+    expect(source).toMatch(
+      /\.blx-header-primary\[aria-disabled='true'\]\s*\{[^}]*opacity:\s*1;[^}]*background:\s*var\(--ed-surface-2\);[^}]*color:\s*var\(--ed-fg-muted\);/,
+    );
+  });
+
+  it('gives Publish and its split trigger explicit primary foregrounds after generic header rules', () => {
+    const selectors = [...source.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map((match) => ({
+      selector: match[1] ?? '',
+      declarations: match[2] ?? '',
+    }));
+    for (const className of ['blx-publish-button', 'blx-publish-menu-trigger']) {
+      expect(source).toMatch(new RegExp(`button\\.${className}[^{}]*\\{[^}]*color: var\\(--ed-primary-fg\\)`));
+      expect(
+        selectors.filter(
+          ({ selector, declarations }) =>
+            selector.includes(`.${className}`) && /color:\s*var\(--ed-header-fg\)/.test(declarations),
+        ),
+      ).toEqual([]);
+    }
+    const primaryForeground = source.lastIndexOf(".blx-header [role='toolbar'] button.blx-publish-button");
+    const genericHeaderForeground = source.lastIndexOf(".blx-header [role='toolbar'] button,");
+    expect(primaryForeground).toBeGreaterThan(genericHeaderForeground);
+  });
 });
 
 describe('selected state indicator', () => {

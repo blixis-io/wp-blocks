@@ -150,7 +150,7 @@ export function Header({
   const publishPending = hasDirty || hasPublicationPending(publication);
   const publishDisabled =
     !bootstrap.editingEnabled || saveLocked || publicationStatus === 'publishing' || !publishPending;
-  const publishLabel =
+  const publishStateLabel =
     publication &&
     (publication.layout.state !== 'unpublished' ||
       Object.values(publication.locales).some((item) => item.state !== 'unpublished'))
@@ -162,7 +162,7 @@ export function Header({
       : publicationStatus === 'publishing'
         ? t('publication.publishing')
         : publishPending
-          ? publishLabel
+          ? publishStateLabel
           : t('publication.nothingToPublish');
   const publicationStreams = publication ? [publication.layout, ...Object.values(publication.locales)] : [];
   const hasLivePublication = publicationStreams.some((item) => item.state !== 'unpublished');
@@ -401,7 +401,7 @@ export function Header({
             onSelect: manualSave,
           },
           {
-            label: publishLabel,
+            label: publishStateLabel,
             disabled: !bootstrap.editingEnabled || saveLocked || publicationStatus === 'publishing' || !publishPending,
             describedBy: 'blx-publish-hint',
             icon: <Icon name="publish" size={15} />,
@@ -611,24 +611,24 @@ export function Header({
               </Hint>
               <Hint text={publishHint}>
                 <ToolbarButton
-                  className="blx-header-secondary"
+                  className="blx-header-primary blx-publish-button"
                   variant="default"
                   aria-disabled={publishDisabled}
-                  aria-label={publishLabel}
+                  aria-label={publishStateLabel}
                   aria-describedby="blx-publish-hint"
                   onClick={() => {
                     if (!publishDisabled) openPublish();
                   }}
                 >
                   <Icon name="publish" className={icon} />
-                  <span>{publishLabel}</span>
+                  <span>{t('header.publish')}</span>
                 </ToolbarButton>
               </Hint>
               <Menu
                 label={t('header.publishMenu')}
                 items={[
                   {
-                    label: publishLabel,
+                    label: publishStateLabel,
                     disabled:
                       !bootstrap.editingEnabled || saveLocked || publicationStatus === 'publishing' || !publishPending,
                     describedBy: 'blx-publish-hint',
@@ -658,6 +658,7 @@ export function Header({
                   },
                 ]}
                 className="blx-menu-control blx-publish-split"
+                triggerClassName="blx-publish-menu-trigger"
                 toolbarTrigger
               >
                 <Icon name="chevronDown" size={14} />

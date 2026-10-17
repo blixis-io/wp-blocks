@@ -9,8 +9,9 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
+  PanelToggleIcon,
+  Icon,
 } from '@blixis/wp-editor-ui';
-import { Icon } from '@blixis/wp-editor-ui';
 import type { RestClient } from './api/types';
 import type { CanvasMessage } from '@blixis/wp-canvas-bridge';
 import { Canvas, PreviewAppearance, type CanvasTestOptions } from './canvas/Canvas';
@@ -53,12 +54,14 @@ function Shell({
   canvas,
   preference,
   onPreference,
+  dir,
 }: {
   bootstrap: EditorBootstrap;
   client: RestClient | undefined;
   canvas: CanvasTestOptions | undefined;
   preference: ChromePreference;
   onPreference: (next: ChromePreference) => void;
+  dir: 'ltr' | 'rtl';
 }) {
   const { t } = useI18n();
   const [inspectorTab, setInspectorTab] = useState<'content' | 'style' | 'advanced'>(() => {
@@ -133,7 +136,6 @@ function Shell({
   };
   const contentLocale = useEditorStore((state) => state.contentLocale);
   const selectedId = useEditorStore((state) => state.selectedId);
-  const pageTitle = useEditorStore((state) => state.pageSettings?.title);
   const document = useEditorStore((state) => state.document);
   const selected = useMemo(
     () => (selectedId === null ? null : findElement(document?.root, selectedId)),
@@ -203,7 +205,10 @@ function Shell({
                   handleTogglePanel('left');
                 }}
               >
-                <Icon name="caretRight" size={14} mirrorInRtl />
+                <span className="blx-rail-icon">
+                  <PanelToggleIcon side="start" open={false} dir={dir} />
+                </span>
+                <span className="blx-rail-label">{t('panel.structure')}</span>
               </button>
             </TooltipTrigger>
             <TooltipContent>{t('panel.expand')}</TooltipContent>
@@ -222,7 +227,10 @@ function Shell({
                   handleTogglePanel('right');
                 }}
               >
-                <Icon name="caretRight" size={14} mirrorInRtl />
+                <span className="blx-rail-icon">
+                  <PanelToggleIcon side="end" open={false} dir={dir} />
+                </span>
+                <span className="blx-rail-label">{t('panel.inspector')}</span>
               </button>
             </TooltipTrigger>
             <TooltipContent>{t('panel.expand')}</TooltipContent>
@@ -351,14 +359,13 @@ function Shell({
                       handleTogglePanel('right');
                     }}
                   >
-                    <Icon name="caretRight" size={14} mirrorInRtl />
+                    <PanelToggleIcon side="end" open dir={dir} />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent>{t('panel.collapse')}</TooltipContent>
               </Tooltip>
             </div>
             <TabsContent value="page" className="blx-page-inspector-body">
-              {pageTitle ? <p className="blx-panel-subtitle">{pageTitle}</p> : null}
               <Inspector element={null} tab="content" editingEnabled={!locked} />
             </TabsContent>
             {selected ? (
@@ -495,6 +502,7 @@ export function EditorApp({
                     canvas={canvas}
                     preference={preference}
                     onPreference={setPreference}
+                    dir={dir}
                   />
                 </TooltipProvider>
               </PortalContainerProvider>

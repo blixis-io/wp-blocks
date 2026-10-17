@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { placeHoverChip, placeSelectionToolbar } from './selection-chrome';
+import { placeHoverChip, placeSelectionMenu, placeSelectionToolbar } from './selection-chrome';
 
 describe('hover chip placement', () => {
   it('places the chip above and keeps it inside horizontal frame bounds', () => {
@@ -95,5 +95,26 @@ describe('selection toolbar placement', () => {
     const selection = { left: 130, top: 104, width: 20, height: 15 };
     const result = placeSelectionToolbar(frame, selection, { width: 100, height: 30 }, 6);
     expect(result.top).toBe(selection.top + selection.height + 6);
+  });
+});
+
+describe('selection menu placement', () => {
+  const frame = { left: 12, top: 18, width: 500, height: 360 };
+  const size = { width: 184, height: 172 };
+  it('flips below a toolbar near the top and shifts from the right edge', () => {
+    const position = placeSelectionMenu(frame, { left: 450, top: 24, width: 40, height: 34 }, size);
+    expect(position).toEqual({ left: 306, top: 62 });
+  });
+  it('flips above a toolbar near the bottom and stays in the frame', () => {
+    const position = placeSelectionMenu(frame, { left: 24, top: 340, width: 40, height: 34 }, size);
+    expect(position).toEqual({ left: 12, top: 164 });
+  });
+  it('clamps oversized menus to the frame origin', () => {
+    expect(
+      placeSelectionMenu(frame, { left: 450, top: 350, width: 40, height: 34 }, { width: 600, height: 500 }),
+    ).toEqual({
+      left: 12,
+      top: 18,
+    });
   });
 });

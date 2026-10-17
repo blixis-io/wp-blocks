@@ -248,6 +248,14 @@ describe('redesigned editor header', () => {
     expect(screen.getByRole('button', { name: 'Save Draft' }).getAttribute('aria-disabled')).toBe('true');
   });
 
+  it('keeps the Publish label stable while exposing publication state to assistive technology', () => {
+    setup();
+    const button = screen.getByRole('button', { name: 'Publish' });
+    expect(button.textContent).toContain('Publish');
+    expect(button.getAttribute('aria-label')).toBe('Publish');
+    expect(button.getAttribute('aria-describedby')).toBe('blx-publish-hint');
+  });
+
   it('enables Publish and keeps unsupported Schedule and Unpublish items disabled', async () => {
     const { user } = setup();
     await user.click(screen.getByRole('button', { name: 'Publish options' }));
@@ -902,6 +910,29 @@ describe('keyboard shortcuts dialog', () => {
 });
 
 describe('side panels', () => {
+  it('provides full-height labelled rails that reopen both panels by keyboard', async () => {
+    const { user } = setup();
+    await user.click(screen.getByRole('button', { name: 'More options' }));
+    await user.click(screen.getByRole('menuitemcheckbox', { name: 'Structure panel' }));
+    const left = screen.getByRole('button', { name: 'Structure panel' });
+    expect(left.getAttribute('aria-expanded')).toBe('false');
+    expect(left.getAttribute('aria-controls')).toBe('blx-structure');
+    expect(left.textContent).toContain('Structure');
+    left.focus();
+    await user.keyboard('{Enter}');
+    expect(screen.getByRole('navigation', { name: 'Structure' }).getAttribute('aria-hidden')).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: 'More options' }));
+    await user.click(screen.getByRole('menuitemcheckbox', { name: 'Inspector panel' }));
+    const right = screen.getByRole('button', { name: 'Inspector panel' });
+    expect(right.getAttribute('aria-expanded')).toBe('false');
+    expect(right.getAttribute('aria-controls')).toBe('blx-inspector');
+    expect(right.textContent).toContain('Inspector');
+    right.focus();
+    await user.keyboard(' ');
+    expect(screen.getByRole('complementary', { name: 'Inspector' }).getAttribute('aria-hidden')).toBeNull();
+  });
+
   it('marks the root motion-ready after mount and never leaves focus inside a closed panel', async () => {
     const { user } = setup();
     const root = screen.getByTestId('editor-root');

@@ -47,6 +47,8 @@ import palette from '@iconify-icons/solar/palette-linear';
 import highlighter from '@iconify-icons/solar/paint-roller-linear';
 import code from '@iconify-icons/solar/code-linear';
 import clearFormatting from '@iconify-icons/solar/eraser-linear';
+import sidebarClose from '@iconify-icons/solar/sidebar-close-line-duotone';
+import sidebarOpen from '@iconify-icons/solar/sidebar-open-line-duotone';
 import type { ElementDefinition } from '@blixis/wp-element-registry';
 
 interface SolarIconData {
@@ -55,7 +57,7 @@ interface SolarIconData {
   body: string;
 }
 
-/** Individual Solar Linear assets: imports stay explicit so the build can tree-shake unused glyphs. */
+/** Individual Solar assets: imports stay explicit so the build can tree-shake unused glyphs. */
 export const ICONS = {
   back: altArrowLeft,
   forward: altArrowRight,
@@ -92,6 +94,8 @@ export const ICONS = {
   appearance: sun,
   panelLeft,
   panelRight,
+  sidebarClose,
+  sidebarOpen,
   text,
   add,
   copy,

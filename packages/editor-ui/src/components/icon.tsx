@@ -6,11 +6,12 @@ export interface IconProps {
   weight?: 'thin' | 'light' | 'regular' | 'bold' | 'fill' | 'duotone';
   label?: string;
   mirrorInRtl?: boolean;
+  flipX?: boolean;
   className?: string;
 }
 
-/** Solar Linear SVG. Decorative by default; named labels expose meaningful icons to AT. */
-export function Icon({ name, size = 16, label, mirrorInRtl = false, className }: IconProps) {
+/** Registered Solar SVG. Decorative by default; named labels expose meaningful icons to AT. */
+export function Icon({ name, size = 16, label, mirrorInRtl = false, flipX = false, className }: IconProps) {
   const icon = ICONS[name];
   const shouldMirror = mirrorInRtl && DIRECTIONAL_ICONS.has(name);
   // Keep SVG geometry consistent across the registry: Solar's three-dot glyph uses circles only.
@@ -27,7 +28,11 @@ export function Icon({ name, size = 16, label, mirrorInRtl = false, className }:
       width={size}
       height={size}
       viewBox={`0 0 ${String(icon.width ?? 24)} ${String(icon.height ?? 24)}`}
-      className={[className, shouldMirror ? 'rtl:-scale-x-100' : undefined].filter(Boolean).join(' ') || undefined}
+      className={
+        [className, shouldMirror ? 'blx-icon-mirror-rtl' : undefined, flipX ? 'blx-icon-flip-x' : undefined]
+          .filter(Boolean)
+          .join(' ') || undefined
+      }
       {...(label ? { 'aria-label': label, role: 'img' as const } : { 'aria-hidden': true })}
       focusable="false"
       dangerouslySetInnerHTML={{ __html: body }}

@@ -1236,8 +1236,26 @@ describe('selection and hover', () => {
     fireEvent.click(trigger);
     const item = screen.getByRole('menuitem', { name: 'Select parent' });
     expect(document.activeElement).toBe(item);
+    s.endpoints.last().deliver({ type: 'rects', revision: 0, items: [{ id: 'el-text-1', x: 8, y: 2, w: 60, h: 20 }] });
+    expect(screen.getByRole('menu', { name: 'More element actions' })).toBeTruthy();
     fireEvent.keyDown(item, { key: 'Escape' });
     expect(document.activeElement).toBe(trigger);
+  });
+
+  it('opens the action menu from ArrowDown and closes it when selection changes', async () => {
+    const s = setup();
+    await ready(s);
+    await act(() => Promise.resolve().then(() => s.store.getState().select('el-text-1')));
+    await flush(20);
+    s.endpoints.last().deliver({ type: 'rects', revision: 0, items: [{ id: 'el-text-1', x: 5, y: 40, w: 60, h: 20 }] });
+    const trigger = screen.getByRole('button', { name: 'More element actions' });
+    fireEvent.keyDown(trigger, { key: 'ArrowDown' });
+    expect(screen.getByRole('menu', { name: 'More element actions' })).toBeTruthy();
+    expect(document.activeElement).toBe(screen.getByRole('menuitem', { name: 'Select parent' }));
+    act(() => {
+      s.store.getState().select('el-heading-1');
+    });
+    expect(screen.queryByRole('menu', { name: 'More element actions' })).toBeNull();
   });
 
   it('requests and retains a hovered element rectangle when there is no selection', async () => {
