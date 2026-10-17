@@ -44,6 +44,7 @@ describe('Icon', () => {
   const SOLAR_EXPORTS = {
     back: 'alt-arrow-left-linear',
     forward: 'alt-arrow-right-linear',
+    caretLeft: 'alt-arrow-left-linear',
     caretRight: 'alt-arrow-right-linear',
     chevronRight: 'alt-arrow-right-linear',
     move: 'cursor-square-linear',
@@ -233,6 +234,7 @@ describe('Icon', () => {
       'documents|pages',
       'menuDots|more',
       'button|move',
+      'back|caretLeft',
       'caretRight|forward',
       'chevronRight|forward',
       'caretRight|chevronRight',

@@ -353,7 +353,7 @@ describe('preview requests', () => {
     expect(endpoint.sent).toContainEqual({ type: 'edit-command', name, args });
   });
 
-  it.each(['code', 'span'])('maps the Span menu choice %s to the code mark command', async (choice) => {
+  it('toggles the inline code mark from the compact format toolbar', async () => {
     const s = setup();
     await ready(s);
     const endpoint = s.endpoints.last();
@@ -366,9 +366,7 @@ describe('preview requests', () => {
       text: 'Hello',
       rect: { x: 30, y: 20, w: 30, h: 24 },
     });
-    fireEvent.change(within(screen.getByTestId('format-toolbar')).getByRole('combobox', { name: 'Inline style' }), {
-      target: { value: choice },
-    });
+    fireEvent.click(within(screen.getByTestId('format-toolbar')).getByRole('button', { name: 'Code' }));
     expect(endpoint.sent).toContainEqual({ type: 'edit-command', name: 'toggle-mark', args: { mark: 'code' } });
   });
 
@@ -1056,7 +1054,7 @@ describe('selection and hover', () => {
     expect(count()).toBe(before - 1);
   });
 
-  it('disables mutation controls with an editor-locale reason in read-only mode', async () => {
+  it('hides mutation controls in read-only mode', async () => {
     const s = setup({ editingEnabled: false });
     await ready(s);
     s.pending[0]?.resolve(previewResult('<p data-blx-id="el-text-1">x</p>'));
@@ -1071,12 +1069,8 @@ describe('selection and hover', () => {
     s.endpoints
       .last()
       .deliver({ type: 'rects', revision: 1, items: [{ id: 'el-text-1', x: 20, y: 80, w: 120, h: 28 }] });
-    expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Duplicate' }).disabled).toBe(true);
-    const duplicate = screen.getByRole('button', { name: 'Duplicate' });
-    expect(document.getElementById(duplicate.getAttribute('aria-describedby') ?? '')?.textContent).toBe(
-      'Editing is disabled for this document.',
-    );
-    expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Delete' }).disabled).toBe(true);
+    expect(screen.queryByRole('button', { name: 'Duplicate' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Delete' })).toBeNull();
   });
 
   it('forwards store selection and hover to the canvas', async () => {
@@ -1138,7 +1132,6 @@ describe('selection and hover', () => {
     endpoint.deliver({ type: 'pick', id: null, shift: false, alt: false });
     expect(s.store.getState().selectedId).toBeNull();
     expect(s.store.getState().hoveredId).toBeNull();
-    expect(screen.getByTestId('inspector-selection').textContent).toBe('No element selected.');
     expect(screen.queryByTestId('selection-toolbar')).toBeNull();
     expect(screen.queryByTestId('selection-handles')).toBeNull();
   });
@@ -1222,9 +1215,9 @@ describe('selection and hover', () => {
     s.endpoints.last().deliver({ type: 'rects', revision: 0, items: [{ id: 'el-text-1', x: 5, y: 40, w: 60, h: 20 }] });
     const stage = screen.getByTestId('canvas-stage');
     fireEvent.keyDown(stage, { key: 'Tab' });
-    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Duplicate' }));
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Edit text' }));
     fireEvent.keyDown(document.activeElement as HTMLElement, { key: 'ArrowRight' });
-    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Delete' }));
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Duplicate' }));
     fireEvent.keyDown(document.activeElement as HTMLElement, { key: 'Escape' });
     expect(document.activeElement).toBe(stage);
   });

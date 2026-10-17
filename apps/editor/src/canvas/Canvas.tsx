@@ -39,6 +39,8 @@ import { styleSelector } from '../inspector/style-mapping';
 import { PROPERTIES } from '@blixis/wp-style-engine';
 import { isSafeUrl } from '@blixis/wp-element-registry';
 import { shortcutKeys } from '../shortcuts';
+import { useMediaServices } from '../media/MediaContext';
+import { MediaDialog } from '../media/MediaDialog';
 
 const PREVIEW_MODES = [
   { id: 'light', label: 'canvas.appearance.light', icon: <Icon name="light" /> },
@@ -114,6 +116,27 @@ export function PreviewAppearance() {
   );
 }
 
+function SelectionAction({
+  label,
+  icon,
+  onClick,
+}: {
+  label: string;
+  icon: 'text' | 'heading' | 'link' | 'image' | 'add' | 'copy' | 'delete';
+  onClick: () => void;
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button type="button" tabIndex={-1} aria-label={label} onClick={onClick}>
+          <Icon name={icon} size={14} />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
+  );
+}
+
 /** Test seams of the session hook. */
 export interface CanvasTestOptions {
   createEndpoint?: CanvasSessionOptions['createEndpoint'];
@@ -153,6 +176,7 @@ export function Canvas({
   inlineEditing = true,
 }: CanvasProps) {
   const { t, lang, dir } = useI18n();
+  const media = useMediaServices();
   const store = useEditorStoreApi();
   const contentLocale = useEditorStore((state) => state.contentLocale);
   const viewport = useEditorStore((state) => state.viewport);
@@ -169,6 +193,7 @@ export function Canvas({
   const [toolbarSize, setToolbarSize] = useState({ width: 250, height: 36 });
   const [toolbar, setToolbar] = useState<HTMLDivElement | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [mediaOpen, setMediaOpen] = useState(false);
   const [formatMenu, setFormatMenu] = useState<'color' | 'highlight' | 'link' | null>(null);
   const formatPopover = useRef<HTMLDivElement>(null);
   const linkPopover = useRef<HTMLFormElement>(null);
@@ -259,6 +284,21 @@ export function Canvas({
     selectedId === null || session.editSession !== null
       ? undefined
       : session.rects.find((rect) => rect.id === selectedId);
+  const selectedPath = selectedId && editorDocument ? findPath(editorDocument.root, selectedId) : null;
+  const selectedParentPath = selectedPath?.slice(0, -1) ?? [];
+  const selectedSiblings =
+    editorDocument && selectedPath
+      ? selectedParentPath.length
+        ? nodeAt(editorDocument.root, selectedParentPath)?.children
+        : editorDocument.root
+      : undefined;
+  const selectedIndex = selectedPath?.at(-1);
+  const canMoveUp = editingEnabled && selectedIndex !== undefined && selectedIndex > 0;
+  const canMoveDown =
+    editingEnabled &&
+    selectedIndex !== undefined &&
+    selectedSiblings !== undefined &&
+    selectedIndex < selectedSiblings.length - 1;
   const hoveredPath = hoveredId && editorDocument ? findPath(editorDocument.root, hoveredId) : null;
   const hoveredNode = hoveredPath && editorDocument ? nodeAt(editorDocument.root, hoveredPath) : null;
   const hoveredRect =
@@ -475,6 +515,25 @@ export function Canvas({
       return;
     state.select(copy.id);
   };
+  const selectParent = (): void => {
+    const document = store.getState().document;
+    const path = selectedId && document ? findPath(document.root, selectedId) : null;
+    const parent = path && path.length > 1 && document ? nodeAt(document.root, path.slice(0, -1)) : null;
+    store.getState().select(parent?.id ?? null);
+  };
+  const moveSelection = (direction: -1 | 1): void => {
+    const document = store.getState().document;
+    const path = selectedId && document ? findPath(document.root, selectedId) : null;
+    if (!document || !path || path.length === 0 || !selectedId) return;
+    const index = path[path.length - 1];
+    const parentPath = path.slice(0, -1);
+    const siblings = parentPath.length ? nodeAt(document.root, parentPath)?.children : document.root;
+    if (index === undefined || !siblings) return;
+    const nextIndex = index + direction;
+    if (nextIndex < 0 || nextIndex >= siblings.length) return;
+    const parent = parentPath.length ? nodeAt(document.root, parentPath) : null;
+    store.getState().dispatch({ type: 'move', id: selectedId, parentId: parent?.id ?? null, index: nextIndex });
+  };
   const restart = (): void => {
     setAttempt((value) => value + 1);
   };
@@ -554,45 +613,93 @@ export function Canvas({
             {elementLabel(selected.type, t)}
             <ElementId id={selected.id} />
           </span>
-          {!editingEnabled ? (
-            <span id="blx-selection-disabled" className="sr-only">
-              {t('canvas.selection.disabled')}
-            </span>
+          {(selected.type === 'blixis/text' ||
+            selected.type === 'blixis/heading' ||
+            selected.type === 'blixis/button') &&
+          editingEnabled ? (
+            <SelectionAction
+              label={t('canvas.selection.edit')}
+              icon="text"
+              onClick={() => {
+                session.startEdit(selected.id, selected.type === 'blixis/button' ? 'label' : 'text');
+              }}
+            />
           ) : null}
-          <button
-            type="button"
-            tabIndex={0}
-            onClick={duplicate}
-            disabled={!editingEnabled}
-            aria-label={t('canvas.selection.duplicate')}
-            aria-describedby={!editingEnabled ? 'blx-selection-disabled' : undefined}
-          >
-            <Icon name="copy" size={14} />
-          </button>
-          <button
-            type="button"
-            tabIndex={-1}
-            onClick={() => {
-              if (editingEnabled && selectedId) store.getState().dispatch({ type: 'remove', id: selectedId });
-            }}
-            disabled={!editingEnabled}
-            aria-label={t('canvas.selection.delete')}
-            aria-describedby={!editingEnabled ? 'blx-selection-disabled' : undefined}
-          >
-            <Icon name="delete" size={14} />
-          </button>
-          <button
-            type="button"
-            tabIndex={-1}
-            aria-label={t('canvas.selection.more')}
-            aria-haspopup="menu"
-            aria-expanded={menuOpen}
-            onClick={() => {
-              setMenuOpen((open) => !open);
-            }}
-          >
-            <Icon name="menuDots" size={14} />
-          </button>
+          {selected.type === 'blixis/heading' && editingEnabled ? (
+            <SelectionAction
+              label={t('canvas.selection.headingLevel')}
+              icon="heading"
+              onClick={() => {
+                setMenuOpen((open) => !open);
+              }}
+            />
+          ) : null}
+          {selected.type === 'blixis/button' && editingEnabled ? (
+            <SelectionAction
+              label={t('canvas.selection.link')}
+              icon="link"
+              onClick={() => {
+                document.dispatchEvent(new CustomEvent('blixis:inspector-content', { detail: { field: 'href' } }));
+              }}
+            />
+          ) : null}
+          {selected.type === 'blixis/image' && editingEnabled ? (
+            <SelectionAction
+              label={t('canvas.selection.replaceImage')}
+              icon="image"
+              onClick={() => {
+                setMediaOpen(true);
+              }}
+            />
+          ) : null}
+          {selected.type === 'blixis/image' && editingEnabled ? (
+            <SelectionAction
+              label={t('canvas.selection.editAlt')}
+              icon="text"
+              onClick={() =>
+                document.dispatchEvent(new CustomEvent('blixis:inspector-content', { detail: { field: 'alt' } }))
+              }
+            />
+          ) : null}
+          {(selected.type === 'blixis/container' || selected.type === 'blixis/section') && editingEnabled ? (
+            <SelectionAction
+              label={t('canvas.selection.addInside')}
+              icon="add"
+              onClick={() => {
+                store.getState().select(selected.id);
+                document.dispatchEvent(new CustomEvent('blixis:open-elements'));
+              }}
+            />
+          ) : null}
+          {editingEnabled ? (
+            <SelectionAction label={t('canvas.selection.duplicate')} icon="copy" onClick={duplicate} />
+          ) : null}
+          {editingEnabled ? (
+            <SelectionAction
+              label={t('canvas.selection.delete')}
+              icon="delete"
+              onClick={() => {
+                if (selectedId) store.getState().dispatch({ type: 'remove', id: selectedId });
+              }}
+            />
+          ) : null}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                tabIndex={-1}
+                aria-label={t('canvas.selection.more')}
+                aria-haspopup="menu"
+                aria-expanded={menuOpen}
+                onClick={() => {
+                  setMenuOpen((open) => !open);
+                }}
+              >
+                <Icon name="menuDots" size={14} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>{t('canvas.selection.more')}</TooltipContent>
+          </Tooltip>
           <div
             role="menu"
             tabIndex={-1}
@@ -608,24 +715,71 @@ export function Canvas({
               }
             }}
           >
-            <button
-              ref={menuItem}
-              type="button"
-              role="menuitem"
-              onClick={() => {
-                const document = store.getState().document;
-                const path = selectedId && document ? findPath(document.root, selectedId) : null;
-                const parent = path && path.length > 1 && document ? nodeAt(document.root, path.slice(0, -1)) : null;
-                store.getState().select(parent?.id ?? null);
-                setMenuOpen(false);
-              }}
-            >
-              {' '}
-              {t('canvas.selection.parent')}
-            </button>
+            {selectedPath && selectedPath.length > 1 ? (
+              <button
+                ref={menuItem}
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  selectParent();
+                  setMenuOpen(false);
+                }}
+              >
+                {t('canvas.selection.parent')}
+              </button>
+            ) : null}
+            {canMoveUp ? (
+              <button
+                ref={!selectedPath || selectedPath.length <= 1 ? menuItem : undefined}
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  moveSelection(-1);
+                  setMenuOpen(false);
+                }}
+              >
+                {t('canvas.selection.moveUp')}
+              </button>
+            ) : null}
+            {canMoveDown ? (
+              <button
+                ref={!selectedPath || (selectedPath.length <= 1 && !canMoveUp) ? menuItem : undefined}
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  moveSelection(1);
+                  setMenuOpen(false);
+                }}
+              >
+                {t('canvas.selection.moveDown')}
+              </button>
+            ) : null}
+            {selected.type === 'blixis/heading'
+              ? [1, 2, 3, 4, 5, 6].map((level) => (
+                  <button
+                    key={level}
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      store.getState().dispatch({ type: 'update-props', id: selected.id, set: { level } });
+                      setMenuOpen(false);
+                    }}
+                  >{`H${String(level)}`}</button>
+                ))
+              : null}
           </div>
         </div>
       ) : null}
+      <MediaDialog
+        open={mediaOpen}
+        onOpenChange={setMediaOpen}
+        client={media.client}
+        canUpload={media.canUpload}
+        onUse={(item) => {
+          if (selectedId)
+            store.getState().dispatch({ type: 'update-props', id: selectedId, set: { attachmentId: item.id } });
+        }}
+      />
       {session.editSession &&
       session.editSelection &&
       !session.editSelection.empty &&
@@ -669,21 +823,28 @@ export function Canvas({
             next?.focus();
           }}
         >
-          <select
-            aria-label={t('rich.inlineStyle')}
-            value={session.editSelection.marks['code'] ? 'code' : 'span'}
-            onChange={() => {
-              session.sendEditCommand('toggle-mark', { mark: 'code' });
-            }}
-          >
-            <option value="span">{t('rich.span')}</option>
-            <option value="code">{t('rich.code')}</option>
-          </select>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                data-format="code"
+                aria-label={t('rich.code')}
+                aria-pressed={Boolean(session.editSelection.marks['code'])}
+                onClick={() => {
+                  session.sendEditCommand('toggle-mark', { mark: 'code' });
+                }}
+              >
+                <Icon name="code" size={14} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>{t('rich.code')}</TooltipContent>
+          </Tooltip>
           {(['bold', 'italic', 'underline', 'strike'] as const).map((mark) => (
             <Tooltip key={mark}>
               <TooltipTrigger asChild>
                 <button
                   type="button"
+                  data-format={mark}
                   aria-label={t(`rich.${mark}`)}
                   aria-pressed={Boolean(
                     session.editSelection?.marks[
@@ -716,7 +877,7 @@ export function Canvas({
             </Tooltip>
           ))}
           {(['color', 'highlight'] as const).map((kind) => (
-            <span className="blx-format-popover-anchor" key={kind}>
+            <span className="blx-format-popover-anchor" data-format={kind} key={kind}>
               <button
                 type="button"
                 aria-label={t(`rich.${kind}`)}
@@ -847,6 +1008,7 @@ export function Canvas({
           <span className="blx-format-popover-anchor">
             <button
               type="button"
+              data-format="link"
               aria-label={t('rich.link')}
               aria-expanded={formatMenu === 'link'}
               onClick={() => {

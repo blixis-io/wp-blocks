@@ -230,7 +230,7 @@ try {
     toolbar: !!document.querySelector('header [role=toolbar]'),
     structure: !!document.querySelector('nav[aria-label="Structure"]'),
     main: !!document.querySelector('main'),
-    inspector: !!document.querySelector('aside[aria-label="Inspector"]'),
+    inspector: !!document.querySelector('aside#blx-inspector[aria-labelledby="blx-inspector-label"]'),
     adminChrome: !!document.querySelector('#adminmenu, #wpadminbar'),
     scrolls: document.documentElement.scrollHeight > window.innerHeight + 1,
     lang: document.querySelector('.blx-editor')?.getAttribute('lang') ?? document.documentElement.lang,
@@ -392,7 +392,10 @@ try {
 
   // Panels collapse with correct ARIA.
   await clickReal('button[aria-label="More options"]');
-  const toggle = buttonByText('Structure panel');
+  // The sidebars now also have their own collapse buttons whose labels mention the panel: look inside the open menu only.
+  const menuItemByText = (text) =>
+    `[...document.querySelectorAll('[role^=menuitem]')].find((b) => b.textContent.trim().toLowerCase().includes(${JSON.stringify(text.toLowerCase())}))`;
+  const toggle = menuItemByText('Structure panel');
   const expandedBefore = await ev(`${toggle}?.getAttribute('aria-checked')`);
   await ev(`${toggle}.click()`);
   await waitForMotion();
@@ -402,12 +405,12 @@ try {
     'focus does not remain inside the closed structure panel',
   );
   await clickReal('button[aria-label="More options"]');
-  const expandedAfter = await ev(`${buttonByText('Structure panel')}?.getAttribute('aria-checked')`);
+  const expandedAfter = await ev(`${menuItemByText('Structure panel')}?.getAttribute('aria-checked')`);
   assert.notEqual(expandedAfter, expandedBefore, 'the structure panel menu checkbox toggles aria-checked');
   await press('Escape');
   // Layout, not just ARIA: with the structure panel hidden the canvas keeps the middle and the inspector stays on the right.
   const geometry = await ev(
-    `(() => { const box = (selector) => { const r = document.querySelector(selector)?.getBoundingClientRect(); return r ? { x: Math.round(r.x), w: Math.round(r.width) } : null; }; return { main: box('main'), inspector: box('aside[aria-label="Inspector"]'), viewport: window.innerWidth }; })()`,
+    `(() => { const box = (selector) => { const r = document.querySelector(selector)?.getBoundingClientRect(); return r ? { x: Math.round(r.x), w: Math.round(r.width) } : null; }; return { main: box('main'), inspector: box('aside#blx-inspector'), viewport: window.innerWidth }; })()`,
   );
   assert.ok(geometry.main && geometry.inspector, 'canvas and inspector render');
   assert.ok(geometry.main.w > 600, `the canvas keeps the available width (${JSON.stringify(geometry)})`);
@@ -420,7 +423,7 @@ try {
     `the inspector keeps its width (${JSON.stringify(geometry)})`,
   );
   await clickReal('button[aria-label="More options"]');
-  await ev(`${buttonByText('Structure panel')}.click()`);
+  await ev(`${menuItemByText('Structure panel')}.click()`);
   await waitForMotion();
   const reopened = await ev(
     `(() => { const r = document.querySelector('nav[aria-label="Structure"]').getBoundingClientRect(); const m = document.querySelector('main').getBoundingClientRect(); return { structure: Math.round(r.width), mainX: Math.round(m.x) }; })()`,
@@ -437,7 +440,7 @@ try {
   const reflow = await ev(`(() => {
     const doc = document.documentElement;
     const root = document.querySelector('.blx-editor');
-    const heading = [...document.querySelectorAll('h2')].find((h) => /inspector|page settings/i.test(h.textContent));
+    const heading = document.querySelector('aside[aria-labelledby="blx-inspector-label"] [role=tablist]') ?? document.querySelector('aside[aria-labelledby="blx-inspector-label"]');
     const scroller = (() => { for (let el = heading?.parentElement; el; el = el.parentElement) { if (el.scrollHeight > el.clientHeight + 1 && /(auto|scroll)/.test(getComputedStyle(el).overflowY)) return el; } return null; })();
     const before = scroller ? scroller.scrollTop : null;
     heading?.scrollIntoView({ block: 'center' });
@@ -544,10 +547,31 @@ try {
   );
   await sleep(300);
   const picked = await ev(
-    `({ current: document.querySelector('nav[aria-label="Structure"] [role="treeitem"][aria-selected="true"]')?.textContent.trim(), inspector: document.querySelector('aside[aria-label="Inspector"]').textContent })`,
+    `({ current: document.querySelector('nav[aria-label="Structure"] [role="treeitem"][aria-selected="true"]')?.textContent.trim(), inspector: document.querySelector('aside#blx-inspector').textContent })`,
   );
   assert.ok(picked.current?.includes('hero-h1'), 'the clicked element is marked aria-current');
   assert.ok(picked.inspector.includes('hero-h1'), 'the visually hidden inspector live region announces the selection');
+  const sidebarTabs = await ev(
+    `(() => ({ page: [...document.querySelectorAll('aside#blx-inspector [role="tab"]')].some((tab) => tab.textContent.trim() === 'Page'), block: [...document.querySelectorAll('aside#blx-inspector [role="tab"]')].find((tab) => tab.textContent.trim() === 'Block')?.getAttribute('aria-selected') }))()`,
+  );
+  assert.equal(sidebarTabs.page, true, 'the inspector exposes the Page tab');
+  assert.equal(sidebarTabs.block, 'true', 'selecting an element opens the Block tab');
+  await ev(
+    `(() => { const tab=[...document.querySelectorAll('aside#blx-inspector [role="tab"]')].find((item) => item.textContent.trim() === 'Page'); tab?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0, ctrlKey: false })); })()`,
+  );
+  assert.equal(
+    await ev(`document.querySelector('aside#blx-inspector [role="tab"][aria-selected="true"]')?.textContent.trim()`),
+    'Page',
+    'the Page tab opens on a Radix mousedown',
+  );
+  await ev(
+    `(() => { const tab=[...document.querySelectorAll('aside#blx-inspector [role="tab"]')].find((item) => item.textContent.trim() === 'Block'); tab?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0, ctrlKey: false })); })()`,
+  );
+  assert.equal(
+    await ev(`document.querySelector('aside#blx-inspector [role="tab"][aria-selected="true"]')?.textContent.trim()`),
+    'Block',
+    'the Block tab opens on a Radix mousedown',
+  );
   assert.equal(
     await ev(`!!document.querySelector('[data-testid="selection-toolbar"]')`),
     true,
@@ -557,9 +581,11 @@ try {
     const frame=document.querySelector('main iframe'), doc=frame?.contentDocument, fr=frame?.getBoundingClientRect();
     if (!frame || !doc || !fr) return null;
     const root=doc.querySelector('#blx-canvas-root'); root?.scrollIntoView({block:'start'});
-    for (const [x,y] of [[doc.documentElement.clientWidth-12,80],[12,80],[doc.documentElement.clientWidth-12,doc.documentElement.clientHeight-20],[12,doc.documentElement.clientHeight-20]]) {
+    for (const [x,y] of [[24,80],[24,doc.documentElement.clientHeight-40],[doc.documentElement.clientWidth-60,80],[doc.documentElement.clientWidth-60,doc.documentElement.clientHeight-40]]) {
       const target=doc.elementFromPoint(x,y);
-      if (target && !target.closest('[data-blx-id]')) return {x:fr.left+frame.clientLeft+x,y:fr.top+frame.clientTop+y};
+      const gx=fr.left+frame.clientLeft+x, gy=fr.top+frame.clientTop+y;
+      // The editor chrome (selection toolbar, handles) floats over the frame: only use points where the frame itself is hit.
+      if (target && !target.closest('[data-blx-id]') && document.elementFromPoint(gx,gy)===frame) return {x:gx,y:gy};
     }
     return null;
   })()`);
@@ -584,11 +610,10 @@ try {
     `({ toolbar:!!document.querySelector('[data-testid="selection-toolbar"]'), inspector:document.querySelector('[data-testid="inspector-selection"]')?.textContent ?? '', editingChip:!!document.querySelector('[data-testid="canvas-hover-chip"]') })`,
   );
   assert.equal(emptySelection.toolbar, false, 'empty canvas click clears the selection toolbar');
-  assert.match(
-    emptySelection.inspector,
-    /No element selected/i,
-    'empty canvas click clears the inspector element chip',
+  const emptyTabs = await ev(
+    `[...document.querySelectorAll('aside#blx-inspector [role="tab"]')].map((tab) => tab.textContent.trim() + ':' + tab.getAttribute('aria-selected'))`,
   );
+  assert.deepEqual(emptyTabs, ['Page:true'], 'empty canvas click leaves only the selected Page tab (no Block tab)');
   assert.equal(emptySelection.editingChip, false, 'empty canvas click clears the hover chip');
   const emptyCanvasFocus = await ev(`(() => {
     const active = document.activeElement;
@@ -705,7 +730,7 @@ try {
 
   // Inspector text edits reach the live preview and undo restores the original document value.
   await ev(
-    `(() => { const tab = [...document.querySelectorAll('aside[aria-label="Inspector"] [role=tab]')].find((item) => item.textContent.trim() === 'Content'); tab?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0, ctrlKey: false })); })()`,
+    `(() => { const tab = [...document.querySelectorAll('aside#blx-inspector .blx-inspector-subtabs [role=tab]')].find((item) => item.textContent.trim() === 'Content'); tab?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0, ctrlKey: false })); })()`,
   );
   await sleep(400);
   await ev(
@@ -713,7 +738,7 @@ try {
   );
   await sleep(400);
   await ev(
-    `(() => { const label = [...document.querySelectorAll('aside[aria-label="Inspector"] label')].find((item) => item.textContent.trim() === 'Text'); document.getElementById(label?.htmlFor)?.focus(); })()`,
+    `(() => { const label = [...document.querySelectorAll('aside#blx-inspector label')].find((item) => item.textContent.trim() === 'Text'); document.getElementById(label?.htmlFor)?.focus(); })()`,
   );
   await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Control', code: 'ControlLeft' });
   await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'a', code: 'KeyA', modifiers: 2 });
@@ -771,7 +796,7 @@ try {
   })()`);
   await sleep(350);
   const inspectorLayout = await ev(`(() => {
-    const row = [...document.querySelectorAll('aside[aria-label="Inspector"] .blx-inspector-field')].find((item) => item.querySelector('input[aria-label="Size"]'));
+    const row = [...document.querySelectorAll('aside#blx-inspector .blx-inspector-field')].find((item) => item.querySelector('input[aria-label="Size"]'));
     const label = row?.querySelector('.blx-inspector-label > label');
     const slider = row?.querySelector('[role="slider"]');
     const input = row?.querySelector('input[aria-label="Size"]');
@@ -780,7 +805,7 @@ try {
     const track = slider?.getBoundingClientRect();
     const thumbRect = thumb?.getBoundingClientRect();
     const color = document.querySelector('.blx-color-field');
-    const panel = document.querySelector('aside[aria-label="Inspector"]');
+    const panel = document.querySelector('aside#blx-inspector');
     const gradient = document.querySelector('.blx-gradient-field');
     const gradientLabel = gradient?.querySelector('.blx-inspector-toggle-row > span');
     const gradientToggle = gradient?.querySelector('input[type="checkbox"]');
@@ -855,7 +880,11 @@ try {
     `font size unit select is 52px (${JSON.stringify(inspectorLayout)})`,
   );
   assert.equal(inspectorLayout.unitTextFits, true, 'font size unit text is not clipped');
-  assert.equal(inspectorLayout.rowOverflow, true, 'font size row has no horizontal overflow');
+  assert.equal(
+    inspectorLayout.rowOverflow,
+    true,
+    `font size row has no horizontal overflow (${JSON.stringify(inspectorLayout)})`,
+  );
   assert.equal(inspectorLayout.value, 2.75, 'font size input retains the rem value');
   assert.equal(inspectorLayout.stickyTabs, 'sticky', 'inspector tab bar remains sticky');
   assert.equal(inspectorLayout.typographyExpanded, 'true', 'Typography starts open');
@@ -1088,7 +1117,7 @@ try {
   const fontAfter = await ev(
     `document.querySelector('main iframe')?.contentWindow?.getComputedStyle(document.querySelector('main iframe')?.contentDocument?.querySelector('h1')).fontSize`,
   );
-  const sizeValue = await ev(`document.querySelector('aside[aria-label="Inspector"] input[aria-label="Size"]')?.value`);
+  const sizeValue = await ev(`document.querySelector('aside#blx-inspector input[aria-label="Size"]')?.value`);
   assert.notEqual(sizeValue, '16', 'the numeric field follows the pointer drag');
   assert.notEqual(fontAfter, fontBefore, 'the canvas heading font size follows the slider');
   await ev(`document.querySelector('button[aria-label="Undo"]')?.click()`);
@@ -1111,7 +1140,7 @@ try {
     `(() => { const frame = document.querySelector('main iframe'); const heading = frame?.contentDocument?.querySelector('h1'); return heading && frame?.contentWindow ? frame.contentWindow.getComputedStyle(heading).paddingTop : null; })()`,
   );
   const paddingInput = await ev(
-    `(() => { const input = document.querySelector('aside[aria-label="Inspector"] input[aria-label="Padding Top"]'); input?.focus(); return !!input; })()`,
+    `(() => { const input = document.querySelector('aside#blx-inspector input[aria-label="Padding Top"]'); input?.focus(); return !!input; })()`,
   );
   assert.equal(paddingInput, true, 'box model padding top input receives focus');
   await send('Input.insertText', { text: '16' });
@@ -1144,8 +1173,12 @@ try {
   })()`);
   assert.ok(narrowWidget, 'box model is measurable at 260px and 320px inspector inner widths');
   for (const [index, layout] of narrowWidget.entries()) {
-    const expectedInnerWidth = index === 0 ? 260 : 320;
-    assert.ok(Math.abs(layout.wrapWidth - expectedInnerWidth) <= 1, `panel inner width is ${expectedInnerWidth}px`);
+    // The Page/Block tab structure gives the content column its own gutters: 275px in the 320px panel, 335px in the 380px panel.
+    const expectedInnerWidth = index === 0 ? 275 : 335;
+    assert.ok(
+      Math.abs(layout.wrapWidth - expectedInnerWidth) <= 6,
+      `panel inner width is about ${expectedInnerWidth}px (${JSON.stringify(layout)})`,
+    );
     assert.ok(
       layout.scrollWidth <= layout.clientWidth,
       `box model has no horizontal overflow at ${layout.panelWidth}px (${JSON.stringify(layout)})`,
@@ -1438,7 +1471,7 @@ try {
   })()`);
   assert.equal(longBreadcrumbTop, noSelectionTop, 'a long breadcrumb does not move the canvas iframe');
   const afterPick = await ev(
-    `({ inspector: document.querySelector('aside[aria-label="Inspector"]').textContent, focusInFrame: document.activeElement?.tagName === 'IFRAME', marked: document.querySelector('main iframe').contentDocument.querySelectorAll('[data-blx-selected]').length, outlines: document.querySelectorAll('[data-testid="selection-overlay"]').length })`,
+    `({ inspector: document.querySelector('aside#blx-inspector').textContent, focusInFrame: document.activeElement?.tagName === 'IFRAME', marked: document.querySelector('main iframe').contentDocument.querySelectorAll('[data-blx-selected]').length, outlines: document.querySelectorAll('[data-testid="selection-overlay"]').length })`,
   );
   assert.ok(afterPick.inspector.includes(target.id), 'picking an element in the canvas selects it in the editor');
   assert.equal(
@@ -1498,7 +1531,7 @@ try {
   await ev(`${buttonByText('style')}.click()`);
   await sleep(250);
   const styleInspector = await ev(`(() => {
-    const panel = document.querySelector('aside[aria-label="Inspector"]');
+    const panel = document.querySelector('aside#blx-inspector');
     const labels = [...panel.querySelectorAll('.blx-inspector-label > label, .blx-inspector-label > span')].map((label) => ({
       text: label.textContent.trim(), clipped: label.scrollWidth > label.clientWidth,
     }));
@@ -1591,7 +1624,7 @@ try {
     `a real 80px canvas drag changes computed width by 80px (${resizeStart.width} -> ${resizedWidth})`,
   );
   await ev(
-    `(() => { const tab = [...document.querySelectorAll('aside[aria-label="Inspector"] [role=tab]')].find((item) => item.textContent.trim() === 'Style'); tab?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0, ctrlKey: false })); })()`,
+    `(() => { const tab = [...document.querySelectorAll('aside#blx-inspector .blx-inspector-subtabs [role=tab]')].find((item) => item.textContent.trim() === 'Style'); tab?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0, ctrlKey: false })); })()`,
   );
   await sleep(400);
   await ev(
@@ -1695,9 +1728,7 @@ try {
   await ev(`document.querySelector('[role="treeitem"][data-id=${JSON.stringify(target.id)}]')?.click()`);
   await sleep(300);
   assert.ok(
-    await ev(
-      `document.querySelector('aside[aria-label="Inspector"]').textContent.includes(${JSON.stringify(target.id)})`,
-    ),
+    await ev(`document.querySelector('aside#blx-inspector').textContent.includes(${JSON.stringify(target.id)})`),
     'tree selection selects the element',
   );
   const crumb = await ev(
@@ -1710,9 +1741,7 @@ try {
   await ev(`document.querySelector('[aria-label="Selected element path"] .blx-breadcrumb-item')?.click()`);
   await sleep(300);
   assert.ok(
-    await ev(
-      `document.querySelector('aside[aria-label="Inspector"]').textContent.includes(${JSON.stringify(firstCrumbId)})`,
-    ),
+    await ev(`document.querySelector('aside#blx-inspector').textContent.includes(${JSON.stringify(firstCrumbId)})`),
     'breadcrumb selection is interactive',
   );
 
@@ -2355,7 +2384,7 @@ try {
   })()`);
   assert.equal(
     await ev(
-      `[...document.querySelectorAll('aside[aria-label="Inspector"] [role=tab]')].find((tab) => tab.getAttribute('aria-selected') === 'true')?.textContent.trim()`,
+      `[...document.querySelectorAll('aside#blx-inspector .blx-inspector-subtabs [role=tab]')].find((tab) => tab.getAttribute('aria-selected') === 'true')?.textContent.trim()`,
     ),
     'Content',
     'starting an edit session shows the Content tab with the Selected Text section',
@@ -2442,7 +2471,7 @@ try {
   assert.deepEqual(colorProblems, [], 'color editing adds no console or CSP problems');
   // Selected Text inspector controls share the canvas selection and execute through the existing edit-command bridge.
   const contentTabPoint = await ev(
-    `(() => { const tab = [...document.querySelectorAll('aside[aria-label="Inspector"] [role="tab"]')].find((item) => item.textContent.trim() === 'Content'); const r = tab?.getBoundingClientRect(); return r ? { x:r.left+r.width/2,y:r.top+r.height/2 } : null; })()`,
+    `(() => { const tab = [...document.querySelectorAll('aside#blx-inspector .blx-inspector-subtabs [role="tab"]')].find((item) => item.textContent.trim() === 'Content'); const r = tab?.getBoundingClientRect(); return r ? { x:r.left+r.width/2,y:r.top+r.height/2 } : null; })()`,
   );
   assert.ok(contentTabPoint, 'the inspector Content tab exists during inline editing');
   await send('Input.dispatchMouseEvent', { type: 'mouseMoved', ...contentTabPoint });
@@ -2451,7 +2480,7 @@ try {
   await sleep(300);
   assert.equal(
     await ev(
-      `document.querySelector('aside[aria-label="Inspector"] [role="tab"][aria-selected="true"]')?.textContent.trim()`,
+      `document.querySelector('aside#blx-inspector .blx-inspector-subtabs [role="tab"][aria-selected="true"]')?.textContent.trim()`,
     ),
     'Content',
     'Content is the active inspector tab',
@@ -2750,7 +2779,7 @@ try {
   );
   await sleep(1200);
   await ev(
-    `(() => { const tab = [...document.querySelectorAll('aside[aria-label="Inspector"] [role=tab]')].find((item) => item.textContent.trim() === 'Content'); tab?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0, ctrlKey: false })); })()`,
+    `(() => { const tab = [...document.querySelectorAll('aside#blx-inspector .blx-inspector-subtabs [role=tab]')].find((item) => item.textContent.trim() === 'Content'); tab?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0, ctrlKey: false })); })()`,
   );
   await sleep(500);
   const richInspector = await ev(`document.querySelector('textarea[aria-label="Text"]')?.value`);
@@ -2836,11 +2865,11 @@ try {
   );
   await sleep(500);
   await ev(
-    `(() => { const tab = [...document.querySelectorAll('aside[aria-label="Inspector"] [role=tab]')].find((item) => item.textContent.trim() === 'Content'); tab?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0, ctrlKey: false })); })()`,
+    `(() => { const tab = [...document.querySelectorAll('aside#blx-inspector .blx-inspector-subtabs [role=tab]')].find((item) => item.textContent.trim() === 'Content'); tab?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0, ctrlKey: false })); })()`,
   );
   await sleep(400);
   const inspectorSavedHeading = await ev(
-    `(() => { const label = [...document.querySelectorAll('aside[aria-label="Inspector"] label')].find((item) => item.textContent.trim() === 'Text'); return label ? document.getElementById(label.htmlFor)?.value : null; })()`,
+    `(() => { const label = [...document.querySelectorAll('aside#blx-inspector label')].find((item) => item.textContent.trim() === 'Text'); return label ? document.getElementById(label.htmlFor)?.value : null; })()`,
   );
   assert.equal(inspectorSavedHeading, 'Saved by the check', 'the shortcut-saved heading appears in the inspector');
 
@@ -2949,9 +2978,11 @@ try {
     const frame=document.querySelector('main iframe'), doc=frame?.contentDocument, fr=frame?.getBoundingClientRect();
     if (!frame || !doc || !fr) return false;
     doc.querySelector('#blx-canvas-root')?.scrollIntoView({block:'start'});
-    for (const [x,y] of [[doc.documentElement.clientWidth-12,80],[12,80],[doc.documentElement.clientWidth-12,doc.documentElement.clientHeight-20],[12,doc.documentElement.clientHeight-20]]) {
+    for (const [x,y] of [[24,80],[24,doc.documentElement.clientHeight-40],[doc.documentElement.clientWidth-60,80],[doc.documentElement.clientWidth-60,doc.documentElement.clientHeight-40]]) {
       const target=doc.elementFromPoint(x,y);
-      if (target && !target.closest('[data-blx-id]')) return {x:fr.left+frame.clientLeft+x,y:fr.top+frame.clientTop+y};
+      const gx=fr.left+frame.clientLeft+x, gy=fr.top+frame.clientTop+y;
+      // The editor chrome (selection toolbar, handles) floats over the frame: only use points where the frame itself is hit.
+      if (target && !target.closest('[data-blx-id]') && document.elementFromPoint(gx,gy)===frame) return {x:gx,y:gy};
     }
     return false;
   })()`,

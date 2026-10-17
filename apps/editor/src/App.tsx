@@ -6,6 +6,9 @@ import {
   TabsList,
   TabsTrigger,
   TooltipProvider,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
 } from '@blixis/wp-editor-ui';
 import { Icon } from '@blixis/wp-editor-ui';
 import type { RestClient } from './api/types';
@@ -62,6 +65,7 @@ function Shell({
     const saved = readSessionStorage('blixis-inspector-tab');
     return saved === 'style' || saved === 'advanced' ? saved : 'content';
   });
+  const [rightTab, setRightTab] = useState<'page' | 'block'>('page');
   const [editTarget, setEditTarget] = useState<{
     id: string;
     prop: string;
@@ -99,6 +103,22 @@ function Shell({
     setEndEdit(() => end);
   }, []);
   const store = useEditorStoreApi();
+  useEffect(() => {
+    const showContent = (event: Event) => {
+      setInspectorTab('content');
+      setTabPickedDuringEdit(store.getState().selectedId);
+      const field = (event as CustomEvent<{ field?: string }>).detail.field;
+      if (field) {
+        requestAnimationFrame(() => {
+          globalThis.document.querySelector<HTMLInputElement>(`[name="${field}"]`)?.focus();
+        });
+      }
+    };
+    globalThis.document.addEventListener('blixis:inspector-content', showContent);
+    return () => {
+      globalThis.document.removeEventListener('blixis:inspector-content', showContent);
+    };
+  }, [store]);
   const panels = useEditorStore((state) => state.panels);
   const togglePanel = useEditorStore((state) => state.togglePanel);
   const [visiblePanels, setVisiblePanels] = useState(panels);
@@ -119,6 +139,11 @@ function Shell({
     () => (selectedId === null ? null : findElement(document?.root, selectedId)),
     [selectedId, document],
   );
+  const previousSelected = useRef<string | null>(selectedId);
+  useEffect(() => {
+    if (previousSelected.current !== selectedId) setRightTab(selectedId === null ? 'page' : 'block');
+    previousSelected.current = selectedId;
+  }, [selectedId]);
   const breadcrumb = useMemo(() => {
     if (selectedId === null || document === null) return [];
     const path = findPath(document.root, selectedId);
@@ -131,15 +156,12 @@ function Shell({
   const saveLocked = useEditorStore((state) => state.saveLocked);
   const locked = !bootstrap.editingEnabled || saveLocked;
   const openPageSettings = () => {
-    store.getState().clearSelection();
-    setInspectorTab('content');
+    setRightTab('page');
     if (!panels.right) {
       setVisiblePanels((visible) => ({ ...visible, right: true }));
       togglePanel('right');
     }
-    window.requestAnimationFrame(() =>
-      globalThis.document.querySelector<HTMLButtonElement>('#inspector-section-page-settings-heading button')?.focus(),
-    );
+    window.requestAnimationFrame(() => globalThis.document.getElementById('page-title')?.focus());
   };
   return (
     <>
@@ -167,6 +189,44 @@ function Shell({
         data-left={panels.left ? 'open' : 'closed'}
         data-right={panels.right ? 'open' : 'closed'}
       >
+        {!panels.left ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                className="blx-reopen-panel blx-reopen-left ed-focus-ring"
+                aria-label={t('panel.structure.toggle')}
+                aria-controls={STRUCTURE_ID}
+                aria-expanded={false}
+                onClick={() => {
+                  handleTogglePanel('left');
+                }}
+              >
+                <Icon name="caretRight" size={14} mirrorInRtl />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>{t('panel.expand')}</TooltipContent>
+          </Tooltip>
+        ) : null}
+        {!panels.right ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                className="blx-reopen-panel blx-reopen-right ed-focus-ring"
+                aria-label={t('panel.inspector.toggle')}
+                aria-controls={INSPECTOR_ID}
+                aria-expanded={false}
+                onClick={() => {
+                  handleTogglePanel('right');
+                }}
+              >
+                <Icon name="caretRight" size={14} mirrorInRtl />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>{t('panel.expand')}</TooltipContent>
+          </Tooltip>
+        ) : null}
         <nav
           id={STRUCTURE_ID}
           aria-label={t('panel.structure')}
@@ -180,7 +240,13 @@ function Shell({
             }
           }}
         >
-          <StructurePanel editingEnabled={!locked} />
+          <StructurePanel
+            editingEnabled={!locked}
+            onCollapse={() => {
+              handleTogglePanel('left');
+            }}
+            expanded={panels.left}
+          />
         </nav>
         <main id={CANVAS_ID} tabIndex={-1} className="blx-main" aria-label={t('canvas.title')}>
           <LoadStatus />
@@ -243,7 +309,7 @@ function Shell({
         </main>
         <aside
           id={INSPECTOR_ID}
-          aria-label={t('panel.inspector')}
+          aria-labelledby="blx-inspector-label"
           className="blx-panel blx-panel-right"
           aria-hidden={!panels.right || undefined}
           inert={!panels.right}
@@ -254,72 +320,100 @@ function Shell({
             }
           }}
         >
-          <h2 className="blx-panel-title">
-            {selected === null ? t('header.pageSettings') : t('panel.inspector')}
-            {selected === null && pageTitle ? <span className="blx-panel-subtitle">{pageTitle}</span> : null}
-          </h2>
-          <p className="blx-inspector-selection" data-testid="inspector-selection" aria-live="polite">
-            {selected === null ? (
-              t('inspector.noSelection')
-            ) : (
-              <>
-                <span className="sr-only">{t('inspector.selected')}: </span>
-                <span className="font-medium">{elementLabel(selected.type, t)}</span>{' '}
-                <ElementId id={selected.id} tooltip={false} />
-              </>
-            )}
-          </p>
-          {selected === null ? (
-            <div className="blx-page-inspector-body">
-              <Inspector element={null} tab="content" editingEnabled={!locked} />
-            </div>
-          ) : (
-            <Tabs
-              value={shownTab}
-              onValueChange={(value) => {
-                if (value === 'content' || value === 'style' || value === 'advanced') {
-                  setInspectorTab(value);
-                  setTabPickedDuringEdit(editingId ?? null);
-                  writeSessionStorage('blixis-inspector-tab', value);
-                }
-              }}
-              className="blx-inspector-tabs min-h-0 flex-1"
-            >
-              <TabsList aria-label={t('inspector.tabs')}>
-                <TabsTrigger value="content">{t('inspector.content')}</TabsTrigger>
-                <TabsTrigger value="style">{t('inspector.style')}</TabsTrigger>
-                <TabsTrigger value="advanced">{t('inspector.advanced')}</TabsTrigger>
+          <span className="sr-only" id="blx-inspector-label">
+            {t('panel.inspector')}
+          </span>
+          <span className="sr-only" data-testid="inspector-selection" aria-live="polite">
+            {selected ? `${t('inspector.selected')}: ${elementLabel(selected.type, t)} ${selected.id}` : ''}
+          </span>
+          <Tabs
+            value={rightTab}
+            onValueChange={(value) => {
+              if (value === 'page' || value === 'block') setRightTab(value);
+            }}
+            className="blx-right-tabs"
+          >
+            <div className="blx-panel-tabbar">
+              <TabsList aria-label={t('panel.inspector')} className="blx-right-tabs-list">
+                <TabsTrigger value="page">{t('inspector.tab.page')}</TabsTrigger>
+                {selected ? <TabsTrigger value="block">{t('inspector.tab.block')}</TabsTrigger> : null}
               </TabsList>
-              <TabsContent value="content">
-                <Inspector
-                  element={selected}
-                  tab="content"
-                  editingEnabled={!locked}
-                  editTarget={editTarget}
-                  editSelection={editSelection}
-                  tokenColors={tokenColors}
-                  sendEditCommand={sendEditCommand}
-                  setEditText={setEditText}
-                  endEdit={endEdit}
-                  inlineEditing={inlineEditing}
-                  onInlineEditingChange={(value) => {
-                    setInlineEditing(value);
-                    writeSessionStorage('blixis-inline-editing', String(value));
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    className="blx-collapse-button ed-focus-ring"
+                    aria-label={t('panel.inspector.toggle')}
+                    aria-controls={INSPECTOR_ID}
+                    aria-expanded={panels.right}
+                    onClick={() => {
+                      handleTogglePanel('right');
+                    }}
+                  >
+                    <Icon name="caretRight" size={14} mirrorInRtl />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>{t('panel.collapse')}</TooltipContent>
+              </Tooltip>
+            </div>
+            <TabsContent value="page" className="blx-page-inspector-body">
+              {pageTitle ? <p className="blx-panel-subtitle">{pageTitle}</p> : null}
+              <Inspector element={null} tab="content" editingEnabled={!locked} />
+            </TabsContent>
+            {selected ? (
+              <TabsContent value="block" className="blx-inspector-tabs">
+                <div className="blx-inspector-selection">
+                  <span className="font-medium">{elementLabel(selected.type, t)}</span>{' '}
+                  <ElementId id={selected.id} tooltip={false} />
+                </div>
+                <Tabs
+                  value={shownTab}
+                  onValueChange={(value) => {
+                    if (value === 'content' || value === 'style' || value === 'advanced') {
+                      setInspectorTab(value);
+                      setTabPickedDuringEdit(editingId ?? null);
+                      writeSessionStorage('blixis-inspector-tab', value);
+                    }
                   }}
-                  startEdit={(id, prop, focus) => {
-                    setInspectorTab('content');
-                    startEdit(id, prop, focus);
-                  }}
-                />
+                  className="blx-inspector-subtabs"
+                >
+                  <TabsList aria-label={t('inspector.tabs')}>
+                    <TabsTrigger value="content">{t('inspector.content')}</TabsTrigger>
+                    <TabsTrigger value="style">{t('inspector.style')}</TabsTrigger>
+                    <TabsTrigger value="advanced">{t('inspector.advanced')}</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="content">
+                    <Inspector
+                      element={selected}
+                      tab="content"
+                      editingEnabled={!locked}
+                      editTarget={editTarget}
+                      editSelection={editSelection}
+                      tokenColors={tokenColors}
+                      sendEditCommand={sendEditCommand}
+                      setEditText={setEditText}
+                      endEdit={endEdit}
+                      inlineEditing={inlineEditing}
+                      onInlineEditingChange={(value) => {
+                        setInlineEditing(value);
+                        writeSessionStorage('blixis-inline-editing', String(value));
+                      }}
+                      startEdit={(id, prop, focus) => {
+                        setInspectorTab('content');
+                        startEdit(id, prop, focus);
+                      }}
+                    />
+                  </TabsContent>
+                  <TabsContent value="style">
+                    <Inspector element={selected} tab="style" editingEnabled={!locked} />
+                  </TabsContent>
+                  <TabsContent value="advanced">
+                    <Inspector element={selected} tab="advanced" editingEnabled={!locked} />
+                  </TabsContent>
+                </Tabs>
               </TabsContent>
-              <TabsContent value="style">
-                <Inspector element={selected} tab="style" editingEnabled={!locked} />
-              </TabsContent>
-              <TabsContent value="advanced">
-                <Inspector element={selected} tab="advanced" editingEnabled={!locked} />
-              </TabsContent>
-            </Tabs>
-          )}
+            ) : null}
+          </Tabs>
         </aside>
       </div>
     </>
