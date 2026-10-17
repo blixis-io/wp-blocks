@@ -10,8 +10,12 @@ export interface PublicationSlice {
   publicationError: ApiError | null;
   publicationSuccess: boolean;
   refreshPublication: () => Promise<void>;
-  publish: (locales: readonly string[]) => Promise<void>;
+  publish: (
+    locales: readonly string[],
+    options?: { confirmImpact?: boolean; excludeIncompatible?: boolean },
+  ) => Promise<void>;
   rollback: (locale?: string) => Promise<void>;
+  unpublish: () => Promise<void>;
   clearPublicationError: () => void;
 }
 class PublicationFailure extends Error {
@@ -33,7 +37,7 @@ export const createPublicationSlice =
       if (result.ok) set({ publication: result.value, publicationStatus: 'idle', publicationError: null });
       else set({ publicationStatus: 'failed', publicationError: result.error });
     },
-    async publish(locales) {
+    async publish(locales, options = {}) {
       set({ publicationStatus: 'publishing', publicationError: null, publicationSuccess: false });
       if (isDirty(get())) {
         await get().saveDraft();
@@ -78,12 +82,20 @@ export const createPublicationSlice =
             pointerRevision,
             layout,
             ...(targets[0] ? { locale: targets[0] } : {}),
+            ...(options.confirmImpact ? { confirmImpact: true } : {}),
+            ...(options.excludeIncompatible ? { excludeIncompatible: true } : {}),
           });
           if (!result.ok) throw new PublicationFailure(result.error);
           pointerRevision = result.value.pointerRevision;
         }
         for (const locale of targets.slice(layout || targets.length === 0 ? 1 : 0)) {
-          const result = await deps.client.publish({ pointerRevision, layout: false, locale });
+          const result = await deps.client.publish({
+            pointerRevision,
+            layout: false,
+            locale,
+            ...(options.confirmImpact ? { confirmImpact: true } : {}),
+            ...(options.excludeIncompatible ? { excludeIncompatible: true } : {}),
+          });
           if (!result.ok) throw new PublicationFailure(result.error);
           pointerRevision = result.value.pointerRevision;
         }
@@ -132,6 +144,32 @@ export const createPublicationSlice =
           });
       if (!rollback.ok) {
         set({ publicationStatus: 'failed', publicationError: rollback.error });
+        return;
+      }
+      const refreshed = await deps.client.readPublication();
+      set(
+        refreshed.ok
+          ? {
+              publication: refreshed.value,
+              publicationStatus: 'idle',
+              publicationError: null,
+              publicationSuccess: true,
+            }
+          : { publicationStatus: 'failed', publicationError: refreshed.error, publicationSuccess: false },
+      );
+    },
+    async unpublish() {
+      const current = get().publication;
+      if (!current || get().publicationStatus === 'publishing') return;
+      set({ publicationStatus: 'publishing', publicationError: null, publicationSuccess: false });
+      const result = await deps.client.unpublish({ pointerRevision: current.pointerRevision });
+      if (!result.ok) {
+        const refreshed = await deps.client.readPublication();
+        set({
+          ...(refreshed.ok ? { publication: refreshed.value } : {}),
+          publicationStatus: 'failed',
+          publicationError: result.error,
+        });
         return;
       }
       const refreshed = await deps.client.readPublication();

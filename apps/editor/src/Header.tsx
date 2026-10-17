@@ -12,7 +12,7 @@ import {
   ToolbarToggleItem,
   type IconName,
 } from '@blixis/wp-editor-ui';
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { EditorBootstrap } from './bootstrap';
 import type { PublicationState } from './api/types';
 import { CHROME_PREFERENCES, type ChromePreference } from './chrome-theme';
@@ -23,6 +23,7 @@ import { shortcutKeys, type ShortcutAction } from './shortcuts';
 import { ShortcutsDialog } from './ShortcutsDialog';
 import { Dialog, DialogContent } from '@blixis/wp-editor-ui';
 import { VIEWPORTS as VIEWPORT_IDS, useEditorStore, useEditorStoreApi, type Viewport } from './state';
+import { readStorage, writeStorage } from './storage';
 
 const APPEARANCE_ICONS: Record<ChromePreference, IconName> = { system: 'system', light: 'light', dark: 'dark' };
 const VIEWPORTS = [
@@ -37,6 +38,7 @@ interface HeaderProps {
   appearance: ChromePreference;
   onAppearance: (next: ChromePreference) => void;
   onPageSettings: () => void;
+  inlineEditActive: boolean;
 }
 function Hint({
   text,
@@ -92,7 +94,15 @@ function hasPublicationPending(state: PublicationState | null): boolean {
   return state.layout.state !== 'published' || Object.values(state.locales).some((item) => item.state !== 'published');
 }
 
-export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppearance, onPageSettings }: HeaderProps) {
+export function Header({
+  bootstrap,
+  panels,
+  onTogglePanel,
+  appearance,
+  onAppearance,
+  onPageSettings,
+  inlineEditActive,
+}: HeaderProps) {
   const { t, locale } = useI18n();
   const store = useEditorStoreApi();
   const viewport = useEditorStore((state) => state.viewport);
@@ -113,7 +123,6 @@ export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppeara
   const savedAt = useEditorStore((state) => state.lastSavedAt);
   const [conflictOpen, setConflictOpen] = useState(false);
   const [conflictConfirm, setConflictConfirm] = useState<'reload' | 'overwrite' | null>(null);
-  const rateRetryUsed = useRef(false);
   const [now, setNow] = useState(0);
   const [rateCountdown, setRateCountdown] = useState<{ delay: number; seconds: number } | null>(null);
   const rateSeconds =
@@ -125,7 +134,17 @@ export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppeara
   const [width, setWidth] = useState(() => (typeof window === 'undefined' ? 1200 : window.innerWidth));
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [publishOpen, setPublishOpen] = useState(false);
-  const [publicationAction, setPublicationAction] = useState<'publish' | 'rollback'>('publish');
+  const [autosaveEnabled, setAutosaveEnabled] = useState(() => readStorage('blixis-editor-autosave') !== 'false');
+  const autoAttempts = useRef(0);
+  const autosaveBlocked = useRef(false);
+  const lastEditedState = useRef({ document: store.getState().document, pageSettings: store.getState().pageSettings });
+  const [editTick, setEditTick] = useState(0);
+  const manualSave = useCallback(() => {
+    autoAttempts.current = 0;
+    autosaveBlocked.current = false;
+    void store.getState().saveDraft();
+  }, [store]);
+  const [publicationAction, setPublicationAction] = useState<'publish' | 'rollback' | 'unpublish'>('publish');
   const [selectedLocales, setSelectedLocales] = useState<string[]>([]);
   const hasDirty = dirty.layout || Object.values(dirty.content).some(Boolean) || pageSettingsDirty;
   const publishPending = hasDirty || hasPublicationPending(publication);
@@ -185,13 +204,13 @@ export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppeara
     const handler = (event: KeyboardEvent) => {
       if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== 's') return;
       event.preventDefault();
-      void store.getState().saveDraft();
+      manualSave();
     };
     window.addEventListener('keydown', handler);
     return () => {
       window.removeEventListener('keydown', handler);
     };
-  }, [store]);
+  }, [store, manualSave]);
   useEffect(
     () => () => {
       store.getState().cancelSave();
@@ -208,24 +227,6 @@ export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppeara
       window.removeEventListener('beforeunload', handler);
     };
   }, [hasDirty, saveStatus]);
-  useEffect(() => {
-    if (saveError?.kind !== 'network') return;
-    const retry = () => {
-      void store.getState().saveDraft();
-    };
-    window.addEventListener('online', retry);
-    return () => {
-      window.removeEventListener('online', retry);
-    };
-  }, [saveError, store]);
-  useEffect(() => {
-    if (saveErrorKey !== 'save.error.rate' || retryAfterMs === null || rateRetryUsed.current) return;
-    rateRetryUsed.current = true;
-    const timer = window.setTimeout(() => void store.getState().saveDraft(), retryAfterMs);
-    return () => {
-      window.clearTimeout(timer);
-    };
-  }, [saveErrorKey, retryAfterMs, store]);
   useEffect(() => {
     if (saveErrorKey !== 'save.error.rate' || retryAfterMs === null) return;
     let seconds = Math.ceil(retryAfterMs / 1000);
@@ -249,6 +250,64 @@ export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppeara
     () => (savedAt === null ? t('header.time.now') : relativeSaved(now, savedAt, locale)),
     [now, savedAt, locale, t],
   );
+  const dirtyFingerprint = JSON.stringify({ dirty, pageSettingsDirty });
+  useEffect(
+    () =>
+      store.subscribe((state) => {
+        if (
+          lastEditedState.current.document !== state.document ||
+          lastEditedState.current.pageSettings !== state.pageSettings
+        ) {
+          lastEditedState.current = { document: state.document, pageSettings: state.pageSettings };
+          if (autoAttempts.current < 3) autosaveBlocked.current = false;
+          setEditTick((tick) => tick + 1);
+        }
+      }),
+    [store],
+  );
+  useEffect(() => {
+    if (
+      !autosaveEnabled ||
+      !hasDirty ||
+      saveStatus !== 'idle' ||
+      saveError !== null ||
+      saveLocked ||
+      !bootstrap.editingEnabled ||
+      conflictOpen ||
+      inlineEditActive ||
+      publicationStatus === 'publishing' ||
+      autosaveBlocked.current ||
+      autoAttempts.current >= 3
+    )
+      return;
+    const timer = window.setTimeout(() => {
+      if (autoAttempts.current >= 3) return;
+      autoAttempts.current += 1;
+      void store
+        .getState()
+        .saveDraft()
+        .then(() => {
+          if (store.getState().saveStatus === 'failed') autosaveBlocked.current = true;
+          else autoAttempts.current = 0;
+        });
+    }, 5000);
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [
+    autosaveEnabled,
+    hasDirty,
+    dirtyFingerprint,
+    editTick,
+    saveStatus,
+    saveError,
+    saveLocked,
+    bootstrap.editingEnabled,
+    conflictOpen,
+    inlineEditActive,
+    publicationStatus,
+    store,
+  ]);
   const viewUrl = validLocalUrl(bootstrap.viewUrl);
   const previewUrl = validLocalUrl(bootstrap.previewUrl);
   const previewLabel = hasDirty ? t('header.saveAndPreview') : t('header.preview');
@@ -283,6 +342,17 @@ export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppeara
     icon: <Icon name={APPEARANCE_ICONS[preference]} size={15} />,
   }));
   const overflowItems = [
+    {
+      label: t('header.autosave'),
+      checked: autosaveEnabled,
+      onSelect: () => {
+        setAutosaveEnabled((enabled) => {
+          const next = !enabled;
+          writeStorage('blixis-editor-autosave', String(next));
+          return next;
+        });
+      },
+    },
     {
       label: t('header.shortcuts'),
       icon: <Icon name="shortcuts" size={15} />,
@@ -328,7 +398,7 @@ export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppeara
             disabled: !bootstrap.editingEnabled || saveLocked || saveStatus === 'saving' || !hasDirty,
             describedBy: 'blx-save-hint',
             icon: <Icon name="save" size={15} />,
-            onSelect: () => void store.getState().saveDraft(),
+            onSelect: manualSave,
           },
           {
             label: publishLabel,
@@ -401,30 +471,36 @@ export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppeara
             <button type="button" className="blx-title-text" onClick={onPageSettings}>
               {title}
             </button>
-            <span
-              className="blx-saved"
-              data-save-state={
-                saveStatus === 'saving' ? 'saving' : saveStatus === 'failed' ? 'failed' : hasDirty ? 'dirty' : 'saved'
-              }
-              role="status"
-              aria-live="polite"
+            <Hint
+              text={t('header.autosaveTooltip', {
+                state: t(autosaveEnabled ? 'header.autosaveOn' : 'header.autosaveOff'),
+              })}
             >
-              <i aria-hidden="true" />
-              {saveStatus === 'saving' ? (
-                t('save.saving')
-              ) : saveStatus === 'failed' ? (
-                <>
-                  <span>{t('save.failed')}</span>{' '}
-                  <button type="button" aria-label={t('save.retry')} onClick={() => void store.getState().saveDraft()}>
-                    {t('save.retry')}
-                  </button>
-                </>
-              ) : hasDirty ? (
-                t('header.unsaved')
-              ) : (
-                t('header.saved', { time: relative })
-              )}
-            </span>
+              <span
+                className="blx-saved"
+                data-save-state={
+                  saveStatus === 'saving' ? 'saving' : saveStatus === 'failed' ? 'failed' : hasDirty ? 'dirty' : 'saved'
+                }
+                role="status"
+                aria-live="polite"
+              >
+                <i aria-hidden="true" />
+                {saveStatus === 'saving' ? (
+                  t('save.saving')
+                ) : saveStatus === 'failed' ? (
+                  <>
+                    <span>{t('save.failed')}</span>{' '}
+                    <button type="button" aria-label={t('save.retry')} onClick={manualSave}>
+                      {t('save.retry')}
+                    </button>
+                  </>
+                ) : hasDirty ? (
+                  t('header.unsaved')
+                ) : (
+                  t('header.saved', { time: relative })
+                )}
+              </span>
+            </Hint>
           </span>
           <span
             className="blx-publication-chip"
@@ -527,7 +603,7 @@ export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppeara
                   aria-busy={saveStatus === 'saving'}
                   aria-label={t('header.saveDraft')}
                   aria-describedby="blx-save-hint"
-                  onClick={() => void store.getState().saveDraft()}
+                  onClick={manualSave}
                 >
                   <Icon name="save" className={icon} />
                   <span>{saveStatus === 'saving' ? t('save.saving') : t('header.saveDraft')}</span>
@@ -559,7 +635,18 @@ export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppeara
                     onSelect: openPublish,
                   },
                   { label: t('header.schedule'), disabled: true },
-                  { label: t('header.unpublish'), disabled: true, describedBy: 'blx-unpublish-hint' },
+                  {
+                    label: t('header.unpublish'),
+                    disabled:
+                      !bootstrap.editingEnabled ||
+                      saveLocked ||
+                      publicationStatus === 'publishing' ||
+                      !hasLivePublication,
+                    onSelect: () => {
+                      setPublicationAction('unpublish');
+                      setPublishOpen(true);
+                    },
+                  },
                   {
                     label: t('publication.rollback'),
                     disabled:
@@ -591,7 +678,7 @@ export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppeara
           {publishHint}
         </span>
         <span id="blx-unpublish-hint" className="sr-only">
-          {t('publication.unpublishUnavailable')}
+          {t('publication.unpublishDescription')}
         </span>
         <span id="blx-undo-hint" className="sr-only">
           {t('header.undo.hint')}
@@ -613,9 +700,19 @@ export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppeara
       />
       <Dialog open={publishOpen} onOpenChange={setPublishOpen}>
         <DialogContent
-          title={t(publicationAction === 'rollback' ? 'publication.rollbackTitle' : 'publication.confirmTitle')}
+          title={t(
+            publicationAction === 'rollback'
+              ? 'publication.rollbackTitle'
+              : publicationAction === 'unpublish'
+                ? 'publication.unpublishTitle'
+                : 'publication.confirmTitle',
+          )}
           description={t(
-            publicationAction === 'rollback' ? 'publication.rollbackDescription' : 'publication.confirmDescription',
+            publicationAction === 'rollback'
+              ? 'publication.rollbackDescription'
+              : publicationAction === 'unpublish'
+                ? 'publication.unpublishDescription'
+                : 'publication.confirmDescription',
           )}
           closeLabel={t('dialog.close')}
         >
@@ -649,7 +746,46 @@ export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppeara
           )}
           {publicationError && (
             <div role="alert" className="blx-save-alert">
-              {publicationError.message ?? t('publication.error')}
+              {publicationError.code === 'blixis_publish_blocked'
+                ? t('publication.blocked')
+                : (publicationError.message ?? t('publication.error'))}
+              {Array.isArray(publicationError.data?.['incompatible']) && (
+                <section aria-label={t('publication.incompatible')}>
+                  <h3>{t('publication.incompatible')}</h3>
+                  <ul>
+                    {(publicationError.data['incompatible'] as unknown[]).flatMap((item, index) => {
+                      if (typeof item !== 'object' || item === null) return [];
+                      const row = item as Record<string, unknown>;
+                      if (typeof row['id'] !== 'string' || typeof row['locale'] !== 'string') return [];
+                      const reason =
+                        row['reason'] === 'missing-element'
+                          ? 'missing-element'
+                          : row['reason'] === 'type-changed'
+                            ? 'type-changed'
+                            : 'unknown';
+                      return [
+                        <li key={`${row['id']}-${String(index)}`}>
+                          <code>{row['id']}</code> — {t(`publication.reason.${reason}` as MessageKey)} ({row['locale']})
+                        </li>,
+                      ];
+                    })}
+                  </ul>
+                </section>
+              )}
+              {Array.isArray(publicationError.data?.['impacted']) && (
+                <section aria-label={t('publication.impacted')}>
+                  <h3>{t('publication.impacted')}</h3>
+                  <ul>
+                    {(publicationError.data['impacted'] as unknown[]).flatMap((item, index) => {
+                      if (typeof item !== 'object' || item === null) return [];
+                      const row = item as Record<string, unknown>;
+                      return typeof row['locale'] === 'string'
+                        ? [<li key={`${row['locale']}-${String(index)}`}>{row['locale']}</li>]
+                        : [];
+                    })}
+                  </ul>
+                </section>
+              )}
               {publicationError.status === 429 && (
                 <span>
                   {t('publication.retryAfter', {
@@ -670,6 +806,28 @@ export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppeara
             </div>
           )}
           <div className="flex gap-2">
+            {publicationError?.code === 'blixis_publish_blocked' &&
+              Array.isArray(publicationError.data?.['incompatible']) && (
+                <button
+                  type="button"
+                  className="ed-focus-ring rounded-md bg-ed-surface-2 px-3 py-2 text-ed-fg hover:bg-ed-surface-hover"
+                  disabled={publicationStatus === 'publishing'}
+                  onClick={() => void store.getState().publish(selectedLocales, { excludeIncompatible: true })}
+                >
+                  {t('publication.excludeIncompatible')}
+                </button>
+              )}
+            {publicationError?.code === 'blixis_publish_blocked' &&
+              Array.isArray(publicationError.data?.['impacted']) && (
+                <button
+                  type="button"
+                  className="ed-focus-ring rounded-md bg-ed-surface-2 px-3 py-2 text-ed-fg hover:bg-ed-surface-hover"
+                  disabled={publicationStatus === 'publishing'}
+                  onClick={() => void store.getState().publish(selectedLocales, { confirmImpact: true })}
+                >
+                  {t('publication.confirmImpact')}
+                </button>
+              )}
             <button
               type="button"
               className="ed-focus-ring rounded-md bg-ed-primary px-3 py-2 text-ed-primary-fg hover:bg-ed-primary-hover"
@@ -683,7 +841,9 @@ export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppeara
                 const action =
                   publicationAction === 'rollback'
                     ? store.getState().rollback()
-                    : store.getState().publish(selectedLocales);
+                    : publicationAction === 'unpublish'
+                      ? store.getState().unpublish()
+                      : store.getState().publish(selectedLocales);
                 void action.then(() => {
                   if (store.getState().publicationStatus === 'idle') setPublishOpen(false);
                 });
@@ -691,7 +851,13 @@ export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppeara
             >
               {publicationStatus === 'publishing'
                 ? t('publication.publishing')
-                : t(publicationAction === 'rollback' ? 'publication.rollbackConfirm' : 'header.publish')}
+                : t(
+                    publicationAction === 'rollback'
+                      ? 'publication.rollbackConfirm'
+                      : publicationAction === 'unpublish'
+                        ? 'publication.unpublish'
+                        : 'header.publish',
+                  )}
             </button>
             <button
               type="button"
@@ -723,8 +889,7 @@ export function Header({ bootstrap, panels, onTogglePanel, appearance, onAppeara
             <button
               type="button"
               onClick={() => {
-                rateRetryUsed.current = true;
-                void store.getState().saveDraft();
+                manualSave();
               }}
             >
               {t('save.retry')}

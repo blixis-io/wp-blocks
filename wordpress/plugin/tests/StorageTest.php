@@ -140,4 +140,15 @@ final class StorageTest extends TestCase {
 		$this->assertSame( [ $orphan ], $this->snapshots->collect( 6, $stored ) );
 		$this->assertSame( $protected, $this->database->snapshot_keys( 6 ) );
 	}
+
+	/** Collection never deletes retained history while the pointer is an unpublished tombstone. */
+	public function test_orphan_collection_preserves_snapshots_for_tombstone_pointer(): void {
+		$key = MetaKeys::snap_layout( 1 );
+		$this->database->insert( 8, $key, '{}' );
+		$pointer = '{"schemaVersion":1,"pointerRevision":1,"defaultLocale":"en_US","locales":{"en_US":{}}}';
+		$this->assertTrue( $this->streams->write( 8, MetaKeys::PUBLISHED, $pointer, 0 )->success );
+		$stored = $this->streams->read( 8, MetaKeys::PUBLISHED )['value'] ?? '';
+		$this->assertSame( [], $this->snapshots->collect( 8, $stored ) );
+		$this->assertSame( [ $key ], $this->database->snapshot_keys( 8 ) );
+	}
 }

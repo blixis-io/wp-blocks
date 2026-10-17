@@ -57,6 +57,93 @@ final class Publisher {
 	}
 
 	/**
+	 * Advance the publication pointer to an explicit unpublished tombstone.
+	 * Snapshots and working streams are deliberately left intact for republish and rollback.
+	 *
+	 * @param int $post_id Post ID.
+	 * @param int $expected_pointer_revision Expected pointer revision.
+	 * @throws \RuntimeException When storage or pointer encoding fails.
+	 */
+	public function unpublish( int $post_id, int $expected_pointer_revision ): PublishResult {
+		try {
+			$this->database->lock( $post_id, MetaKeys::PUBLISHED );
+			try {
+				$stored  = $this->streams->read( $post_id, MetaKeys::PUBLISHED );
+				$current = $stored['revision'] ?? 0;
+				if ( $current !== $expected_pointer_revision ) {
+					return PublishResult::error(
+						409,
+						'blixis_conflict',
+						[
+							'currentRevision'  => $current,
+							'expectedRevision' => $expected_pointer_revision,
+						]
+					);
+				}
+				$pointer = null === $stored ? null : Envelope::decode( $stored['value'], MetaKeys::PUBLISHED );
+				if ( null === $pointer ) {
+					return PublishResult::error( 422, 'blixis_nothing_to_publish' );
+				}
+				$pointer_fields = \get_object_vars( $pointer );
+				$locales        = ( $pointer_fields['locales'] ?? null ) instanceof \stdClass ? \get_object_vars( $pointer_fields['locales'] ) : [];
+				$active         = $this->layout_number( $pointer ) > 0;
+				foreach ( $locales as $entry ) {
+					$entry_fields = $entry instanceof \stdClass ? \get_object_vars( $entry ) : [];
+					if ( ( $entry_fields['contentSnapshot'] ?? 0 ) > 0 || ( $entry_fields['baseLayout'] ?? 0 ) > 0 ) {
+						$active = true;
+					}
+				}
+				if ( ! $active ) {
+					return PublishResult::error( 422, 'blixis_nothing_to_publish' );
+				}
+				$empty_locales = new \stdClass();
+				foreach ( $locales as $locale => $_entry ) {
+					if ( MetaKeys::is_valid_locale( (string) $locale ) ) {
+						$empty_locales->{ (string) $locale} = new \stdClass();
+					}
+				}
+				$value     = \json_encode( // phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- Pure pointer envelope encoding.
+					[
+						'schemaVersion'   => 1,
+						'pointerRevision' => 1,
+						'defaultLocale'   => $pointer_fields['defaultLocale'] ?? 'en_US',
+						'locales'         => $empty_locales,
+					],
+					JSON_THROW_ON_ERROR
+				);
+				$new_value = Envelope::with_revision( $value, MetaKeys::PUBLISHED, $current + 1 );
+				if ( null === $new_value ) {
+					throw new \RuntimeException( 'Unable to encode unpublished pointer.' );
+				}
+				$rows = $this->database->rows( $post_id, MetaKeys::PUBLISHED );
+				if ( 1 !== \count( $rows ) || ! $this->database->compare_and_swap( $post_id, MetaKeys::PUBLISHED, $rows[0]['id'], $stored['value'], $new_value ) ) {
+					$current = $this->streams->read( $post_id, MetaKeys::PUBLISHED )['revision'] ?? 0;
+					return PublishResult::error(
+						409,
+						'blixis_conflict',
+						[
+							'currentRevision'  => $current,
+							'expectedRevision' => $expected_pointer_revision,
+						]
+					);
+				}
+				return PublishResult::ok(
+					[
+						'pointerRevision' => $current + 1,
+						'layoutSnapshot'  => null,
+						'contentSnapshot' => null,
+						'pinnedLocales'   => [],
+					]
+				);
+			} finally {
+				$this->database->unlock( $post_id, MetaKeys::PUBLISHED );
+			}
+		} catch ( \RuntimeException $error ) {
+			return PublishResult::error( 500, 'blixis_storage_error' );
+		}
+	}
+
+	/**
 	 * Publication state of the layout and of every published locale.
 	 *
 	 * @param int $post_id Post ID.
@@ -195,7 +282,7 @@ final class Publisher {
 				}
 				$content_base = (int) ( $content_doc->{'baseLayout'} ?? 0 );
 				if ( $content_base < 1 || null === $this->raw( $post_id, MetaKeys::snap_layout( $content_base ) ) ) {
-					return PublishResult::error( 409, 'blixis_snapshot_missing' );
+					return PublishResult::error( 409, 'blixis_base_layout_snapshot_missing' );
 				}
 				$source = (int) ( $content_doc->{'sourceRevision'} ?? 0 );
 				$types  = \is_object( $content_doc->{'elementTypes'} ?? null ) ? \array_map( 'strval', \get_object_vars( $content_doc->{'elementTypes'} ) ) : [];
@@ -296,7 +383,7 @@ final class Publisher {
 			[
 				'schemaVersion'           => 1,
 				'pointerRevision'         => 1,
-				'publishedLayoutRevision' => $layout_part ? $layout_number : $published_layout,
+				'publishedLayoutRevision' => $layout_part ? $layout_number : ( $rollback_content && $published_layout < 1 ? $content_base : $published_layout ),
 				'defaultLocale'           => $default_locale,
 				'locales'                 => $locales,
 			],

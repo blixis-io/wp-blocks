@@ -15,6 +15,7 @@ use Blixis\Builder\Publication\AuditEvent;
 use Blixis\Builder\Publication\AuditSink;
 use Blixis\Builder\Publication\WordPressAuditSink;
 use Blixis\Builder\Publication\WordPressRateLimiter;
+use Blixis\Builder\Frontend\Invalidation;
 use Blixis\Builder\Registry\ElementRegistry;
 use Blixis\Builder\Storage\RevisionRing;
 use Blixis\Builder\Storage\SnapshotStore;
@@ -63,8 +64,9 @@ final class PublicationController {
 			]
 		);
 		foreach ( [
-			'publish'  => 'publish',
-			'rollback' => 'rollback',
+			'publish'   => 'publish',
+			'rollback'  => 'rollback',
+			'unpublish' => 'unpublish',
 		] as $path => $method ) {
 			\register_rest_route(
 				'blixis/v1',
@@ -124,6 +126,17 @@ final class PublicationController {
 	}
 
 	/**
+	 * Unpublish every layout and locale while retaining snapshots and working streams.
+	 *
+	 * @param \WP_REST_Request $request REST request.
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function unpublish( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
+		$if_match = $request->get_header( 'if-match' );
+		return $this->change( $request, 'unpublish', $this->requests->unpublish( (int) RouteParams::get( $request, 'post_id' ), '' === $if_match ? null : $if_match, \get_current_user_id(), $request->get_body() ) );
+	}
+
+	/**
 	 * Emit only after a successful pointer move.
 	 *
 	 * @param \WP_REST_Request $request REST request.
@@ -133,8 +146,11 @@ final class PublicationController {
 	 */
 	private function change( \WP_REST_Request $request, string $kind, PublishResult $result ): \WP_REST_Response|\WP_Error {
 		if ( null === $result->code ) {
+			if ( 'publish' === $kind || 'rollback' === $kind ) {
+				Invalidation::bump();
+			}
 			$body   = \json_decode( $request->get_body(), true ); // phpcs:ignore WordPress.WP.AlternativeFunctions.json_decode_json_decode -- Already validated by request policy.
-			$locale = \is_array( $body ) && \is_string( $body['locale'] ?? null ) ? $body['locale'] : null;
+			$locale = 'unpublish' === $kind ? null : ( \is_array( $body ) && \is_string( $body['locale'] ?? null ) ? $body['locale'] : null );
 			( $this->audit ?? new WordPressAuditSink() )->emit( new AuditEvent( \get_current_user_id(), (int) RouteParams::get( $request, 'post_id' ), $locale, $kind, $result->data['layoutSnapshot'] ?? null, $result->data['contentSnapshot'] ?? null, $result->data['pointerRevision'] ) );
 		}
 		return self::response( $result );

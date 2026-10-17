@@ -103,6 +103,10 @@ final class SnapshotStore {
 			if ( ( null === $current && '' !== $pointer ) || ( null !== $current && $current['value'] !== $pointer ) ) {
 				throw new \RuntimeException( 'Publication pointer changed.' );
 			}
+			$data = '' === $pointer ? null : Envelope::decode( $pointer, MetaKeys::PUBLISHED );
+			if ( null !== $data && ( ! isset( $data->{'publishedLayoutRevision'} ) || ! \is_int( $data->{'publishedLayoutRevision'} ) || $data->{'publishedLayoutRevision'} < 1 ) ) {
+				return [];
+			}
 			$deleted = [];
 			$orphans = '' === $pointer ? $this->database->snapshot_keys( $post_id ) : $this->unreferenced( $post_id, $pointer );
 			foreach ( $orphans as $key ) {

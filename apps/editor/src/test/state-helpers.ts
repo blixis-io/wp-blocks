@@ -108,6 +108,7 @@ export function fakeClient(streams: {
       ),
     publish: unsupported,
     rollback: unsupported,
+    unpublish: unsupported,
     preview: unsupported,
   };
   return client;

@@ -181,6 +181,24 @@ export interface SplitDocument {
   >;
 }
 
+/** Remove translation records for ids absent from the current layout while preserving all remaining entries. */
+export function pruneOrphanEntries(
+  layout: Pick<BuilderDocument, 'root'>,
+  content: Record<string, TranslationEntry>,
+): Record<string, TranslationEntry> {
+  const ids = new Set<string>();
+  const pending = [...layout.root];
+  while (pending.length) {
+    const node = pending.pop();
+    if (!node) continue;
+    ids.add(node.id);
+    pending.push(...node.children);
+  }
+  const entries: Record<string, TranslationEntry> = {};
+  for (const [id, entry] of Object.entries(content)) if (ids.has(id)) entries[id] = entry;
+  return Object.keys(entries).length === Object.keys(content).length ? content : entries;
+}
+
 /**
  * The inverse of `composeDocument` for write routes. `contentRevision` is informational (the server stamps the real one on
  * save); pass the last known one to keep the envelope plausible. The returned objects share structure with `doc` and must

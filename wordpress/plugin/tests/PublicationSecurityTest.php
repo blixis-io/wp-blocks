@@ -176,6 +176,37 @@ final class PublicationSecurityTest extends TestCase {
 		};
 		$this->assertInstanceOf( \WP_REST_Response::class, $controller->rollback( $rollback ) );
 		$this->assertSame( 'rollback', $sink->events[1]['kind'] );
+		$unpublish                         = new class() extends \WP_REST_Request {
+			/** Unpublish fixture request. */
+			public function __construct() {
+				parent::__construct( 'POST', 5, '{}' );
+			}
+			/** Return the pointer precondition.
+			 *
+			 * @param string $key Header name.
+			 */
+			public function get_header( string $key ): string {
+				return 'if-match' === $key ? '"2"' : '';
+			}
+		};
+		\BlixisInvalidationState::$updates = 0;
+		$this->assertInstanceOf( \WP_REST_Response::class, $controller->unpublish( $unpublish ) );
+		$this->assertSame( 0, \BlixisInvalidationState::$updates, 'unpublish does not bump the site-wide render-cache epoch' );
+		$this->assertSame( 'unpublish', $sink->events[2]['kind'] );
+		$this->assertNull( $sink->events[2]['locale'], 'unpublish audit locale is always null' );
+		$this->assertSame( [ 'actor', 'post', 'locale', 'kind', 'layoutSnapshot', 'contentSnapshot', 'pointerRevision', 'time' ], \array_keys( $sink->events[2] ) );
+	}
+
+	/** Unpublish requires If-Match, rejects stale revisions and returns a safe storage error if its lock fails. */
+	public function test_unpublish_preconditions_and_lock_failure(): void {
+		$db        = new FakeDatabase();
+		$streams   = new StreamStore( $db );
+		$publisher = new Publisher( $db, $streams, new SnapshotStore( $db, $streams ), ElementRegistry::from_manifest_file( \dirname( __DIR__ ) . '/data/core-elements.json' ) );
+		$request   = new PublicationRequest( $publisher, new FakePostAccess(), new FakeSiteLocale() );
+		$this->assertSame( [ 428, 'blixis_precondition_required' ], [ $request->unpublish( 5, null )->status, $request->unpublish( 5, null )->code ] );
+		$this->assertSame( [ 409, 'blixis_conflict' ], [ $request->unpublish( 5, '"4"' )->status, $request->unpublish( 5, '"4"' )->code ] );
+		$db->fail_lock = true;
+		$this->assertSame( [ 500, 'blixis_storage_error' ], [ $request->unpublish( 5, '"0"' )->status, $request->unpublish( 5, '"0"' )->code ] );
 	}
 
 	/** A full post cannot gain another snapshot or move its pointer. */
@@ -262,6 +293,9 @@ final class PublicationSecurityTest extends TestCase {
 		$result    = $request->publish( 5, '"0"', '{"layout":true}', 7 );
 		$this->assertSame( [ 429, 'blixis_rate_limited', 31 ], [ $result->status, $result->code, $result->data['retryAfter'] ] );
 		$this->assertSame( [], $db->read_keys );
+		$this->assertSame( 0, $limiter->recorded );
+		$unpublish = $request->unpublish( 5, '"0"', 7, '{}' );
+		$this->assertSame( [ 429, 'blixis_rate_limited', 31 ], [ $unpublish->status, $unpublish->code, $unpublish->data['retryAfter'] ] );
 		$this->assertSame( 0, $limiter->recorded );
 	}
 }

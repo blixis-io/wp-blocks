@@ -1115,6 +1115,29 @@ async function smoke() {
           json(await api(`${post}/published`, { cookie: adminCookie, nonce: adminNonce }));
         const pubPage = async () => (await get(`/?page_id=${pubPost}`)).text;
 
+        check(
+          (await api(`${pubPost}/unpublish`, { method: 'POST', body: '{}' })).status === 401 &&
+            (
+              await api(`${pubPost}/unpublish`, {
+                cookie: contributorCookie,
+                nonce: contributorNonce,
+                method: 'POST',
+                ifMatch: '"0"',
+                body: '{}',
+              })
+            ).status === 403 &&
+            (
+              await api(`${pubPost}/unpublish`, {
+                cookie: authorCookie,
+                nonce: authorNonce,
+                method: 'POST',
+                ifMatch: '"0"',
+                body: '{}',
+              })
+            ).status === 403,
+          'unpublish requires authentication and publish access to the target post',
+        );
+
         await putStream(pubPost, 'layout', layoutBody(['hed-1', 'hed-2']), 0);
         await putStream(pubPost, 'content/en_US', contentBody({ 'hed-1': 'Hello live' }), 0);
         await putStream(pubPost, 'content/nl_NL', contentBody({ 'hed-2': 'Tweede kop' }), 0);
@@ -1211,6 +1234,65 @@ async function smoke() {
           pubHtml.includes('data-blx-id="hed-2"'),
           'the locale rollback restores the layout the content was published against',
         );
+        const unpublish = await api(`${pubPost}/unpublish`, {
+          cookie: adminCookie,
+          nonce: adminNonce,
+          method: 'POST',
+          ifMatch: '"4"',
+          body: '{}',
+        });
+        const unpublishedState = await pubState();
+        check(
+          unpublish.status === 200 &&
+            (await json(unpublish)).pointerRevision === 5 &&
+            unpublishedState.layout?.state === 'unpublished' &&
+            unpublishedState.locales?.en_US?.state === 'unpublished' &&
+            (await pubPage()).includes('PLAIN PUBLISH'),
+          'unpublish restores anonymous plain content and reports layout and locales unpublished',
+        );
+        const rollbackAfterUnpublish = await postAction(
+          pubPost,
+          'rollback',
+          { locale: 'en_US', contentSnapshot: 1 },
+          5,
+        );
+        check(
+          rollbackAfterUnpublish.status === 200 && (await pubPage()).includes('Hello live'),
+          'a locale rollback after unpublish restores the old content and its base layout',
+        );
+        const unpublishAgain = await api(`${pubPost}/unpublish`, {
+          cookie: adminCookie,
+          nonce: adminNonce,
+          method: 'POST',
+          ifMatch: '"6"',
+          body: '{}',
+        });
+        check(unpublishAgain.status === 200, 'the page can be unpublished again after rollback');
+        check(
+          (
+            await api(`${pubPost}/unpublish`, {
+              cookie: adminCookie,
+              nonce: adminNonce,
+              method: 'POST',
+              ifMatch: '"7"',
+              body: '{}',
+            })
+          ).status === 422,
+          'unpublishing an already unpublished page is a nothing-to-do conflict',
+        );
+        const republished = await postAction(pubPost, 'publish', { layout: true, locale: 'en_US' }, 7);
+        check(
+          republished.status === 200 && (await pubPage()).includes('Hello EDITED'),
+          'the retained working streams (including the later draft edit) can be published again',
+        );
+        const afterRepublish = await pubState();
+        const postUnpublishRollback = await postAction(
+          pubPost,
+          'rollback',
+          { locale: 'en_US', contentSnapshot: afterRepublish.locales?.en_US?.snapshot - 1 },
+          afterRepublish.pointerRevision,
+        );
+        check(postUnpublishRollback.status === 200, 'rollback remains available after unpublishing and republishing');
         command('post', 'delete', pubPost, '--force');
         command('post', 'delete', draftOfContributor, '--force');
         // Theme compatibility guard (BWB-047): lock editing on unsupported themes, keep data and public output, restore on switch back.

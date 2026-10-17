@@ -1,6 +1,6 @@
-import { createHistory, validateDocument, type BuilderDocument } from '@blixis/wp-core';
+import { createHistory, validateDocument, type BuilderDocument, type TranslationEntry } from '@blixis/wp-core';
 import type { StateCreator } from 'zustand/vanilla';
-import { composeDocument, deepEqual, splitDocument, type ComposeError } from './compose';
+import { composeDocument, deepEqual, pruneOrphanEntries, splitDocument, type ComposeError } from './compose';
 import type { ResolvedDeps } from './context';
 import type { ApiError, StreamRead } from './deps';
 import type { Emitter } from './events';
@@ -82,8 +82,14 @@ export function computeDirty(
 ): DirtyState {
   const layout = !layoutEqual(doc, saved);
   const content: Record<string, boolean> = {};
-  for (const locale of new Set([...Object.keys(doc.translations), ...Object.keys(saved.translations)])) {
-    content[locale] = !deepEqual(doc.translations[locale] ?? {}, saved.translations[locale] ?? {});
+  const currentStreams = Object.fromEntries(
+    Object.entries(doc.translations).map(([locale, entries]) => [locale, pruneOrphanEntries(doc, entries)]),
+  );
+  const savedStreams = Object.fromEntries(
+    Object.entries(saved.translations).map(([locale, entries]) => [locale, pruneOrphanEntries(saved, entries)]),
+  );
+  for (const locale of new Set([...Object.keys(currentStreams), ...Object.keys(savedStreams)])) {
+    content[locale] = !deepEqual(currentStreams[locale] ?? {}, savedStreams[locale] ?? {});
   }
   const sameContent =
     Object.keys(content).length === Object.keys(previous.content).length &&
@@ -124,6 +130,9 @@ export const createDocumentSlice =
     const writeSnapshot = async (snapshot: BuilderDocument, signal: AbortSignal, overwrite = false) => {
       const dirty = get().dirty;
       const split = splitDocument(snapshot, get().revisions.content);
+      for (const [locale, stream] of Object.entries(split.contents)) {
+        split.contents[locale] = { ...stream, entries: pruneOrphanEntries(snapshot, stream.entries) };
+      }
       const revisions: { layout?: number; content: Record<string, number> } = { content: {} };
       if (overwrite) {
         if (dirty.layout) {
@@ -341,9 +350,28 @@ export const createDocumentSlice =
             streamContents[locale] = read.document;
             contentRevisions[locale] = read.revision;
           }
+          const prunedContents = Object.fromEntries(
+            Object.entries(streamContents).map(([locale, stream]) => {
+              if (!stream || !layout.value.document) return [locale, stream];
+              const entries = stream['entries'];
+              if (typeof entries !== 'object' || entries === null || Array.isArray(entries)) return [locale, stream];
+              const root = layout.value.document['root'];
+              if (!Array.isArray(root)) return [locale, stream];
+              return [
+                locale,
+                {
+                  ...stream,
+                  entries: pruneOrphanEntries(
+                    { root: root as BuilderDocument['root'] },
+                    entries as Record<string, TranslationEntry>,
+                  ),
+                },
+              ];
+            }),
+          );
           const composed = composeDocument({
             layout: layout.value.document,
-            contents: streamContents,
+            contents: prunedContents,
             postId: deps.bootstrap.postId,
             defaultLocale: deps.bootstrap.defaultLocale,
             enabledLocales: deps.bootstrap.enabledLocales,
