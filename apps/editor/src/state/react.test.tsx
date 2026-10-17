@@ -70,11 +70,12 @@ describe('Structure panel and inspector header', () => {
     expect(screen.getByRole('button', { name: 'Save Draft' }).getAttribute('aria-disabled')).toBe('false');
     await user.click(screen.getByRole('button', { name: 'About us' }));
     expect(store.getState().selectedId).toBeNull();
+    expect(screen.getByRole('tab', { name: 'Page' }).getAttribute('aria-selected')).toBe('true');
     expect(screen.getByRole('region', { name: 'Page' })).toBeTruthy();
     store.getState().select('el-heading-1');
     await user.click(screen.getByRole('button', { name: 'Pages' }));
     await user.click(await screen.findByRole('menuitem', { name: 'Page settings' }));
-    expect(store.getState().selectedId).toBeNull();
+    expect(store.getState().selectedId).toBe('el-heading-1');
   });
   it('shows a loading state, then a nested outline of the document', async () => {
     const { store } = makeStore();
@@ -91,7 +92,7 @@ describe('Structure panel and inspector header', () => {
   it('selects on click, marks aria-current and shows type and id in the inspector', async () => {
     const { user, store } = mount();
     await ready();
-    expect(screen.getByTestId('inspector-selection').textContent).toBe('No element selected.');
+    expect(screen.getByTestId('inspector-selection').textContent).toBe('');
     const heading = screen.getByRole('treeitem', { name: /el-heading-1/ });
     expect(heading.getAttribute('aria-selected')).toBe('false');
     await user.click(heading);

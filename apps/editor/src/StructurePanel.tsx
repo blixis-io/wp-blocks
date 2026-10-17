@@ -1,4 +1,15 @@
-import { Icon, ScrollArea, Tabs, TabsContent, TabsList, TabsTrigger, elementIconName } from '@blixis/wp-editor-ui';
+import {
+  Icon,
+  ScrollArea,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  elementIconName,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@blixis/wp-editor-ui';
 import type { ElementNode } from '@blixis/wp-core';
 import type { ElementDefinition } from '@blixis/wp-element-registry';
 import { findPath, nodeAt } from '@blixis/wp-core';
@@ -266,7 +277,15 @@ const OutlineItem = memo(function OutlineItem({
   );
 });
 
-export function StructurePanel({ editingEnabled }: { editingEnabled: boolean }) {
+export function StructurePanel({
+  editingEnabled,
+  onCollapse,
+  expanded: panelExpanded,
+}: {
+  editingEnabled: boolean;
+  onCollapse?: () => void;
+  expanded?: boolean;
+}) {
   const { t, dir } = useI18n();
   const status = useEditorStore((state) => state.status);
   const error = useEditorStore((state) => state.error);
@@ -280,6 +299,16 @@ export function StructurePanel({ editingEnabled }: { editingEnabled: boolean }) 
   const [tab, setTab] = useState(() =>
     readSessionStorage('blixis-left-tab') === 'elements' ? 'elements' : 'structure',
   );
+  useEffect(() => {
+    const openElements = () => {
+      setTab('elements');
+      writeSessionStorage('blixis-left-tab', 'elements');
+    };
+    document.addEventListener('blixis:open-elements', openElements);
+    return () => {
+      document.removeEventListener('blixis:open-elements', openElements);
+    };
+  }, []);
   const treeRef = useRef<HTMLDivElement>(null);
   const expanded = useMemo(() => new Set(expandedIds), [expandedIds]);
   const filtered = useMemo(() => filterRows(root ?? [], query, t), [root, query, t]);
@@ -386,10 +415,29 @@ export function StructurePanel({ editingEnabled }: { editingEnabled: boolean }) 
       }}
       className="blx-left-main"
     >
-      <TabsList aria-label={t('panel.leftTabs')} className="blx-left-tabs">
-        <TabsTrigger value="structure">{t('panel.structure')}</TabsTrigger>
-        <TabsTrigger value="elements">{t('panel.elements')}</TabsTrigger>
-      </TabsList>
+      <div className="blx-panel-tabbar">
+        <TabsList aria-label={t('panel.leftTabs')} className="blx-left-tabs">
+          <TabsTrigger value="structure">{t('panel.structure')}</TabsTrigger>
+          <TabsTrigger value="elements">{t('panel.elements')}</TabsTrigger>
+        </TabsList>
+        {onCollapse ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                className="blx-collapse-button ed-focus-ring"
+                aria-label={t('panel.structure.toggle')}
+                aria-controls="blx-structure"
+                aria-expanded={panelExpanded}
+                onClick={onCollapse}
+              >
+                <Icon name="caretLeft" size={14} mirrorInRtl />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>{t('panel.collapse')}</TooltipContent>
+          </Tooltip>
+        ) : null}
+      </div>
       <TabsContent value="structure" className="blx-structure-content">
         <label className="blx-panel-search">
           <Icon name="search" size={14} />

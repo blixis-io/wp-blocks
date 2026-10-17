@@ -75,7 +75,8 @@ describe('left panel and element palette', () => {
       expect(screen.getByRole('tree')).toBeTruthy();
     });
     expect(screen.getByRole('tab', { name: 'Structure' })).toBeTruthy();
-    expect(screen.getAllByRole('tab')).toHaveLength(2);
+    expect(within(screen.getByRole('tablist', { name: 'Structure and elements' })).getAllByRole('tab')).toHaveLength(2);
+    expect(screen.getByRole('button', { name: 'Structure panel' })).toBeTruthy();
     const user = userEvent.setup();
     await openElements(user);
     const palette = screen.getByRole('region', { name: 'Elements' });

@@ -269,6 +269,11 @@ describe('editor polish CSS contracts', () => {
     expect(source).toMatch(/\.blx-inspector-tabs \[role='tablist'\][^{]*\{[^}]*position: sticky/);
     expect(source).toMatch(/\.blx-inspector-tabs \[role='tabpanel'\][^{]*\{[^}]*overflow: auto/);
   });
+  it('removes wrapper padding from the Page and Block tabpanels', () => {
+    expect(source).toMatch(
+      /\.blx-right-tabs > \.blx-page-inspector-body,\s*\.blx-right-tabs > \.blx-inspector-tabs\s*\{[^}]*padding: 0;/,
+    );
+  });
   it('resets the Content fieldset frame and uses shared section borders', () => {
     expect(source).toMatch(
       /\.blx-inspector-group\s*\{[^}]*min-inline-size: 0;[^}]*border: 0;[^}]*padding: 0;[^}]*margin: 0;/,

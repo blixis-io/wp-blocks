@@ -59,6 +59,7 @@ interface SolarIconData {
 export const ICONS = {
   back: altArrowLeft,
   forward: altArrowRight,
+  caretLeft: altArrowLeft,
   caretRight: altArrowRight,
   chevronRight: altArrowRight,
   move: cursorSquare,
@@ -128,6 +129,7 @@ export const TEXT_ALIGN_ICONS = {
 export const DIRECTIONAL_ICONS = new Set<IconName>([
   'back',
   'forward',
+  'caretLeft',
   'caretRight',
   'chevronRight',
   'chevronDown',

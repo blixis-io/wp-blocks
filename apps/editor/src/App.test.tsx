@@ -79,7 +79,8 @@ describe('shell landmarks', () => {
     act(() => {
       store.getState().select(null);
     });
-    expect(screen.getByRole('heading', { name: /Page settings/ })).toBeTruthy();
+    expect(screen.getByRole('tab', { name: 'Page' }).getAttribute('aria-selected')).toBe('true');
+    expect(screen.queryByRole('tab', { name: 'Block' })).toBeNull();
     expect(screen.queryByRole('tab', { name: 'Content' })).toBeNull();
     expect(screen.queryByRole('tab', { name: 'Style' })).toBeNull();
     expect(screen.queryByRole('tab', { name: 'Advanced' })).toBeNull();
@@ -929,11 +930,11 @@ describe('inspector selection label', () => {
     expect(selection.textContent).toContain('Selected element:');
     expect(selection.textContent).toContain('el-heading-1');
   });
-  it('keeps the Inspector heading and selection live region without a visible selected-element title row', async () => {
+  it('keeps the Inspector landmark named and selection live region without a visible title heading', async () => {
     const { user } = setup();
     await user.click(await screen.findByRole('treeitem', { name: /el-heading-1/ }));
     const inspector = screen.getByRole('complementary', { name: 'Inspector' });
-    expect(within(inspector).getByRole('heading', { name: 'Inspector' })).toBeTruthy();
+    expect(inspector.getAttribute('aria-labelledby')).toBe('blx-inspector-label');
     expect(within(inspector).getByTestId('inspector-selection').getAttribute('aria-live')).toBe('polite');
     expect(inspector.querySelector('.blx-inspector-selection')?.classList.contains('blx-empty')).toBe(false);
   });
