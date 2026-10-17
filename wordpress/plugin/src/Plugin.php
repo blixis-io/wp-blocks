@@ -23,6 +23,7 @@ use Blixis\Builder\Rest\PageSettingsController;
 use Blixis\Builder\Seo\Head;
 use Blixis\Builder\Rest\TemplateController;
 use Blixis\Builder\Templates\FontCollection;
+use Blixis\Builder\Admin\AdminMenu;
 
 \defined( 'ABSPATH' ) || exit;
 
@@ -33,6 +34,8 @@ final class Plugin {
 
 	/** Register hooks for a supported runtime. */
 	public static function register(): void {
+		\add_filter( 'blixis_builder_admin_menu_slug', static fn() => AdminMenu::SLUG );
+		AdminMenu::hooks();
 		\add_action( 'init', [ self::class, 'load_text_domain' ] );
 		MetaRegistration::hooks();
 		\add_action( 'rest_api_init', [ DocumentController::class, 'register' ] );

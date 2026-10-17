@@ -92,7 +92,7 @@ final class SetupState {
 			$state['updated_at'] = $updated_at;
 			return null === self::normalize( $state ) ? null : $state;
 		}
-		if ( null === $state || ! in_array( $state['status'], [ 'not_started', 'in_progress' ], true ) ) {
+		if ( null === $state || ! in_array( $state['status'], [ 'not_started', 'in_progress', 'dismissed' ], true ) ) {
 			return null;
 		}
 		if ( 'start' === $action ) {

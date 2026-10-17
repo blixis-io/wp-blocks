@@ -36,7 +36,11 @@
         "assets/editor/NOTICE.txt",
         "assets/editor/editor.js.LEGAL.txt",
         "assets/editor/canvas.js",
-        "assets/editor/richtext.js"
+        "assets/editor/richtext.js",
+        "assets/admin/admin.css",
+        "assets/admin/assets.js",
+        "assets/admin/assets-core.js",
+        "languages/blixis-builder-nl_NL.mo"
       ],
       "tier": "free",
       "identity": "Plugin Name",

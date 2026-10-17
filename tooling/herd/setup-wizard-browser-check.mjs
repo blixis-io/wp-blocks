@@ -121,7 +121,7 @@ try {
   );
   cliOptional('user', 'meta', 'delete', userId, 'blixis_setup_ui');
   cliOptional('user', 'meta', 'delete', userId, 'blixis_setup_draft');
-  await navigate(`${SITE}/wp-admin/themes.php?page=blixis-setup`);
+  await navigate(`${SITE}/wp-admin/admin.php?page=blixis-setup`);
   const initial = await evaluate(
     `({title:document.querySelector('h1')?.textContent,steps:[...document.querySelectorAll('.blx-stepper li')].map(x=>x.textContent.trim()),radios:document.querySelectorAll('[role="radiogroup"] input[type="radio"]').length,templates:document.body.innerText.includes('View All Templates')})`,
   );

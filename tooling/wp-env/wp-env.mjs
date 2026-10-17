@@ -2387,7 +2387,9 @@ async function smoke() {
         !adminHtml.includes('Set up the Blixis theme when you are ready.'),
         'setup prompt is kept on the wizard page',
       );
-      const setupWelcome = await http(`${base}/wp-admin/themes.php?page=blixis-setup`, {
+      // The notice preference persists across smoke runs: start from the default (shown).
+      command('option', 'delete', 'blixis_show_setup_notice');
+      const setupWelcome = await http(`${base}/wp-admin/admin.php?page=blixis-setup`, {
         headers: { cookie: adminCookie },
       });
       const setupWelcomeHtml = await setupWelcome.text();
@@ -2397,6 +2399,166 @@ async function smoke() {
           setupWelcomeHtml.includes('Dismiss'),
         'not-started wizard shows compact inline start and dismiss actions',
       );
+      const legacyWizard = await http(`${base}/wp-admin/themes.php?page=blixis-setup`, {
+        headers: { cookie: adminCookie },
+        redirect: 'manual',
+      });
+      check(
+        legacyWizard.status === 302 && legacyWizard.headers.get('location')?.includes('admin.php?page=blixis-setup'),
+        'legacy Appearance wizard URL redirects to the Blixis menu page',
+      );
+      const menuLabels = [
+        'Setup Wizard',
+        'Global Styles',
+        'Templates',
+        'Theme Builder',
+        'Assets',
+        'Settings',
+        'Help &amp; Support',
+      ];
+      const menuStart = setupWelcomeHtml.indexOf('id="toplevel_page_blixis"');
+      const menuHtml = menuStart < 0 ? '' : setupWelcomeHtml.slice(menuStart);
+      const menuPositions = menuLabels.map((label) =>
+        Math.max(
+          menuHtml.indexOf(label),
+          label.includes('&amp;') ? menuHtml.indexOf(label.replace('&amp;', '&#038;')) : -1,
+        ),
+      );
+      check(
+        menuPositions.every((position) => position >= 0) &&
+          menuPositions.every((position, index) => !index || position > menuPositions[index - 1]),
+        'Blixis admin menu shows all seven entries in the required order',
+      );
+      const templatesPage = await http(`${base}/wp-admin/admin.php?page=blixis-templates`, {
+        headers: { cookie: adminCookie },
+      });
+      const templatesHtml = await templatesPage.text();
+      check(
+        templatesPage.status === 200 && (templatesHtml.match(/class="blx-admin__card"/g) ?? []).length === 4,
+        'templates admin page lists all four bundled cards',
+      );
+      check(
+        templatesHtml.includes('Use templates from the Setup Wizard') &&
+          templatesHtml.includes('A template provider is planned'),
+        'templates page clearly describes current read-only limits',
+      );
+      const assetsPage = await http(`${base}/wp-admin/admin.php?page=blixis-assets`, {
+        headers: { cookie: adminCookie },
+      });
+      const assetsHtml = await assetsPage.text();
+      check(
+        assetsPage.status === 200 && /data-config="[^"]*nonce/.test(assetsHtml) && assetsHtml.includes('assets.js'),
+        'Assets page enqueues its module with nonce and REST data attributes',
+      );
+      const mediaNonce = (
+        await (
+          await http(`${base}/wp-admin/admin-ajax.php?action=rest-nonce`, { headers: { cookie: adminCookie } })
+        ).text()
+      ).trim();
+      const mediaList = await http(`${base}/wp-json/wp/v2/media?per_page=1`, {
+        headers: { cookie: adminCookie, 'x-wp-nonce': mediaNonce },
+      });
+      check(
+        mediaList.status === 200 && Array.isArray(await mediaList.json()),
+        'Assets uses the authenticated core media REST list',
+      );
+      const subscriberForAssets = await loginAs('subscriber_sub');
+      const deniedAssets = await http(`${base}/wp-admin/admin.php?page=blixis-assets`, {
+        headers: { cookie: subscriberForAssets },
+      });
+      check(deniedAssets.status === 403, 'subscriber is denied the Assets page');
+      const settingsPage = await http(`${base}/wp-admin/admin.php?page=blixis-settings`, {
+        headers: { cookie: adminCookie },
+      });
+      const settingsHtml = await settingsPage.text();
+      const settingsNonce = settingsHtml.match(/name=['"]_wpnonce['"] value=['"]([^'"]+)['"]/);
+      const settingsGroup = settingsHtml.match(/name=['"]option_page['"] value=['"]([^'"]+)['"]/);
+      if (settingsNonce && settingsGroup) {
+        await http(`${base}/wp-admin/options.php`, {
+          method: 'POST',
+          redirect: 'manual',
+          headers: { cookie: adminCookie, 'content-type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            _wpnonce: settingsNonce[1],
+            option_page: settingsGroup[1],
+            action: 'update',
+            blixis_show_setup_notice: '<script>',
+          }),
+        });
+        check(
+          ['', '0'].includes(command('option', 'get', 'blixis_show_setup_notice')),
+          'settings rejects a hostile setup-notice value',
+        );
+        await http(`${base}/wp-admin/options.php`, {
+          method: 'POST',
+          redirect: 'manual',
+          headers: { cookie: adminCookie, 'content-type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            _wpnonce: settingsNonce[1],
+            option_page: settingsGroup[1],
+            action: 'update',
+            blixis_show_setup_notice: '1',
+          }),
+        });
+        check(
+          command('option', 'get', 'blixis_show_setup_notice') === '1',
+          'settings nonce re-enables the setup notice',
+        );
+        const dismissNonce = setupWelcomeHtml.match(/name="blixis_setup_nonce_dismiss" value="([^"]+)"/);
+        if (dismissNonce) {
+          const dismissed = await http(`${base}/wp-admin/admin-post.php`, {
+            method: 'POST',
+            redirect: 'manual',
+            headers: { cookie: adminCookie, 'content-type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ action: 'blixis_setup_dismiss', blixis_setup_nonce_dismiss: dismissNonce[1] }),
+          });
+          check(
+            dismissed.status === 302 && ['', '0'].includes(command('option', 'get', 'blixis_show_setup_notice')),
+            'dismissing the wizard disables its admin notice preference',
+          );
+          const settingsAgain = await http(`${base}/wp-admin/admin.php?page=blixis-settings`, {
+            headers: { cookie: adminCookie },
+          });
+          const formAgain = await settingsAgain.text();
+          const nonceAgain = formAgain.match(/name=['"]_wpnonce['"] value=['"]([^'"]+)['"]/);
+          const groupAgain = formAgain.match(/name=['"]option_page['"] value=['"]([^'"]+)['"]/);
+          if (nonceAgain && groupAgain) {
+            await http(`${base}/wp-admin/options.php`, {
+              method: 'POST',
+              redirect: 'manual',
+              headers: { cookie: adminCookie, 'content-type': 'application/x-www-form-urlencoded' },
+              body: new URLSearchParams({
+                _wpnonce: nonceAgain[1],
+                option_page: groupAgain[1],
+                action: 'update',
+                blixis_show_setup_notice: '1',
+              }),
+            });
+            const reopened = await http(`${base}/wp-admin/admin.php?page=blixis-setup`, {
+              headers: { cookie: adminCookie },
+            });
+            check(
+              (await reopened.text()).includes('blx-setup-banner'),
+              'Settings re-enables the notice after dismissal',
+            );
+          } else {
+            check(false, 'settings re-enable form exposes a core nonce');
+          }
+        } else {
+          check(false, 'wizard dismiss action exposes its nonce');
+        }
+      } else {
+        check(false, 'settings form exposes its core nonce');
+      }
+      // The dismissal test above changed the site status: later checks expect a not-started setup.
+      command(
+        'option',
+        'update',
+        'blixis_setup',
+        JSON.stringify({ version: 1, status: 'not_started', updated_at: new Date().toISOString() }),
+        '--format=json',
+      );
+      command('option', 'delete', 'blixis_show_setup_notice');
       check(
         !(await editorThemes.text()).includes('Set up the Blixis theme when you are ready.'),
         'editor does not see the setup notice',
@@ -2450,7 +2612,7 @@ async function smoke() {
           const state = JSON.parse(command('option', 'get', 'blixis_setup', '--format=json'));
           check(state.status === (action === 'start' ? 'in_progress' : 'dismissed'), `${action} updates site status`);
           if (action === 'start') {
-            const wizardUrl = `${base}/wp-admin/themes.php?page=blixis-setup`;
+            const wizardUrl = `${base}/wp-admin/admin.php?page=blixis-setup`;
             const editorWizard = await http(wizardUrl, { headers: { cookie: editorCookie }, redirect: 'manual' });
             check(editorWizard.status === 403, 'editor cannot open setup wizard');
             const subscriberWizard = await http(wizardUrl, {
@@ -2530,7 +2692,7 @@ async function smoke() {
             );
             // The start banner only renders while setup has not started: read the nonce from the page in the reset state.
             const restartHtml = await (
-              await http(`${base}/wp-admin/themes.php?page=blixis-setup`, { headers: { cookie: adminCookie } })
+              await http(`${base}/wp-admin/admin.php?page=blixis-setup`, { headers: { cookie: adminCookie } })
             ).text();
             const restartNonce = restartHtml.match(/name="blixis_setup_nonce_start" value="([a-z0-9]+)"/)?.[1];
             response = await http(`${base}/wp-admin/admin-post.php`, {
@@ -2803,11 +2965,11 @@ async function smoke() {
                 childHome.text.includes('--blx-color-bg:#ffffff'),
                 'child prints the saved design system inline CSS',
               );
-              const childSetup = await http(`${base}/wp-admin/themes.php?page=blixis-setup`, {
+              const childSetup = await http(`${base}/wp-admin/admin.php?page=blixis-setup`, {
                 headers: { cookie: adminCookie },
               });
               check(
-                childSetup.status === 200 && (await childSetup.text()).includes('Blixis setup'),
+                childSetup.status === 200 && /class="[^"]*blixis-setup/.test(await childSetup.text()),
                 'admin can reach setup while the child is active',
               );
               command('theme', 'activate', 'blixis-child-invalid-fixture');
@@ -2828,7 +2990,7 @@ async function smoke() {
               'theme switches and after_switch_theme preserve setup, design, history and user meta',
             );
             const setupHtml = await (
-              await http(`${base}/wp-admin/themes.php?page=blixis-setup`, { headers: { cookie: adminCookie } })
+              await http(`${base}/wp-admin/admin.php?page=blixis-setup`, { headers: { cookie: adminCookie } })
             ).text();
             const rollbackNonce = setupHtml.match(/name="blixis_setup_nonce_rollback" value="([a-z0-9]+)"/)?.[1];
             check(Boolean(rollbackNonce), 'the restore form has a nonce');
