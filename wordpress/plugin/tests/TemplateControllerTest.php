@@ -18,6 +18,16 @@ require_once dirname( __DIR__ ) . '/src/Autoloader.php';
 \Blixis\Builder\Autoloader::register();
 /** Route capability and body policy tests. */
 final class TemplateControllerTest extends TestCase {
+	/** Admin-post policy binds the selected identity and both required capabilities. */
+	public function test_admin_install_policy(): void {
+		$this->assertTrue( TemplateController::admin_install_policy( 'POST', true, true, 'modern-homes', 'modern-homes' ) );
+		$this->assertFalse( TemplateController::admin_install_policy( 'GET', true, true, 'modern-homes', 'modern-homes' ) );
+		$this->assertFalse( TemplateController::admin_install_policy( 'POST', false, true, 'modern-homes', 'modern-homes' ) );
+		$this->assertFalse( TemplateController::admin_install_policy( 'POST', true, false, 'modern-homes', 'modern-homes' ) );
+		$this->assertFalse( TemplateController::admin_install_policy( 'POST', true, true, 'modern-homes', 'business' ) );
+		$this->assertFalse( TemplateController::admin_install_policy( 'POST', true, true, '../outside', '../outside' ) );
+	}
+
 	#[RunInSeparateProcess]
 	#[PreserveGlobalState( false )]
 	/** Auth gates and empty request body policy. */

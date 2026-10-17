@@ -166,6 +166,141 @@ msgstr "Lettertypekeuze"
 msgid "Choose a system font pairing for your website."
 msgstr "Kies een combinatie van systeemlettertypen voor je website."
 
+msgid "These professionally designed templates give you a head start. You can customize everything after setup."
+msgstr "Deze professioneel ontworpen templates geven je een goede start. Na de installatie kun je alles aanpassen."
+
+msgid "Choose a color palette for your site. You can fine-tune these later in Global Styles."
+msgstr "Kies een kleurenpalet voor je website. Je kunt dit later verder aanpassen bij Globale stijlen."
+
+msgid "Pick a font pairing for your website."
+msgstr "Kies een combinatie van lettertypen voor je website."
+
+msgid "Template categories"
+msgstr "Templatecategorieën"
+
+msgid "All"
+msgstr "Alle"
+
+msgid "View All Templates"
+msgstr "Alle templates bekijken"
+
+msgid "Real estate"
+msgstr "Vastgoed"
+
+msgid "Agency"
+msgstr "Agentschap"
+
+msgid "Corporate"
+msgstr "Zakelijk"
+
+msgid "Ecommerce"
+msgstr "Webwinkel"
+
+msgid "Template palette"
+msgstr "Templatekleuren"
+
+msgid "Template fonts"
+msgstr "Templatelettertypen"
+
+msgid "Clean & modern (Recommended)"
+msgstr "Strak en modern (aanbevolen)"
+
+msgid "System font pairing"
+msgstr "Combinatie van systeemlettertypen"
+
+msgid "Installed"
+msgstr "Geïnstalleerd"
+
+msgid "Not installed"
+msgstr "Niet geïnstalleerd"
+
+msgid "Not installed — system fonts will be used until installed."
+msgstr "Niet geïnstalleerd — systeemlettertypen worden gebruikt totdat de lettertypen zijn geïnstalleerd."
+
+msgid "Install font"
+msgstr "Lettertype installeren"
+
+msgid "Template fonts were installed. Continue to apply them."
+msgstr "Templatelettertypen zijn geïnstalleerd. Ga verder om ze toe te passen."
+
+msgid "Template fonts could not be installed. The system font pairing will be used."
+msgstr "Templatelettertypen konden niet worden geïnstalleerd. De combinatie van systeemlettertypen wordt gebruikt."
+
+msgid "Select your theme foundation"
+msgstr "Kies de basis van je thema"
+
+msgid "Style your website"
+msgstr "Geef je website een stijl"
+
+msgid "Add Your Content"
+msgstr "Voeg je inhoud toe"
+
+msgid "Setup Complete!"
+msgstr "Installatie voltooid!"
+
+msgid "Import demo content to get a head start. You can choose what to import and adjust these settings later."
+msgstr "Importeer demoinhoud voor een snelle start. Je kunt kiezen wat je importeert en deze instellingen later aanpassen."
+
+msgid "Content import is not available for this starter design yet."
+msgstr "Inhoud importeren is voor dit startontwerp nog niet beschikbaar."
+
+msgid "This template does not include importable content."
+msgstr "Deze template bevat geen importeerbare inhoud."
+
+msgid "Import is not available for this template yet."
+msgstr "Importeren is voor deze template nog niet beschikbaar."
+
+msgid "Choose your default color mode. Visitors can still switch modes later."
+msgstr "Kies de standaardkleurmodus. Bezoekers kunnen later nog steeds van modus wisselen."
+
+msgid "Your website is ready to launch. The selected design and style settings will be applied to your site."
+msgstr "Je website is klaar voor de start. Het gekozen ontwerp en de stijlinstellingen worden op je site toegepast."
+
+msgid "Header style"
+msgstr "Kopstijl"
+
+msgid "Modern Header"
+msgstr "Moderne kop"
+
+msgid "Minimal Header"
+msgstr "Minimale kop"
+
+msgid "Centered Header"
+msgstr "Gecentreerde kop"
+
+msgid "Footer style"
+msgstr "Voettekststijl"
+
+msgid "Modern Footer"
+msgstr "Moderne voettekst"
+
+msgid "Minimal Footer"
+msgstr "Minimale voettekst"
+
+msgid "Centered Footer"
+msgstr "Gecentreerde voettekst"
+
+msgid "Container width"
+msgstr "Containerbreedte"
+
+msgid "Boxed"
+msgstr "Ingekaderd"
+
+msgid "Wide"
+msgstr "Breed"
+
+msgid "Full Width"
+msgstr "Volledige breedte"
+
+msgid "Starter layout"
+msgstr "Startindeling"
+
+msgid "Online Store"
+msgstr "Webwinkel"
+
+msgid "Coming soon: this template setting does not have an apply backend yet."
+msgstr "Binnenkort: deze template-instelling kan nog niet worden toegepast."
+
 msgid "You can access the setup wizard anytime from the Blixis menu."
 msgstr "Je kunt de installatiewizard altijd openen via het Blixis-menu."
 

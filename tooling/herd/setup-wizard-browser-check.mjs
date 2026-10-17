@@ -123,7 +123,7 @@ try {
   cliOptional('user', 'meta', 'delete', userId, 'blixis_setup_draft');
   await navigate(`${SITE}/wp-admin/admin.php?page=blixis-setup`);
   const initial = await evaluate(
-    `({title:document.querySelector('h1')?.textContent,steps:[...document.querySelectorAll('.blx-stepper li')].map(x=>x.textContent.trim()),radios:document.querySelectorAll('[role="radiogroup"] input[type="radio"]').length,templates:document.body.innerText.includes('View All Templates')})`,
+    `({title:document.querySelector('h1')?.textContent,steps:[...document.querySelectorAll('.blx-stepper li')].map(x=>x.textContent.trim()),radios:document.querySelectorAll('[role="radiogroup"] input[type="radio"]').length,templates:document.body.innerText.includes('View All Templates'),cards:[...document.querySelectorAll('.blx-preset-card')].map(card=>({id:card.querySelector('input')?.value,image:card.querySelector('img')?.src||''}))})`,
   );
   assert.match(initial.title, /Welcome to Blixis/);
   assert.deepEqual(
@@ -134,27 +134,30 @@ try {
     await evaluate(`!!document.querySelector('.blx-setup-banner')`),
     'not-started page shows inline entry actions',
   );
+  assert.ok(initial.cards.length > 0, 'bundled templates or theme fallback cards render');
   assert.ok(
-    await evaluate(`document.querySelector('.blx-preset-card input[value="ocean"]')?.checked`),
-    'Ocean is the default without a draft',
+    await evaluate(`document.querySelector('.blx-preset-card input')?.checked`),
+    'the first available template is selected by default',
   );
+  if (initial.templates)
+    assert.ok(
+      initial.cards.every((card) => card.image),
+      'plugin cards use real pack preview images',
+    );
   assert.ok(
-    await evaluate(`!document.querySelector('.blx-preset-preview')?.innerText.includes('Ocean')`),
-    'mini preview does not repeat the preset name',
+    initial.radios >= initial.cards.length + 4,
+    'template, palette and font choices are keyboard-selectable radios',
   );
-  assert.equal(await evaluate(`document.querySelectorAll('.blx-preset-card').length`), 5);
-  assert.ok(
-    await evaluate(
-      `document.querySelector('.blx-preset-card:last-child .blx-preset-title')?.textContent.includes('Start from scratch')`,
-    ),
-  );
-  assert.equal(initial.templates, false, 'no template catalog is implied');
-  assert.ok(initial.radios >= 5, 'real presets and the scratch option are keyboard-selectable radios');
-  await click('.blx-preset-card input[value="ocean"]');
+  assert.ok(await evaluate(`document.querySelector('.blx-scheme-card input[value="template"]')?.checked`));
+  assert.ok(await evaluate(`document.querySelector('.blx-font-option input[value="template"]')?.checked`));
+  const selectedTemplate = initial.cards[0].id;
+  await click(`.blx-preset-card input[value="${selectedTemplate}"]`);
   assert.equal(
-    await evaluate(`document.querySelector('.blx-preset-card input[value="ocean"]').checked`),
+    await evaluate(
+      `document.querySelector('.blx-preset-card input[value=${JSON.stringify(selectedTemplate)}]').checked`,
+    ),
     true,
-    'preset selection works',
+    'template selection works',
   );
   await click('.blx-scheme-card input[value="nature"]');
   await click('.blx-font-option input[value="editorial"]');
@@ -169,15 +172,22 @@ try {
     '2Theme',
     'Continue advances into Theme',
   );
-  assert.ok(await evaluate(`document.body.innerText.includes('Make it yours')`), 'wizard renders Style content');
+  assert.ok(
+    await evaluate(`document.body.innerText.includes('Select your theme foundation')`),
+    'wizard renders foundation controls',
+  );
   const draft = JSON.parse(cli('user', 'meta', 'get', userId, 'blixis_setup_draft'));
-  assert.equal(draft.preset, 'ocean');
+  assert.equal(draft.template, selectedTemplate);
   assert.equal(draft.scheme, 'nature');
   assert.equal(draft.font, 'editorial');
   assert.match(draft.tokens['font-heading'].value, /Georgia/);
   await click('button[name="direction"][value="back"]');
   await sleep(700);
-  assert.ok(await evaluate(`document.querySelector('.blx-preset-card input[value="ocean"]')?.checked`));
+  assert.ok(
+    await evaluate(
+      `document.querySelector('.blx-preset-card input[value=${JSON.stringify(selectedTemplate)}]')?.checked`,
+    ),
+  );
   assert.ok(await evaluate(`document.querySelector('.blx-scheme-card input[value="nature"]')?.checked`));
   assert.ok(await evaluate(`document.querySelector('.blx-font-option input[value="editorial"]')?.checked`));
   await click('button[name="direction"][value="cancel"]');
