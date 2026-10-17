@@ -102,6 +102,7 @@ PUT requires `Content-Type: application/json`, a JSON envelope object of at most
 | 404 | `blixis_media_not_found` | Media not found. |
 | 409 | `blixis_conflict` | Revision conflict. |
 | 409 | `blixis_snapshot_missing` | Snapshot is missing. |
+| 409 | `blixis_base_layout_snapshot_missing` | The content snapshot base layout is missing. |
 | 409 | `blixis_layout_not_published` | Layout is not published. |
 | 409 | `blixis_publish_blocked` | Publication is blocked. |
 | 409 | `blixis_snapshot_limit` | Publish would exceed 200 stored snapshots, or rollback would exceed its recovery ceiling of 240. |
@@ -114,6 +115,8 @@ PUT requires `Content-Type: application/json`, a JSON envelope object of at most
 | 429 | `blixis_rate_limited` | Publication rate limit reached. |
 | 500 | `blixis_storage_error` | Storage failed. |
 | 500 | `blixis_preview_failed` | Preview failed. |
+
+`POST /documents/{id}/unpublish` uses `edit_post`, the REST cookie nonce, the publication rate bucket, the per-post pointer lock and a quoted `If-Match`. Its body must be empty or `{}`. It advances the pointer to an unpublished tombstone (pointer revision increases; layout and locale references are removed) and retains snapshot rows and working streams. It does not bump the render-cache epoch: frontend readers resolve the pointer before cache lookup, so the tombstone selects the ordinary WordPress content path. The tombstone preserves locale keys with empty entries so `GET /published` reports each locale as unpublished. A repeated unpublish returns 422 `blixis_nothing_to_publish`; stale revisions return 409 and missing `If-Match` returns 428. The `blixis_builder_publication_event` hook also emits content-free `kind=unpublish` events with a null locale.
 
 Plugin errors use `WP_Error` with stable codes, fixed messages from `Rest\ErrorCatalog`, and `data.status`. WordPress reports invalid route arguments as `rest_invalid_param` with the `blixis_*` code under `data.details.<arg>.code`.
 
@@ -193,13 +196,13 @@ Every successful write of a working stream (layout or one locale's content) keep
 - Content entries must refer to elements that exist in that layout with the same recorded type and only to translatable or locale-specific properties; otherwise the publish is blocked (409 `blixis_publish_blocked`, `incompatible: [{ id, reason, locale }]`) unless `excludeIncompatible` drops those entries.
 - A layout publish checks every other published locale; locales it would break are listed (409 with `impacted: [{ locale, ids }]`) and, with `confirmImpact`, stay pinned to their previous layout (`baseLayout` in their pointer entry) while compatible locales move to the new layout. Public rendering of a locale uses its own `baseLayout`.
 
-**Rollback:** `POST /documents/{id}/rollback` with `{ locale, contentSnapshot }` or `{ layoutSnapshot }` republishes an old snapshot under a new number (history is append-only). A locale rollback restores the pair (base layout, content) exactly; a layout rollback follows the same impact rules as a layout publish. Unknown snapshots are 404 `blixis_snapshot_not_found`.
+**Rollback:** `POST /documents/{id}/rollback` with `{ locale, contentSnapshot }` or `{ layoutSnapshot }` republishes an old snapshot under a new number (history is append-only). A locale rollback restores the pair (base layout, content) exactly; after unpublish it uses the content snapshot's `baseLayout` as the published layout. If that layout snapshot is gone, it returns 409 `blixis_base_layout_snapshot_missing`. A layout rollback follows the same impact rules as a layout publish. Unknown snapshots are 404 `blixis_snapshot_not_found`.
 
-Snapshots carry the working revision they came from (`sourceRevision`), the layout they were made for (`baseLayout`) and the element types their entries referred to (`elementTypes`). Pruning of unreferenced snapshots stays a separate, explicit step (`SnapshotStore::collect`).
+Snapshots carry the working revision they came from (`sourceRevision`), the layout they were made for (`baseLayout`) and the element types their entries referred to (`elementTypes`). Pruning of unreferenced snapshots stays a separate, explicit step (`SnapshotStore::collect`); collection preserves every snapshot while the current pointer is an unpublished tombstone.
 
-**Publication abuse controls.** After authentication, per-post capability and theme checks, the publication request limits each user to 30 successful publishes or rollbacks of a post in a rolling hour. A rejected request returns 429 `blixis_rate_limited` with `Retry-After` seconds. The publisher refuses a publish that would take a post above 200 stored snapshots; rollback remains available through 240 snapshots for recovery. Both limits return 409 `blixis_snapshot_limit` before any snapshot or pointer write. The limiter uses a per-site transient; its read/update is not atomic across simultaneous requests. A site-wide aggregate cap, alerting and retention accounting remain BWB-070 work.
+**Publication abuse controls.** After authentication, per-post capability and theme checks, the publication request limits each user to 30 successful publishes, rollbacks or unpublishes of a post in a rolling hour. A rejected request returns 429 `blixis_rate_limited` with `Retry-After` seconds. The publisher refuses a publish that would take a post above 200 stored snapshots; rollback remains available through 240 snapshots for recovery. Both limits return 409 `blixis_snapshot_limit` before any snapshot or pointer write. The limiter uses a per-site transient; its read/update is not atomic across simultaneous requests. A site-wide aggregate cap, alerting and retention accounting remain BWB-070 work.
 
-**Audit hook.** After a successful pointer advance, the publication controller fires `do_action( 'blixis_builder_publication_event', array $event )`. The event has exactly `actor` (user ID), `post`, `locale` (or null), `kind` (`publish`, `rollback`, or `page-settings`), `layoutSnapshot` (or null), `contentSnapshot` (or null), `pointerRevision`, and `time` (UTC RFC3339). Page settings updates reuse this envelope with null snapshots and pointer revision zero. It includes no document content. Hook consumers own their retention and access policy.
+**Audit hook.** After a successful pointer advance, the publication controller fires `do_action( 'blixis_builder_publication_event', array $event )`. The event has exactly `actor` (user ID), `post`, `locale` (or null), `kind` (`publish`, `rollback`, `unpublish`, or `page-settings`), `layoutSnapshot` (or null), `contentSnapshot` (or null), `pointerRevision`, and `time` (UTC RFC3339). Page settings updates reuse this envelope with null snapshots and pointer revision zero. It includes no document content. Hook consumers own their retention and access policy.
 
 ## Theme compatibility guard
 

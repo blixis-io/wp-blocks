@@ -176,6 +176,7 @@ function Shell({
           appearance={preference}
           onAppearance={onPreference}
           onPageSettings={openPageSettings}
+          inlineEditActive={editTarget !== null}
         />
         {locked ? (
           <div role="status" className="blx-banner" data-testid="lock-banner">

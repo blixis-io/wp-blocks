@@ -315,6 +315,221 @@ describe('redesigned editor header', () => {
     expect(screen.getByText('Unsaved changes')).toBeTruthy();
   });
 
+  it('autosaves a dirty draft after five seconds of inactivity', async () => {
+    const { store, client } = setup();
+    const writeLayout = vi.fn(() => Promise.resolve(ok({ revision: 1 })));
+    client.writeLayout = writeLayout;
+    await waitFor(() => {
+      expect(store.getState().document).not.toBeNull();
+    });
+    vi.useFakeTimers();
+    try {
+      act(() => {
+        store.getState().dispatch({ type: 'update-props', id: 'el-heading-1', set: { level: 3 } });
+      });
+      expect(writeLayout).not.toHaveBeenCalled();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(4999);
+      });
+      expect(writeLayout).not.toHaveBeenCalled();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1);
+        await Promise.resolve();
+      });
+      expect(writeLayout).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('keeps autosave disabled when its separate preference is off', async () => {
+    localStorage.setItem('blixis-editor-autosave', 'false');
+    const { store, client } = setup();
+    const writeLayout = vi.fn(() => Promise.resolve(ok({ revision: 1 })));
+    client.writeLayout = writeLayout;
+    await waitFor(() => {
+      expect(store.getState().document).not.toBeNull();
+    });
+    vi.useFakeTimers();
+    try {
+      act(() => {
+        store.getState().dispatch({ type: 'update-props', id: 'el-heading-1', set: { level: 3 } });
+      });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(10_000);
+      });
+      expect(writeLayout).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('pauses autosave while publication is running and cancels its timer on unmount', async () => {
+    const { store, client, unmount } = setup();
+    const writeLayout = vi.fn(() => Promise.resolve(ok({ revision: 1 })));
+    client.writeLayout = writeLayout;
+    await waitFor(() => {
+      expect(store.getState().document).not.toBeNull();
+    });
+    vi.useFakeTimers();
+    try {
+      act(() => {
+        store.getState().dispatch({ type: 'update-props', id: 'el-heading-1', set: { level: 3 } });
+      });
+      act(() => {
+        store.setState({ publicationStatus: 'publishing' });
+      });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(6000);
+      });
+      expect(writeLayout).not.toHaveBeenCalled();
+      act(() => {
+        store.setState({ publicationStatus: 'idle' });
+      });
+      unmount();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(6000);
+      });
+      expect(writeLayout).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('does not retry a failed autosave until dismissal and a later edit', async () => {
+    const { store, client } = setup();
+    const writeLayout = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: false, error: { kind: 'network' } })
+      .mockResolvedValue({ ok: true, value: { revision: 1 } });
+    client.writeLayout = writeLayout;
+    await waitFor(() => {
+      expect(store.getState().document).not.toBeNull();
+    });
+    vi.useFakeTimers();
+    try {
+      act(() => {
+        store.getState().dispatch({ type: 'update-props', id: 'el-heading-1', set: { level: 3 } });
+      });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(5000);
+      });
+      expect(writeLayout).toHaveBeenCalledTimes(1);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(10_000);
+      });
+      expect(writeLayout).toHaveBeenCalledTimes(1);
+      const alert = screen.getByRole('alert');
+      fireEvent.click(within(alert).getByRole('button', { name: 'Close' }));
+      act(() => {
+        store.getState().dispatch({ type: 'update-props', id: 'el-heading-1', set: { level: 4 } });
+      });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(5000);
+      });
+      expect(writeLayout).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('stops after three failed automatic attempts until a manual save', async () => {
+    const { store, client } = setup();
+    const writeLayout = vi.fn(() => Promise.resolve({ ok: false as const, error: { kind: 'network' as const } }));
+    client.writeLayout = writeLayout;
+    await waitFor(() => {
+      expect(store.getState().document).not.toBeNull();
+    });
+    vi.useFakeTimers();
+    try {
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        act(() => {
+          store.getState().dispatch({ type: 'update-props', id: 'el-heading-1', set: { level: attempt + 3 } });
+        });
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(5000);
+        });
+        expect(writeLayout).toHaveBeenCalledTimes(attempt + 1);
+        fireEvent.click(within(screen.getByRole('alert')).getByRole('button', { name: 'Close' }));
+      }
+      act(() => {
+        store.getState().dispatch({ type: 'update-props', id: 'el-heading-1', set: { level: 6 } });
+      });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(5000);
+      });
+      expect(writeLayout).toHaveBeenCalledTimes(3);
+      fireEvent.click(screen.getByRole('button', { name: 'Save Draft' }));
+      expect(writeLayout).toHaveBeenCalledTimes(4);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('does not autosave while the conflict dialog is open', async () => {
+    const { store, client } = setup();
+    const writeLayout = vi.fn(() => Promise.resolve(ok({ revision: 1 })));
+    client.writeLayout = writeLayout;
+    await waitFor(() => {
+      expect(store.getState().document).not.toBeNull();
+    });
+    act(() => {
+      store.getState().dispatch({ type: 'update-props', id: 'el-heading-1', set: { level: 3 } });
+    });
+    act(() => {
+      store.setState({
+        saveStatus: 'failed',
+        saveError: { kind: 'http', status: 409 },
+        saveErrorKey: 'save.error.conflict',
+      });
+    });
+    expect(await screen.findByRole('dialog')).toBeTruthy();
+    vi.useFakeTimers();
+    try {
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(10_000);
+      });
+      expect(writeLayout).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('offers Unpublish for published pages and refreshes the chip after confirmation', async () => {
+    const { store, client, user } = setup();
+    await waitFor(() => {
+      expect(store.getState().document).not.toBeNull();
+    });
+    store.setState({
+      publication: {
+        pointerRevision: 4,
+        layout: { state: 'published', snapshot: 2, workingRevision: 1 },
+        locales: { en_US: { state: 'published', snapshot: 2, workingRevision: 1 } },
+      },
+    });
+    const unpublish = vi.fn(() =>
+      Promise.resolve(ok({ pointerRevision: 5, layoutSnapshot: null, contentSnapshot: null, pinnedLocales: [] })),
+    );
+    client.unpublish = unpublish;
+    await user.click(screen.getByRole('button', { name: 'Publish options' }));
+    const item = screen.getByRole('menuitem', { name: 'Unpublish' });
+    expect(item.getAttribute('aria-disabled')).not.toBe('true');
+    await user.click(item);
+    expect(screen.getByRole('dialog', { name: 'Unpublish this page?' })).toBeTruthy();
+    expect(
+      within(screen.getByRole('dialog')).getByText(
+        'Visitors will see the regular page content until you publish again. Your draft and previous versions are kept.',
+      ),
+    ).toBeTruthy();
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Unpublish' }));
+    await waitFor(() => {
+      expect(unpublish).toHaveBeenCalledWith({ pointerRevision: 4 });
+    });
+    await waitFor(() => {
+      expect(screen.getByText('Not published')).toBeTruthy();
+    });
+  });
+
   it('collapses Preview and Save Draft labels below 1100px', () => {
     setup();
     act(() => {

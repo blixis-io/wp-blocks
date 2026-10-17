@@ -2971,6 +2971,33 @@ try {
   };
   await publishHeading('Publish smoke heading');
   await publishHeading(originalHeading);
+  await clickReal('.blx-publish-split button');
+  const unpublishLabel = await ev(
+    `(() => [...document.querySelectorAll('[role="menuitem"]')].find((item) => /^(Unpublish|Publicatie ongedaan maken)$/.test(item.textContent.trim()))?.textContent.trim())()`,
+  );
+  assert.ok(unpublishLabel, 'the enabled Unpublish menu item is available for the published page');
+  await ev(
+    `[...document.querySelectorAll('[role="menuitem"]')].find((item) => /^(Unpublish|Publicatie ongedaan maken)$/.test(item.textContent.trim()))?.click()`,
+  );
+  await sleep(600);
+  assert.ok(await ev(`!!document.querySelector('[role="dialog"]')`), 'unpublish opens its confirmation dialog');
+  const unpublishConfirm = await ev(
+    `(() => [...document.querySelectorAll('[role="dialog"] button')].find((item) => /^(Unpublish|Publicatie ongedaan maken)$/.test(item.textContent.trim()))?.textContent.trim())()`,
+  );
+  assert.ok(unpublishConfirm, 'the unpublish confirmation action is available');
+  await clickReal(`[role="dialog"] button:not([aria-label])`);
+  for (let attempt = 0; attempt < 80; attempt += 1) {
+    if (!(await ev(`!!document.querySelector('[role="dialog"]')`))) break;
+    await sleep(250);
+  }
+  assert.equal(await ev(`document.querySelector('.blx-publication-chip')?.textContent.trim()`), 'Not published');
+  const plainAfterUnpublish = execFileSync('curl', ['-sk', `${SITE}/builder-demo/`], { encoding: 'utf8' });
+  assert.ok(
+    plainAfterUnpublish.includes('This is the normal WordPress content.') &&
+      !plainAfterUnpublish.includes(originalHeading),
+    'the anonymous page shows regular WordPress content after unpublish',
+  );
+  await publishHeading(originalHeading);
 
   // Page settings are loaded on the empty-selection inspector and saved independently of undo history.
   await ev(

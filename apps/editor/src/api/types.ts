@@ -122,6 +122,9 @@ export interface PublishOptions {
 export type RollbackOptions =
   | { pointerRevision: number; layoutSnapshot: number; confirmImpact?: boolean }
   | { pointerRevision: number; locale: string; contentSnapshot: number; confirmImpact?: boolean };
+export interface UnpublishOptions {
+  pointerRevision: number;
+}
 
 /** Body of `POST /documents/{id}/preview`: all optional. `document` previews the unsaved editor state (never persisted). */
 export interface PreviewRequestBody {
@@ -173,6 +176,10 @@ export interface RestClient {
   readPublication(options?: { signal?: AbortSignal }): Promise<ApiResult<PublicationState>>;
   publish(options: PublishOptions, requestOptions?: { signal?: AbortSignal }): Promise<ApiResult<PublicationResult>>;
   rollback(options: RollbackOptions, requestOptions?: { signal?: AbortSignal }): Promise<ApiResult<PublicationResult>>;
+  unpublish(
+    options: UnpublishOptions,
+    requestOptions?: { signal?: AbortSignal },
+  ): Promise<ApiResult<PublicationResult>>;
   /** `POST documents/{postId}/preview` (no If-Match). Responses are capped at 1.3 MiB of text (html 1 MiB + css 256 KiB + envelope). */
   preview(body: PreviewRequestBody, options?: { signal?: AbortSignal }): Promise<ApiResult<PreviewResult>>;
 }

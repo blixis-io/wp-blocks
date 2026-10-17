@@ -77,8 +77,8 @@ final class ThemeGuardTest extends TestCase {
 	public function test_guard_routes_and_order(): void {
 		$access = new FakePostAccess();
 		$guard  = new ThemeGuard( $access, $this->compat() );
-		foreach ( [ 'layout PUT', 'content PUT', 'layout restore', 'content restore', 'publish', 'rollback' ] as $route ) {
-			$result = $guard->permission( 5, true, \in_array( $route, [ 'publish', 'rollback' ], true ) );
+		foreach ( [ 'layout PUT', 'content PUT', 'layout restore', 'content restore', 'publish', 'rollback', 'unpublish' ] as $route ) {
+			$result = $guard->permission( 5, true, \in_array( $route, [ 'publish', 'rollback', 'unpublish' ], true ) );
 			$this->assertInstanceOf( DocumentResult::class, $result );
 			$this->assertSame( 423, $result->status, $route );
 			$this->assertSame( 'blixis_theme_incompatible', $result->error_code );

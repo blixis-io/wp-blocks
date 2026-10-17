@@ -31,6 +31,11 @@ final class FakeDatabase implements Database {
 	 * @var bool
 	 */
 	public bool $fail_pointer_insert = false;
+	/** Fail advisory lock acquisition when requested by a test.
+	 *
+	 * @var bool
+	 */
+	public bool $fail_lock = false;
 	/** Keys read by the repository.
 	 *
 	 * @var list<string>
@@ -63,6 +68,9 @@ final class FakeDatabase implements Database {
 	 * @throws \RuntimeException When storage fails.
 	 */
 	public function lock( int $post_id, string $key ): void {
+		if ( $this->fail_lock ) {
+			throw new \RuntimeException( 'Injected lock failure.' );
+		}
 		$name = $post_id . ':' . $key;
 		if ( isset( $this->locks[ $name ] ) ) {
 			throw new \RuntimeException( 'Lock already held.' );

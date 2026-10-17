@@ -9,6 +9,7 @@ export {
   composeDocument,
   createEmptyDocument,
   deepEqual,
+  pruneOrphanEntries,
   formatTimestamp,
   isSplitStable,
   splitDocument,

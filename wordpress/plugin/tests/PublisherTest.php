@@ -15,6 +15,7 @@ use Blixis\Builder\Publication\PublishOptions;
 use Blixis\Builder\Publication\Publisher;
 use Blixis\Builder\Registry\ElementRegistry;
 use Blixis\Builder\Storage\FakeDatabase;
+use Blixis\Builder\Storage\Envelope;
 use Blixis\Builder\Storage\MetaKeys;
 use Blixis\Builder\Storage\SnapshotStore;
 use Blixis\Builder\Storage\StreamStore;
@@ -155,6 +156,48 @@ final class PublisherTest extends TestCase {
 		$status = $this->publisher->status( 5 );
 		$this->assertSame( 'published', $status['layout']['state'] );
 		$this->assertSame( 'published', $status['locales']['en_US']['state'] );
+	}
+
+	/** Unpublishing advances the pointer, restores the ordinary-content fallback and keeps every snapshot and working stream. */
+	public function test_unpublish_retains_snapshots_and_working_streams(): void {
+		$this->save_layout( [ 'hed-1' ], 0 );
+		$this->save_content( 'en_US', [ 'hed-1' => 'Hello' ], 0 );
+		$this->assertNull( $this->publish( 0, true, 'en_US' )->code );
+		$before = $this->database->data;
+		$result = $this->publisher->unpublish( 5, 1 );
+		$this->assertNull( $result->code );
+		$this->assertSame( 2, $result->data['pointerRevision'] );
+		$this->assertSame( 'none', $this->live( 'en_US' ) );
+		$status = $this->publisher->status( 5 );
+		$this->assertSame( 'unpublished', $status['layout']['state'] );
+		$this->assertSame( 'unpublished', $status['locales']['en_US']['state'] );
+		$this->assertSame( $before[5][ MetaKeys::LAYOUT ], $this->database->data[5][ MetaKeys::LAYOUT ] );
+		$this->assertSame( $before[5][ MetaKeys::content( 'en_US' ) ], $this->database->data[5][ MetaKeys::content( 'en_US' ) ] );
+		$this->assertArrayHasKey( MetaKeys::snap_layout( 1 ), $this->database->data[5] );
+		$this->assertArrayHasKey( MetaKeys::snap_content( 'en_US', 1 ), $this->database->data[5] );
+		$this->assertSame( [ 422, 'blixis_nothing_to_publish' ], [ $this->publisher->unpublish( 5, 2 )->status, $this->publisher->unpublish( 5, 2 )->code ] );
+		$this->assertNull( $this->publisher->publish( 5, new PublishOptions( 2, true, 'en_US' ) )->code );
+		$this->assertNotSame( 'none', $this->live( 'en_US' ) );
+	}
+
+	/** Content rollback after unpublish restores its original layout, and reports a missing base snapshot clearly. */
+	public function test_content_rollback_after_unpublish_uses_its_base_layout(): void {
+		$this->save_layout( [ 'hed-1' ], 0 );
+		$this->save_content( 'en_US', [ 'hed-1' => 'Original text' ], 0 );
+		$this->assertNull( $this->publish( 0, true, 'en_US' )->code );
+		$this->save_content( 'en_US', [ 'hed-1' => 'Later text' ], 1 );
+		$this->assertNull( $this->publish( 1, false, 'en_US' )->code );
+		$this->assertNull( $this->publisher->unpublish( 5, 2 )->code );
+		$result = $this->publisher->publish( 5, new PublishOptions( 3, false, 'en_US', false, false, null, 1, 'en_US' ) );
+		$this->assertNull( $result->code );
+		$pointer = Envelope::decode( $this->database->data[5][ MetaKeys::PUBLISHED ][0]['value'], MetaKeys::PUBLISHED );
+		$this->assertNotNull( $pointer );
+		$this->assertSame( 1, $pointer->{'publishedLayoutRevision'} );
+		$this->assertStringContainsString( 'Original text', $this->live( 'en_US' ) );
+
+		$this->assertTrue( $this->database->delete( 5, MetaKeys::snap_layout( 1 ), $this->database->data[5][ MetaKeys::snap_layout( 1 ) ][0]['id'] ) );
+		$missing = $this->publisher->publish( 5, new PublishOptions( 4, false, 'en_US', false, false, null, 1, 'en_US' ) );
+		$this->assertSame( [ 409, 'blixis_base_layout_snapshot_missing' ], [ $missing->status, $missing->code ] );
 	}
 
 	/** Publishing Dutch with pending English edits leaves English live output byte-identical. */
@@ -353,6 +396,10 @@ final class PublisherTest extends TestCase {
 		}
 		foreach ( [ '{}', '{"layoutSnapshot":1,"locale":"nl_NL"}', '{"contentSnapshot":1}', '{"layoutSnapshot":0}', '{"layoutSnapshot":1,"contentSnapshot":1,"locale":"nl_NL"}' ] as $bad ) {
 			$this->assertSame( 422, $request->rollback( 5, '"0"', $bad )->status, $bad );
+		}
+		foreach ( [ '{"locale":"client supplied"}', '{"unknown":true}' ] as $bad ) {
+			$result = $request->unpublish( 5, '"0"', 0, $bad );
+			$this->assertSame( [ 422, 'blixis_invalid_document' ], [ $result->status, $result->code ], $bad );
 		}
 		$access->can_publish = true;
 		\Blixis\Builder\Theme\ThemeCompat::reset_for_tests();

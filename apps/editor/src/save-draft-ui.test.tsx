@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-confusing-void-expression, @typescript-eslint/no-empty-function, @typescript-eslint/no-floating-promises, @typescript-eslint/no-non-null-assertion, @typescript-eslint/unbound-method, @typescript-eslint/no-unnecessary-type-assertion */
-import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { EditorApp } from './App';
@@ -80,6 +80,98 @@ describe('Save Draft UI recovery', () => {
     expect(screen.getByRole('button', { name: 'Reload publication state' })).toBeTruthy();
     expect(client.publish).toHaveBeenCalledWith(
       expect.objectContaining({ locale: 'en_US', layout: true, pointerRevision: 0 }),
+    );
+  });
+
+  it('explains incompatible publication details and retries with the supported option', async () => {
+    const { client, user } = await setup();
+    let attempt = 0;
+    client.publish = vi.fn(() => {
+      attempt += 1;
+      return Promise.resolve(
+        attempt === 1
+          ? {
+              ok: false as const,
+              error: {
+                kind: 'http' as const,
+                status: 409,
+                code: 'blixis_publish_blocked',
+                data: { incompatible: [{ id: 'el-copy-1', reason: 'missing-element', locale: 'en_US' }] },
+              },
+            }
+          : {
+              ok: true as const,
+              value: { pointerRevision: 1, layoutSnapshot: 1, contentSnapshot: 1, pinnedLocales: [] },
+            },
+      );
+    });
+    await user.click(screen.getByRole('button', { name: 'Publish' }));
+    const dialog = screen.getByRole('dialog', { name: 'Publish this page?' });
+    await user.click(within(dialog).getByRole('button', { name: 'Publish' }));
+    await screen.findByRole('alert');
+    expect(screen.getByRole('alert').textContent).toContain('Missing element');
+    expect(screen.getByText('el-copy-1')).toBeTruthy();
+    expect(screen.getByRole('alert').textContent).toContain('en_US');
+    await user.click(screen.getByRole('button', { name: 'Publish without the incompatible content' }));
+    await waitFor(() =>
+      expect(client.publish).toHaveBeenLastCalledWith(expect.objectContaining({ excludeIncompatible: true })),
+    );
+  });
+
+  it.each([
+    ['en_US', 'Publish without the incompatible content', 'Missing element'],
+    ['nl_NL', 'Publiceren zonder de niet-compatibele inhoud', 'Element ontbreekt'],
+  ])('localizes blocked publication details and retry action in %s', async (locale, action, reason) => {
+    const { client, user } = await setup({ locale });
+    client.publish = vi.fn(() =>
+      Promise.resolve({
+        ok: false as const,
+        error: {
+          kind: 'http' as const,
+          status: 409,
+          code: 'blixis_publish_blocked',
+          data: { incompatible: [{ id: 'el-gone', reason: 'missing-element', locale: 'en_US' }] },
+        },
+      }),
+    );
+    await user.click(screen.getByRole('button', { name: locale === 'nl_NL' ? 'Publiceren' : 'Publish' }));
+    const publishButton = screen.getAllByRole('button', { name: locale === 'nl_NL' ? 'Publiceren' : 'Publish' }).at(-1);
+    if (!publishButton) throw new Error('publish button missing');
+    await user.click(publishButton);
+    await screen.findByRole('alert');
+    expect(screen.getByRole('alert').textContent).toContain(reason);
+    expect(screen.getByRole('button', { name: action })).toBeTruthy();
+  });
+
+  it('lists impacted locales and retries with confirmImpact', async () => {
+    const { client, user } = await setup();
+    let attempt = 0;
+    client.publish = vi.fn(() => {
+      attempt += 1;
+      return Promise.resolve(
+        attempt === 1
+          ? {
+              ok: false as const,
+              error: {
+                kind: 'http' as const,
+                status: 409,
+                code: 'blixis_publish_blocked',
+                data: { impacted: [{ locale: 'fr_FR', ids: ['el-copy-2'] }] },
+              },
+            }
+          : {
+              ok: true as const,
+              value: { pointerRevision: 1, layoutSnapshot: 1, contentSnapshot: 1, pinnedLocales: [] },
+            },
+      );
+    });
+    await user.click(screen.getByRole('button', { name: 'Publish' }));
+    const dialog = screen.getByRole('dialog', { name: 'Publish this page?' });
+    await user.click(within(dialog).getByRole('button', { name: 'Publish' }));
+    expect(await screen.findByText('fr_FR')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Publish and update the affected translations' }));
+    await waitFor(() =>
+      expect(client.publish).toHaveBeenLastCalledWith(expect.objectContaining({ confirmImpact: true })),
     );
   });
 
@@ -440,7 +532,7 @@ describe('Save Draft browser lifecycle', () => {
     expect(event.defaultPrevented).toBe(true);
   });
 
-  it('caps Retry-After and performs one automatic retry', async () => {
+  it('shows the capped Retry-After without retrying until a manual save', async () => {
     const { store, client } = await setup();
     vi.useFakeTimers();
     dirty(store);
@@ -454,6 +546,10 @@ describe('Save Draft browser lifecycle', () => {
     await act(async () => {
       await vi.advanceTimersByTimeAsync(30_000);
     });
+    expect(client.writeLayout).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      await store.getState().saveDraft();
+    });
     expect(client.writeLayout).toHaveBeenCalledTimes(2);
     await act(async () => {
       await vi.advanceTimersByTimeAsync(60_000);
@@ -461,7 +557,7 @@ describe('Save Draft browser lifecycle', () => {
     expect(client.writeLayout).toHaveBeenCalledTimes(2);
   });
 
-  it('retries once when online follows a network failure', async () => {
+  it('does not retry a failed save on reconnect', async () => {
     const { store, client } = await setup();
     dirty(store);
     const write = vi
@@ -471,10 +567,14 @@ describe('Save Draft browser lifecycle', () => {
     client.writeLayout = write as never;
     await save(store);
     act(() => window.dispatchEvent(new Event('online')));
-    await waitFor(() => expect(client.writeLayout).toHaveBeenCalledTimes(2));
+    expect(client.writeLayout).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      await store.getState().saveDraft();
+    });
+    expect(client.writeLayout).toHaveBeenCalledTimes(2);
   });
 
-  it('removes the online retry listener after a successful retry', async () => {
+  it('keeps a network failure visible after reconnect until a manual save', async () => {
     const { store, client } = await setup();
     dirty(store);
     const write = vi
@@ -484,23 +584,25 @@ describe('Save Draft browser lifecycle', () => {
     client.writeLayout = write as never;
     await save(store);
     act(() => window.dispatchEvent(new Event('online')));
-    await waitFor(() => expect(store.getState().dirty.layout).toBe(false));
+    expect(store.getState().dirty.layout).toBe(true);
+    expect(write).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      await store.getState().saveDraft();
+    });
+    expect(store.getState().dirty.layout).toBe(false);
     expect(write).toHaveBeenCalledTimes(2);
-    const count = write.mock.calls.length;
-    act(() => window.dispatchEvent(new Event('online')));
-    expect(write).toHaveBeenCalledTimes(count);
   });
 
-  it('removes an online listener on unmount', async () => {
+  it('does not install an online retry listener', async () => {
     const add = vi.spyOn(window, 'addEventListener');
     const remove = vi.spyOn(window, 'removeEventListener');
     const { store, client, unmount } = await setup();
     dirty(store);
     client.writeLayout = vi.fn().mockResolvedValue({ ok: false, error: { kind: 'network' } });
     await save(store);
-    expect(add.mock.calls.some(([name]) => name === 'online')).toBe(true);
+    expect(add.mock.calls.some(([name]) => name === 'online')).toBe(false);
     unmount();
-    expect(remove.mock.calls.some(([name]) => name === 'online')).toBe(true);
+    expect(remove.mock.calls.some(([name]) => name === 'online')).toBe(false);
     add.mockRestore();
     remove.mockRestore();
   });

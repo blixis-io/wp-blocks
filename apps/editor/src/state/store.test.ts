@@ -13,7 +13,7 @@ import {
   ok,
   streamsOf,
 } from '../test/state-helpers';
-import { createEditorStore, isDirty, viewStorageKey, type DocumentEvent } from './index';
+import { createEditorStore, isDirty, pruneOrphanEntries, viewStorageKey, type DocumentEvent } from './index';
 
 const deferred = <T>() => {
   let resolve!: (value: T) => void;
@@ -611,6 +611,48 @@ describe('document slice: dirty tracking and markSaved', () => {
     store.getState().dispatch({ type: 'remove', id: 'el-heading-1' });
     expect(store.getState().dirty.layout).toBe(true);
     expect(store.getState().dirty.content['en_US']).toBe(true);
+  });
+
+  it('prunes orphan entries from a content stream after duplicate, save, and undo', async () => {
+    const { store, client } = await makeLoadedStore();
+    const document = documentOf(store);
+    const original = document.root[0]?.children
+      .flatMap((node) => node.children)
+      .find((node) => node.id === 'el-heading-1');
+    expect(original).toBeTruthy();
+    if (!original) return;
+    const copy = { ...structuredClone(original), id: 'el-copy-test-1' };
+    const bodies: unknown[] = [];
+    client.writeLayout = (_body, revision) => Promise.resolve(ok({ revision: revision + 1 }));
+    client.writeContent = (_locale, body, revision) => {
+      bodies.push(body);
+      return Promise.resolve(ok({ revision: revision + 1 }));
+    };
+    store.getState().dispatch({
+      type: 'insert',
+      parentId: document.root[0]?.children[0]?.id ?? null,
+      index: 1,
+      element: copy,
+      translations: Object.entries(document.translations).flatMap(([locale, entries]) => {
+        const entry = entries[original.id];
+        return entry ? [{ locale, elementId: copy.id, entry: structuredClone(entry) }] : [];
+      }),
+    });
+    await store.getState().saveDraft();
+    store.getState().undo();
+    bodies.length = 0;
+    await store.getState().saveDraft();
+    expect(bodies).toHaveLength(1);
+    expect(bodies[0]).not.toHaveProperty('entries.el-copy-test-1');
+  });
+
+  it('purely prunes entries whose element ids are absent from the layout', async () => {
+    const document = (await makeLoadedStore()).store.getState().document;
+    expect(document).toBeTruthy();
+    if (!document) return;
+    const content = { ...document.translations['en_US'], 'el-gone-1': { status: 'draft' as const, values: {} } };
+    expect(pruneOrphanEntries(document, content)).not.toHaveProperty('el-gone-1');
+    expect(pruneOrphanEntries(document, content)).toHaveProperty('el-heading-1');
   });
 
   it('keeps the dirty object identity while nothing changes', async () => {

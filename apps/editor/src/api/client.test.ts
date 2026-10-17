@@ -77,7 +77,7 @@ describe('REST client requests', () => {
     ).writePage({ title: 'x' }, '1111111111111111111111111111111111111111');
     expect(result).toMatchObject({ ok: false, error: { kind: 'http', status } });
   });
-  it('publishes and rolls back with the pointer revision in If-Match', async () => {
+  it('publishes, rolls back and unpublishes with the pointer revision in If-Match', async () => {
     const calls: RequestInit[] = [];
     const fetchMock = vi.fn((_input: RequestInfo | URL, init?: RequestInit) => {
       if (init) calls.push(init);
@@ -90,10 +90,18 @@ describe('REST client requests', () => {
       ok: true,
       value: { pointerRevision: 3 },
     });
-    expect(await api.rollback({ pointerRevision: 3, locale: 'nl_NL', contentSnapshot: 1 })).toMatchObject({ ok: true });
+    expect(
+      await api.publish({ pointerRevision: 3, layout: true, locale: 'en_US', excludeIncompatible: true }),
+    ).toMatchObject({ ok: true });
+    expect(await api.publish({ pointerRevision: 4, layout: true, confirmImpact: true })).toMatchObject({ ok: true });
+    expect(await api.rollback({ pointerRevision: 5, locale: 'nl_NL', contentSnapshot: 1 })).toMatchObject({ ok: true });
+    expect(await api.unpublish({ pointerRevision: 6 })).toMatchObject({ ok: true });
     expect(calls.map((call) => [call.method, headersFor(call).get('If-Match'), call.body])).toEqual([
       ['POST', '"2"', JSON.stringify({ layout: true, locale: 'nl_NL' })],
-      ['POST', '"3"', JSON.stringify({ locale: 'nl_NL', contentSnapshot: 1 })],
+      ['POST', '"3"', JSON.stringify({ layout: true, locale: 'en_US', excludeIncompatible: true })],
+      ['POST', '"4"', JSON.stringify({ layout: true, confirmImpact: true })],
+      ['POST', '"5"', JSON.stringify({ locale: 'nl_NL', contentSnapshot: 1 })],
+      ['POST', '"6"', '{}'],
     ]);
   });
 

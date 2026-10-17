@@ -7,6 +7,7 @@ import type {
   PublicationState,
   RestClient,
   RollbackOptions,
+  UnpublishOptions,
   RevisionEntry,
   StreamRead,
   StreamWritten,
@@ -483,6 +484,18 @@ export function createRestClient({
         'POST',
         body,
         pointerRevision,
+        requestOptions?.signal,
+        publicationResult,
+      );
+    },
+    unpublish: (options: UnpublishOptions, requestOptions) => {
+      if (!safeInteger(options.pointerRevision))
+        return Promise.resolve({ ok: false, error: { kind: 'http', status: 400, code: 'blixis_invalid_document' } });
+      return request<PublicationResult>(
+        `documents/${String(postId)}/unpublish`,
+        'POST',
+        {},
+        options.pointerRevision,
         requestOptions?.signal,
         publicationResult,
       );

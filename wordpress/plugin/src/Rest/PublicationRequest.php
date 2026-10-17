@@ -119,6 +119,36 @@ final class PublicationRequest {
 	}
 
 	/**
+	 * Remove the published state without deleting immutable snapshots or working streams.
+	 *
+	 * @param int     $post_id Post ID.
+	 * @param ?string $if_match Pointer revision header.
+	 * @param int     $actor WordPress user ID.
+	 * @param string  $body JSON body, which must be empty or an empty object.
+	 * @return PublishResult
+	 */
+	public function unpublish( int $post_id, ?string $if_match, int $actor = 0, string $body = '' ): PublishResult {
+		$expected = $this->expected( $if_match );
+		if ( $expected instanceof PublishResult ) {
+			return $expected;
+		}
+		if ( null === $this->body( $body, [] ) ) {
+			return PublishResult::error( 422, 'blixis_invalid_document' );
+		}
+		if ( null !== $this->limiter && $actor > 0 ) {
+			$retry = $this->limiter->retry_after( $actor, $post_id );
+			if ( $retry > 0 ) {
+				return PublishResult::error( 429, 'blixis_rate_limited', [ 'retryAfter' => $retry ] );
+			}
+		}
+		$result = $this->publisher->unpublish( $post_id, $expected );
+		if ( null === $result->code && null !== $this->limiter && $actor > 0 ) {
+			$this->limiter->record( $actor, $post_id );
+		}
+		return $result;
+	}
+
+	/**
 	 * Check the rolling limit before storage and count successful writes only.
 	 *
 	 * @param int            $post_id Post ID.
