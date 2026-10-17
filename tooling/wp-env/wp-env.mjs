@@ -2318,9 +2318,11 @@ async function smoke() {
           'no',
         'editor lacks edit_theme_options',
       );
+      const subscriberSetupCookie = await loginAs('subscriber_sub');
       for (const [name, cookie] of [
         ['admin', adminCookie],
         ['editor_ed', editorCookie],
+        ['subscriber_sub', subscriberSetupCookie],
       ]) {
         const response = await http(`${base}/wp-admin/admin-post.php`, {
           method: 'POST',
@@ -2335,6 +2337,13 @@ async function smoke() {
         });
         check(getResponse.status === 403, `${name} cannot start via GET`);
       }
+      const anonymousWrite = await http(`${base}/wp-admin/admin-post.php`, {
+        method: 'POST',
+        redirect: 'manual',
+        headers: { 'content-type': 'application/x-www-form-urlencoded' },
+        body: 'action=blixis_setup_dismiss',
+      });
+      check([400, 302, 403].includes(anonymousWrite.status), 'anonymous visitor cannot dismiss setup');
       const afterDenied = JSON.parse(command('option', 'get', 'blixis_setup', '--format=json'));
       check(afterDenied.status === 'not_started', 'rejected requests preserve setup status');
       for (const action of ['start', 'dismiss']) {
@@ -2354,13 +2363,20 @@ async function smoke() {
             const wizardUrl = `${base}/wp-admin/themes.php?page=blixis-setup`;
             const editorWizard = await http(wizardUrl, { headers: { cookie: editorCookie }, redirect: 'manual' });
             check(editorWizard.status === 403, 'editor cannot open setup wizard');
+            const subscriberWizard = await http(wizardUrl, {
+              headers: { cookie: subscriberSetupCookie },
+              redirect: 'manual',
+            });
+            check(subscriberWizard.status === 403, 'subscriber cannot open setup wizard');
+            const anonymousWizard = await http(wizardUrl, { redirect: 'manual' });
+            check([302, 403].includes(anonymousWizard.status), 'anonymous visitor cannot open setup wizard');
             const stepPage = async (step) => {
               const response = await http(`${wizardUrl}&step=${step}`, { headers: { cookie: adminCookie } });
               const html = await response.text();
               check(
                 response.status === 200 &&
                   html.includes(
-                    `<h2>${['', 'Choose preset', 'Colors', 'Typography', 'Spacing, radius and layout', 'Preview', 'Apply'][step]}</h2>`,
+                    `<h2>${step === 1 ? 'Choose a starter design' : step === 6 ? 'Finish setup' : 'Make it yours'}</h2>`,
                   ),
                 `wizard step ${step} renders`,
               );
@@ -2383,11 +2399,78 @@ async function smoke() {
               });
             };
             let html = await stepPage(1);
-            let response = await submit(1, html, { preset: 'ocean' });
+            let response;
+            check(
+              html.includes('aria-label="Setup steps"') &&
+                html.includes('>Welcome</li>') &&
+                html.includes('>Theme</li>') &&
+                html.includes('>Style</li>') &&
+                html.includes('>Content</li>') &&
+                html.includes('>Finish</li>'),
+              'wizard renders the five visible step labels',
+            );
+            check(
+              html.includes('All Templates') &&
+                html.includes('Business') &&
+                html.includes('Blog') &&
+                html.includes('Portfolio') &&
+                html.includes('eCommerce') &&
+                !html.includes('>SaaS</a>'),
+              'wizard filters only categories backed by bundled presets',
+            );
+            check(
+              html.includes('role="radiogroup"') && html.includes('name="preset" value="ocean"'),
+              'preset choices have native radiogroup controls',
+            );
+            response = await submit(1, html, {}, 'cancel');
+            check(response.status === 302, 'wizard Skip Setup redirects after POST');
+            check(
+              JSON.parse(command('option', 'get', 'blixis_setup', '--format=json')).status === 'dismissed',
+              'wizard Skip Setup records site dismissal',
+            );
+            command(
+              'option',
+              'update',
+              'blixis_setup',
+              JSON.stringify({ version: 1, status: 'not_started', updated_at: new Date().toISOString() }),
+              '--format=json',
+            );
+            const restartNonce = adminHtml.match(/name="blixis_setup_nonce_start" value="([a-z0-9]+)"/)?.[1];
+            response = await http(`${base}/wp-admin/admin-post.php`, {
+              method: 'POST',
+              redirect: 'manual',
+              headers: { cookie: adminCookie, 'content-type': 'application/x-www-form-urlencoded' },
+              body: new URLSearchParams({ action: 'blixis_setup_start', blixis_setup_nonce_start: restartNonce ?? '' }),
+            });
+            check(response.status === 302, 'setup can be restarted after smoke-test reset');
+            html = await stepPage(1);
+            response = await submit(1, html, { preset: '<script>' });
+            check(
+              response.status === 302 && response.headers.get('location')?.includes('error=invalid'),
+              'hostile preset id is rejected',
+            );
+            response = await submit(1, html, { preset: 'ocean' });
             check(response.status === 302, 'preset POST advances');
             html = await stepPage(2);
             const draftBefore = command('user', 'meta', 'get', 'admin', 'blixis_setup_draft');
             check(draftBefore.includes('"preset":"ocean"'), 'preset POST saves user draft');
+            response = await submit(2, html, {}, 'back');
+            check(
+              response.status === 302 && response.headers.get('location')?.includes('step=1'),
+              'Back resumes the prior setup step',
+            );
+            const resumed = await stepPage(1);
+            check(
+              [...resumed.matchAll(/<input\b[^>]*\bname="preset"[^>]*>/g)].some(
+                (match) =>
+                  /\bvalue="ocean"/.test(match[0]) &&
+                  /\bchecked(?:\s*=\s*(?:"checked"|'checked'|checked))?(?:\s|\/?>)/.test(match[0]),
+              ),
+              'resume restores the selected preset',
+            );
+            response = await submit(1, resumed, { preset: 'ocean' });
+            check(response.status === 302, 'resumed setup continues');
+            html = await stepPage(2);
             const colorFields = Object.fromEntries(
               [...html.matchAll(/name="(tokens\[[^"]+\]\[(?:value|dark)\])" value="([^"]+)"/g)].map((m) => [
                 m[1],

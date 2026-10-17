@@ -1,0 +1,119 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Blixis Theme 0.1.0\n"
+"Language: nl_NL\n"
+"Language-Team: Dutch\n"
+"Last-Translator: Blixis\n"
+"PO-Revision-Date: 2026-10-17 00:00+0000\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "Welcome to Blixis"
+msgstr "Welkom bij Blixis"
+
+msgid "Choose a starter design and customize its style. You can always change this later."
+msgstr "Kies een startontwerp en pas de stijl aan. Je kunt dit later altijd wijzigen."
+
+msgid "Setup steps"
+msgstr "Installatiestappen"
+
+msgid "Welcome"
+msgstr "Welkom"
+
+msgid "Theme"
+msgstr "Thema"
+
+msgid "Style"
+msgstr "Stijl"
+
+msgid "Content"
+msgstr "Inhoud"
+
+msgid "Finish"
+msgstr "Afronden"
+
+msgid "Choose a starter design"
+msgstr "Kies een startontwerp"
+
+msgid "Choose later"
+msgstr "Later kiezen"
+
+msgid "Starter pages and template imports are not part of this setup yet. Choose later from WordPress Pages when you are ready."
+msgstr "Startpagina's en importsjablonen zijn nog geen onderdeel van deze installatie. Kies later een pagina via WordPress-pagina's wanneer je zover bent."
+
+msgid "All Templates"
+msgstr "Alle ontwerpen"
+
+msgid "Business"
+msgstr "Zakelijk"
+
+msgid "Blog"
+msgstr "Blog"
+
+msgid "Portfolio"
+msgstr "Portfolio"
+
+msgid "eCommerce"
+msgstr "Webwinkel"
+
+msgid "SaaS"
+msgstr "SaaS"
+
+msgid "Filter starter designs"
+msgstr "Startontwerpen filteren"
+
+msgid "Starter designs"
+msgstr "Startontwerpen"
+
+msgid "A thoughtful design for your site"
+msgstr "Een doordacht ontwerp voor je website"
+
+msgid "You can always change this later."
+msgstr "Je kunt dit later altijd wijzigen."
+
+msgid "Make it yours"
+msgstr "Maak het eigen"
+
+msgid "Finish setup"
+msgstr "Installatie afronden"
+
+msgid "Your choices"
+msgstr "Je keuzes"
+
+msgid "Continue"
+msgstr "Doorgaan"
+
+msgid "Skip Setup"
+msgstr "Installatie overslaan"
+
+msgid "Back"
+msgstr "Terug"
+
+msgid "Ocean"
+msgstr "Oceaan"
+
+msgid "Forest"
+msgstr "Bos"
+
+msgid "Sunset"
+msgstr "Zonsondergang"
+
+msgid "Minimal"
+msgstr "Minimalistisch"
+
+msgid "Custom"
+msgstr "Aangepast"
+
+msgid "The design system could not be saved. Nothing was changed; try again."
+msgstr "Het ontwerpsysteem kon niet worden opgeslagen. Er is niets gewijzigd; probeer het opnieuw."
+
+msgid "Applying saves this design system for the whole site. Every page changes at once; you can restore the previous version afterwards."
+msgstr "Toepassen slaat dit ontwerpsysteem op voor de hele website. Alle pagina's veranderen tegelijk; je kunt daarna de vorige versie herstellen."
+
+msgid "Body font"
+msgstr "Lettertype voor lopende tekst"
+
+msgid "Heading font"
+msgstr "Lettertype voor koppen"

@@ -27,11 +27,21 @@ final class SetupState {
 	 * @return array{version: 1, status: string, updated_at: string, preset?: string}|null
 	 */
 	public static function normalize( mixed $value ): ?array {
+		if ( is_string( $value ) ) {
+			$decoded = json_decode( $value, true );
+			if ( ! is_array( $decoded ) ) {
+				return null;
+			}
+			$value = $decoded;
+		}
 		if ( ! is_array( $value ) || array_diff( array_keys( $value ), [ 'version', 'status', 'updated_at', 'preset' ] ) || self::VERSION !== ( $value['version'] ?? null ) || ! is_string( $value['status'] ?? null ) || ! in_array( $value['status'], [ 'not_started', 'in_progress', 'completed', 'dismissed' ], true ) || ! is_string( $value['updated_at'] ?? null ) ) {
 			return null;
 		}
-		$date = \DateTimeImmutable::createFromFormat( DATE_ATOM, $value['updated_at'] );
-		if ( false === $date || $date->format( DATE_ATOM ) !== $value['updated_at'] ) {
+		if ( 1 !== preg_match( '~^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})$~', $value['updated_at'] ) ) {
+			return null;
+		}
+		$date_parts = date_parse( $value['updated_at'] );
+		if ( $date_parts['error_count'] || $date_parts['warning_count'] ) {
 			return null;
 		}
 		$state = [
@@ -71,7 +81,11 @@ final class SetupState {
 	 * @return array{version: 1, status: string, updated_at: string, preset?: string}|null
 	 */
 	public static function transition( mixed $value, string $action, string $updated_at ): ?array {
-		$state = self::normalize( $value );
+		$state     = self::normalize( $value );
+		$raw_state = is_string( $value ) ? json_decode( $value, true ) : $value;
+		if ( null === $state && 'start' === $action && ( ! is_array( $raw_state ) || self::VERSION >= ( $raw_state['version'] ?? 0 ) ) ) {
+			$state = self::initial( $updated_at );
+		}
 		if ( null !== $state && 'complete' === $action ) {
 			// Applying a design system completes setup from any state, also when it is re-run later.
 			$state['status']     = 'completed';
@@ -96,12 +110,22 @@ final class SetupState {
 	}
 
 	/**
-	 * Read the current site's setup status. Invalid and future versions remain stored but are not acted on.
+	 * Read the current site's setup status. Invalid data behaves as not started without changing the stored option.
 	 *
-	 * @return array{version: 1, status: string, updated_at: string, preset?: string}|null
+	 * @return array{version: 1, status: string, updated_at: string, preset?: string}
 	 */
-	public static function get(): ?array {
-		return self::normalize( get_option( self::OPTION, false ) );
+	public static function get(): array {
+		return self::read( get_option( self::OPTION, false ) );
+	}
+
+	/**
+	 * Read a stored option value, treating invalid data as a fresh setup without changing storage.
+	 *
+	 * @param mixed $value Stored option value.
+	 * @return array{version: 1, status: string, updated_at: string, preset?: string}
+	 */
+	public static function read( mixed $value ): array {
+		return self::normalize( $value ) ?? self::initial( gmdate( DATE_ATOM ) );
 	}
 
 	/**

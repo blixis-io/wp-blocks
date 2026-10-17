@@ -14,6 +14,8 @@ A lean, accessible classic theme for the Blixis Builder.
 
 Blixis renders posts and pages with plain PHP templates and leaves page design to the Blixis Builder plugin. It declares compatibility with the builder through the `Blixis-Compat` header in style.css.
 
+Appearance → Blixis setup guides administrators through a starter design, site styles and a validated design-system apply. Setup can be skipped and resumed later; starter pages are not included.
+
 == Copyright ==
 
 Blixis, (C) 2026 Blixis. Blixis is distributed under the terms of the GNU GPL v2 or later.
