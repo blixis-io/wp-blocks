@@ -19,11 +19,11 @@ final class SetupAdmin {
 	private const NONCE_ACTION = 'blixis_setup_action';
 	private const DRAFT_META   = 'blixis_setup_draft';
 	private const STEP_NAMES   = [
-		1 => 'Theme',
-		2 => 'Style',
+		1 => 'Welcome',
+		2 => 'Theme',
 		3 => 'Style',
 		4 => 'Style',
-		5 => 'Style',
+		5 => 'Content',
 		6 => 'Finish',
 	];
 	private const PRESETS      = [
@@ -38,7 +38,6 @@ final class SetupAdmin {
 	public static function register(): void {
 		add_action( 'admin_menu', [ self::class, 'menu' ] );
 		add_action( 'admin_enqueue_scripts', [ self::class, 'assets' ] );
-		add_action( 'admin_notices', [ self::class, 'notice' ] );
 		foreach ( [ 'start', 'dismiss', 'wizard', 'rollback' ] as $action ) {
 			add_action( 'admin_post_blixis_setup_' . $action, [ self::class, $action ] );
 		}
@@ -60,22 +59,6 @@ final class SetupAdmin {
 		add_theme_page( __( 'Blixis setup', 'blixis' ), __( 'Blixis setup', 'blixis' ), self::CAPABILITY, 'blixis-setup', [ self::class, 'page' ] );
 	}
 
-	/** Show the entry notice. */
-	public static function notice(): void {
-		if ( ! current_user_can( self::CAPABILITY ) || is_network_admin() ) {
-			return;
-		}
-		$state = SetupState::get();
-		if ( ! \in_array( $state['status'], [ 'not_started', 'in_progress' ], true ) ) {
-			return;
-		}
-		?>
-		<div class="notice notice-info"><p><?php echo esc_html__( 'Set up the Blixis theme when you are ready.', 'blixis' ); ?></p>
-		<?php self::action_form( 'start', __( 'Start setup', 'blixis' ) ); ?>
-		<?php self::action_form( 'dismiss', __( 'Dismiss', 'blixis' ) ); ?></div>
-		<?php
-	}
-
 	/** Render the current step; an explicit step query supports revisiting prior steps. */
 	public static function page(): void {
 		self::require_capability();
@@ -85,9 +68,11 @@ final class SetupAdmin {
 		$requested  = isset( $_GET['step'] ) ? (int) $_GET['step'] : $resume; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only navigation.
 		$step       = max( 1, min( $resume, $requested ) );
 		$stored     = self::draft( $user_id );
-		$preset     = $stored['preset'] ?? 'custom';
-		$tokens     = $stored['tokens'] ?? self::preset_tokens( 'custom' );
+		$preset     = $stored['preset'] ?? 'ocean';
+		$tokens     = $stored['tokens'] ?? self::preset_tokens( $preset );
 		$appearance = $stored['appearance'] ?? Appearance::site_mode();
+		$scheme     = $stored['scheme'] ?? 'primary';
+		$font       = $stored['font'] ?? 'system';
 		if ( null === $tokens ) {
 			$tokens = [];
 		}
@@ -107,11 +92,18 @@ final class SetupAdmin {
 			}
 		}
 		?>
-		<div class="wrap blixis-setup"><header class="blx-setup-brand"><span class="blx-setup-mark" aria-hidden="true">B</span><span>Blixis</span></header><h1><?php echo esc_html__( 'Welcome to Blixis', 'blixis' ); ?></h1>
-		<p class="blx-setup-intro"><?php echo esc_html__( 'Choose a starter design and customize its style. You can always change this later.', 'blixis' ); ?></p>
-		<?php self::saved_panel(); ?>
-			<nav class="blx-stepper" aria-label="<?php echo esc_attr__( 'Setup steps', 'blixis' ); ?>"><ol aria-live="polite">
+		<div class="wrap blx-setup-wrap"><header class="blx-setup-top"><a class="blx-setup-brand" href="<?php echo esc_url( home_url( '/' ) ); ?>"><span class="blx-setup-mark" aria-hidden="true">b</span><span>Blixis</span></a><div class="blx-setup-top-actions"><a class="button" href="<?php echo esc_url( home_url( '/' ) ); ?>" target="_blank" rel="noopener"><?php echo esc_html__( 'View Site', 'blixis' ); ?></a></div></header>
+		<main class="blixis-setup"><p class="blx-setup-eyebrow"><?php echo esc_html__( 'Setup Wizard', 'blixis' ); ?></p><h1><?php echo esc_html__( 'Welcome to', 'blixis' ); ?> <span>Blixis</span></h1>
+		<p class="blx-setup-intro"><?php echo esc_html__( 'Let’s get your website ready in a few simple steps. Choose a starter design, customize the style, and import content. You can always change these settings later.', 'blixis' ); ?></p>
+		<?php if ( 'not_started' === $state['status'] ) : ?>
+			<div class="blx-setup-banner"><p><?php echo esc_html__( 'Set up the Blixis theme when you are ready.', 'blixis' ); ?></p>
+				<?php self::action_form( 'start', __( 'Start setup', 'blixis' ), 'button button-primary blx-banner-start' ); ?>
+				<?php self::action_form( 'dismiss', __( 'Dismiss', 'blixis' ), 'button-link blx-banner-dismiss' ); ?>
+			</div>
+		<?php endif; ?>
+		<nav class="blx-stepper" aria-label="<?php echo esc_attr__( 'Setup steps', 'blixis' ); ?>"><ol aria-live="polite">
 			<?php
+			$active_number = 1 === $step ? 1 : ( 2 === $step ? 2 : ( $step <= 4 ? 3 : ( 5 === $step ? 4 : 5 ) ) );
 			foreach ( [
 				1 => __( 'Welcome', 'blixis' ),
 				2 => __( 'Theme', 'blixis' ),
@@ -119,16 +111,22 @@ final class SetupAdmin {
 				4 => __( 'Content', 'blixis' ),
 				5 => __( 'Finish', 'blixis' ),
 			] as $number => $title ) :
-													$current = ( 2 === $number && 1 === $step ) || ( 3 === $number && $step >= 2 && $step <= 4 ) || ( 4 === $number && 5 === $step ) || ( 5 === $number && 6 === $step );
+				$current  = $active_number === $number;
+				$complete = $number < $active_number;
 				?>
-				<li <?php echo $current ? 'aria-current="step"' : ''; ?>><span><?php echo esc_html( (string) $number ); ?></span><?php echo esc_html( $title ); ?></li>
+				<li class="<?php echo $complete ? 'is-complete' : ''; ?>" <?php echo $current ? 'aria-current="step"' : ''; ?>><span><?php echo esc_html( $complete ? '✓' : (string) $number ); ?></span><span class="blx-step-label"><?php echo esc_html( $title ); ?></span></li>
 			<?php endforeach; ?>
 			</ol></nav>
-			<h2><?php echo esc_html( 1 === $step ? __( 'Choose a starter design', 'blixis' ) : ( 6 === $step ? __( 'Finish setup', 'blixis' ) : __( 'Make it yours', 'blixis' ) ) ); ?></h2>
+			<?php $step_title = 1 === $step ? __( 'Choose a starter design', 'blixis' ) : ( 6 === $step ? __( 'Finish setup', 'blixis' ) : ( 5 === $step ? __( 'Content', 'blixis' ) : __( 'Make it yours', 'blixis' ) ) ); ?>
+			<section class="blx-step-content" aria-labelledby="blx-step-title"><h2 id="blx-step-title"><?php echo esc_html( $step_title ); ?></h2>
+			<?php
+			if ( 1 === $step ) :
+				?>
+				<p class="blx-section-help"><?php echo esc_html__( 'These professionally designed presets give you a head start. You can customize everything after setup.', 'blixis' ); ?></p><?php endif; ?>
 			<?php
 			if ( 5 === $step ) :
 				?>
-				<section class="blx-content-later"><h3><?php echo esc_html__( 'Content', 'blixis' ); ?></h3><p><?php echo esc_html__( 'Starter pages and template imports are not part of this setup yet. Choose later from WordPress Pages when you are ready.', 'blixis' ); ?></p></section><?php endif; ?>
+				<section class="blx-content-later"><p><?php echo esc_html__( 'Starter pages and template imports are not part of this setup yet. Choose later from WordPress Pages when you are ready.', 'blixis' ); ?></p></section><?php endif; ?>
 			<?php
 			if ( $errors ) :
 				?>
@@ -140,29 +138,35 @@ final class SetupAdmin {
 			</ul></div><?php endif; ?>
 			<?php
 			if ( 6 === $step ) :
+				$scheme_choice = self::find_choice( SetupChoices::schemes(), $scheme );
+				$font_choice   = self::find_choice( SetupChoices::fonts(), $font );
 				?>
-				<p><?php echo esc_html__( 'Applying saves this design system for the whole site. Every page changes at once; you can restore the previous version afterwards.', 'blixis' ); ?></p><section class="blx-finish-summary"><h3><?php echo esc_html__( 'Your choices', 'blixis' ); ?></h3><p><?php echo esc_html( self::PRESETS[ $preset ] ?? '' ); ?> · <?php echo esc_html( ucfirst( $appearance ) ); ?></p></section><?php endif; ?>
+				<p><?php echo esc_html__( 'Applying saves this design system for the whole site. Every page changes at once; you can restore the previous version afterwards.', 'blixis' ); ?></p><section class="blx-finish-summary"><h3><?php echo esc_html__( 'Your choices', 'blixis' ); ?></h3><p><?php echo esc_html( self::choice_text( self::PRESETS[ $preset ] ?? '' ) ); ?> · <?php echo esc_html( self::choice_text( $scheme_choice['label'] ?? '' ) ); ?> · <?php echo esc_html( self::choice_text( $font_choice['label'] ?? '' ) ); ?> · <?php echo esc_html( self::choice_text( ucfirst( $appearance ) ) ); ?></p></section><?php endif; ?>
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 				<input type="hidden" name="action" value="blixis_setup_wizard"><input type="hidden" name="step" value="<?php echo esc_attr( (string) $step ); ?>">
 				<?php wp_nonce_field( 'blixis_setup_step_' . $step, 'blixis_setup_nonce_wizard' ); ?>
-				<?php self::fields( $step, $preset, $tokens, $appearance ); ?>
-				<p class="submit">
+				<?php self::fields( $step, $preset, $tokens, $appearance, $scheme, $font ); ?>
+			</section><footer class="blx-setup-footer">
 				<?php
 				if ( $step > 1 ) :
 					?>
-					<button class="button" type="submit" name="direction" value="back"><?php echo esc_html__( 'Back', 'blixis' ); ?></button><?php endif; ?>
+					<button class="button" type="submit" name="direction" value="back"><?php echo esc_html__( 'Back', 'blixis' ); ?></button>
+					<?php
+					else :
+						?>
+																							<button class="button" type="submit" name="direction" value="cancel"><span aria-hidden="true">←</span> <?php echo esc_html__( 'Skip Setup', 'blixis' ); ?></button><span class="blx-skip-hint"><?php echo esc_html__( 'You can access the setup wizard anytime from the Blixis menu.', 'blixis' ); ?></span><?php endif; ?>
 				<?php
 				if ( $step < 6 ) :
 					?>
-					<button class="button button-primary" type="submit" name="direction" value="next"><?php echo esc_html__( 'Continue', 'blixis' ); ?> <span aria-hidden="true">→</span></button>
+					<button class="button button-primary blx-continue" type="submit" name="direction" value="next"><?php echo esc_html__( 'Continue', 'blixis' ); ?> <span aria-hidden="true">→</span></button>
 					<?php
 else :
 	?>
 					<button class="button button-primary" type="submit" name="direction" value="apply"><?php echo esc_html__( 'Apply', 'blixis' ); ?></button><?php endif; ?>
-				<button class="button" type="submit" name="direction" value="cancel"><?php echo esc_html__( 'Skip Setup', 'blixis' ); ?></button>
-				</p>
+				</footer>
 			</form>
-		</div>
+			<?php self::saved_panel(); ?>
+		</main></div>
 		<?php
 	}
 
@@ -173,8 +177,10 @@ else :
 	 * @param string               $preset Preset.
 	 * @param array<string, mixed> $tokens Draft.
 	 * @param string               $appearance Site appearance draft.
+	 * @param string               $scheme Selected color scheme.
+	 * @param string               $font Selected font pairing.
 	 */
-	private static function fields( int $step, string $preset, array $tokens, string $appearance ): void {
+	private static function fields( int $step, string $preset, array $tokens, string $appearance, string $scheme = 'primary', string $font = 'system' ): void {
 		if ( 1 === $step ) {
 			$categories = [];
 			foreach ( array_keys( self::PRESETS ) as $id ) {
@@ -195,37 +201,33 @@ else :
 				'ecommerce' => __( 'eCommerce', 'blixis' ),
 				'saas'      => __( 'SaaS', 'blixis' ),
 			];
-			$preset_labels   = [
-				'ocean'   => __( 'Ocean', 'blixis' ),
-				'forest'  => __( 'Forest', 'blixis' ),
-				'sunset'  => __( 'Sunset', 'blixis' ),
-				'minimal' => __( 'Minimal', 'blixis' ),
-				'custom'  => __( 'Custom', 'blixis' ),
-			];
-			echo '<nav class="blx-category-filters" aria-label="' . esc_attr__( 'Filter starter designs', 'blixis' ) . '">';
-			foreach ( $category_labels as $slug => $label ) {
-				if ( 'all' !== $slug && ! in_array( $slug, $categories, true ) ) {
-					continue;
-				}
-				$url = add_query_arg(
-					[
-						'page'     => 'blixis-setup',
-						'step'     => 1,
-						'category' => $slug,
-					],
-					admin_url( 'themes.php' )
-				);
-				printf( '<a class="%s" href="%s"%s>%s</a>', 'blx-category-chip' . ( $filter === $slug ? ' is-active' : '' ), esc_url( $url ), $filter === $slug ? ' aria-current="true"' : '', esc_html( $label ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped values.
-			}
-			echo '</nav><fieldset class="blx-preset-grid"><legend class="screen-reader-text">' . esc_html__( 'Choose a starter design', 'blixis' ) . '</legend><div class="blx-preset-cards" role="radiogroup" aria-label="' . esc_attr__( 'Starter designs', 'blixis' ) . '">';
+			$preset_data     = [];
+			echo '<fieldset class="blx-preset-grid"><legend class="screen-reader-text">' . esc_html__( 'Choose a starter design', 'blixis' ) . '</legend><div class="blx-preset-cards" role="radiogroup" aria-label="' . esc_attr__( 'Starter designs', 'blixis' ) . '">';
 			foreach ( self::PRESETS as $id => $label ) {
 				$category = $categories[ $id ] ?? '';
-				if ( 'all' !== $filter && $category !== $filter ) {
-					continue;
+				if ( 'custom' !== $id ) {
+					$path = get_template_directory() . '/design/presets/' . $id . '.json';
+					$data = is_readable( $path ) ? json_decode( (string) file_get_contents( $path ), true ) : null; // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Bundled preset.
+					if ( is_array( $data ) ) {
+						$preset_data[ $id ] = $data;
+					}
 				}
-				printf( '<label class="blx-preset-card%s"><input type="radio" name="preset" value="%s" %s><span class="blx-preset-preview blx-preset-preview--%s"><span class="blx-preset-swatch" aria-hidden="true"></span><strong>%s</strong><small>%s</small></span><span class="blx-preset-title">%s</span><span class="blx-preset-category">%s</span><span class="blx-selected" aria-hidden="true">✓</span></label>', checked( $preset, $id, false ) ? ' is-selected' : '', esc_attr( $id ), checked( $preset, $id, false ), esc_attr( $id ), esc_html__( 'Aa', 'blixis' ), esc_html__( 'A thoughtful design for your site', 'blixis' ), esc_html( $preset_labels[ $id ] ), esc_html( isset( $category_labels[ $category ] ) ? $category_labels[ $category ] : __( 'Custom', 'blixis' ) ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped values.
+				$seed  = self::preset_tokens( $id );
+				$label = 'custom' === $id ? __( 'Start from scratch', 'blixis' ) : self::choice_text( (string) ( $preset_data[ $id ]['label'] ?? $label ) );
+				$tag   = 'custom' === $id ? __( 'Begin with a neutral design and shape it yourself.', 'blixis' ) : self::choice_text( (string) ( $preset_data[ $id ]['tagline'] ?? '' ) );
+				$style = self::mock_style( $seed ?? [] );
+				printf( '<label class="blx-preset-card%s%s"><input type="radio" name="preset" value="%s" %s><span class="blx-preset-preview%s" style="%s" aria-hidden="true"><span class="blx-mini-header"><i></i><b>Blixis</b><span><i></i><i></i><i></i></span></span><span class="blx-mini-hero"><strong>Welcome</strong><small></small><em></em></span><span class="blx-mini-content"><i></i><i></i><i></i></span></span><span class="blx-preset-title">%s</span><span class="blx-preset-category">%s</span><span class="blx-selected" aria-hidden="true">✓</span></label>', checked( $preset, $id, false ) ? ' is-selected' : '', 'custom' === $id ? ' is-custom' : '', esc_attr( $id ), checked( $preset, $id, false ), 'custom' === $id ? ' blx-preset-preview--custom' : '', esc_attr( $style ), esc_html( $label ), esc_html( $tag ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- All dynamic values escaped.
 			}
-			echo '</div></fieldset><p class="description">' . esc_html__( 'You can always change this later.', 'blixis' ) . '</p>';
+			echo '</div></fieldset><section class="blx-choice-columns"><fieldset class="blx-choice-group"><legend>' . esc_html__( 'Color scheme', 'blixis' ) . '</legend><p class="description">' . esc_html__( 'Choose a palette for your website. Fine-tune it later in Global Styles.', 'blixis' ) . '</p><div class="blx-scheme-cards" role="radiogroup" aria-label="' . esc_attr__( 'Color schemes', 'blixis' ) . '">';
+			foreach ( SetupChoices::schemes() as $choice ) {
+				$scheme_tokens = $choice['tokens'];
+				printf( '<label class="blx-scheme-card"><input type="radio" name="scheme" value="%s" %s><span class="blx-swatches" aria-hidden="true"><i style="--swatch:%s"></i><i style="--swatch:%s"></i><i style="--swatch:%s"></i><i style="--swatch:%s"></i></span><strong>%s</strong><small>%s</small></label>', esc_attr( $choice['id'] ), checked( $scheme, $choice['id'], false ), esc_attr( $scheme_tokens['color-primary']['value'] ), esc_attr( $scheme_tokens['color-link']['value'] ), esc_attr( $scheme_tokens['color-text']['value'] ), esc_attr( $scheme_tokens['color-muted']['value'] ), esc_html( self::choice_text( $choice['label'] ) ), esc_html( self::choice_text( $choice['descriptor'] ) ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Palette values validated from local JSON.
+			}
+			echo '</div></fieldset><fieldset class="blx-choice-group"><legend>' . esc_html__( 'Font selection', 'blixis' ) . '</legend><p class="description">' . esc_html__( 'Choose a system font pairing for your website.', 'blixis' ) . '</p><div class="blx-font-select-card" role="radiogroup" aria-label="' . esc_attr__( 'Font pairings', 'blixis' ) . '">';
+			foreach ( SetupChoices::fonts() as $choice ) {
+				printf( '<label class="blx-font-option"><input type="radio" name="font" value="%s" %s><strong aria-hidden="true" style="font-family:%s">Aa</strong><span><b>%s</b><small>%s</small></span></label>', esc_attr( $choice['id'] ), checked( $font, $choice['id'], false ), esc_attr( $choice['heading'] ), esc_html( self::choice_text( $choice['label'] ) ), esc_html( self::choice_text( $choice['descriptor'] ) ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Values validated from local JSON.
+			}
+			echo '</div></fieldset></section>';
 		} elseif ( \in_array( $step, [ 2, 3, 4 ], true ) ) {
 			echo '<fieldset><legend>' . esc_html( self::STEP_NAMES[ $step ] ) . '</legend>';
 			foreach ( $tokens as $name => $entry ) {
@@ -372,18 +374,25 @@ else :
 			return;
 		}
 		?>
-		<section aria-labelledby="blixis-saved"><h2 id="blixis-saved"><?php echo esc_html__( 'Saved design system', 'blixis' ); ?></h2>
-		<p>
+		<aside class="blx-saved-panel"><p class="blx-saved-summary">
 		<?php
+		$saved_timestamp = strtotime( $saved['updated_at'] );
+		if ( false === $saved_timestamp ) {
+			$saved_timestamp = time();
+		}
+		$saved_date = wp_date( (string) get_option( 'date_format' ), $saved_timestamp );
+		if ( false === $saved_date ) {
+			$saved_date = '';
+		}
 		/* translators: 1: preset, 2: version number, 3: date. */
-		printf( esc_html__( 'Preset %1$s, version %2$s, saved %3$s.', 'blixis' ), esc_html( $saved['preset'] ), esc_html( (string) $saved['tokenVersion'] ), esc_html( $saved['updated_at'] ) );
+		printf( esc_html__( 'Current design: %1$s, version %2$s, saved %3$s', 'blixis' ), esc_html( self::choice_text( self::PRESETS[ $saved['preset'] ] ?? $saved['preset'] ) ), esc_html( (string) $saved['tokenVersion'] ), esc_html( $saved_date ) );
 		?>
 		</p>
 		<?php
 		if ( [] !== DesignSystemStore::history() ) {
-			self::action_form( 'rollback', __( 'Restore the previous design system', 'blixis' ) );
+			self::action_form( 'rollback', __( 'Restore previous version', 'blixis' ), 'button-link blx-restore-link' );
 		}
-		echo '</section>';
+		echo '</aside>';
 	}
 
 	/** Restore the previous design system. */
@@ -436,8 +445,17 @@ else :
 			if ( null === $tokens ) {
 				self::redirect_step( $step, 'unavailable' );
 			}
-			$draft = [
+			$scheme        = isset( $_POST['scheme'] ) ? sanitize_key( wp_unslash( $_POST['scheme'] ) ) : '';
+			$font          = isset( $_POST['font'] ) ? sanitize_key( wp_unslash( $_POST['font'] ) ) : '';
+			$chosen_tokens = SetupChoices::apply_to_tokens( $tokens, $scheme, $font, FontLibrary::allowed_stacks() );
+			if ( null === $chosen_tokens ) {
+				self::redirect_step( $step, 'invalid' );
+			}
+			$tokens = $chosen_tokens;
+			$draft  = [
 				'preset'     => $preset,
+				'scheme'     => $scheme,
+				'font'       => $font,
 				'tokens'     => $tokens,
 				'appearance' => $draft['appearance'] ?? Appearance::site_mode(),
 			];
@@ -532,7 +550,12 @@ else :
 			return null;
 		}
 		$data = json_decode( $raw, true );
-		if ( ! \is_array( $data ) || ! \in_array( \array_keys( $data ), [ [ 'preset', 'tokens' ], [ 'preset', 'tokens', 'appearance' ] ], true ) || ! \is_string( $data['preset'] ) || ! isset( self::PRESETS[ $data['preset'] ] ) || ( \array_key_exists( 'appearance', $data ) && Appearance::normalize( $data['appearance'] ) !== $data['appearance'] ) ) {
+		if ( ! \is_array( $data ) || ! \is_string( $data['preset'] ?? null ) || ! isset( self::PRESETS[ $data['preset'] ] ) || ( \array_key_exists( 'appearance', $data ) && Appearance::normalize( $data['appearance'] ) !== $data['appearance'] ) ) {
+			return null;
+		}
+		$data['scheme'] = $data['scheme'] ?? 'primary';
+		$data['font']   = $data['font'] ?? 'system';
+		if ( null === self::find_choice( SetupChoices::schemes(), $data['scheme'] ) || null === self::find_choice( SetupChoices::fonts(), $data['font'] ) || \array_diff( \array_keys( $data ), [ 'preset', 'scheme', 'font', 'tokens', 'appearance' ] ) ) {
 			return null;
 		}
 		$seed = self::preset_tokens( $data['preset'] );
@@ -541,9 +564,80 @@ else :
 		}
 		return [
 			'preset'     => $data['preset'],
+			'scheme'     => $data['scheme'],
+			'font'       => $data['font'],
 			'tokens'     => $data['tokens'],
 			'appearance' => $data['appearance'] ?? Appearance::site_mode(),
 		];
+	}
+
+	/** Find one allowlisted choice by id.
+	 *
+	 * @param list<array<string, mixed>> $choices Choice records.
+	 * @param mixed                      $id Submitted id.
+	 * @return array<string, mixed>|null
+	 */
+	private static function find_choice( array $choices, mixed $id ): ?array {
+		if ( ! is_string( $id ) ) {
+			return null;
+		}
+		foreach ( $choices as $choice ) {
+			if ( $choice['id'] === $id ) {
+				return $choice;
+			}
+		}
+		return null;
+	}
+
+	/** Build validated, scoped presentation properties for decorative preset miniatures.
+	 *
+	 * @param array<string, mixed> $tokens Token map.
+	 */
+	private static function mock_style( array $tokens ): string {
+		$style = '';
+		foreach ( [ 'color-bg', 'color-surface', 'color-text', 'color-muted', 'color-primary', 'color-on-primary', 'font-heading' ] as $name ) {
+			$value = $tokens[ $name ]['value'] ?? '';
+			if ( is_string( $value ) && '' !== $value ) {
+				$style .= '--mini-' . substr( $name, 6 ) . ':' . $value . ';';
+			}
+		}
+		return $style;
+	}
+
+	/** Translate copy stored in bundled JSON through literal gettext source strings.
+	 *
+	 * @param string $text English source copy.
+	 */
+	private static function choice_text( string $text ): string {
+		$translations = [
+			'Ocean'                                => __( 'Ocean', 'blixis' ),
+			'Deep blues and cool neutrals.'        => __( 'Deep blues and cool neutrals.', 'blixis' ),
+			'Forest'                               => __( 'Forest', 'blixis' ),
+			'Leaf greens and warm neutrals.'       => __( 'Leaf greens and warm neutrals.', 'blixis' ),
+			'Sunset'                               => __( 'Sunset', 'blixis' ),
+			'Warm terracotta and amber.'           => __( 'Warm terracotta and amber.', 'blixis' ),
+			'Minimal'                              => __( 'Minimal', 'blixis' ),
+			'Custom'                               => __( 'Custom', 'blixis' ),
+			'Begin with a neutral design and shape it yourself.' => __( 'Begin with a neutral design and shape it yourself.', 'blixis' ),
+			'High-contrast monochrome essentials.' => __( 'High-contrast monochrome essentials.', 'blixis' ),
+			'Primary'                              => __( 'Primary', 'blixis' ),
+			'Nature'                               => __( 'Nature', 'blixis' ),
+			'Secondary'                            => __( 'Secondary', 'blixis' ),
+			'Neutral'                              => __( 'Neutral', 'blixis' ),
+			'Modern'                               => __( 'Modern', 'blixis' ),
+			'Fresh'                                => __( 'Fresh', 'blixis' ),
+			'Vibrant'                              => __( 'Vibrant', 'blixis' ),
+			'System Sans'                          => __( 'System Sans', 'blixis' ),
+			'Editorial'                            => __( 'Editorial', 'blixis' ),
+			'Technical'                            => __( 'Technical', 'blixis' ),
+			'Clean & modern'                       => __( 'Clean & modern', 'blixis' ),
+			'Classic & readable'                   => __( 'Classic & readable', 'blixis' ),
+			'Compact & precise'                    => __( 'Compact & precise', 'blixis' ),
+			'Auto'                                 => __( 'Auto', 'blixis' ),
+			'Light'                                => __( 'Light', 'blixis' ),
+			'Dark'                                 => __( 'Dark', 'blixis' ),
+		];
+		return $translations[ $text ] ?? $text;
 	}
 
 	/**
@@ -593,10 +687,11 @@ else :
 	 *
 	 * @param string $action Action.
 	 * @param string $label Label.
+	 * @param string $button_class Button class.
 	 */
-	private static function action_form( string $action, string $label ): void {
+	private static function action_form( string $action, string $label, string $button_class = 'button button-secondary' ): void {
 		?>
-		<form class="blx-setup-action-form" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>"><input type="hidden" name="action" value="<?php echo esc_attr( 'blixis_setup_' . $action ); ?>"><?php wp_nonce_field( self::NONCE_ACTION, 'blixis_setup_nonce_' . $action ); ?><button class="button button-secondary" type="submit"><?php echo esc_html( $label ); ?></button></form>
+		<form class="blx-setup-action-form blx-setup-action-form--<?php echo esc_attr( $action ); ?>" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>"><input type="hidden" name="action" value="<?php echo esc_attr( 'blixis_setup_' . $action ); ?>"><?php wp_nonce_field( self::NONCE_ACTION, 'blixis_setup_nonce_' . $action ); ?><button class="<?php echo esc_attr( $button_class ); ?>" type="submit"><?php echo esc_html( $label ); ?></button></form>
 		<?php
 	}
 

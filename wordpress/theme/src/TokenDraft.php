@@ -48,6 +48,9 @@ final class TokenDraft {
 		if ( 'custom' !== $preset && ( ! \is_string( $data['category'] ?? null ) || ! \in_array( $data['category'], [ 'business', 'blog', 'portfolio', 'ecommerce' ], true ) ) ) {
 			return null;
 		}
+		if ( 'custom' !== $preset && ( ! self::valid_preset_copy( $data ) ) ) {
+			return null;
+		}
 		$tokens        = [];
 		$allowed_names = [ 'color-bg', 'color-surface', 'color-text', 'color-muted', 'color-link', 'color-primary', 'color-on-primary', 'color-line', 'font-body', 'font-heading', 'text-sm', 'text-base', 'text-lg', 'text-xl', 'text-2xl', 'space-1', 'space-2', 'space-3', 'space-4', 'space-6', 'space-8', 'radius-sm', 'radius-md', 'container-content', 'container-wide', 'shadow-card' ];
 		foreach ( $data['tokens'] as $token ) {
@@ -69,6 +72,20 @@ final class TokenDraft {
 		}
 		$result = self::validate( $tokens, $tokens );
 		return [] === $result ? $tokens : null;
+	}
+
+	/** Validate the user-facing English preset fields shipped in bundled JSON. */
+	/** Validate bounded English display fields in a bundled preset.
+	 *
+	 * @param array<string, mixed> $data Preset data.
+	 */
+	private static function valid_preset_copy( array $data ): bool {
+		foreach ( [ 'label', 'tagline' ] as $field ) {
+			if ( ! isset( $data[ $field ] ) || ! is_string( $data[ $field ] ) || '' === trim( $data[ $field ] ) || strlen( $data[ $field ] ) > 80 || 1 !== preg_match( '/^[\p{L}\p{N} .,&\x27-]+$/uD', $data[ $field ] ) ) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	/**

@@ -2308,7 +2308,20 @@ async function smoke() {
         headers: { cookie: editorCookie },
       });
       const adminHtml = await adminThemes.text();
-      check(adminHtml.includes('Set up the Blixis theme when you are ready.'), 'admin sees the setup notice');
+      check(
+        !adminHtml.includes('Set up the Blixis theme when you are ready.'),
+        'setup prompt is kept on the wizard page',
+      );
+      const setupWelcome = await http(`${base}/wp-admin/themes.php?page=blixis-setup`, {
+        headers: { cookie: adminCookie },
+      });
+      const setupWelcomeHtml = await setupWelcome.text();
+      check(
+        setupWelcomeHtml.includes('blx-setup-banner') &&
+          setupWelcomeHtml.includes('Start setup') &&
+          setupWelcomeHtml.includes('Dismiss'),
+        'not-started wizard shows compact inline start and dismiss actions',
+      );
       check(
         !(await editorThemes.text()).includes('Set up the Blixis theme when you are ready.'),
         'editor does not see the setup notice',
@@ -2347,7 +2360,9 @@ async function smoke() {
       const afterDenied = JSON.parse(command('option', 'get', 'blixis_setup', '--format=json'));
       check(afterDenied.status === 'not_started', 'rejected requests preserve setup status');
       for (const action of ['start', 'dismiss']) {
-        const nonce = adminHtml.match(new RegExp(`name="blixis_setup_nonce_${action}" value="([a-z0-9]+)"`))?.[1];
+        const nonce = setupWelcomeHtml.match(
+          new RegExp(`name="blixis_setup_nonce_${action}" value="([a-z0-9]+)"`),
+        )?.[1];
         check(Boolean(nonce), `${action} form has a nonce`);
         if (nonce) {
           const response = await http(`${base}/wp-admin/admin-post.php`, {
@@ -2375,9 +2390,9 @@ async function smoke() {
               const html = await response.text();
               check(
                 response.status === 200 &&
-                  html.includes(
-                    `<h2>${step === 1 ? 'Choose a starter design' : step === 6 ? 'Finish setup' : 'Make it yours'}</h2>`,
-                  ),
+                  new RegExp(
+                    `<h2[^>]*>${step === 1 ? 'Choose a starter design' : step === 6 ? 'Finish setup' : step === 5 ? 'Content' : 'Make it yours'}</h2>`,
+                  ).test(html),
                 `wizard step ${step} renders`,
               );
               return html;
@@ -2402,25 +2417,28 @@ async function smoke() {
             let response;
             check(
               html.includes('aria-label="Setup steps"') &&
-                html.includes('>Welcome</li>') &&
-                html.includes('>Theme</li>') &&
-                html.includes('>Style</li>') &&
-                html.includes('>Content</li>') &&
-                html.includes('>Finish</li>'),
+                html.includes('blx-step-label">Welcome</span>') &&
+                html.includes('blx-step-label">Theme</span>') &&
+                html.includes('blx-step-label">Style</span>') &&
+                html.includes('blx-step-label">Content</span>') &&
+                html.includes('blx-step-label">Finish</span>'),
               'wizard renders the five visible step labels',
             );
             check(
-              html.includes('All Templates') &&
-                html.includes('Business') &&
-                html.includes('Blog') &&
-                html.includes('Portfolio') &&
-                html.includes('eCommerce') &&
-                !html.includes('>SaaS</a>'),
-              'wizard filters only categories backed by bundled presets',
+              !html.includes('View All Templates') && !html.includes('SaaS'),
+              'wizard does not imply an unavailable template catalog',
             );
             check(
-              html.includes('role="radiogroup"') && html.includes('name="preset" value="ocean"'),
-              'preset choices have native radiogroup controls',
+              html.includes('role="radiogroup"') &&
+                html.includes('name="preset" value="ocean"') &&
+                html.includes('name="scheme" value="primary"') &&
+                html.includes('name="font" value="system"') &&
+                /name="preset" value="ocean"\s+checked/.test(html) &&
+                html.includes('blx-mini-hero') &&
+                html.includes('<strong>Welcome</strong>') &&
+                !html.includes('Explore the design') &&
+                html.includes('style="--mini-bg:#f8fbff;'),
+              'preset, palette and font choices render as accessible radios with token-driven mini previews',
             );
             response = await submit(1, html, {}, 'cancel');
             check(response.status === 302, 'wizard Skip Setup redirects after POST');
@@ -2435,7 +2453,11 @@ async function smoke() {
               JSON.stringify({ version: 1, status: 'not_started', updated_at: new Date().toISOString() }),
               '--format=json',
             );
-            const restartNonce = adminHtml.match(/name="blixis_setup_nonce_start" value="([a-z0-9]+)"/)?.[1];
+            // The start banner only renders while setup has not started: read the nonce from the page in the reset state.
+            const restartHtml = await (
+              await http(`${base}/wp-admin/themes.php?page=blixis-setup`, { headers: { cookie: adminCookie } })
+            ).text();
+            const restartNonce = restartHtml.match(/name="blixis_setup_nonce_start" value="([a-z0-9]+)"/)?.[1];
             response = await http(`${base}/wp-admin/admin-post.php`, {
               method: 'POST',
               redirect: 'manual',
@@ -2444,16 +2466,41 @@ async function smoke() {
             });
             check(response.status === 302, 'setup can be restarted after smoke-test reset');
             html = await stepPage(1);
-            response = await submit(1, html, { preset: '<script>' });
+            response = await submit(1, html, { preset: '<script>', scheme: 'primary', font: 'system' });
             check(
               response.status === 302 && response.headers.get('location')?.includes('error=invalid'),
               'hostile preset id is rejected',
             );
-            response = await submit(1, html, { preset: 'ocean' });
+            const draftBeforeChoices = wpCmd('user', 'meta', 'get', 'admin', 'blixis_setup_draft');
+            response = await submit(1, html, { preset: 'ocean', scheme: 'unknown', font: 'system' });
+            check(
+              response.status === 302 && response.headers.get('location')?.includes('error=invalid'),
+              'hostile color scheme id is rejected',
+            );
+            check(
+              (() => {
+                const after = wpCmd('user', 'meta', 'get', 'admin', 'blixis_setup_draft');
+                return after.status === draftBeforeChoices.status && after.stdout === draftBeforeChoices.stdout;
+              })(),
+              'rejected palette leaves the draft unchanged',
+            );
+            response = await submit(1, html, { preset: 'ocean', scheme: 'primary', font: 'unknown' });
+            check(
+              response.status === 302 && response.headers.get('location')?.includes('error=invalid'),
+              'hostile font pairing id is rejected',
+            );
+            response = await submit(1, html, { preset: 'ocean', scheme: 'nature', font: 'editorial' });
             check(response.status === 302, 'preset POST advances');
             html = await stepPage(2);
+            check(!html.includes('blx-setup-banner'), 'in-progress wizard hides the entry banner');
             const draftBefore = command('user', 'meta', 'get', 'admin', 'blixis_setup_draft');
-            check(draftBefore.includes('"preset":"ocean"'), 'preset POST saves user draft');
+            check(
+              draftBefore.includes('"preset":"ocean"') &&
+                draftBefore.includes('"scheme":"nature"') &&
+                draftBefore.includes('"font":"editorial"') &&
+                draftBefore.includes('Georgia'),
+              'preset, palette and font POST save validated values in the per-user draft',
+            );
             response = await submit(2, html, {}, 'back');
             check(
               response.status === 302 && response.headers.get('location')?.includes('step=1'),
@@ -2468,7 +2515,20 @@ async function smoke() {
               ),
               'resume restores the selected preset',
             );
-            response = await submit(1, resumed, { preset: 'ocean' });
+            check(
+              [...resumed.matchAll(/<input\b[^>]*\bname="scheme"[^>]*>/g)].some(
+                (match) =>
+                  /\bvalue="nature"/.test(match[0]) &&
+                  /\bchecked(?:\s*=\s*(?:"checked"|'checked'|checked))?(?:\s|\/?>)/.test(match[0]),
+              ) &&
+                [...resumed.matchAll(/<input\b[^>]*\bname="font"[^>]*>/g)].some(
+                  (match) =>
+                    /\bvalue="editorial"/.test(match[0]) &&
+                    /\bchecked(?:\s*=\s*(?:"checked"|'checked'|checked))?(?:\s|\/?>)/.test(match[0]),
+                ),
+              'resume restores the selected palette and font pairing',
+            );
+            response = await submit(1, resumed, { preset: 'ocean', scheme: 'nature', font: 'editorial' });
             check(response.status === 302, 'resumed setup continues');
             html = await stepPage(2);
             const colorFields = Object.fromEntries(
@@ -2590,8 +2650,8 @@ async function smoke() {
               'the saved design system is version 1 of the ocean preset',
             );
             check(
-              saved.tokens['color-bg'].value === '#f8fbff' && saved.tokens['color-bg'].dark === '#0b1726',
-              'apply persists both the light and the dark value of each color token',
+              saved.tokens['color-bg'].value === '#fafcf8' && saved.tokens['color-bg'].dark === '#101c15',
+              'apply persists the selected palette in both website appearance modes',
             );
             check(
               JSON.parse(command('option', 'get', 'blixis_setup', '--format=json')).status === 'completed',
@@ -2605,7 +2665,7 @@ async function smoke() {
               'the design system is autoloaded (every page needs it)',
             );
             check(
-              (await get('/')).text.includes('--blx-color-bg:#f8fbff'),
+              (await get('/')).text.includes('--blx-color-bg:#fafcf8'),
               'the front page prints the saved tokens after the bundled ones',
             );
             check(
@@ -2719,11 +2779,11 @@ async function smoke() {
             check(rolledBack.status === 302, 'restore redirects after an authorized POST');
             const restored = JSON.parse(command('option', 'get', 'blixis_design_system', '--format=json'));
             check(
-              restored.tokenVersion === 3 && restored.tokens['color-bg'].value === '#f8fbff',
+              restored.tokenVersion === 3 && restored.tokens['color-bg'].value === '#fafcf8',
               'restore brings back the first design system under a new, higher version',
             );
             check(
-              restored.tokens['color-bg'].dark === '#0b1726',
+              restored.tokens['color-bg'].dark === '#101c15',
               'restore brings back the dark values together with the light values',
             );
             command('post', 'delete', fontPost.trim(), '--force');

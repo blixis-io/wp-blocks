@@ -19,6 +19,7 @@ require_once __DIR__ . '/src/SetupState.php';
 require_once __DIR__ . '/src/TokenDraft.php';
 require_once __DIR__ . '/src/FontLibrary.php';
 require_once __DIR__ . '/src/DesignSystemStore.php';
+require_once __DIR__ . '/src/SetupChoices.php';
 require_once __DIR__ . '/src/SetupAdmin.php';
 
 Setup::register();

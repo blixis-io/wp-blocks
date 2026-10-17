@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "schemes": [
+    { "id": "primary", "label": "Primary", "descriptor": "Modern", "preset": "ocean" },
+    { "id": "nature", "label": "Nature", "descriptor": "Fresh", "preset": "forest" },
+    { "id": "secondary", "label": "Secondary", "descriptor": "Vibrant", "preset": "sunset" },
+    { "id": "neutral", "label": "Neutral", "descriptor": "Minimal", "preset": "minimal" }
+  ]
+}
