@@ -1,0 +1,115 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/font-collection.json",
+  "name": "Blixis fonts",
+  "description": "Bundled local variable fonts for Blixis templates.",
+  "categories": [
+    {
+      "name": "Sans Serif",
+      "slug": "sans-serif"
+    }
+  ],
+  "font_families": [
+    {
+      "font_family_settings": {
+        "name": "Plus Jakarta Sans",
+        "slug": "plus-jakarta-sans",
+        "fontFamily": "Plus Jakarta Sans, sans-serif",
+        "fontFace": [
+          {
+            "fontFamily": "Plus Jakarta Sans",
+            "fontStyle": "normal",
+            "fontWeight": "200 800",
+            "fontDisplay": "swap",
+            "src": "fonts/plus-jakarta-sans/PlusJakartaSans-wght.ttf"
+          }
+        ]
+      },
+      "categories": ["sans-serif"]
+    },
+    {
+      "font_family_settings": {
+        "name": "Inter",
+        "slug": "inter",
+        "fontFamily": "Inter, sans-serif",
+        "fontFace": [
+          {
+            "fontFamily": "Inter",
+            "fontStyle": "normal",
+            "fontWeight": "200 800",
+            "fontDisplay": "swap",
+            "src": "fonts/inter/Inter-opsz-wght.ttf"
+          }
+        ]
+      },
+      "categories": ["sans-serif"]
+    },
+    {
+      "font_family_settings": {
+        "name": "Space Grotesk",
+        "slug": "space-grotesk",
+        "fontFamily": "Space Grotesk, sans-serif",
+        "fontFace": [
+          {
+            "fontFamily": "Space Grotesk",
+            "fontStyle": "normal",
+            "fontWeight": "200 800",
+            "fontDisplay": "swap",
+            "src": "fonts/space-grotesk/SpaceGrotesk-wght.ttf"
+          }
+        ]
+      },
+      "categories": ["sans-serif"]
+    },
+    {
+      "font_family_settings": {
+        "name": "DM Sans",
+        "slug": "dm-sans",
+        "fontFamily": "DM Sans, sans-serif",
+        "fontFace": [
+          {
+            "fontFamily": "DM Sans",
+            "fontStyle": "normal",
+            "fontWeight": "200 800",
+            "fontDisplay": "swap",
+            "src": "fonts/dm-sans/DMSans-opsz-wght.ttf"
+          }
+        ]
+      },
+      "categories": ["sans-serif"]
+    },
+    {
+      "font_family_settings": {
+        "name": "Manrope",
+        "slug": "manrope",
+        "fontFamily": "Manrope, sans-serif",
+        "fontFace": [
+          {
+            "fontFamily": "Manrope",
+            "fontStyle": "normal",
+            "fontWeight": "200 800",
+            "fontDisplay": "swap",
+            "src": "fonts/manrope/Manrope-wght.ttf"
+          }
+        ]
+      },
+      "categories": ["sans-serif"]
+    },
+    {
+      "font_family_settings": {
+        "name": "Outfit",
+        "slug": "outfit",
+        "fontFamily": "Outfit, sans-serif",
+        "fontFace": [
+          {
+            "fontFamily": "Outfit",
+            "fontStyle": "normal",
+            "fontWeight": "200 800",
+            "fontDisplay": "swap",
+            "src": "fonts/outfit/Outfit-wght.ttf"
+          }
+        ]
+      },
+      "categories": ["sans-serif"]
+    }
+  ]
+}

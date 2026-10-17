@@ -1,0 +1,693 @@
+{
+  "schemaVersion": "1.0.0",
+  "template": {
+    "id": "online-store",
+    "slug": "online-store",
+    "name": "Online Store",
+    "category": "ecommerce",
+    "description": "Editorial WooCommerce storefront starter.",
+    "version": "1.0.0",
+    "requiredBuilderVersion": ">=0.1.0",
+    "license": "demo-only",
+    "tags": [
+      "ecommerce",
+      "woocommerce",
+      "retail"
+    ],
+    "previewImageRef": "preview",
+    "defaultLocale": "en",
+    "supportedLocales": [
+      "en",
+      "nl"
+    ]
+  },
+  "dependencies": {
+    "wordpressPlugins": [
+      {
+        "slug": "woocommerce",
+        "required": true
+      }
+    ],
+    "fontProvider": "google-fonts"
+  },
+  "fonts": [
+    {
+      "id": "heading",
+      "provider": "google",
+      "family": "Outfit",
+      "weights": [
+        400,
+        500,
+        600,
+        700,
+        800
+      ],
+      "styles": [
+        "normal"
+      ]
+    },
+    {
+      "id": "body",
+      "provider": "google",
+      "family": "DM Sans",
+      "weights": [
+        400,
+        500,
+        600,
+        700
+      ],
+      "styles": [
+        "normal"
+      ]
+    }
+  ],
+  "designTokens": {
+    "colors": {
+      "light": {
+        "primary": "#AA6B34",
+        "secondary": "#29211D",
+        "accent": "#B78A65",
+        "background": "#FFFCF7",
+        "surface": "#F6EFE8",
+        "text": "#29211D",
+        "muted": "#78695D",
+        "border": "#E8DCD0"
+      },
+      "dark": {
+        "primary": "#E5B78C",
+        "secondary": "#FFF7ED",
+        "accent": "#D7AB84",
+        "background": "#191511",
+        "surface": "#28211D",
+        "text": "#FCF6ED",
+        "muted": "#CEBAAA",
+        "border": "#4D3D32"
+      }
+    },
+    "typography": {
+      "headingFontRef": "heading",
+      "bodyFontRef": "body",
+      "scale": {
+        "h1": "clamp(2.75rem, 5vw, 5rem)",
+        "h2": "clamp(2rem, 3vw, 3rem)",
+        "body": "1rem"
+      }
+    },
+    "spacing": {
+      "sm": "0.75rem",
+      "md": "1rem",
+      "lg": "1.5rem",
+      "xl": "3rem",
+      "section": "clamp(4rem, 8vw, 7rem)"
+    },
+    "radii": {
+      "sm": "0.5rem",
+      "md": "1rem",
+      "lg": "1.5rem",
+      "pill": "999px"
+    },
+    "layout": {
+      "container": "1200px"
+    },
+    "breakpoints": {
+      "mobileMax": "767px",
+      "tabletMax": "1023px"
+    },
+    "defaultAppearance": "auto"
+  },
+  "assets": {
+    "logo": {
+      "kind": "svg",
+      "source": {
+        "type": "template-path",
+        "path": "assets/online-store/logo.svg"
+      },
+      "alt": "Brand logo"
+    },
+    "preview": {
+      "kind": "image",
+      "source": {
+        "type": "template-path",
+        "path": "assets/online-store/preview.webp"
+      },
+      "alt": "online-store template preview"
+    },
+    "hero": {
+      "kind": "image",
+      "source": {
+        "type": "template-path",
+        "path": "assets/online-store/hero.webp"
+      },
+      "alt": "Leather handbag and clothing editorial image",
+      "attribution": {
+        "required": true,
+        "status": "pending-license-review"
+      }
+    },
+    "product-1": {
+      "kind": "image",
+      "source": {
+        "type": "template-path",
+        "path": "assets/online-store/product-1.webp"
+      },
+      "alt": "Black leather tote bag",
+      "attribution": {
+        "required": true,
+        "status": "pending-license-review"
+      }
+    },
+    "product-2": {
+      "kind": "image",
+      "source": {
+        "type": "template-path",
+        "path": "assets/online-store/product-2.webp"
+      },
+      "alt": "Neutral cotton jacket",
+      "attribution": {
+        "required": true,
+        "status": "pending-license-review"
+      }
+    },
+    "product-3": {
+      "kind": "image",
+      "source": {
+        "type": "template-path",
+        "path": "assets/online-store/product-3.webp"
+      },
+      "alt": "Ceramic home accessories",
+      "attribution": {
+        "required": true,
+        "status": "pending-license-review"
+      }
+    }
+  },
+  "documents": [
+    {
+      "id": "homepage",
+      "type": "page",
+      "slug": "home",
+      "title": "Online Store — Home",
+      "status": "draft",
+      "root": {
+        "id": "page-root",
+        "type": "page",
+        "props": {},
+        "children": [
+          {
+            "id": "header",
+            "type": "site-header",
+            "props": {},
+            "children": [
+              {
+                "id": "header-inner",
+                "type": "container",
+                "props": {
+                  "maxWidthToken": "container"
+                },
+                "children": [
+                  {
+                    "id": "logo",
+                    "type": "site-logo",
+                    "props": {
+                      "assetRef": "logo",
+                      "link": "/"
+                    },
+                    "children": []
+                  },
+                  {
+                    "id": "primary-nav",
+                    "type": "navigation",
+                    "props": {
+                      "items": [
+                        {
+                          "label": "Shop",
+                          "href": "/shop/"
+                        },
+                        {
+                          "label": "New arrivals",
+                          "href": "/product-category/new/"
+                        },
+                        {
+                          "label": "Our story",
+                          "href": "/about/"
+                        }
+                      ]
+                    },
+                    "children": []
+                  },
+                  {
+                    "id": "cart",
+                    "type": "woocommerce-cart-link",
+                    "props": {
+                      "showCount": true,
+                      "showSubtotal": false
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "hero",
+            "type": "section",
+            "props": {
+              "semanticTag": "section",
+              "variant": "hero"
+            },
+            "children": [
+              {
+                "id": "hero-inner",
+                "type": "container",
+                "props": {
+                  "maxWidthToken": "container"
+                },
+                "children": [
+                  {
+                    "id": "hero-columns",
+                    "type": "columns",
+                    "props": {
+                      "ratios": [
+                        5,
+                        6
+                      ]
+                    },
+                    "children": [
+                      {
+                        "id": "hero-copy",
+                        "type": "stack",
+                        "props": {},
+                        "children": [
+                          {
+                            "id": "hero-eyebrow",
+                            "type": "text",
+                            "props": {
+                              "content": [
+                                {
+                                  "text": "THE NEW COLLECTION"
+                                }
+                              ]
+                            },
+                            "children": []
+                          },
+                          {
+                            "id": "hero-title",
+                            "type": "heading",
+                            "props": {
+                              "tag": "h1",
+                              "content": [
+                                {
+                                  "text": "Everyday pieces. "
+                                },
+                                {
+                                  "text": "Lasting style.",
+                                  "marks": [
+                                    {
+                                      "type": "token-color",
+                                      "value": "primary"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "text": ""
+                                }
+                              ]
+                            },
+                            "children": [],
+                            "animations": [
+                              {
+                                "id": "entrance",
+                                "preset": "fade-up",
+                                "trigger": {
+                                  "type": "viewport-enter",
+                                  "threshold": 0.2,
+                                  "once": true
+                                },
+                                "timing": {
+                                  "durationMs": 700,
+                                  "delayMs": 0,
+                                  "easing": "ease-out"
+                                },
+                                "from": {
+                                  "opacity": 0,
+                                  "translateY": "24px"
+                                },
+                                "to": {
+                                  "opacity": 1,
+                                  "translateY": "0px"
+                                },
+                                "reducedMotion": "show-final-state"
+                              }
+                            ]
+                          },
+                          {
+                            "id": "hero-description",
+                            "type": "text",
+                            "props": {
+                              "content": [
+                                {
+                                  "text": "Discover intentional essentials designed to go everywhere with you."
+                                }
+                              ]
+                            },
+                            "children": []
+                          },
+                          {
+                            "id": "hero-actions",
+                            "type": "row",
+                            "props": {},
+                            "children": [
+                              {
+                                "id": "shop-now",
+                                "type": "button",
+                                "props": {
+                                  "label": "Shop the collection",
+                                  "href": "/shop/",
+                                  "variant": "primary",
+                                  "target": "_self"
+                                },
+                                "children": []
+                              },
+                              {
+                                "id": "story-link",
+                                "type": "button",
+                                "props": {
+                                  "label": "Our story",
+                                  "href": "/about/",
+                                  "variant": "outline",
+                                  "target": "_self"
+                                },
+                                "children": []
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "id": "hero-image",
+                        "type": "image",
+                        "props": {
+                          "assetRef": "hero",
+                          "alt": "Minimal premium leather accessories and clothing",
+                          "loading": "lazy",
+                          "fit": "cover"
+                        },
+                        "children": []
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "new-arrivals",
+            "type": "section",
+            "props": {
+              "semanticTag": "section",
+              "variant": "default"
+            },
+            "children": [
+              {
+                "id": "products-inner",
+                "type": "container",
+                "props": {
+                  "maxWidthToken": "container"
+                },
+                "children": [
+                  {
+                    "id": "products-heading",
+                    "type": "heading",
+                    "props": {
+                      "tag": "h2",
+                      "content": [
+                        {
+                          "text": "New arrivals"
+                        }
+                      ]
+                    },
+                    "children": []
+                  },
+                  {
+                    "id": "product-query",
+                    "type": "woocommerce-product-grid",
+                    "props": {
+                      "columns": {
+                        "desktop": 3,
+                        "tablet": 2,
+                        "mobile": 1
+                      },
+                      "query": {
+                        "status": "publish",
+                        "orderby": "date",
+                        "order": "DESC",
+                        "limit": 6
+                      },
+                      "productCard": {
+                        "showPrice": true,
+                        "showRating": false,
+                        "showAddToCart": true
+                      },
+                      "placeholderAssets": [
+                        "product-1",
+                        "product-2",
+                        "product-3"
+                      ]
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "values",
+            "type": "section",
+            "props": {
+              "semanticTag": "section",
+              "variant": "default"
+            },
+            "children": [
+              {
+                "id": "values-inner",
+                "type": "container",
+                "props": {
+                  "maxWidthToken": "container"
+                },
+                "children": [
+                  {
+                    "id": "value-grid",
+                    "type": "grid",
+                    "props": {
+                      "columns": {
+                        "desktop": 3,
+                        "tablet": 2,
+                        "mobile": 1
+                      },
+                      "gapToken": "lg"
+                    },
+                    "children": [
+                      {
+                        "id": "value-one",
+                        "type": "card",
+                        "props": {
+                          "variant": "surface"
+                        },
+                        "children": [
+                          {
+                            "id": "value-one-title",
+                            "type": "heading",
+                            "props": {
+                              "tag": "h3",
+                              "content": [
+                                {
+                                  "text": "Thoughtfully made"
+                                }
+                              ]
+                            },
+                            "children": []
+                          },
+                          {
+                            "id": "value-one-desc",
+                            "type": "text",
+                            "props": {
+                              "content": [
+                                {
+                                  "text": "Considered materials and production."
+                                }
+                              ]
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "id": "value-two",
+                        "type": "card",
+                        "props": {
+                          "variant": "surface"
+                        },
+                        "children": [
+                          {
+                            "id": "value-two-title",
+                            "type": "heading",
+                            "props": {
+                              "tag": "h3",
+                              "content": [
+                                {
+                                  "text": "Built to last"
+                                }
+                              ]
+                            },
+                            "children": []
+                          },
+                          {
+                            "id": "value-two-desc",
+                            "type": "text",
+                            "props": {
+                              "content": [
+                                {
+                                  "text": "Timeless designs beyond trends."
+                                }
+                              ]
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "id": "value-three",
+                        "type": "card",
+                        "props": {
+                          "variant": "surface"
+                        },
+                        "children": [
+                          {
+                            "id": "value-three-title",
+                            "type": "heading",
+                            "props": {
+                              "tag": "h3",
+                              "content": [
+                                {
+                                  "text": "Simple returns"
+                                }
+                              ]
+                            },
+                            "children": []
+                          },
+                          {
+                            "id": "value-three-desc",
+                            "type": "text",
+                            "props": {
+                              "content": [
+                                {
+                                  "text": "Easy, transparent shopping."
+                                }
+                              ]
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "footer",
+            "type": "site-footer",
+            "props": {},
+            "children": [
+              {
+                "id": "footer-inner",
+                "type": "container",
+                "props": {
+                  "maxWidthToken": "container"
+                },
+                "children": [
+                  {
+                    "id": "footer-copy",
+                    "type": "text",
+                    "props": {
+                      "content": [
+                        {
+                          "text": "© {year} Your company. All rights reserved."
+                        }
+                      ]
+                    },
+                    "children": []
+                  },
+                  {
+                    "id": "footer-links",
+                    "type": "navigation",
+                    "props": {
+                      "items": [
+                        {
+                          "label": "Privacy",
+                          "href": "/privacy/"
+                        },
+                        {
+                          "label": "Contact",
+                          "href": "/contact/"
+                        }
+                      ]
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "localizations": {
+    "en": {},
+    "nl": {
+      "hero-title": {
+        "content": [
+          {
+            "text": "Tijdloze items. "
+          },
+          {
+            "text": "Blijvende stijl.",
+            "marks": [
+              {
+                "type": "token-color",
+                "value": "primary"
+              }
+            ]
+          }
+        ]
+      },
+      "shop-now": {
+        "label": "Bekijk collectie"
+      },
+      "story-link": {
+        "label": "Ons verhaal"
+      }
+    }
+  },
+  "importOptions": {
+    "createPages": true,
+    "setHomePage": false,
+    "downloadAssets": false,
+    "createNavigation": true,
+    "overwriteExisting": false
+  },
+  "security": {
+    "allowRemoteScripts": false,
+    "allowEmbeddedHtml": false
+  },
+  "dataBindings": {
+    "product-query": {
+      "provider": "woocommerce",
+      "resource": "products",
+      "requiresPlugin": "woocommerce",
+      "fallback": "empty-state"
+    }
+  }
+}

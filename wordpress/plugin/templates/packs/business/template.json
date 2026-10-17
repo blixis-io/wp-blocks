@@ -1,0 +1,854 @@
+{
+  "schemaVersion": "1.0.0",
+  "template": {
+    "id": "business",
+    "slug": "business",
+    "name": "Business",
+    "category": "corporate",
+    "description": "Corporate consulting and professional services template.",
+    "version": "1.0.0",
+    "requiredBuilderVersion": ">=0.1.0",
+    "license": "demo-only",
+    "tags": ["corporate", "consulting", "services"],
+    "previewImageRef": "preview",
+    "defaultLocale": "en",
+    "supportedLocales": ["en", "nl"]
+  },
+  "dependencies": {
+    "wordpressPlugins": [],
+    "fontProvider": "google-fonts"
+  },
+  "fonts": [
+    {
+      "id": "heading",
+      "provider": "google",
+      "family": "Plus Jakarta Sans",
+      "weights": [400, 500, 600, 700, 800],
+      "styles": ["normal"]
+    },
+    {
+      "id": "body",
+      "provider": "google",
+      "family": "Inter",
+      "weights": [400, 500, 600, 700],
+      "styles": ["normal"]
+    }
+  ],
+  "designTokens": {
+    "colors": {
+      "light": {
+        "primary": "#0B63CE",
+        "secondary": "#102C46",
+        "accent": "#06B6D4",
+        "background": "#FFFFFF",
+        "surface": "#F0F6FB",
+        "text": "#152238",
+        "muted": "#5B7185",
+        "border": "#D9E5F0"
+      },
+      "dark": {
+        "primary": "#60A5FA",
+        "secondary": "#DBEAFE",
+        "accent": "#22D3EE",
+        "background": "#091827",
+        "surface": "#122A40",
+        "text": "#EAF3FA",
+        "muted": "#AAC0D4",
+        "border": "#294A60"
+      }
+    },
+    "typography": {
+      "headingFontRef": "heading",
+      "bodyFontRef": "body",
+      "scale": {
+        "h1": "clamp(2.75rem, 5vw, 5rem)",
+        "h2": "clamp(2rem, 3vw, 3rem)",
+        "body": "1rem"
+      }
+    },
+    "spacing": {
+      "sm": "0.75rem",
+      "md": "1rem",
+      "lg": "1.5rem",
+      "xl": "3rem",
+      "section": "clamp(4rem, 8vw, 7rem)"
+    },
+    "radii": {
+      "sm": "0.5rem",
+      "md": "1rem",
+      "lg": "1.5rem",
+      "pill": "999px"
+    },
+    "layout": {
+      "container": "1200px"
+    },
+    "breakpoints": {
+      "mobileMax": "767px",
+      "tabletMax": "1023px"
+    },
+    "defaultAppearance": "auto"
+  },
+  "assets": {
+    "logo": {
+      "kind": "svg",
+      "source": {
+        "type": "template-path",
+        "path": "assets/business/logo.svg"
+      },
+      "alt": "Brand logo"
+    },
+    "preview": {
+      "kind": "image",
+      "source": {
+        "type": "template-path",
+        "path": "assets/business/preview.webp"
+      },
+      "alt": "business template preview"
+    },
+    "hero": {
+      "kind": "image",
+      "source": {
+        "type": "template-path",
+        "path": "assets/business/hero.webp"
+      },
+      "alt": "Glass corporate headquarters",
+      "attribution": {
+        "required": false,
+        "status": "generated",
+        "creator": "Blixis",
+        "license": "No attribution required"
+      }
+    },
+    "case": {
+      "kind": "image",
+      "source": {
+        "type": "template-path",
+        "path": "assets/business/case.webp"
+      },
+      "alt": "Professional team meeting",
+      "attribution": {
+        "required": false,
+        "status": "generated",
+        "creator": "Blixis",
+        "license": "No attribution required"
+      }
+    }
+  },
+  "documents": [
+    {
+      "id": "homepage",
+      "type": "page",
+      "slug": "home",
+      "title": "Business — Home",
+      "status": "draft",
+      "root": {
+        "id": "page-root",
+        "type": "page",
+        "props": {},
+        "children": [
+          {
+            "id": "header",
+            "type": "site-header",
+            "props": {
+              "sticky": false
+            },
+            "children": [
+              {
+                "id": "header-inner",
+                "type": "container",
+                "props": {},
+                "children": [
+                  {
+                    "id": "logo",
+                    "type": "site-logo",
+                    "props": {
+                      "assetRef": "logo",
+                      "link": "/"
+                    },
+                    "children": []
+                  },
+                  {
+                    "id": "primary-nav",
+                    "type": "navigation",
+                    "props": {
+                      "items": [
+                        {
+                          "label": "Home",
+                          "href": "/"
+                        },
+                        {
+                          "label": "About",
+                          "href": "/about/"
+                        },
+                        {
+                          "label": "Services",
+                          "href": "/services/"
+                        },
+                        {
+                          "label": "Contact",
+                          "href": "/contact/"
+                        }
+                      ]
+                    },
+                    "children": []
+                  },
+                  {
+                    "id": "header-cta",
+                    "type": "button",
+                    "props": {
+                      "label": "Contact us",
+                      "href": "/contact/",
+                      "variant": "primary",
+                      "target": "_self"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "hero",
+            "type": "section",
+            "props": {
+              "semanticTag": "section",
+              "variant": "hero"
+            },
+            "children": [
+              {
+                "id": "hero-inner",
+                "type": "container",
+                "props": {
+                  "maxWidthToken": "container"
+                },
+                "children": [
+                  {
+                    "id": "hero-columns",
+                    "type": "columns",
+                    "props": {
+                      "ratios": [6, 5]
+                    },
+                    "children": [
+                      {
+                        "id": "hero-copy",
+                        "type": "stack",
+                        "props": {},
+                        "children": [
+                          {
+                            "id": "hero-badge",
+                            "type": "text",
+                            "props": {
+                              "content": [
+                                {
+                                  "text": "YOUR PARTNER FOR GROWTH"
+                                }
+                              ]
+                            },
+                            "children": []
+                          },
+                          {
+                            "id": "hero-title",
+                            "type": "heading",
+                            "props": {
+                              "tag": "h1",
+                              "content": [
+                                {
+                                  "text": "Building what "
+                                },
+                                {
+                                  "text": "comes next",
+                                  "marks": [
+                                    {
+                                      "type": "token-color",
+                                      "value": "primary"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "text": ""
+                                }
+                              ]
+                            },
+                            "children": [],
+                            "animations": [
+                              {
+                                "id": "entrance",
+                                "preset": "fade-up",
+                                "trigger": {
+                                  "type": "viewport-enter",
+                                  "threshold": 0.2,
+                                  "once": true
+                                },
+                                "timing": {
+                                  "durationMs": 700,
+                                  "delayMs": 0,
+                                  "easing": "ease-out"
+                                },
+                                "from": {
+                                  "opacity": 0,
+                                  "translateY": "24px"
+                                },
+                                "to": {
+                                  "opacity": 1,
+                                  "translateY": "0px"
+                                },
+                                "reducedMotion": "show-final-state"
+                              }
+                            ]
+                          },
+                          {
+                            "id": "hero-description",
+                            "type": "text",
+                            "props": {
+                              "content": [
+                                {
+                                  "text": "Practical strategy, thoughtful technology, and measurable outcomes for growing organizations."
+                                }
+                              ]
+                            },
+                            "children": []
+                          },
+                          {
+                            "id": "hero-buttons",
+                            "type": "row",
+                            "props": {},
+                            "children": [
+                              {
+                                "id": "business-contact",
+                                "type": "button",
+                                "props": {
+                                  "label": "Talk to an expert",
+                                  "href": "/contact/",
+                                  "variant": "primary",
+                                  "target": "_self"
+                                },
+                                "children": []
+                              },
+                              {
+                                "id": "business-services",
+                                "type": "button",
+                                "props": {
+                                  "label": "Our services",
+                                  "href": "#services",
+                                  "variant": "outline",
+                                  "target": "_self"
+                                },
+                                "children": []
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "id": "business-hero-image",
+                        "type": "image",
+                        "props": {
+                          "assetRef": "hero",
+                          "alt": "Contemporary glass office building",
+                          "loading": "lazy",
+                          "fit": "cover"
+                        },
+                        "children": []
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "stats",
+            "type": "section",
+            "props": {
+              "semanticTag": "section",
+              "variant": "default"
+            },
+            "children": [
+              {
+                "id": "stats-inner",
+                "type": "container",
+                "props": {
+                  "maxWidthToken": "container"
+                },
+                "children": [
+                  {
+                    "id": "stats-grid",
+                    "type": "grid",
+                    "props": {
+                      "columns": {
+                        "desktop": 3,
+                        "tablet": 2,
+                        "mobile": 1
+                      },
+                      "gapToken": "lg"
+                    },
+                    "children": [
+                      {
+                        "id": "stat-one",
+                        "type": "card",
+                        "props": {
+                          "variant": "surface"
+                        },
+                        "children": [
+                          {
+                            "id": "stat-one-number",
+                            "type": "heading",
+                            "props": {
+                              "tag": "h3",
+                              "content": [
+                                {
+                                  "text": "120+"
+                                }
+                              ]
+                            },
+                            "children": []
+                          },
+                          {
+                            "id": "stat-one-caption",
+                            "type": "text",
+                            "props": {
+                              "content": [
+                                {
+                                  "text": "Projects delivered"
+                                }
+                              ]
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "id": "stat-two",
+                        "type": "card",
+                        "props": {
+                          "variant": "surface"
+                        },
+                        "children": [
+                          {
+                            "id": "stat-two-number",
+                            "type": "heading",
+                            "props": {
+                              "tag": "h3",
+                              "content": [
+                                {
+                                  "text": "18"
+                                }
+                              ]
+                            },
+                            "children": []
+                          },
+                          {
+                            "id": "stat-two-caption",
+                            "type": "text",
+                            "props": {
+                              "content": [
+                                {
+                                  "text": "Markets served"
+                                }
+                              ]
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "id": "stat-three",
+                        "type": "card",
+                        "props": {
+                          "variant": "surface"
+                        },
+                        "children": [
+                          {
+                            "id": "stat-three-number",
+                            "type": "heading",
+                            "props": {
+                              "tag": "h3",
+                              "content": [
+                                {
+                                  "text": "96%"
+                                }
+                              ]
+                            },
+                            "children": []
+                          },
+                          {
+                            "id": "stat-three-caption",
+                            "type": "text",
+                            "props": {
+                              "content": [
+                                {
+                                  "text": "Client satisfaction"
+                                }
+                              ]
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "services",
+            "type": "section",
+            "props": {
+              "semanticTag": "section",
+              "variant": "default"
+            },
+            "children": [
+              {
+                "id": "services-inner",
+                "type": "container",
+                "props": {
+                  "maxWidthToken": "container"
+                },
+                "children": [
+                  {
+                    "id": "services-title",
+                    "type": "heading",
+                    "props": {
+                      "tag": "h2",
+                      "content": [
+                        {
+                          "text": "Expertise that creates momentum"
+                        }
+                      ]
+                    },
+                    "children": []
+                  },
+                  {
+                    "id": "services-grid",
+                    "type": "grid",
+                    "props": {
+                      "columns": {
+                        "desktop": 3,
+                        "tablet": 2,
+                        "mobile": 1
+                      },
+                      "gapToken": "lg"
+                    },
+                    "children": [
+                      {
+                        "id": "advisory",
+                        "type": "card",
+                        "props": {
+                          "variant": "surface"
+                        },
+                        "children": [
+                          {
+                            "id": "advisory-title",
+                            "type": "heading",
+                            "props": {
+                              "tag": "h3",
+                              "content": [
+                                {
+                                  "text": "Business advisory"
+                                }
+                              ]
+                            },
+                            "children": []
+                          },
+                          {
+                            "id": "advisory-text",
+                            "type": "text",
+                            "props": {
+                              "content": [
+                                {
+                                  "text": "Clear direction for meaningful decisions."
+                                }
+                              ]
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "id": "technology",
+                        "type": "card",
+                        "props": {
+                          "variant": "surface"
+                        },
+                        "children": [
+                          {
+                            "id": "technology-title",
+                            "type": "heading",
+                            "props": {
+                              "tag": "h3",
+                              "content": [
+                                {
+                                  "text": "Digital transformation"
+                                }
+                              ]
+                            },
+                            "children": []
+                          },
+                          {
+                            "id": "technology-text",
+                            "type": "text",
+                            "props": {
+                              "content": [
+                                {
+                                  "text": "Modern systems that unlock efficiency."
+                                }
+                              ]
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "id": "operations",
+                        "type": "card",
+                        "props": {
+                          "variant": "surface"
+                        },
+                        "children": [
+                          {
+                            "id": "operations-title",
+                            "type": "heading",
+                            "props": {
+                              "tag": "h3",
+                              "content": [
+                                {
+                                  "text": "Operational excellence"
+                                }
+                              ]
+                            },
+                            "children": []
+                          },
+                          {
+                            "id": "operations-text",
+                            "type": "text",
+                            "props": {
+                              "content": [
+                                {
+                                  "text": "Teams and processes built to scale."
+                                }
+                              ]
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "case-study",
+            "type": "section",
+            "props": {
+              "semanticTag": "section",
+              "variant": "default"
+            },
+            "children": [
+              {
+                "id": "case-study-inner",
+                "type": "container",
+                "props": {
+                  "maxWidthToken": "container"
+                },
+                "children": [
+                  {
+                    "id": "case-columns",
+                    "type": "columns",
+                    "props": {
+                      "ratios": [1, 1]
+                    },
+                    "children": [
+                      {
+                        "id": "case-image",
+                        "type": "image",
+                        "props": {
+                          "assetRef": "case",
+                          "alt": "People collaborating in a professional workspace",
+                          "loading": "lazy",
+                          "fit": "cover"
+                        },
+                        "children": []
+                      },
+                      {
+                        "id": "case-copy",
+                        "type": "stack",
+                        "props": {},
+                        "children": [
+                          {
+                            "id": "case-kicker",
+                            "type": "text",
+                            "props": {
+                              "content": [
+                                {
+                                  "text": "CLIENT SUCCESS"
+                                }
+                              ]
+                            },
+                            "children": []
+                          },
+                          {
+                            "id": "case-title",
+                            "type": "heading",
+                            "props": {
+                              "tag": "h2",
+                              "content": [
+                                {
+                                  "text": "Results that speak for themselves"
+                                }
+                              ]
+                            },
+                            "children": []
+                          },
+                          {
+                            "id": "case-description",
+                            "type": "text",
+                            "props": {
+                              "content": [
+                                {
+                                  "text": "See how a focused partnership helped a growing business improve delivery."
+                                }
+                              ]
+                            },
+                            "children": []
+                          },
+                          {
+                            "id": "case-link",
+                            "type": "button",
+                            "props": {
+                              "label": "Read case study",
+                              "href": "/case-studies/",
+                              "variant": "primary",
+                              "target": "_self"
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "footer",
+            "type": "site-footer",
+            "props": {},
+            "children": [
+              {
+                "id": "footer-inner",
+                "type": "container",
+                "props": {
+                  "maxWidthToken": "container"
+                },
+                "children": [
+                  {
+                    "id": "footer-copy",
+                    "type": "text",
+                    "props": {
+                      "content": [
+                        {
+                          "text": "© {year} Your company. All rights reserved."
+                        }
+                      ]
+                    },
+                    "children": []
+                  },
+                  {
+                    "id": "footer-links",
+                    "type": "navigation",
+                    "props": {
+                      "items": [
+                        {
+                          "label": "Privacy",
+                          "href": "/privacy/"
+                        },
+                        {
+                          "label": "Contact",
+                          "href": "/contact/"
+                        }
+                      ]
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "importable": false,
+      "importabilityReasons": [
+        "Element type \"button\" uses unsupported prop \"target\".",
+        "Element type \"card\" has prop \"variant\" with no core schema.",
+        "Element type \"card\" is not available in the core element registry.",
+        "Element type \"columns\" has prop \"ratios\" with no core schema.",
+        "Element type \"columns\" is not available in the core element registry.",
+        "Element type \"container\" uses unsupported prop \"maxWidthToken\".",
+        "Element type \"grid\" has prop \"columns\" with no core schema.",
+        "Element type \"grid\" has prop \"gapToken\" with no core schema.",
+        "Element type \"grid\" is not available in the core element registry.",
+        "Element type \"heading\" uses unsupported prop \"content\".",
+        "Element type \"heading\" uses unsupported prop \"tag\".",
+        "Element type \"image\" uses unsupported prop \"assetRef\".",
+        "Element type \"image\" uses unsupported prop \"fit\".",
+        "Element type \"image\" uses unsupported prop \"loading\".",
+        "Element type \"navigation\" has prop \"items\" with no core schema.",
+        "Element type \"navigation\" is not available in the core element registry.",
+        "Element type \"page\" is not available in the core element registry.",
+        "Element type \"row\" is not available in the core element registry.",
+        "Element type \"section\" uses unsupported prop \"semanticTag\".",
+        "Element type \"section\" uses unsupported prop \"variant\".",
+        "Element type \"site-footer\" is not available in the core element registry.",
+        "Element type \"site-header\" has prop \"sticky\" with no core schema.",
+        "Element type \"site-header\" is not available in the core element registry.",
+        "Element type \"site-logo\" has prop \"assetRef\" with no core schema.",
+        "Element type \"site-logo\" has prop \"link\" with no core schema.",
+        "Element type \"site-logo\" is not available in the core element registry.",
+        "Element type \"stack\" is not available in the core element registry.",
+        "Element type \"text\" uses unsupported prop \"content\"."
+      ]
+    }
+  ],
+  "localizations": {
+    "en": {},
+    "nl": {
+      "hero-title": {
+        "content": [
+          {
+            "text": "Samen bouwen aan "
+          },
+          {
+            "text": "morgen",
+            "marks": [
+              {
+                "type": "token-color",
+                "value": "primary"
+              }
+            ]
+          }
+        ]
+      },
+      "business-contact": {
+        "label": "Plan een gesprek"
+      },
+      "business-services": {
+        "label": "Onze diensten"
+      }
+    }
+  },
+  "importOptions": {
+    "createPages": true,
+    "setHomePage": false,
+    "downloadAssets": false,
+    "createNavigation": true,
+    "overwriteExisting": false
+  },
+  "security": {
+    "allowRemoteScripts": false,
+    "allowEmbeddedHtml": false
+  }
+}

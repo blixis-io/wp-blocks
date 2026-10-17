@@ -227,6 +227,22 @@ test('secret-like files abort the build, even inside excluded-looking folders', 
   }
 });
 
+test('Free plugin template packaging is closed to the reviewed template asset manifest', () => {
+  const dist = config.distributions.find((item) => item.slug === 'blixis-builder');
+  assert.ok(Array.isArray(dist.contentAllowlist.templates));
+  const actualRoot = join(here, '..', '..', 'wordpress', 'plugin');
+  const files = collectFiles(actualRoot, { ...config, contentAllowlist: dist.contentAllowlist });
+  const shipped = files
+    .filter((file) => file.rel.startsWith('templates/'))
+    .map((file) => file.rel.slice('templates/'.length));
+  assert.deepEqual(shipped, [...dist.contentAllowlist.templates].sort());
+  const root = repo(({ put }) => put('wordpress/plugin/templates/unreviewed.txt', 'unexpected\n'));
+  assert.throws(
+    () => collectFiles(join(root, 'wordpress/plugin'), { ...config, contentAllowlist: dist.contentAllowlist }),
+    /content packaging allow-list/,
+  );
+});
+
 test('symbolic links abort the build', () => {
   const root = repo(({ root: r }) => symlinkSync('/etc/passwd', join(r, 'wordpress/theme/link.php')));
   assert.throws(() => build(root, 'dist'), /symbolic links are not allowed/);

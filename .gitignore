@@ -13,3 +13,4 @@ vendor/
 
 # Generated editor bundle copied into the plugin by tooling/build/sync-editor-assets.mjs
 wordpress/plugin/assets/editor/
+docs/templates/*.png

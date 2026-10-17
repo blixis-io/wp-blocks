@@ -1,0 +1,737 @@
+{
+  "schemaVersion": "1.0.0",
+  "template": {
+    "id": "modern-homes",
+    "slug": "modern-homes",
+    "name": "Modern Homes",
+    "category": "real-estate",
+    "description": "Luxury real estate and architecture starter kit.",
+    "version": "1.0.0",
+    "requiredBuilderVersion": ">=0.1.0",
+    "license": "demo-only",
+    "tags": ["architecture", "real-estate", "minimal"],
+    "previewImageRef": "preview",
+    "defaultLocale": "en",
+    "supportedLocales": ["en", "nl"]
+  },
+  "dependencies": {
+    "wordpressPlugins": [],
+    "fontProvider": "google-fonts"
+  },
+  "fonts": [
+    {
+      "id": "heading",
+      "provider": "google",
+      "family": "Manrope",
+      "weights": [400, 500, 600, 700, 800],
+      "styles": ["normal"]
+    },
+    {
+      "id": "body",
+      "provider": "google",
+      "family": "Inter",
+      "weights": [400, 500, 600, 700],
+      "styles": ["normal"]
+    }
+  ],
+  "designTokens": {
+    "colors": {
+      "light": {
+        "primary": "#2563EB",
+        "secondary": "#0F172A",
+        "accent": "#D6A76E",
+        "background": "#FFFFFF",
+        "surface": "#F4F7FB",
+        "text": "#111827",
+        "muted": "#64748B",
+        "border": "#E2E8F0"
+      },
+      "dark": {
+        "primary": "#60A5FA",
+        "secondary": "#E2E8F0",
+        "accent": "#E8C89A",
+        "background": "#0B1220",
+        "surface": "#162235",
+        "text": "#F8FAFC",
+        "muted": "#A5B4C7",
+        "border": "#334155"
+      }
+    },
+    "typography": {
+      "headingFontRef": "heading",
+      "bodyFontRef": "body",
+      "scale": {
+        "h1": "clamp(2.75rem, 5vw, 5rem)",
+        "h2": "clamp(2rem, 3vw, 3rem)",
+        "body": "1rem"
+      }
+    },
+    "spacing": {
+      "sm": "0.75rem",
+      "md": "1rem",
+      "lg": "1.5rem",
+      "xl": "3rem",
+      "section": "clamp(4rem, 8vw, 7rem)"
+    },
+    "radii": {
+      "sm": "0.5rem",
+      "md": "1rem",
+      "lg": "1.5rem",
+      "pill": "999px"
+    },
+    "layout": {
+      "container": "1200px"
+    },
+    "breakpoints": {
+      "mobileMax": "767px",
+      "tabletMax": "1023px"
+    },
+    "defaultAppearance": "auto"
+  },
+  "assets": {
+    "logo": {
+      "kind": "svg",
+      "source": {
+        "type": "template-path",
+        "path": "assets/modern-homes/logo.svg"
+      },
+      "alt": "Brand logo"
+    },
+    "preview": {
+      "kind": "image",
+      "source": {
+        "type": "template-path",
+        "path": "assets/modern-homes/preview.webp"
+      },
+      "alt": "modern-homes template preview"
+    },
+    "hero": {
+      "kind": "image",
+      "source": {
+        "type": "template-path",
+        "path": "assets/modern-homes/hero.webp"
+      },
+      "alt": "Modern house exterior",
+      "attribution": {
+        "required": false,
+        "status": "generated",
+        "creator": "Blixis",
+        "license": "No attribution required"
+      }
+    },
+    "interior": {
+      "kind": "image",
+      "source": {
+        "type": "template-path",
+        "path": "assets/modern-homes/interior.webp"
+      },
+      "alt": "Contemporary living room",
+      "attribution": {
+        "required": false,
+        "status": "generated",
+        "creator": "Blixis",
+        "license": "No attribution required"
+      }
+    }
+  },
+  "documents": [
+    {
+      "id": "homepage",
+      "type": "page",
+      "slug": "home",
+      "title": "Modern Homes — Home",
+      "status": "draft",
+      "root": {
+        "id": "page-root",
+        "type": "page",
+        "props": {},
+        "children": [
+          {
+            "id": "header",
+            "type": "site-header",
+            "props": {
+              "sticky": false
+            },
+            "children": [
+              {
+                "id": "header-inner",
+                "type": "container",
+                "props": {},
+                "children": [
+                  {
+                    "id": "logo",
+                    "type": "site-logo",
+                    "props": {
+                      "assetRef": "logo",
+                      "link": "/"
+                    },
+                    "children": []
+                  },
+                  {
+                    "id": "primary-nav",
+                    "type": "navigation",
+                    "props": {
+                      "items": [
+                        {
+                          "label": "Home",
+                          "href": "/"
+                        },
+                        {
+                          "label": "About",
+                          "href": "/about/"
+                        },
+                        {
+                          "label": "Services",
+                          "href": "/services/"
+                        },
+                        {
+                          "label": "Contact",
+                          "href": "/contact/"
+                        }
+                      ]
+                    },
+                    "children": []
+                  },
+                  {
+                    "id": "header-cta",
+                    "type": "button",
+                    "props": {
+                      "label": "Contact us",
+                      "href": "/contact/",
+                      "variant": "primary",
+                      "target": "_self"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "hero",
+            "type": "section",
+            "props": {
+              "semanticTag": "section",
+              "variant": "hero"
+            },
+            "children": [
+              {
+                "id": "hero-container",
+                "type": "container",
+                "props": {
+                  "maxWidthToken": "container"
+                },
+                "children": [
+                  {
+                    "id": "hero-columns",
+                    "type": "columns",
+                    "props": {
+                      "ratios": [5, 6],
+                      "stackAt": "tablet"
+                    },
+                    "children": [
+                      {
+                        "id": "hero-copy",
+                        "type": "stack",
+                        "props": {
+                          "gapToken": "lg"
+                        },
+                        "children": [
+                          {
+                            "id": "hero-kicker",
+                            "type": "text",
+                            "props": {
+                              "content": [
+                                {
+                                  "text": "MODERN LIVING"
+                                }
+                              ]
+                            },
+                            "children": []
+                          },
+                          {
+                            "id": "hero-title",
+                            "type": "heading",
+                            "props": {
+                              "tag": "h1",
+                              "content": [
+                                {
+                                  "text": "Modern homes for a "
+                                },
+                                {
+                                  "text": "brighter future",
+                                  "marks": [
+                                    {
+                                      "type": "token-color",
+                                      "value": "primary"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "text": ""
+                                }
+                              ]
+                            },
+                            "children": [],
+                            "styles": {
+                              "base": {
+                                "maxWidth": "12ch"
+                              },
+                              "mobile": {
+                                "fontSize": "2.75rem"
+                              }
+                            },
+                            "animations": [
+                              {
+                                "id": "entrance",
+                                "preset": "fade-up",
+                                "trigger": {
+                                  "type": "viewport-enter",
+                                  "threshold": 0.2,
+                                  "once": true
+                                },
+                                "timing": {
+                                  "durationMs": 700,
+                                  "delayMs": 0,
+                                  "easing": "ease-out"
+                                },
+                                "from": {
+                                  "opacity": 0,
+                                  "translateY": "24px"
+                                },
+                                "to": {
+                                  "opacity": 1,
+                                  "translateY": "0px"
+                                },
+                                "reducedMotion": "show-final-state"
+                              }
+                            ]
+                          },
+                          {
+                            "id": "hero-description",
+                            "type": "text",
+                            "props": {
+                              "content": [
+                                {
+                                  "text": "Architectural homes with thoughtful details, sustainable materials, and timeless comfort."
+                                }
+                              ]
+                            },
+                            "children": []
+                          },
+                          {
+                            "id": "hero-actions",
+                            "type": "row",
+                            "props": {
+                              "gapToken": "md"
+                            },
+                            "children": [
+                              {
+                                "id": "explore",
+                                "type": "button",
+                                "props": {
+                                  "label": "Explore Homes",
+                                  "href": "/homes/",
+                                  "variant": "primary",
+                                  "target": "_self"
+                                },
+                                "children": []
+                              },
+                              {
+                                "id": "watch",
+                                "type": "button",
+                                "props": {
+                                  "label": "Watch the film",
+                                  "href": "#film",
+                                  "variant": "outline",
+                                  "target": "_self"
+                                },
+                                "children": []
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "id": "hero-image",
+                        "type": "image",
+                        "props": {
+                          "assetRef": "hero",
+                          "alt": "Modern white home with pool and palm trees",
+                          "loading": "lazy",
+                          "fit": "cover"
+                        },
+                        "children": []
+                      }
+                    ]
+                  }
+                ]
+              }
+            ],
+            "styles": {
+              "base": {
+                "paddingBlock": "var(--bx-space-section)"
+              },
+              "dark": {
+                "background": "var(--bx-color-surface)"
+              }
+            }
+          },
+          {
+            "id": "features",
+            "type": "section",
+            "props": {
+              "semanticTag": "section",
+              "variant": "default"
+            },
+            "children": [
+              {
+                "id": "feature-content",
+                "type": "container",
+                "props": {
+                  "maxWidthToken": "container"
+                },
+                "children": [
+                  {
+                    "id": "feature-grid",
+                    "type": "grid",
+                    "props": {
+                      "columns": {
+                        "desktop": 3,
+                        "tablet": 2,
+                        "mobile": 1
+                      },
+                      "gapToken": "lg"
+                    },
+                    "children": [
+                      {
+                        "id": "feature-design",
+                        "type": "card",
+                        "props": {
+                          "variant": "surface"
+                        },
+                        "children": [
+                          {
+                            "id": "feature-title-1",
+                            "type": "heading",
+                            "props": {
+                              "tag": "h3",
+                              "content": [
+                                {
+                                  "text": "Architectural design"
+                                }
+                              ]
+                            },
+                            "children": []
+                          },
+                          {
+                            "id": "feature-desc-1",
+                            "type": "text",
+                            "props": {
+                              "content": [
+                                {
+                                  "text": "Elegant spaces created for everyday living."
+                                }
+                              ]
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "id": "feature-sustainable",
+                        "type": "card",
+                        "props": {
+                          "variant": "surface"
+                        },
+                        "children": [
+                          {
+                            "id": "feature-title-2",
+                            "type": "heading",
+                            "props": {
+                              "tag": "h3",
+                              "content": [
+                                {
+                                  "text": "Responsible materials"
+                                }
+                              ]
+                            },
+                            "children": []
+                          },
+                          {
+                            "id": "feature-desc-2",
+                            "type": "text",
+                            "props": {
+                              "content": [
+                                {
+                                  "text": "Built for longevity and efficiency."
+                                }
+                              ]
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "id": "feature-service",
+                        "type": "card",
+                        "props": {
+                          "variant": "surface"
+                        },
+                        "children": [
+                          {
+                            "id": "feature-title-3",
+                            "type": "heading",
+                            "props": {
+                              "tag": "h3",
+                              "content": [
+                                {
+                                  "text": "Personal service"
+                                }
+                              ]
+                            },
+                            "children": []
+                          },
+                          {
+                            "id": "feature-desc-3",
+                            "type": "text",
+                            "props": {
+                              "content": [
+                                {
+                                  "text": "Guidance from concept to keys."
+                                }
+                              ]
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "featured-home",
+            "type": "section",
+            "props": {
+              "semanticTag": "section",
+              "variant": "default"
+            },
+            "children": [
+              {
+                "id": "featured-home-inner",
+                "type": "container",
+                "props": {
+                  "maxWidthToken": "container"
+                },
+                "children": [
+                  {
+                    "id": "about-cols",
+                    "type": "columns",
+                    "props": {
+                      "ratios": [1, 1]
+                    },
+                    "children": [
+                      {
+                        "id": "interior-photo",
+                        "type": "image",
+                        "props": {
+                          "assetRef": "interior",
+                          "alt": "Sunlit contemporary living room",
+                          "loading": "lazy",
+                          "fit": "cover"
+                        },
+                        "children": []
+                      },
+                      {
+                        "id": "about-copy",
+                        "type": "stack",
+                        "props": {},
+                        "children": [
+                          {
+                            "id": "about-kicker",
+                            "type": "text",
+                            "props": {
+                              "content": [
+                                {
+                                  "text": "FEATURED HOMES"
+                                }
+                              ]
+                            },
+                            "children": []
+                          },
+                          {
+                            "id": "about-title",
+                            "type": "heading",
+                            "props": {
+                              "tag": "h2",
+                              "content": [
+                                {
+                                  "text": "Spaces that inspire better living"
+                                }
+                              ]
+                            },
+                            "children": []
+                          },
+                          {
+                            "id": "about-desc",
+                            "type": "text",
+                            "props": {
+                              "content": [
+                                {
+                                  "text": "Explore carefully designed residences in remarkable locations."
+                                }
+                              ]
+                            },
+                            "children": []
+                          },
+                          {
+                            "id": "about-button",
+                            "type": "button",
+                            "props": {
+                              "label": "View properties",
+                              "href": "/homes/",
+                              "variant": "primary",
+                              "target": "_self"
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "footer",
+            "type": "site-footer",
+            "props": {},
+            "children": [
+              {
+                "id": "footer-inner",
+                "type": "container",
+                "props": {
+                  "maxWidthToken": "container"
+                },
+                "children": [
+                  {
+                    "id": "footer-copy",
+                    "type": "text",
+                    "props": {
+                      "content": [
+                        {
+                          "text": "© {year} Your company. All rights reserved."
+                        }
+                      ]
+                    },
+                    "children": []
+                  },
+                  {
+                    "id": "footer-links",
+                    "type": "navigation",
+                    "props": {
+                      "items": [
+                        {
+                          "label": "Privacy",
+                          "href": "/privacy/"
+                        },
+                        {
+                          "label": "Contact",
+                          "href": "/contact/"
+                        }
+                      ]
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "importable": false,
+      "importabilityReasons": [
+        "Element type \"button\" uses unsupported prop \"target\".",
+        "Element type \"card\" has prop \"variant\" with no core schema.",
+        "Element type \"card\" is not available in the core element registry.",
+        "Element type \"columns\" has prop \"ratios\" with no core schema.",
+        "Element type \"columns\" has prop \"stackAt\" with no core schema.",
+        "Element type \"columns\" is not available in the core element registry.",
+        "Element type \"container\" uses unsupported prop \"maxWidthToken\".",
+        "Element type \"grid\" has prop \"columns\" with no core schema.",
+        "Element type \"grid\" has prop \"gapToken\" with no core schema.",
+        "Element type \"grid\" is not available in the core element registry.",
+        "Element type \"heading\" uses unsupported prop \"content\".",
+        "Element type \"heading\" uses unsupported prop \"tag\".",
+        "Element type \"image\" uses unsupported prop \"assetRef\".",
+        "Element type \"image\" uses unsupported prop \"fit\".",
+        "Element type \"image\" uses unsupported prop \"loading\".",
+        "Element type \"navigation\" has prop \"items\" with no core schema.",
+        "Element type \"navigation\" is not available in the core element registry.",
+        "Element type \"page\" is not available in the core element registry.",
+        "Element type \"row\" has prop \"gapToken\" with no core schema.",
+        "Element type \"row\" is not available in the core element registry.",
+        "Element type \"section\" uses unsupported prop \"semanticTag\".",
+        "Element type \"section\" uses unsupported prop \"variant\".",
+        "Element type \"site-footer\" is not available in the core element registry.",
+        "Element type \"site-header\" has prop \"sticky\" with no core schema.",
+        "Element type \"site-header\" is not available in the core element registry.",
+        "Element type \"site-logo\" has prop \"assetRef\" with no core schema.",
+        "Element type \"site-logo\" has prop \"link\" with no core schema.",
+        "Element type \"site-logo\" is not available in the core element registry.",
+        "Element type \"stack\" has prop \"gapToken\" with no core schema.",
+        "Element type \"stack\" is not available in the core element registry.",
+        "Element type \"text\" uses unsupported prop \"content\"."
+      ]
+    }
+  ],
+  "localizations": {
+    "en": {},
+    "nl": {
+      "hero-title": {
+        "content": [
+          {
+            "text": "Moderne woningen voor een "
+          },
+          {
+            "text": "stralende toekomst",
+            "marks": [
+              {
+                "type": "token-color",
+                "value": "primary"
+              }
+            ]
+          }
+        ]
+      },
+      "hero-description": {
+        "content": [
+          {
+            "text": "Architectonische woningen met duurzame materialen, slimme details en tijdloos comfort."
+          }
+        ]
+      },
+      "explore": {
+        "label": "Bekijk woningen"
+      },
+      "watch": {
+        "label": "Bekijk de film"
+      }
+    }
+  },
+  "importOptions": {
+    "createPages": true,
+    "setHomePage": false,
+    "downloadAssets": false,
+    "createNavigation": true,
+    "overwriteExisting": false
+  },
+  "security": {
+    "allowRemoteScripts": false,
+    "allowEmbeddedHtml": false
+  }
+}

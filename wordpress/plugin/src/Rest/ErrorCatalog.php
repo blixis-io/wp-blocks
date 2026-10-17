@@ -43,6 +43,9 @@ final class ErrorCatalog {
 		'blixis_rate_limited'                 => [ 429, 'Publication rate limit reached.' ],
 		'blixis_storage_error'                => [ 500, 'Storage failed.' ],
 		'blixis_preview_failed'               => [ 500, 'Preview failed.' ],
+		'blixis_template_not_found'           => [ 404, 'Template not found.' ],
+		'blixis_invalid_template_request'     => [ 400, 'Template request is invalid.' ],
+		'blixis_font_install_failed'          => [ 400, 'Template fonts could not be installed.' ],
 	];
 
 	/**
