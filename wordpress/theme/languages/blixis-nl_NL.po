@@ -298,8 +298,8 @@ msgstr "Startindeling"
 msgid "Online Store"
 msgstr "Webwinkel"
 
-msgid "Coming soon: this template setting does not have an apply backend yet."
-msgstr "Binnenkort: deze template-instelling kan nog niet worden toegepast."
+msgid "Coming soon"
+msgstr "Binnenkort"
 
 msgid "You can access the setup wizard anytime from the Blixis menu."
 msgstr "Je kunt de installatiewizard altijd openen via het Blixis-menu."
@@ -369,3 +369,272 @@ msgstr "Licht"
 
 msgid "Dark"
 msgstr "Donker"
+
+msgid "Choose the core structure for your website. You can change these settings later in the Theme Builder or Global Styles."
+msgstr "Kies de basisstructuur voor je website. Je kunt deze instellingen later wijzigen in de themabouwer of globale stijlen."
+
+msgid "Choose the visual style for your website. You can fine-tune these settings later in Global Styles or the Theme Builder."
+msgstr "Kies de visuele stijl voor je website. Je kunt deze instellingen later verfijnen in globale stijlen of de themabouwer."
+
+msgid "Adjust the spacing and content widths from your selected design tokens. You can change these settings later in Global Styles."
+msgstr "Pas de tussenruimte en inhoudsbreedtes van je ontwerptokens aan. Je kunt deze instellingen later wijzigen in globale stijlen."
+
+msgid "Fine-tune spacing, corner radius, and content widths for your website."
+msgstr "Verfijn de tussenruimte, hoekafronding en inhoudsbreedtes van je website."
+
+msgid "Select your theme"
+msgstr "Kies je thema"
+
+msgid "foundation"
+msgstr "basis"
+
+msgid "Add Your"
+msgstr "Voeg je"
+
+msgid "Setup"
+msgstr "Installatie"
+
+msgid "Complete!"
+msgstr "voltooid!"
+
+msgid "Review your"
+msgstr "Controleer je"
+
+msgid "setup"
+msgstr "installatie"
+
+msgid "Color palette"
+msgstr "Kleurenpalet"
+
+msgid "Your selected template palette. Choose a different palette on the starter design step."
+msgstr "Het kleurenpalet van je gekozen template. Kies een ander palet bij de stap Startontwerp."
+
+msgid "Selected website colors"
+msgstr "Gekozen websitekleuren"
+
+msgid "Button style"
+msgstr "Knopstijl"
+
+msgid "Button style choices are not available yet because the theme does not define saved button-style options."
+msgstr "Knopstijlen zijn nog niet beschikbaar, omdat het thema geen opgeslagen knopstijlopties heeft."
+
+msgid "Outline"
+msgstr "Omlijnd"
+
+msgid "Soft"
+msgstr "Zacht"
+
+msgid "Base text size"
+msgstr "Basistekstgrootte"
+
+msgid "Spacing 1"
+msgstr "Tussenruimte 1"
+
+msgid "Spacing 2"
+msgstr "Tussenruimte 2"
+
+msgid "Spacing 3"
+msgstr "Tussenruimte 3"
+
+msgid "Spacing 4"
+msgstr "Tussenruimte 4"
+
+msgid "Spacing 6"
+msgstr "Tussenruimte 6"
+
+msgid "Spacing 8"
+msgstr "Tussenruimte 8"
+
+msgid "Small corner radius"
+msgstr "Kleine hoekafronding"
+
+msgid "Medium corner radius"
+msgstr "Gemiddelde hoekafronding"
+
+msgid "Content width"
+msgstr "Inhoudsbreedte"
+
+msgid "Wide content width"
+msgstr "Brede inhoudsbreedte"
+
+msgid "dark"
+msgstr "donker"
+
+msgid "light/base"
+msgstr "licht/basis"
+
+msgid "Live preview"
+msgstr "Live voorbeeld"
+
+msgid "Preview of your selected starter design."
+msgstr "Voorbeeld van je gekozen startontwerp."
+
+msgid "A site preview is not available for this starter design."
+msgstr "Er is geen websitevoorbeeld beschikbaar voor dit startontwerp."
+
+msgid "Preview of %s"
+msgstr "Voorbeeld van %s"
+
+msgid "Live website preview"
+msgstr "Live websitevoorbeeld"
+
+msgid "See how your selected style looks on your site."
+msgstr "Bekijk hoe je gekozen stijl er op je website uitziet."
+
+msgid "Previewing dark appearance"
+msgstr "Voorbeeld van donkere weergave"
+
+msgid "Previewing light appearance"
+msgstr "Voorbeeld van lichte weergave"
+
+msgid "Auto appearance follows each visitor’s system setting."
+msgstr "Automatische weergave volgt de systeeminstelling van iedere bezoeker."
+
+msgid "Preview navigation"
+msgstr "Voorbeeldnavigatie"
+
+msgid "Home"
+msgstr "Home"
+
+msgid "About"
+msgstr "Over ons"
+
+msgid "Services"
+msgstr "Diensten"
+
+msgid "Get started"
+msgstr "Aan de slag"
+
+msgid "Build something extraordinary."
+msgstr "Bouw iets bijzonders."
+
+msgid "A preview of your colors and typography choices."
+msgstr "Een voorbeeld van je kleur- en typografiekeuzes."
+
+msgid "Learn more"
+msgstr "Meer informatie"
+
+msgid "Thoughtful design"
+msgstr "Doordacht ontwerp"
+
+msgid "A clear, comfortable layout."
+msgstr "Een heldere, prettige indeling."
+
+msgid "Made for your site"
+msgstr "Gemaakt voor je website"
+
+msgid "Colors and type from your design."
+msgstr "Kleuren en typografie uit je ontwerp."
+
+msgid "Design tokens"
+msgstr "Ontwerptokens"
+
+msgid "These values are used across your site and can be refined later in Global Styles."
+msgstr "Deze waarden worden op je hele website gebruikt en kun je later verfijnen in globale stijlen."
+
+msgid "Spacing, corner radius, and container widths use the values selected here."
+msgstr "Tussenruimte, hoekafronding en containerbreedtes gebruiken de waarden die je hier kiest."
+
+msgid "Import summary"
+msgstr "Importoverzicht"
+
+msgid "%d page can’t be imported yet because required elements are unavailable."
+msgid_plural "%d pages can’t be imported yet because required elements are unavailable."
+msgstr[0] "%d pagina kan nog niet worden geïmporteerd omdat vereiste elementen ontbreken."
+msgstr[1] "%d pagina's kunnen nog niet worden geïmporteerd omdat vereiste elementen ontbreken."
+
+msgid "Can’t be imported yet"
+msgstr "Kan nog niet worden geïmporteerd"
+
+msgid "This template uses %1$d elements and %2$d properties that Blixis does not have yet."
+msgstr "Deze template gebruikt %1$d elementen en %2$d eigenschappen die Blixis nog niet heeft."
+
+msgid "Technical details"
+msgstr "Technische details"
+
+msgid "%d occurrences"
+msgstr "%d keer"
+
+msgid "System UI"
+msgstr "Systeemlettertype"
+
+msgid "Georgia"
+msgstr "Georgia"
+
+msgid "Monospace"
+msgstr "Monospace"
+
+msgid "Regular"
+msgstr "Normaal"
+
+msgid "Bold"
+msgstr "Vet"
+
+msgid "Variable, %s"
+msgstr "Variabel, %s"
+
+msgid "%d styles"
+msgstr "%d stijlen"
+
+msgid "Your site is ready!"
+msgstr "Je website is klaar!"
+
+msgid "Review your setup"
+msgstr "Controleer je installatie"
+
+msgid "Blixis has been set up successfully. Your website is ready to customize and share."
+msgstr "Blixis is ingesteld. Je website is klaar om aan te passen en te delen."
+
+msgid "Your selected design and website style will be applied when you finish setup."
+msgstr "Je gekozen ontwerp en de stijl van je website worden toegepast wanneer je de installatie afrondt."
+
+msgid "Review the selected design and style settings. Finish setup to apply them to your website."
+msgstr "Controleer het gekozen ontwerp en de stijlinstellingen. Rond de installatie af om ze toe te passen op je website."
+
+msgid "Your setup summary"
+msgstr "Samenvatting van je installatie"
+
+msgid "Starter design"
+msgstr "Startontwerp"
+
+msgid "Typography"
+msgstr "Typografie"
+
+msgid "Website appearance"
+msgstr "Website-uiterlijk"
+
+msgid "View Templates"
+msgstr "Templates bekijken"
+
+msgid "Go to Dashboard"
+msgstr "Naar het dashboard"
+
+msgid "Selected starter design preview"
+msgstr "Voorbeeld van het gekozen startontwerp"
+
+msgid "%s starter design preview"
+msgstr "Voorbeeld van startontwerp %s"
+
+msgid "A preview image is not available for this starter design."
+msgstr "Er is geen voorbeeldafbeelding beschikbaar voor dit startontwerp."
+
+msgid "Setup status"
+msgstr "Installatiestatus"
+
+msgid "Starter design selected"
+msgstr "Startontwerp gekozen"
+
+msgid "Website colors and typography configured"
+msgstr "Websitekleuren en typografie ingesteld"
+
+msgid "Website appearance selected"
+msgstr "Website-uiterlijk gekozen"
+
+msgid "Demo content import unavailable: required elements are not registered"
+msgstr "Demo-inhoud importeren is niet beschikbaar: vereiste elementen zijn niet geregistreerd"
+
+msgid "This starter design does not include importable demo content."
+msgstr "Dit startontwerp bevat geen importeerbare demoinhoud."
+
+msgid "Launch Website"
+msgstr "Website openen"

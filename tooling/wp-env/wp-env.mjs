@@ -2628,13 +2628,21 @@ async function smoke() {
               3: 'Style your website',
               4: 'Style your website',
               5: 'Add Your Content',
-              6: 'Setup Complete!',
+              6: 'Review your setup',
             };
             const stepPage = async (step) => {
               const response = await http(`${wizardUrl}&step=${step}`, { headers: { cookie: adminCookie } });
               const html = await response.text();
+              const pageTitle = html
+                .match(/<h1[^>]*>([\s\S]*?)<\/h1>/)?.[1]
+                ?.replace(/<[^>]+>/g, '')
+                .replace(/&amp;/g, '&')
+                .trim();
               check(
-                response.status === 200 && new RegExp(`<h2[^>]*>${stepTitles[step]}</h2>`).test(html),
+                response.status === 200 &&
+                  (step === 1
+                    ? html.includes(`<h2 id="blx-step-title">${stepTitles[step]}</h2>`)
+                    : pageTitle === stepTitles[step]),
                 `wizard step ${step} renders`,
               );
               return html;
@@ -2742,8 +2750,13 @@ async function smoke() {
               'template, palette and font selections persist in the per-user draft',
             );
             check(
-              html.includes('Coming soon: this template setting'),
-              'unsupported foundation settings are marked as coming soon',
+              (html.match(/blx-coming-soon-badge/g) ?? []).length === 4 &&
+                !html.includes('does not have an apply backend yet'),
+              'foundation groups share a coming soon badge without repeated explanatory copy',
+            );
+            check(
+              html.includes('blx-preview-panel') && html.includes('Preview of your selected starter design.'),
+              'foundation step previews the selected template pack image',
             );
             response = await submit(2, html, {}, 'back');
             check(
@@ -2798,6 +2811,15 @@ async function smoke() {
             );
             html = await stepPage(3);
             check(html.includes('Smoke Inter'), 'installed Font Library family appears in typography options');
+            check(
+              html.includes('blx-live-preview') &&
+                html.includes('Button style choices are not available yet') &&
+                html.includes('name="appearance" value="auto"') &&
+                html.includes('class="blx-font-card"') &&
+                html.includes('<b>Smoke Inter</b>') &&
+                !html.includes('Smoke Inter (400 normal'),
+              'style step shows a token-driven preview and honest unsupported controls',
+            );
             const typographyBefore = command('user', 'meta', 'get', 'admin', 'blixis_setup_draft');
             const typography = JSON.parse(typographyBefore).tokens;
             const typographyFields = {
@@ -2821,6 +2843,12 @@ async function smoke() {
             response = await submit(3, html, typographyFields);
             check(response.status === 302, 'installed Font Library family and appearance are accepted');
             html = await stepPage(4);
+            check(
+              html.includes('blx-token-preview') &&
+                html.includes('name="tokens[space-1][value]"') &&
+                html.includes('name="tokens[radius-md][value]"'),
+              'style detail step presents saved spacing and radius tokens',
+            );
             const current = JSON.parse(command('user', 'meta', 'get', 'admin', 'blixis_setup_draft'));
             const layoutFields = Object.fromEntries(
               [...html.matchAll(/<select[^>]+name="tokens\[([^"]+)\]\[value\]"/g)].map((m) => [
@@ -2832,17 +2860,34 @@ async function smoke() {
             check(response.status === 302, 'style layout step advances');
             html = await stepPage(5);
             check(
-              html.includes('Import is not available for this template yet.') &&
-                html.includes('is not available in the core element registry.'),
-              'content import controls display the pack refusal reason',
+              html.includes('Can’t be imported yet') &&
+                html.includes('Technical details') &&
+                html.includes('blx-import-details-list') &&
+                !html.replace(/<details[\s\S]*?<\/details>/g, '').includes('<li>Element type'),
+              'content import controls summarize refusals and collapse technical details',
             );
             response = await submit(5, html, {});
             check(response.status === 302, 'content step advances without reporting fake imports');
+            check(
+              html.includes('blx-import-summary') && /required elements are unavailable/i.test(html),
+              'content step keeps a concise import summary',
+            );
             // BWB-035: applying persists the design system, completes setup and prints the saved tokens.
             html = await stepPage(6);
-            response = await submit(6, html, {}, 'apply');
             check(
-              response.status === 302 && response.headers.get('location')?.includes('applied=1'),
+              html.includes('Review your setup') &&
+                html.includes('name="direction" value="apply"') &&
+                html.includes('>Finish <span aria-hidden="true">→</span>'),
+              'finish step presents the pre-apply review state',
+            );
+            response = await submit(6, html, {}, 'apply');
+            const appliedLocation = response.headers.get('location');
+            check(
+              response.status === 302 &&
+                appliedLocation?.includes('applied=1') &&
+                appliedLocation?.includes(`template=${templateId}`) &&
+                appliedLocation?.includes('scheme=nature') &&
+                appliedLocation?.includes('font=editorial'),
               'apply saves the design system',
             );
             const saved = JSON.parse(command('option', 'get', 'blixis_design_system', '--format=json'));
@@ -2865,6 +2910,18 @@ async function smoke() {
             check(
               JSON.parse(command('option', 'get', 'blixis_setup', '--format=json')).status === 'completed',
               'setup is completed only after the design system was saved',
+            );
+            const finishPage = await http(new URL(appliedLocation ?? `${wizardUrl}&step=6&applied=1`, base).href, {
+              headers: { cookie: adminCookie },
+            });
+            const finishHtml = await finishPage.text();
+            check(
+              finishPage.status === 200 &&
+                /<h1[^>]*>Setup <span>Complete!<\/span><\/h1>/.test(finishHtml) &&
+                finishHtml.includes('Your site is ready!') &&
+                finishHtml.includes('Launch Website') &&
+                finishHtml.includes('Demo content import unavailable'),
+              'successful apply shows the honest Finish success state',
             );
             check(
               command(
