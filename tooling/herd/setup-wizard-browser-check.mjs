@@ -119,36 +119,67 @@ try {
     JSON.stringify({ version: 1, status: 'not_started', updated_at: new Date().toISOString() }),
     '--format=json',
   );
+  cliOptional('user', 'meta', 'delete', userId, 'blixis_setup_ui');
+  cliOptional('user', 'meta', 'delete', userId, 'blixis_setup_draft');
   await navigate(`${SITE}/wp-admin/themes.php?page=blixis-setup`);
   const initial = await evaluate(
-    `({title:document.querySelector('h1')?.textContent,steps:[...document.querySelectorAll('.blx-stepper li')].map(x=>x.textContent.trim()),categories:[...document.querySelectorAll('.blx-category-chip')].map(x=>x.textContent.trim()),radios:document.querySelectorAll('[role="radiogroup"] input[type="radio"]').length})`,
+    `({title:document.querySelector('h1')?.textContent,steps:[...document.querySelectorAll('.blx-stepper li')].map(x=>x.textContent.trim()),radios:document.querySelectorAll('[role="radiogroup"] input[type="radio"]').length,templates:document.body.innerText.includes('View All Templates')})`,
   );
   assert.match(initial.title, /Welcome to Blixis/);
   assert.deepEqual(
     initial.steps.map((value) => value.replace(/^\d+/, '').trim()),
     ['Welcome', 'Theme', 'Style', 'Content', 'Finish'],
   );
-  assert.ok(initial.categories.includes('Business') && !initial.categories.includes('SaaS'));
-  assert.ok(initial.radios >= 5, 'real presets and Custom are keyboard-selectable radios');
-  await click('.blx-category-chip[href*="category=business"]');
-  assert.equal(
-    await evaluate(`document.querySelectorAll('.blx-preset-card').length`),
-    1,
-    'category filter shows only matching real presets',
+  assert.ok(
+    await evaluate(`!!document.querySelector('.blx-setup-banner')`),
+    'not-started page shows inline entry actions',
   );
+  assert.ok(
+    await evaluate(`document.querySelector('.blx-preset-card input[value="ocean"]')?.checked`),
+    'Ocean is the default without a draft',
+  );
+  assert.ok(
+    await evaluate(`!document.querySelector('.blx-preset-preview')?.innerText.includes('Ocean')`),
+    'mini preview does not repeat the preset name',
+  );
+  assert.equal(await evaluate(`document.querySelectorAll('.blx-preset-card').length`), 5);
+  assert.ok(
+    await evaluate(
+      `document.querySelector('.blx-preset-card:last-child .blx-preset-title')?.textContent.includes('Start from scratch')`,
+    ),
+  );
+  assert.equal(initial.templates, false, 'no template catalog is implied');
+  assert.ok(initial.radios >= 5, 'real presets and the scratch option are keyboard-selectable radios');
   await click('.blx-preset-card input[value="ocean"]');
   assert.equal(
     await evaluate(`document.querySelector('.blx-preset-card input[value="ocean"]').checked`),
     true,
     'preset selection works',
   );
+  await click('.blx-scheme-card input[value="nature"]');
+  await click('.blx-font-option input[value="editorial"]');
   await click('button[name="direction"][value="next"]');
   assert.equal(
+    await evaluate(`!!document.querySelector('.blx-setup-banner')`),
+    false,
+    'in-progress page hides the entry banner',
+  );
+  assert.equal(
     await evaluate(`document.querySelector('.blx-stepper li[aria-current="step"]')?.textContent.trim()`),
-    '3Style',
-    'Continue advances into Style',
+    '2Theme',
+    'Continue advances into Theme',
   );
   assert.ok(await evaluate(`document.body.innerText.includes('Make it yours')`), 'wizard renders Style content');
+  const draft = JSON.parse(cli('user', 'meta', 'get', userId, 'blixis_setup_draft'));
+  assert.equal(draft.preset, 'ocean');
+  assert.equal(draft.scheme, 'nature');
+  assert.equal(draft.font, 'editorial');
+  assert.match(draft.tokens['font-heading'].value, /Georgia/);
+  await click('button[name="direction"][value="back"]');
+  await sleep(700);
+  assert.ok(await evaluate(`document.querySelector('.blx-preset-card input[value="ocean"]')?.checked`));
+  assert.ok(await evaluate(`document.querySelector('.blx-scheme-card input[value="nature"]')?.checked`));
+  assert.ok(await evaluate(`document.querySelector('.blx-font-option input[value="editorial"]')?.checked`));
   await click('button[name="direction"][value="cancel"]');
   await sleep(700);
   assert.equal(

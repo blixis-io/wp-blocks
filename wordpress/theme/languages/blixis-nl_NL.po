@@ -16,6 +16,27 @@ msgstr "Welkom bij Blixis"
 msgid "Choose a starter design and customize its style. You can always change this later."
 msgstr "Kies een startontwerp en pas de stijl aan. Je kunt dit later altijd wijzigen."
 
+msgid "Start from scratch"
+msgstr "Helemaal zelf beginnen"
+
+msgid "Begin with a neutral design and shape it yourself."
+msgstr "Begin met een neutraal ontwerp en geef het zelf vorm."
+
+msgid "Current design: %1$s, version %2$s, saved %3$s"
+msgstr "Huidig ontwerp: %1$s, versie %2$s, opgeslagen op %3$s"
+
+msgid "Restore previous version"
+msgstr "Vorige versie herstellen"
+
+msgid "Set up the Blixis theme when you are ready."
+msgstr "Stel het Blixis-thema in wanneer je er klaar voor bent."
+
+msgid "Start setup"
+msgstr "Installatie starten"
+
+msgid "Dismiss"
+msgstr "Sluiten"
+
 msgid "Setup steps"
 msgstr "Installatiestappen"
 
@@ -117,3 +138,99 @@ msgstr "Lettertype voor lopende tekst"
 
 msgid "Heading font"
 msgstr "Lettertype voor koppen"
+
+msgid "Welcome to"
+msgstr "Welkom bij"
+
+msgid "Let’s get your website ready in a few simple steps. Choose a starter design, customize the style, and import content. You can always change these settings later."
+msgstr "Laten we je website in een paar eenvoudige stappen klaarmaken. Kies een startontwerp, pas de stijl aan en importeer inhoud. Je kunt deze instellingen later altijd wijzigen."
+
+msgid "Setup Wizard"
+msgstr "Installatiewizard"
+
+msgid "View Site"
+msgstr "Website bekijken"
+
+msgid "These professionally designed presets give you a head start. You can customize everything after setup."
+msgstr "Deze professioneel ontworpen presets geven je een goede start. Na de installatie kun je alles aanpassen."
+
+msgid "Color scheme"
+msgstr "Kleurenschema"
+
+msgid "Choose a palette for your website. Fine-tune it later in Global Styles."
+msgstr "Kies een kleurenpalet voor je website. Je kunt dit later verder aanpassen bij Globale stijlen."
+
+msgid "Font selection"
+msgstr "Lettertypekeuze"
+
+msgid "Choose a system font pairing for your website."
+msgstr "Kies een combinatie van systeemlettertypen voor je website."
+
+msgid "You can access the setup wizard anytime from the Blixis menu."
+msgstr "Je kunt de installatiewizard altijd openen via het Blixis-menu."
+
+msgid "Start with the default design tokens."
+msgstr "Begin met de standaardontwerptokens."
+
+msgid "Explore the design"
+msgstr "Bekijk het ontwerp"
+
+msgid "Deep blues and cool neutrals."
+msgstr "Diepblauw en koele neutrale tinten."
+
+msgid "Leaf greens and warm neutrals."
+msgstr "Bladgroen en warme neutrale tinten."
+
+msgid "Warm terracotta and amber."
+msgstr "Warme terracotta- en ambertinten."
+
+msgid "High-contrast monochrome essentials."
+msgstr "Essentiële monochrome kleuren met hoog contrast."
+
+msgid "Primary"
+msgstr "Primair"
+
+msgid "Nature"
+msgstr "Natuur"
+
+msgid "Secondary"
+msgstr "Secundair"
+
+msgid "Neutral"
+msgstr "Neutraal"
+
+msgid "Modern"
+msgstr "Modern"
+
+msgid "Fresh"
+msgstr "Fris"
+
+msgid "Vibrant"
+msgstr "Levendig"
+
+msgid "System Sans"
+msgstr "Systeem schreefloos"
+
+msgid "Editorial"
+msgstr "Redactioneel"
+
+msgid "Technical"
+msgstr "Technisch"
+
+msgid "Clean & modern"
+msgstr "Strak en modern"
+
+msgid "Classic & readable"
+msgstr "Klassiek en leesbaar"
+
+msgid "Compact & precise"
+msgstr "Compact en precies"
+
+msgid "Auto"
+msgstr "Automatisch"
+
+msgid "Light"
+msgstr "Licht"
+
+msgid "Dark"
+msgstr "Donker"

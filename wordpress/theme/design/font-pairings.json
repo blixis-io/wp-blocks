@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "pairings": [
+    {
+      "id": "system",
+      "label": "System Sans",
+      "descriptor": "Clean & modern",
+      "body": "system-ui, -apple-system, \"Segoe UI\", Roboto, sans-serif",
+      "heading": "system-ui, -apple-system, \"Segoe UI\", Roboto, sans-serif"
+    },
+    {
+      "id": "editorial",
+      "label": "Editorial",
+      "descriptor": "Classic & readable",
+      "body": "system-ui, -apple-system, \"Segoe UI\", Roboto, sans-serif",
+      "heading": "Georgia, \"Times New Roman\", serif"
+    },
+    {
+      "id": "technical",
+      "label": "Technical",
+      "descriptor": "Compact & precise",
+      "body": "ui-monospace, SFMono-Regular, monospace",
+      "heading": "ui-monospace, SFMono-Regular, monospace"
+    }
+  ]
+}
