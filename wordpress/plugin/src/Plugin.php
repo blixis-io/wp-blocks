@@ -34,6 +34,9 @@ final class Plugin {
 
 	/** Register hooks for a supported runtime. */
 	public static function register(): void {
+		add_filter( 'blixis_builder_setup_templates', [ self::class, 'setup_templates' ] );
+		add_filter( 'blixis_builder_templates_admin_url', static fn() => admin_url( 'admin.php?page=blixis-templates' ) );
+		add_action( 'admin_post_blixis_install_template_fonts', [ TemplateController::class, 'admin_install' ] );
 		\add_filter( 'blixis_builder_admin_menu_slug', static fn() => AdminMenu::SLUG );
 		AdminMenu::hooks();
 		\add_action( 'init', [ self::class, 'load_text_domain' ] );
@@ -51,6 +54,34 @@ final class Plugin {
 		Frontend::hooks();
 		Head::hooks();
 		NativeLocaleRouter::boot();
+	}
+
+	/** Expose the validated catalogue to compatible themes without making them depend on plugin classes.
+	 *
+	 * @param mixed $templates Existing provider entries.
+	 * @return list<array<string, mixed>>
+	 */
+	public static function setup_templates( mixed $templates ): array {
+		$templates = [];
+		foreach ( \Blixis\Builder\Templates\Library::instance()->all() as $card ) {
+			$data                         = $card->data;
+			$data['designTokens']         = \Blixis\Builder\Templates\Library::instance()->tokens( $data['id'] );
+			$data['importabilityReasons'] = [];
+			$data['documents']            = [];
+			$documents                    = json_decode( (string) file_get_contents( $card->directory . '/template.json' ), true )['documents'] ?? []; // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Read the already validated local pack file.
+			foreach ( $documents as $document ) {
+				$data['importabilityReasons'] = array_merge( $data['importabilityReasons'], $document['importabilityReasons'] ?? [] );
+				$data['documents'][]          = [
+					'id'                   => $document['id'],
+					'type'                 => $document['type'],
+					'title'                => $document['title'],
+					'importable'           => $document['importable'],
+					'importabilityReasons' => $document['importabilityReasons'],
+				];
+			}
+			$templates[] = $data;
+		}
+		return $templates;
 	}
 
 	/** Load translations after WordPress has initialized. */

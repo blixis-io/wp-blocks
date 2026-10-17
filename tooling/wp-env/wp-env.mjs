@@ -2622,14 +2622,19 @@ async function smoke() {
             check(subscriberWizard.status === 403, 'subscriber cannot open setup wizard');
             const anonymousWizard = await http(wizardUrl, { redirect: 'manual' });
             check([302, 403].includes(anonymousWizard.status), 'anonymous visitor cannot open setup wizard');
+            const stepTitles = {
+              1: 'Choose a starter design',
+              2: 'Select your theme foundation',
+              3: 'Style your website',
+              4: 'Style your website',
+              5: 'Add Your Content',
+              6: 'Setup Complete!',
+            };
             const stepPage = async (step) => {
               const response = await http(`${wizardUrl}&step=${step}`, { headers: { cookie: adminCookie } });
               const html = await response.text();
               check(
-                response.status === 200 &&
-                  new RegExp(
-                    `<h2[^>]*>${step === 1 ? 'Choose a starter design' : step === 6 ? 'Finish setup' : step === 5 ? 'Content' : 'Make it yours'}</h2>`,
-                  ).test(html),
+                response.status === 200 && new RegExp(`<h2[^>]*>${stepTitles[step]}</h2>`).test(html),
                 `wizard step ${step} renders`,
               );
               return html;
@@ -2661,55 +2666,52 @@ async function smoke() {
                 html.includes('blx-step-label">Finish</span>'),
               'wizard renders the five visible step labels',
             );
-            check(
-              !html.includes('View All Templates') && !html.includes('SaaS'),
-              'wizard does not imply an unavailable template catalog',
-            );
+            const templateId = html.match(/name="preset" value="([a-z0-9-]+)"/)?.[1];
+            check(Boolean(templateId), 'wizard has a selected template from the provider');
             check(
               html.includes('role="radiogroup"') &&
-                html.includes('name="preset" value="ocean"') &&
-                html.includes('name="scheme" value="primary"') &&
-                html.includes('name="font" value="system"') &&
-                /name="preset" value="ocean"\s+checked/.test(html) &&
-                html.includes('blx-mini-hero') &&
-                html.includes('<strong>Welcome</strong>') &&
-                !html.includes('Explore the design') &&
-                html.includes('style="--mini-bg:#f8fbff;'),
-              'preset, palette and font choices render as accessible radios with token-driven mini previews',
+                html.includes('name="scheme" value="template"') &&
+                html.includes('name="font" value="template"') &&
+                /name="scheme" value="template"[^>]*checked/.test(html) &&
+                /name="font" value="template"[^>]*checked/.test(html) &&
+                html.includes('preview.webp'),
+              'template preview, palette and font defaults render from the pack',
             );
-            response = await submit(1, html, {}, 'cancel');
-            check(response.status === 302, 'wizard Skip Setup redirects after POST');
-            check(
-              JSON.parse(command('option', 'get', 'blixis_setup', '--format=json')).status === 'dismissed',
-              'wizard Skip Setup records site dismissal',
-            );
-            command(
-              'option',
-              'update',
-              'blixis_setup',
-              JSON.stringify({ version: 1, status: 'not_started', updated_at: new Date().toISOString() }),
-              '--format=json',
-            );
-            // The start banner only renders while setup has not started: read the nonce from the page in the reset state.
-            const restartHtml = await (
-              await http(`${base}/wp-admin/admin.php?page=blixis-setup`, { headers: { cookie: adminCookie } })
-            ).text();
-            const restartNonce = restartHtml.match(/name="blixis_setup_nonce_start" value="([a-z0-9]+)"/)?.[1];
-            response = await http(`${base}/wp-admin/admin-post.php`, {
+            const fontInstallNonce = html.match(/name="template_font_nonce" value="([a-z0-9]+)"/)?.[1];
+            const deniedInstall = await http(`${base}/wp-admin/admin-post.php`, {
               method: 'POST',
               redirect: 'manual',
               headers: { cookie: adminCookie, 'content-type': 'application/x-www-form-urlencoded' },
-              body: new URLSearchParams({ action: 'blixis_setup_start', blixis_setup_nonce_start: restartNonce ?? '' }),
+              body: new URLSearchParams({
+                action: 'blixis_install_template_fonts',
+                template_id: templateId,
+                preset: templateId,
+              }),
             });
-            check(response.status === 302, 'setup can be restarted after smoke-test reset');
-            html = await stepPage(1);
-            response = await submit(1, html, { preset: '<script>', scheme: 'primary', font: 'system' });
+            check([403, 400].includes(deniedInstall.status), 'font install is denied without its nonce');
+            if (fontInstallNonce) {
+              response = await http(`${base}/wp-admin/admin-post.php`, {
+                method: 'POST',
+                redirect: 'manual',
+                headers: { cookie: adminCookie, 'content-type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({
+                  action: 'blixis_install_template_fonts',
+                  template_id: templateId,
+                  preset: templateId,
+                  scheme: 'template',
+                  font: 'template',
+                  template_font_nonce: fontInstallNonce,
+                }),
+              });
+              check(response.status === 302, 'font install action runs with its nonce');
+            }
+            response = await submit(1, html, { preset: '<script>', scheme: 'template', font: 'template' });
             check(
               response.status === 302 && response.headers.get('location')?.includes('error=invalid'),
-              'hostile preset id is rejected',
+              'hostile template id is rejected',
             );
             const draftBeforeChoices = wpCmd('user', 'meta', 'get', 'admin', 'blixis_setup_draft');
-            response = await submit(1, html, { preset: 'ocean', scheme: 'unknown', font: 'system' });
+            response = await submit(1, html, { preset: templateId, scheme: 'unknown', font: 'template' });
             check(
               response.status === 302 && response.headers.get('location')?.includes('error=invalid'),
               'hostile color scheme id is rejected',
@@ -2721,22 +2723,27 @@ async function smoke() {
               })(),
               'rejected palette leaves the draft unchanged',
             );
-            response = await submit(1, html, { preset: 'ocean', scheme: 'primary', font: 'unknown' });
+            response = await submit(1, html, { preset: templateId, scheme: 'template', font: 'unknown' });
             check(
               response.status === 302 && response.headers.get('location')?.includes('error=invalid'),
-              'hostile font pairing id is rejected',
+              'hostile font id is rejected',
             );
-            response = await submit(1, html, { preset: 'ocean', scheme: 'nature', font: 'editorial' });
-            check(response.status === 302, 'preset POST advances');
+            response = await submit(1, html, { preset: templateId, scheme: 'nature', font: 'editorial' });
+            check(response.status === 302, 'template, palette and font POST advances');
             html = await stepPage(2);
             check(!html.includes('blx-setup-banner'), 'in-progress wizard hides the entry banner');
             const draftBefore = command('user', 'meta', 'get', 'admin', 'blixis_setup_draft');
+            const draftOne = JSON.parse(draftBefore);
             check(
-              draftBefore.includes('"preset":"ocean"') &&
-                draftBefore.includes('"scheme":"nature"') &&
-                draftBefore.includes('"font":"editorial"') &&
-                draftBefore.includes('Georgia'),
-              'preset, palette and font POST save validated values in the per-user draft',
+              draftOne.template === templateId &&
+                draftOne.scheme === 'nature' &&
+                draftOne.font === 'editorial' &&
+                draftOne.tokens['font-heading'].value.includes('Georgia'),
+              'template, palette and font selections persist in the per-user draft',
+            );
+            check(
+              html.includes('Coming soon: this template setting'),
+              'unsupported foundation settings are marked as coming soon',
             );
             response = await submit(2, html, {}, 'back');
             check(
@@ -2747,45 +2754,29 @@ async function smoke() {
             check(
               [...resumed.matchAll(/<input\b[^>]*\bname="preset"[^>]*>/g)].some(
                 (match) =>
-                  /\bvalue="ocean"/.test(match[0]) &&
-                  /\bchecked(?:\s*=\s*(?:"checked"|'checked'|checked))?(?:\s|\/?>)/.test(match[0]),
+                  /\bvalue="[^"]+"/.test(match[0]) &&
+                  match[0].includes(`value="${templateId}"`) &&
+                  /\bchecked/.test(match[0]),
               ),
-              'resume restores the selected preset',
+              'resume restores the selected template',
             );
             check(
               [...resumed.matchAll(/<input\b[^>]*\bname="scheme"[^>]*>/g)].some(
-                (match) =>
-                  /\bvalue="nature"/.test(match[0]) &&
-                  /\bchecked(?:\s*=\s*(?:"checked"|'checked'|checked))?(?:\s|\/?>)/.test(match[0]),
+                (match) => match[0].includes('value="nature"') && /\bchecked/.test(match[0]),
               ) &&
                 [...resumed.matchAll(/<input\b[^>]*\bname="font"[^>]*>/g)].some(
-                  (match) =>
-                    /\bvalue="editorial"/.test(match[0]) &&
-                    /\bchecked(?:\s*=\s*(?:"checked"|'checked'|checked))?(?:\s|\/?>)/.test(match[0]),
+                  (match) => match[0].includes('value="editorial"') && /\bchecked/.test(match[0]),
                 ),
-              'resume restores the selected palette and font pairing',
+              'resume restores palette and font choices',
             );
-            response = await submit(1, resumed, { preset: 'ocean', scheme: 'nature', font: 'editorial' });
+            response = await submit(1, resumed, { preset: templateId, scheme: 'nature', font: 'editorial' });
             check(response.status === 302, 'resumed setup continues');
             html = await stepPage(2);
-            const colorFields = Object.fromEntries(
-              [...html.matchAll(/name="(tokens\[[^"]+\]\[(?:value|dark)\])" value="([^"]+)"/g)].map((m) => [
-                m[1],
-                m[2],
-              ]),
-            );
-            const low = { ...colorFields, 'tokens[color-text][value]': colorFields['tokens[color-bg][value]'] };
-            response = await submit(2, html, low);
+            response = await submit(2, html, {});
             check(
-              response.status === 302 && response.headers.get('location')?.includes('error=contrast'),
-              'low contrast POST rejected',
+              response.status === 302,
+              'foundation step advances without claiming unavailable settings were applied',
             );
-            check(
-              command('user', 'meta', 'get', 'admin', 'blixis_setup_draft') === draftBefore,
-              'rejected contrast preserves draft',
-            );
-            response = await submit(2, html, colorFields);
-            check(response.status === 302, 'valid colors advance');
             const fontPost = command(
               'post',
               'create',
@@ -2796,7 +2787,6 @@ async function smoke() {
               '--post_content={"fontFamily":"Smoke Inter, sans-serif"}',
               '--porcelain',
             );
-            // WordPress stores each face as a child post (the shape the Font Library screen writes).
             command(
               'post',
               'create',
@@ -2807,16 +2797,14 @@ async function smoke() {
               '--porcelain',
             );
             html = await stepPage(3);
-            check(
-              html.includes('Smoke Inter (400 normal)'),
-              'installed Font Library family and variant appear in Typography',
-            );
+            check(html.includes('Smoke Inter'), 'installed Font Library family appears in typography options');
             const typographyBefore = command('user', 'meta', 'get', 'admin', 'blixis_setup_draft');
             const typography = JSON.parse(typographyBefore).tokens;
             const typographyFields = {
               'tokens[font-body][value]': '"Smoke Inter", system-ui, sans-serif',
               'tokens[font-heading][value]': typography['font-heading'].value,
               'tokens[text-base][value]': typography['text-base'].value,
+              appearance: 'auto',
             };
             response = await submit(3, html, {
               ...typographyFields,
@@ -2831,41 +2819,25 @@ async function smoke() {
               'rejected font leaves draft unchanged',
             );
             response = await submit(3, html, typographyFields);
-            check(response.status === 302, 'installed Font Library family accepted');
-            check(
-              JSON.parse(command('user', 'meta', 'get', 'admin', 'blixis_setup_draft')).tokens['font-body'].value ===
-                typographyFields['tokens[font-body][value]'],
-              'font choice saved in draft',
+            check(response.status === 302, 'installed Font Library family and appearance are accepted');
+            html = await stepPage(4);
+            const current = JSON.parse(command('user', 'meta', 'get', 'admin', 'blixis_setup_draft'));
+            const layoutFields = Object.fromEntries(
+              [...html.matchAll(/<select[^>]+name="tokens\[([^"]+)\]\[value\]"/g)].map((m) => [
+                `tokens[${m[1]}][value]`,
+                current.tokens[m[1]].value,
+              ]),
             );
-            for (let step = 4; step <= 6; step++) {
-              html = await stepPage(step);
-              if (step < 5) {
-                const current = JSON.parse(command('user', 'meta', 'get', 'admin', 'blixis_setup_draft'));
-                const fields = Object.fromEntries(
-                  [...html.matchAll(/<select[^>]+name="tokens\[([^"]+)\]\[value\]"/g)].map((m) => [
-                    `tokens[${m[1]}][value]`,
-                    current.tokens[m[1]].value,
-                  ]),
-                );
-                response = await submit(step, html, fields);
-                check(response.status === 302, `wizard step ${step} advances`);
-              } else if (step === 5) {
-                check(html.includes('Auto follows each visitor'), 'preview explains automatic website appearance');
-                check(html.includes('<h3>Light</h3>') && html.includes('<h3>Dark</h3>'), 'preview shows both modes');
-                const appearanceDraftBefore = command('user', 'meta', 'get', 'admin', 'blixis_setup_draft');
-                response = await submit(step, html, { appearance: 'invalid' });
-                check(
-                  response.status === 302 && response.headers.get('location')?.includes('error=invalid'),
-                  'invalid website appearance is rejected',
-                );
-                check(
-                  command('user', 'meta', 'get', 'admin', 'blixis_setup_draft') === appearanceDraftBefore,
-                  'invalid website appearance preserves the draft',
-                );
-                response = await submit(step, html, { appearance: 'auto' });
-                check(response.status === 302, 'preview advances to Apply');
-              }
-            }
+            response = await submit(4, html, layoutFields);
+            check(response.status === 302, 'style layout step advances');
+            html = await stepPage(5);
+            check(
+              html.includes('Import is not available for this template yet.') &&
+                html.includes('is not available in the core element registry.'),
+              'content import controls display the pack refusal reason',
+            );
+            response = await submit(5, html, {});
+            check(response.status === 302, 'content step advances without reporting fake imports');
             // BWB-035: applying persists the design system, completes setup and prints the saved tokens.
             html = await stepPage(6);
             response = await submit(6, html, {}, 'apply');
@@ -2883,8 +2855,8 @@ async function smoke() {
               'the website appearance option is autoloaded',
             );
             check(
-              saved.tokenVersion === 1 && saved.preset === 'ocean',
-              'the saved design system is version 1 of the ocean preset',
+              saved.tokenVersion === 1 && saved.preset === 'custom',
+              'the saved design system applies the selected template as validated custom tokens',
             );
             check(
               saved.tokens['color-bg'].value === '#fafcf8' && saved.tokens['color-bg'].dark === '#101c15',

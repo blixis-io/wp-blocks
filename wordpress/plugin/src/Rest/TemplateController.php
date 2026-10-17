@@ -15,6 +15,53 @@ use Blixis\Builder\Publication\AuditEvent;
 use Blixis\Builder\Publication\WordPressAuditSink;
 /** Template REST endpoints. */
 final class TemplateController {
+	/** Pure policy for the privileged admin-post install adapter.
+	 *
+	 * @param string $method Request method.
+	 * @param bool   $can_edit Whether the user can edit theme options.
+	 * @param bool   $can_upload Whether the user can upload files.
+	 * @param string $requested_id Submitted template id.
+	 * @param string $selected_id Selected template id.
+	 * @return bool Whether the request satisfies the adapter policy.
+	 */
+	public static function admin_install_policy( string $method, bool $can_edit, bool $can_upload, string $requested_id, string $selected_id ): bool {
+		return 'POST' === strtoupper( $method ) && $can_edit && $can_upload && '' !== $requested_id && $requested_id === $selected_id && 1 === preg_match( '/^[a-z0-9-]{1,64}$/D', $requested_id );
+	}
+
+	/** Admin-post adapter for the existing REST installer policy. */
+	public static function admin_install(): void {
+		$method = isset( $_SERVER['REQUEST_METHOD'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_METHOD'] ) ) : '';
+		if ( 'POST' !== strtoupper( $method ) ) {
+			wp_die( esc_html__( 'A POST request is required.', 'blixis-builder' ), '', [ 'response' => 405 ] );
+		}
+		check_admin_referer( 'template_font_install', 'template_font_nonce' );
+		$can_edit   = current_user_can( 'edit_theme_options' );
+		$can_upload = current_user_can( 'upload_files' );
+		if ( ! $can_edit || ! $can_upload ) {
+			wp_die( esc_html__( 'You are not allowed to install template fonts.', 'blixis-builder' ), '', [ 'response' => 403 ] );
+		}
+		$id       = isset( $_POST['template_id'] ) ? sanitize_key( wp_unslash( $_POST['template_id'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Checked above.
+		$selected = isset( $_POST['preset'] ) ? sanitize_key( wp_unslash( $_POST['preset'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Checked above.
+		if ( ! self::admin_install_policy( $method, $can_edit, $can_upload, $id, $selected ) || ! Library::instance()->find( $id ) ) {
+			wp_die( esc_html__( 'Template not found.', 'blixis-builder' ), '', [ 'response' => 404 ] );
+		}
+		$result = self::install_template( $id, '' );
+		$ok     = ! is_wp_error( $result );
+		$url    = add_query_arg(
+			[
+				'page'         => 'blixis-setup',
+				'step'         => 1,
+				'font_install' => $ok ? 'success' : 'error',
+				'template'     => $id,
+				'scheme'       => isset( $_POST['scheme'] ) ? sanitize_key( wp_unslash( $_POST['scheme'] ) ) : 'template', // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Checked above.
+				'font'         => isset( $_POST['font'] ) ? sanitize_key( wp_unslash( $_POST['font'] ) ) : 'template', // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Checked above.
+			],
+			admin_url( 'admin.php' )
+		);
+		wp_safe_redirect( $url );
+		exit;
+	}
+
 	/** Register template endpoints. */
 	public static function register(): void {
 		register_rest_route(
@@ -76,10 +123,18 @@ final class TemplateController {
 	 * @return \WP_REST_Response|\WP_Error Outcome or fixed error.
 	 */
 	public static function install( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
-		if ( ! self::has_empty_body( $request->get_body() ) ) {
+		return self::install_template( (string) RouteParams::get( $request, 'id' ), $request->get_body() );
+	}
+	/** Shared REST/admin-post installation policy.
+	 *
+	 * @param string $id Validated template id.
+	 * @param string $body Raw request body.
+	 * @return \WP_REST_Response|\WP_Error Outcome or fixed error.
+	 */
+	private static function install_template( string $id, string $body ): \WP_REST_Response|\WP_Error {
+		if ( ! self::has_empty_body( $body ) ) {
 			return new \WP_Error( 'blixis_invalid_template_request', 'Request body must be empty.', [ 'status' => 400 ] );
 		}
-		$id   = (string) RouteParams::get( $request, 'id' );
 		$card = Library::instance()->find( $id );
 		if ( ! $card ) {
 			return new \WP_Error( 'blixis_template_not_found', 'Template not found.', [ 'status' => 404 ] );
