@@ -59,6 +59,10 @@ function repo(extra = (r) => r) {
   put('wordpress/plugin/assets/editor/manifest.json', '{"version":1}\n');
   put('wordpress/plugin/assets/editor/NOTICE.txt', 'Solar Icon Set by 480 Design, CC BY 4.0; used unmodified.\n');
   put('wordpress/plugin/assets/editor/editor.js.LEGAL.txt', 'legal\n');
+  put('wordpress/plugin/assets/admin/admin.css', '.blx-admin{}\n');
+  put('wordpress/plugin/assets/admin/assets.js', 'export {};\n');
+  put('wordpress/plugin/assets/admin/assets-core.js', 'export {};\n');
+  put('wordpress/plugin/languages/blixis-builder-nl_NL.mo', 'compiled Dutch catalog\n');
   put('wordpress/plugin/package.json', JSON.stringify({ name: '@blixis/wp-plugin', version: '0.1.0' }));
   extra({ root, put });
   return root;
@@ -126,6 +130,9 @@ test('entries are sorted, timestamps fixed to the DOS epoch, permissions normali
   assert.deepEqual(
     entries.map((e) => e[0]),
     [
+      'blixis-builder/assets/admin/admin.css',
+      'blixis-builder/assets/admin/assets-core.js',
+      'blixis-builder/assets/admin/assets.js',
       'blixis-builder/assets/editor/NOTICE.txt',
       'blixis-builder/assets/editor/canvas.js',
       'blixis-builder/assets/editor/editor.css',
@@ -137,12 +144,15 @@ test('entries are sorted, timestamps fixed to the DOS epoch, permissions normali
       'blixis-builder/blixis-builder.php',
       'blixis-builder/data/core-elements.json',
       'blixis-builder/data/css-properties.json',
+      'blixis-builder/languages/blixis-builder-nl_NL.mo',
     ],
   );
   for (const [, date] of entries) assert.deepEqual(date, [1980, 1, 1, 0, 0, 0]);
   assert.deepEqual(
     entries.map((e) => e[2]),
-    [0o644, 0o644, 0o644, 0o644, 0o644, 0o644, 0o644, 0o755, 0o644, 0o644, 0o644],
+    Array(entries.length)
+      .fill(0o644)
+      .map((mode, index) => (index === 10 ? 0o755 : mode)),
   );
   assert.ok(
     entries.every((e) => e[3] === 0x800),

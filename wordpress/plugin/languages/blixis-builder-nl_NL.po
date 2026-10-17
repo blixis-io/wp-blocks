@@ -1,0 +1,176 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Blixis Builder 0.1.0\n"
+"Language: nl_NL\n"
+"Language-Team: Dutch\n"
+"Last-Translator: Blixis\n"
+"PO-Revision-Date: 2026-10-17 00:00+0000\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "Blixis"
+msgstr "Blixis"
+
+msgid "Setup Wizard"
+msgstr "Installatiewizard"
+
+msgid "Global Styles"
+msgstr "Globale stijlen"
+
+msgid "Templates"
+msgstr "Sjablonen"
+
+msgid "Theme Builder"
+msgstr "Thema-builder"
+
+msgid "Assets"
+msgstr "Media"
+
+msgid "Settings"
+msgstr "Instellingen"
+
+msgid "Help & Support"
+msgstr "Hulp en ondersteuning"
+
+msgid "View Site"
+msgstr "Website bekijken"
+
+msgid "Global Styles is coming soon"
+msgstr "Globale stijlen zijn binnenkort beschikbaar"
+
+msgid "This will let you manage site-wide colors, typography, spacing, radii, shadows, and breakpoints from the validated design tokens shared by your pages."
+msgstr "Hiermee beheer je straks de kleuren, typografie, tussenruimte, hoekafronding, schaduwen en breakpoints voor je hele website met gevalideerde ontwerptokens die je pagina's delen."
+
+msgid "The current design-system source is the Blixis theme setup wizard."
+msgstr "De installatiewizard van het Blixis-thema is momenteel de bron voor het ontwerpsysteem."
+
+msgid "Open Setup Wizard"
+msgstr "Installatiewizard openen"
+
+msgid "Use templates from the Setup Wizard."
+msgstr "Gebruik sjablonen vanuit de installatiewizard."
+
+msgid "A template provider is planned; this catalog is read-only."
+msgstr "Een sjabloonaanbieder is gepland; deze catalogus is alleen-lezen."
+
+msgid "Available"
+msgstr "Beschikbaar"
+
+msgid "Not installed"
+msgstr "Niet geïnstalleerd"
+
+msgid "Theme Builder is coming soon. It will provide tools for creating and managing reusable site templates."
+msgstr "De thema-builder is binnenkort beschikbaar. Hiermee kun je herbruikbare websitesjablonen maken en beheren."
+
+msgid "Activate the Blixis theme to use the setup wizard."
+msgstr "Activeer het Blixis-thema om de installatiewizard te gebruiken."
+
+msgid "Upload Files"
+msgstr "Bestanden uploaden"
+
+msgid "Media type"
+msgstr "Mediatype"
+
+msgid "All Assets"
+msgstr "Alle media"
+
+msgid "Images"
+msgstr "Afbeeldingen"
+
+msgid "Audio"
+msgstr "Audio"
+
+msgid "Video"
+msgstr "Video"
+
+msgid "Documents"
+msgstr "Documenten"
+
+msgid "Search media"
+msgstr "Media zoeken"
+
+msgid "Sort by"
+msgstr "Sorteren op"
+
+msgid "Date added"
+msgstr "Datum toegevoegd"
+
+msgid "Title"
+msgstr "Titel"
+
+msgid "Grid view"
+msgstr "Rasterweergave"
+
+msgid "List view"
+msgstr "Lijstweergave"
+
+msgid "Media items"
+msgstr "Media-items"
+
+msgid "Select an asset to see its details."
+msgstr "Selecteer media om de details te bekijken."
+
+msgid "Load more"
+msgstr "Meer laden"
+
+msgid "Copy URL"
+msgstr "URL kopiëren"
+
+msgid "Edit in Media Library"
+msgstr "Bewerken in Mediabibliotheek"
+
+msgid "Copy diagnostics"
+msgstr "Diagnostische gegevens kopiëren"
+
+msgid "Diagnostics copied."
+msgstr "Diagnostische gegevens gekopieerd."
+
+msgid "Request failed (%d)."
+msgstr "Aanvraag mislukt (%d)."
+
+msgid "The media response was invalid."
+msgstr "Het media-antwoord is ongeldig."
+
+msgid "The media API must use this site origin."
+msgstr "De media-API moet dezelfde website-oorsprong gebruiken."
+
+msgid "%d media items loaded."
+msgstr "%d media-items geladen."
+
+msgid "Uploading %s…"
+msgstr "%s uploaden…"
+
+msgid "%s uploaded."
+msgstr "%s geüpload."
+
+msgid "%1$s: %2$s"
+msgstr "%1$s: %2$s"
+
+msgid "Alt text"
+msgstr "Alternatieve tekst"
+
+msgid "Untitled"
+msgstr "Zonder titel"
+
+msgid "URL copied."
+msgstr "URL gekopieerd."
+
+msgid "Could not copy URL."
+msgstr "De URL kon niet worden gekopieerd."
+
+msgid "This plugin has no data-deletion option; uninstall removes only its version metadata."
+msgstr "Deze plugin heeft geen optie om gegevens te verwijderen; bij de-installatie wordt alleen de versie-informatie verwijderd."
+
+msgid "Documentation"
+msgstr "Documentatie"
+
+msgid "Issues and support"
+msgstr "Problemen en ondersteuning"
+
+msgid "Show the setup notice in the admin"
+msgstr "Installatiemelding tonen in het beheer"
+
+msgid "Blixis Builder %1$s · Blixis Theme %2$s"
+msgstr "Blixis Builder %1$s · Blixis-thema %2$s"

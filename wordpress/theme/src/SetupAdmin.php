@@ -37,6 +37,8 @@ final class SetupAdmin {
 	/** Register admin hooks. */
 	public static function register(): void {
 		add_action( 'admin_menu', [ self::class, 'menu' ] );
+		// Early: for a page that is no longer registered under Appearance, core answers 403 before `admin_init` runs.
+		add_action( 'init', [ self::class, 'redirect_legacy_url' ], 0 );
 		add_action( 'admin_enqueue_scripts', [ self::class, 'assets' ] );
 		foreach ( [ 'start', 'dismiss', 'wizard', 'rollback' ] as $action ) {
 			add_action( 'admin_post_blixis_setup_' . $action, [ self::class, $action ] );
@@ -49,14 +51,29 @@ final class SetupAdmin {
 	 * @param string $hook Admin page hook.
 	 */
 	public static function assets( string $hook ): void {
-		if ( 'appearance_page_blixis-setup' === $hook ) {
+		if ( in_array( $hook, [ 'appearance_page_blixis-setup', 'blixis_page_blixis-setup', 'toplevel_page_blixis' ], true ) ) {
 			wp_enqueue_style( 'blixis-setup-admin', get_template_directory_uri() . '/assets/css/setup-admin.css', [], (string) filemtime( get_template_directory() . '/assets/css/setup-admin.css' ) );
 		}
 	}
 
-	/** Add Appearance submenu. */
+	/** Add the wizard beneath the Builder menu when present, with a standalone fallback. */
 	public static function menu(): void {
+		$parent = apply_filters( 'blixis_builder_admin_menu_slug', '' );
+		if ( is_string( $parent ) && '' !== $parent ) {
+			return;
+		}
 		add_theme_page( __( 'Blixis setup', 'blixis' ), __( 'Blixis setup', 'blixis' ), self::CAPABILITY, 'blixis-setup', [ self::class, 'page' ] );
+	}
+
+	/** Preserve old Appearance bookmarks after plugin menu migration. */
+	public static function redirect_legacy_url(): void {
+		$parent = apply_filters( 'blixis_builder_admin_menu_slug', '' );
+		$page   = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only legacy URL routing.
+		if ( 'themes.php' !== ( $GLOBALS['pagenow'] ?? '' ) || 'blixis-setup' !== $page || ! is_string( $parent ) || '' === $parent ) {
+			return; }
+		// No capability check here: the destination page enforces it (and a logged-out visitor lands on the login screen).
+		wp_safe_redirect( admin_url( 'admin.php?page=blixis-setup' ) );
+		exit;
 	}
 
 	/** Render the current step; an explicit step query supports revisiting prior steps. */
@@ -95,7 +112,7 @@ final class SetupAdmin {
 		<div class="wrap blx-setup-wrap"><header class="blx-setup-top"><a class="blx-setup-brand" href="<?php echo esc_url( home_url( '/' ) ); ?>"><span class="blx-setup-mark" aria-hidden="true">b</span><span>Blixis</span></a><div class="blx-setup-top-actions"><a class="button" href="<?php echo esc_url( home_url( '/' ) ); ?>" target="_blank" rel="noopener"><?php echo esc_html__( 'View Site', 'blixis' ); ?></a></div></header>
 		<main class="blixis-setup"><p class="blx-setup-eyebrow"><?php echo esc_html__( 'Setup Wizard', 'blixis' ); ?></p><h1><?php echo esc_html__( 'Welcome to', 'blixis' ); ?> <span>Blixis</span></h1>
 		<p class="blx-setup-intro"><?php echo esc_html__( 'Let’s get your website ready in a few simple steps. Choose a starter design, customize the style, and import content. You can always change these settings later.', 'blixis' ); ?></p>
-		<?php if ( 'not_started' === $state['status'] ) : ?>
+		<?php if ( in_array( $state['status'], [ 'not_started', 'dismissed' ], true ) && get_option( 'blixis_show_setup_notice', true ) ) : ?>
 			<div class="blx-setup-banner"><p><?php echo esc_html__( 'Set up the Blixis theme when you are ready.', 'blixis' ); ?></p>
 				<?php self::action_form( 'start', __( 'Start setup', 'blixis' ), 'button button-primary blx-banner-start' ); ?>
 				<?php self::action_form( 'dismiss', __( 'Dismiss', 'blixis' ), 'button-link blx-banner-dismiss' ); ?>
@@ -357,7 +374,10 @@ else :
 		if ( null !== $next ) {
 			update_option( SetupState::OPTION, $next, false );
 		}
-		wp_safe_redirect( admin_url( 'dismiss' === $action ? 'themes.php' : 'themes.php?page=blixis-setup' ) );
+		if ( 'dismiss' === $action ) {
+			update_option( 'blixis_show_setup_notice', false, false );
+		}
+		wp_safe_redirect( admin_url( 'admin.php?page=blixis-setup' ) );
 		exit;
 	}
 
@@ -400,7 +420,7 @@ else :
 		self::require_post();
 		check_admin_referer( self::NONCE_ACTION, 'blixis_setup_nonce_rollback' );
 		$result = DesignSystemStore::rollback();
-		wp_safe_redirect( admin_url( 'themes.php?page=blixis-setup' . ( $result['ok'] ? '&restored=1' : '&error=not-saved' ) ) );
+		wp_safe_redirect( admin_url( 'admin.php?page=blixis-setup' . ( $result['ok'] ? '&restored=1' : '&error=not-saved' ) ) );
 		exit;
 	}
 
@@ -422,7 +442,7 @@ else :
 			if ( null !== $state ) {
 				update_option( SetupState::OPTION, $state, false );
 			}
-			wp_safe_redirect( admin_url( 'themes.php' ) );
+			wp_safe_redirect( admin_url( 'admin.php?page=blixis-setup' ) );
 			exit;
 		}
 		if ( 'back' === $direction ) {
@@ -504,7 +524,7 @@ else :
 			}
 			delete_user_meta( $user_id, self::DRAFT_META );
 			SetupState::save_resume_step( $user_id, 1 );
-			wp_safe_redirect( admin_url( 'themes.php?page=blixis-setup&applied=1' ) );
+			wp_safe_redirect( admin_url( 'admin.php?page=blixis-setup&applied=1' ) );
 			exit;
 		} else {
 			self::save_draft( $user_id, $draft );
@@ -674,7 +694,7 @@ else :
 	 * @param string $error Fixed error code.
 	 */
 	private static function redirect_step( int $step, string $error = '' ): never {
-		$url = admin_url( 'themes.php?page=blixis-setup&step=' . $step );
+		$url = admin_url( 'admin.php?page=blixis-setup&step=' . $step );
 		if ( '' !== $error ) {
 			$url = add_query_arg( 'error', $error, $url );
 		}

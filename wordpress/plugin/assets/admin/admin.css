@@ -1,0 +1,117 @@
+.blx-admin {
+  max-width: 1440px;
+}
+.blx-admin__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 24px;
+  background: #fff;
+  border: 1px solid #dcdcde;
+  border-radius: 8px;
+  margin: 18px 0;
+}
+.blx-admin__brand {
+  font-size: 22px;
+  font-weight: 700;
+  text-decoration: none;
+  color: #1d2327;
+}
+.blx-admin__brand span {
+  color: #087af5;
+}
+.blx-admin__main {
+  position: relative;
+}
+.blx-admin__main > h1 {
+  font-size: 30px;
+  margin: 24px 0;
+}
+.blx-admin__card {
+  background: #fff;
+  border: 1px solid #dcdcde;
+  border-radius: 10px;
+  padding: 24px;
+  margin: 16px 0;
+}
+.blx-admin__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+.blx-admin__grid img {
+  width: 100%;
+  height: auto;
+  border-radius: 6px;
+}
+.blx-assets__toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.blx-assets__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 20px;
+  margin-top: 20px;
+}
+.blx-assets__items {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 12px;
+}
+.blx-assets__items[data-view='list'] {
+  display: flex;
+  flex-direction: column;
+}
+.blx-assets__item {
+  position: relative;
+  text-align: start;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: 1px solid #dcdcde;
+  border-radius: 6px;
+  background: #fff;
+  padding: 8px;
+  color: inherit;
+  cursor: pointer;
+}
+.blx-assets__item:focus-visible,
+.blx-assets__item:hover {
+  outline: 2px solid #087af5;
+}
+.blx-assets__item img {
+  width: 100%;
+  aspect-ratio: 4/3;
+  object-fit: cover;
+}
+.blx-assets__details {
+  border-inline-start: 1px solid #dcdcde;
+  padding-inline-start: 16px;
+  overflow-wrap: anywhere;
+}
+.blx-assets__details img {
+  max-width: 100%;
+  height: auto;
+}
+.is-dragging {
+  outline: 3px dashed #087af5;
+}
+@media (max-width: 800px) {
+  .blx-assets__layout {
+    grid-template-columns: 1fr;
+  }
+  .blx-assets__details {
+    border-inline-start: 0;
+    border-block-start: 1px solid #dcdcde;
+    padding: 16px 0 0;
+  }
+  .blx-assets__toolbar > * {
+    max-width: 100%;
+  }
+}
+[dir='rtl'] .blx-assets__item {
+  text-align: right;
+}

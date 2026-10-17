@@ -90,7 +90,7 @@ final class SetupStateTest extends TestCase {
 	}
 
 	/**
-	 * Start is idempotent and dismiss hides an active setup; final statuses cannot be reopened here.
+	 * Start is idempotent, a dismissed setup can resume, and completed setup stays closed.
 	 */
 	public function test_entry_transitions(): void {
 		$initial = SetupState::initial( self::NOW );
@@ -103,7 +103,9 @@ final class SetupStateTest extends TestCase {
 		$this->assertSame( 'dismissed', $dismissed['status'] );
 		$this->assertNull( SetupState::transition( $initial, 'invalid', self::NOW ) );
 		$this->assertNull( SetupState::transition( array_merge( $initial, [ 'status' => 'completed' ] ), 'start', self::NOW ) );
-		$this->assertNull( SetupState::transition( array_merge( $initial, [ 'status' => 'dismissed' ] ), 'start', self::NOW ) );
+		$reopened = SetupState::transition( array_merge( $initial, [ 'status' => 'dismissed' ] ), 'start', self::NOW );
+		$this->assertNotNull( $reopened );
+		$this->assertSame( 'in_progress', $reopened['status'] );
 	}
 
 	/** Wizard navigation is bounded and has no Apply transition yet. */
