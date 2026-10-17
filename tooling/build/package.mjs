@@ -57,6 +57,10 @@ export function collectFiles(sourceDir, config) {
       if (stat.isSymbolicLink()) throw new Error(`symbolic links are not allowed in packages: ${rel}`);
       if (stat.isDirectory()) walk(abs);
       else if (stat.isFile()) {
+        const contentRoot =
+          config.contentAllowlist && Object.keys(config.contentAllowlist).find((root) => rel.startsWith(`${root}/`));
+        if (contentRoot && !config.contentAllowlist[contentRoot].includes(rel.slice(contentRoot.length + 1)))
+          throw new Error(`file is not on the content packaging allow-list: ${rel}`);
         const allowed = config.allowedNames?.includes(name) || config.allowedExtensions?.includes(extension(name));
         if (config.allowedExtensions && !allowed)
           throw new Error(
@@ -96,7 +100,10 @@ export function buildDistribution(root, dist, config, outDir) {
   const pkgVersion = JSON.parse(readFileSync(pkgFile, 'utf8')).version;
   if (pkgVersion !== version)
     throw new Error(`${dist.slug}: header version ${version} differs from package.json version ${pkgVersion}`);
-  const files = collectFiles(sourceDir, config);
+  const files = collectFiles(sourceDir, {
+    ...config,
+    ...(dist.contentAllowlist ? { contentAllowlist: dist.contentAllowlist } : {}),
+  });
   for (const r of dist.required)
     if (!files.some((f) => f.rel === r)) throw new Error(`${dist.slug}: required file ${r} is excluded or missing`);
   const entries = files.map((f) => ({ path: `${dist.slug}/${f.rel}`, data: readFileSync(f.abs), mode: f.mode }));

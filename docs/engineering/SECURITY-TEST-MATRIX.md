@@ -55,6 +55,16 @@ This matrix records controls present in the current PHP plugin. A test name is e
 - T21: per-user/post transient updates and snapshot counting are soft bounds under concurrent requests (transient read-then-write and snapshot count before insert). The rate window lives in an evictable transient, so object-cache eviction resets it. No site-wide aggregate limit or operator alert exists; pruning accounting remains BWB-070 work.
 T10, T12, T14, T15, T16, T20 and T22 await their listed future issues or delivery phases.
 
+## Template pack security coverage (BWB-157)
+
+| Boundary | Implementation | Automated evidence | Real WordPress evidence |
+|---|---|---|---|
+| Template asset path confinement, scalar bounds, nested localization/style/animation props, schema categories, import options and unknown-type URL props | `Templates\TemplateValidator` | `TemplateValidatorTest::test_rejects_hostile_asset_paths_flags_documents_and_unknown_keys` mutation table; `TemplateValidatorTest::test_all_bundled_packs_pass_validator_and_schema` | wp-env template catalog smoke (not run in this environment) |
+| SVG element/attribute allowlist, fragment-only references, entity, protocol-relative, active element and CSS URL rejection | `Templates\TemplateValidator` | `TemplateValidatorTest::test_rejects_hostile_asset_paths_flags_documents_and_unknown_keys` SVG mutation table; bundled logo validation in `TemplateValidatorTest::test_all_bundled_packs_pass_validator_and_schema` | wp-env catalog reads all bundled logos (not run in this environment) |
+| Filtered pack roots use their validated directory for tokens/assets; duplicate IDs and untrusted URL roots are reported | `Templates\Library` | `TemplateLibraryTest::test_filtered_pack_uses_validated_root_and_reports_duplicate_id`; `TemplateLibraryTest::test_loads_cards_and_skips_invalid_pack_without_throwing` | Filtered-root WordPress integration (not run in this environment) |
+| Font file allowlist, core MIME list, destination no-overwrite, capability gates and idempotence | `Templates\FontInstaller` | `FontInstallerTest::test_allowlist_capabilities_installation_and_idempotence`; `FontCollectionTest::test_collection_has_wordpress_schema_shape_and_six_local_variable_families` | User-run `pnpm wp:smoke`: install, local Font Library files, Font Library reader and idempotence (not run here) |
+| REST 404, failed-attempt rate limit, audit identifiers and family mutex | `Rest\TemplateController`, `Publication\AuditEvent` | `TemplateControllerTest::test_unknown_template_routes_return_404`; `TemplateControllerTest::test_failed_font_install_attempts_are_rate_limited`; `PublicationSecurityTest::test_audit_event_contract` | User-run `pnpm wp:smoke` verifies install and repeat install (not run here); parallel-request lock behavior is unit-covered through option mutex paths only |
+
 
 ## Added by BWB-112
 

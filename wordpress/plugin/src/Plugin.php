@@ -21,6 +21,8 @@ use Blixis\Builder\Admin\CanvasScreen;
 use Blixis\Builder\Canvas\PageShell;
 use Blixis\Builder\Rest\PageSettingsController;
 use Blixis\Builder\Seo\Head;
+use Blixis\Builder\Rest\TemplateController;
+use Blixis\Builder\Templates\FontCollection;
 
 \defined( 'ABSPATH' ) || exit;
 
@@ -37,6 +39,8 @@ final class Plugin {
 		\add_action( 'rest_api_init', [ MediaController::class, 'register' ] );
 		\add_action( 'rest_api_init', [ StatusController::class, 'register' ] );
 		\add_action( 'rest_api_init', [ PageSettingsController::class, 'register' ] );
+		\add_action( 'rest_api_init', [ TemplateController::class, 'register' ] );
+		\add_action( 'init', [ FontCollection::class, 'register' ], 20 );
 		AdminNotice::hooks();
 		EditorScreen::hooks();
 		CanvasScreen::hooks();

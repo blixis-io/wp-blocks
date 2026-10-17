@@ -322,6 +322,88 @@ async function smoke() {
           headers: response.headers,
           text: await response.text(),
         });
+        const json = async (response) => {
+          try {
+            return JSON.parse(response.text);
+          } catch {
+            return {};
+          }
+        };
+        const templateApi = async (path, { cookie, nonce, method = 'GET', body } = {}) =>
+          wrap(
+            await http(`${base}/?rest_route=/blixis/v1/templates${path}`, {
+              method,
+              headers: {
+                ...(cookie ? { cookie } : {}),
+                ...(nonce ? { 'x-wp-nonce': nonce } : {}),
+                ...(body === undefined ? {} : { 'content-type': 'application/json' }),
+              },
+              body,
+            }),
+          );
+        const templateDenied = await templateApi('');
+        const subscriberDenied = await templateApi('', { cookie: subscriberCookie, nonce: subscriberNonce });
+        check(
+          templateDenied.status === 401 && subscriberDenied.status === 403,
+          'template catalog denies anonymous and subscriber requests',
+        );
+        const catalog = await templateApi('', { cookie: adminCookie, nonce: adminNonce });
+        const templateCards = await json(catalog);
+        check(catalog.status === 200 && templateCards.length === 4, 'admin template catalog lists all four packs');
+        for (const card of templateCards) {
+          const preview = await http(card.previewUrl);
+          check(
+            preview.status === 200 && /^image\//.test(preview.headers.get('content-type') ?? ''),
+            `${card.id} preview URL serves an image`,
+          );
+        }
+        const collection = await http(`${base}/?rest_route=/wp/v2/font-collections/blixis`, {
+          headers: { cookie: adminCookie, 'x-wp-nonce': adminNonce },
+        });
+        const collectionText = await collection.text();
+        check(
+          collection.status === 200 &&
+            ['Plus Jakarta Sans', 'Inter', 'Space Grotesk', 'DM Sans', 'Manrope', 'Outfit'].every((family) =>
+              collectionText.includes(family),
+            ),
+          'registered Blixis Font Collection exposes all six families',
+        );
+        const fontRoute = '/business/fonts';
+        const hostileFont = await templateApi('/hostile/fonts', {
+          cookie: adminCookie,
+          nonce: adminNonce,
+          method: 'POST',
+        });
+        check(hostileFont.status === 404, 'hostile template font slug is rejected');
+        const fontInstall = await templateApi(fontRoute, { cookie: adminCookie, nonce: adminNonce, method: 'POST' });
+        check(fontInstall.status === 200, 'admin installs template font family');
+        const installedFonts = command(
+          'eval',
+          '$p=get_posts(["post_type"=>"wp_font_family","post_status"=>"publish","numberposts"=>100]); $f=wp_get_font_dir(); $n=array_values(array_map(fn($x)=>$x->post_title,$p)); $files=is_dir($f["path"])?array_values(array_map("basename",glob($f["path"]."/*.ttf"))):[]; echo wp_json_encode(["names"=>$n,"files"=>$files]);',
+        );
+        let installedData = {};
+        try {
+          installedData = JSON.parse(installedFonts);
+        } catch {
+          /* reported by the smoke assertion */
+        }
+        check(
+          ['Plus Jakarta Sans', 'Inter'].every((family) => installedData.names?.includes(family)) &&
+            installedData.files?.length >= 2,
+          'installed font family posts have local Font Library files',
+        );
+        check(
+          command(
+            'eval',
+            'echo class_exists("Blixis\\Theme\\FontLibrary") && count(\\Blixis\\Theme\\FontLibrary::installed()) >= 2 ? "visible" : "missing";',
+          ).trim() === 'visible',
+          'theme Font Library reader sees the installed families',
+        );
+        const fontAgain = await templateApi(fontRoute, { cookie: adminCookie, nonce: adminNonce, method: 'POST' });
+        check(
+          fontAgain.status === 200 && (await json(fontAgain)).installed.length === 0,
+          'template font installation is idempotent',
+        );
         const api = async (
           path,
           { cookie, nonce, method = 'GET', ifMatch, body, contentType = 'application/json' } = {},
@@ -338,13 +420,6 @@ async function smoke() {
               body,
             }),
           );
-        const json = async (response) => {
-          try {
-            return JSON.parse(response.text);
-          } catch {
-            return {};
-          }
-        };
         const doc = (note) => JSON.stringify({ schemaVersion: 1, layoutRevision: 1, note });
         const layout = `${restPost}/layout`;
         const anonymous = await api(layout);

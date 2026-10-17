@@ -109,6 +109,9 @@ final class PublicationSecurityTest extends TestCase {
 		$this->assertSame( [ 'actor', 'post', 'locale', 'kind', 'layoutSnapshot', 'contentSnapshot', 'pointerRevision', 'time' ], \array_keys( $sink->events[0] ) );
 		$this->assertSame( '1970-01-01T00:00:00Z', $sink->events[0]['time'] );
 		$this->assertSame( 'rollback', $sink->events[0]['kind'] );
+		$template_event = ( new AuditEvent( 7, 0, null, 'template-font-install', null, null, 0, 0, 'business', [ 'inter', '../bad' ] ) )->data();
+		$this->assertSame( 'business', $template_event['templateId'] ?? null );
+		$this->assertSame( [ 'inter' ], $template_event['familySlugs'] ?? null );
 	}
 
 	/** The production sink invokes the documented WordPress action with the safe payload. */

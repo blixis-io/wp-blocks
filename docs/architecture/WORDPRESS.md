@@ -115,6 +115,9 @@ PUT requires `Content-Type: application/json`, a JSON envelope object of at most
 | 429 | `blixis_rate_limited` | Publication rate limit reached. |
 | 500 | `blixis_storage_error` | Storage failed. |
 | 500 | `blixis_preview_failed` | Preview failed. |
+| 400 | `blixis_invalid_template_request` | Template request is invalid. |
+| 400 | `blixis_font_install_failed` | Template fonts could not be installed. |
+| 404 | `blixis_template_not_found` | Template not found. |
 
 `POST /documents/{id}/unpublish` uses `edit_post`, the REST cookie nonce, the publication rate bucket, the per-post pointer lock and a quoted `If-Match`. Its body must be empty or `{}`. It advances the pointer to an unpublished tombstone (pointer revision increases; layout and locale references are removed) and retains snapshot rows and working streams. It does not bump the render-cache epoch: frontend readers resolve the pointer before cache lookup, so the tombstone selects the ordinary WordPress content path. The tombstone preserves locale keys with empty entries so `GET /published` reports each locale as unpublished. A repeated unpublish returns 422 `blixis_nothing_to_publish`; stale revisions return 409 and missing `If-Match` returns 428. The `blixis_builder_publication_event` hook also emits content-free `kind=unpublish` events with a null locale.
 
@@ -136,6 +139,14 @@ The [canvas contract](CANVAS-CONTRACT.md) specifies the preview request and resp
 - Use WordPress-managed Font Library instead of custom asset ownership.
 - Discover installed font families and available variants, present preview/fallback, avoid duplicates and unnecessary Google-hosted runtime requests.
 - Ensure font declarations work in canvas and public renderer and are not injected twice.
+
+## Bundled template data (BWB-157)
+
+The plugin ships four mockup template packs under `templates/packs/`. `Templates\TemplateValidator` validates every pack scalar and nested prop, localization, style and animation value, confines asset paths, enforces category and option allowlists, and parses SVG against an inert element/attribute allowlist. Template categories are `corporate`, `agency`, `real-estate`, `ecommerce`, `blog`, `portfolio`, `saas`, and `other`. Invalid packs are skipped and available from `Library::problems()` for debugging. A filter may add directories through `blixis_builder_template_packs`; filtered packs use the same validation. Duplicate IDs are reported and the first valid pack wins. Asset URLs are built from the validated directory only when it is inside the plugin or WordPress uploads directory; other roots remain available as validated metadata but have no asset URLs and are flagged in `problems()`.
+
+`GET /blixis/v1/templates` and `GET /blixis/v1/templates/{id}` require `edit_theme_options`, WordPress REST cookie authentication and its nonce. Responses are private and non-cacheable and contain validated fields and URLs only. `POST /blixis/v1/templates/{id}/fonts` requires an empty body and installs only allowlisted bundled font files; it checks both `edit_theme_options` and `upload_files`, records each authenticated attempt in the `blxtpl_` rolling-hour bucket before installation (failures count), and takes a 30-second per-family `add_option` mutex around each install. Font MIME checking passes WordPress `wp_get_allowed_font_mime_types()` to `wp_check_filetype()` and accepts the core TTF MIME variants; a fixed extension/MIME fallback covers older environments. The content-free `template-font-install` audit event includes `templateId` and the installed allowlisted `familySlugs`. WordPress 6.5+ registers the local `blixis` Font Collection; older core versions skip registration and return a clear install result.
+
+Pack documents are preserved for later importing but are marked `importable: false` where their types or props do not match the current core registry. Unsupported types and props are listed in each document's `importabilityReasons`; the import path must refuse those documents. This issue does not apply templates or rewrite site content.
 
 ## Auth and security
 
@@ -202,7 +213,7 @@ Snapshots carry the working revision they came from (`sourceRevision`), the layo
 
 **Publication abuse controls.** After authentication, per-post capability and theme checks, the publication request limits each user to 30 successful publishes, rollbacks or unpublishes of a post in a rolling hour. A rejected request returns 429 `blixis_rate_limited` with `Retry-After` seconds. The publisher refuses a publish that would take a post above 200 stored snapshots; rollback remains available through 240 snapshots for recovery. Both limits return 409 `blixis_snapshot_limit` before any snapshot or pointer write. The limiter uses a per-site transient; its read/update is not atomic across simultaneous requests. A site-wide aggregate cap, alerting and retention accounting remain BWB-070 work.
 
-**Audit hook.** After a successful pointer advance, the publication controller fires `do_action( 'blixis_builder_publication_event', array $event )`. The event has exactly `actor` (user ID), `post`, `locale` (or null), `kind` (`publish`, `rollback`, `unpublish`, or `page-settings`), `layoutSnapshot` (or null), `contentSnapshot` (or null), `pointerRevision`, and `time` (UTC RFC3339). Page settings updates reuse this envelope with null snapshots and pointer revision zero. It includes no document content. Hook consumers own their retention and access policy.
+**Audit hook.** After a successful pointer advance, the publication controller fires `do_action( 'blixis_builder_publication_event', array $event )`. The event has `actor` (user ID), `post`, `locale` (or null), `kind` (`publish`, `rollback`, `unpublish`, `page-settings`, or `template-font-install`), `layoutSnapshot` (or null), `contentSnapshot` (or null), `pointerRevision`, and `time` (UTC RFC3339). Page settings and font installation reuse this envelope with null snapshots and pointer revision zero. Font installation additionally carries `templateId` and allowlisted `familySlugs`; it includes no document content. Hook consumers own their retention and access policy.
 
 ## Theme compatibility guard
 

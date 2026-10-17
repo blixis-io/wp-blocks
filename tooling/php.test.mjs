@@ -68,8 +68,15 @@ test('the ruleset declares the PHP and WordPress floors and the compatibility st
 });
 
 test('PHPStan accepts conforming code and rejects a return type error', { skip }, () => {
-  assert.equal(run('phpstan', ['analyse', '--no-progress', 'tooling/php/fixtures/good/ok.php']).status, 0);
-  const bad = run('phpstan', ['analyse', '--no-progress', '--error-format=json', 'tooling/php/fixtures/bad/types.php']);
+  // These tiny fixture analyses run sequentially so they do not need PHPStan's local worker TCP listener.
+  assert.equal(run('phpstan', ['analyse', '--debug', '--no-progress', 'tooling/php/fixtures/good/ok.php']).status, 0);
+  const bad = run('phpstan', [
+    'analyse',
+    '--debug',
+    '--no-progress',
+    '--error-format=json',
+    'tooling/php/fixtures/bad/types.php',
+  ]);
   assert.notEqual(bad.status, 0);
   assert.match(bad.stdout, /return\.type/);
 });
@@ -77,6 +84,7 @@ test('PHPStan accepts conforming code and rejects a return type error', { skip }
 test('PHPStan enforces the PHP 8.2 floor: a PHP 8.3 function is rejected', { skip }, () => {
   const r = run('phpstan', [
     'analyse',
+    '--debug',
     '--no-progress',
     '--error-format=json',
     'tooling/php/fixtures/bad/php83-only.php',
