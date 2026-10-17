@@ -47,6 +47,21 @@
       }
     },
     {
+      "id": "template-pack-schema",
+      "description": "The versioned template pack contract used by the PHP validator and bundled pack checks.",
+      "paths": ["wordpress/plugin/templates/schema/template.schema.json"],
+      "ts": [],
+      "phpOnly": true,
+      "php": {
+        "level": "full",
+        "runner": "wordpress/plugin/tests/TemplateValidatorTest.php",
+        "covers": [
+          "test_all_bundled_packs_pass_validator_and_schema",
+          "test_rejects_hostile_asset_paths_flags_documents_and_unknown_keys"
+        ]
+      }
+    },
+    {
       "id": "token-set-corpus",
       "description": "Design token sets with resolved light and dark values, compiler input and issue codes and paths (hand-derived).",
       "paths": ["packages/style-engine/corpus/token-sets.json"],

@@ -3,6 +3,8 @@
 parameters:
     level: 8
     phpVersion: 80200
+    parallel:
+        maximumNumberOfProcesses: 1
     paths:
         - tooling/php/src
         - tooling/php/bin
