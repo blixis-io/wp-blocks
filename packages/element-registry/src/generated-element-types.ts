@@ -2975,6 +2975,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
         alignItems: { type: 'enum', options: ['start', 'end', 'center', 'stretch', 'baseline'], default: null },
         gridTemplateColumns: { type: 'css-grid-template', default: null },
         minHeight: { type: 'css-length', units: ['px', 'rem', 'vh', 'dvh'], default: null },
+        aspectRatio: { type: 'ratio', default: null },
       },
       defaultValues: {},
       responsive: {
@@ -3069,7 +3070,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'container',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -70013,7 +70014,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'layout',
     icon: 'solar:maximize-square-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'aspect-ratio aspect ratio layout aspect ratio element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },

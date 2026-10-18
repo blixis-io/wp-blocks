@@ -1576,6 +1576,14 @@ describe('Inspector controls', () => {
     expect(store.getState().document?.root[0]?.style?.[0]?.declarations['flex-direction']).toBe('column');
   });
 
+  it('exposes the responsive aspect ratio only on elements that declare it', async () => {
+    const { store } = await mount('blixis/aspect-ratio', { tab: 'style' });
+    fireEvent.change(screen.getByRole('combobox', { name: 'Aspect ratio' }), {
+      target: { value: '16 / 9' },
+    });
+    expect(store.getState().document?.root[0]?.style?.[0]?.declarations['aspect-ratio']).toBe('16 / 9');
+  });
+
   it.each(['blixis/section', 'blixis/container', 'blixis/heading', 'blixis/text', 'blixis/image', 'blixis/button'])(
     'renders all supported Style sections for %s and keeps disabled gradient placeholder',
     async (type) => {

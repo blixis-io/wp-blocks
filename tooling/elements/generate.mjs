@@ -32,6 +32,7 @@ const editorReady = new Set([
   'stack',
   'row',
   'flex',
+  'aspect-ratio',
   'columns',
   'grid',
   'card',

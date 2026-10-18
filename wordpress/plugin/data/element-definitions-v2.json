@@ -5004,6 +5004,10 @@
               "dvh"
             ],
             "default": null
+          },
+          "aspectRatio": {
+            "type": "ratio",
+            "default": null
           }
         },
         "defaultValues": {},
@@ -5168,7 +5172,7 @@
         ]
       },
       "archetype": "container",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
