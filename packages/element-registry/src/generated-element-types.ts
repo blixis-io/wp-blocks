@@ -1050,7 +1050,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'container',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -2588,7 +2588,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'simple',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -2806,7 +2806,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'simple',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -4898,7 +4898,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'richtext',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -5155,7 +5155,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'richtext',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -5412,7 +5412,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'richtext',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -5446,7 +5446,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
     rendering: {
       strategy: 'php-server-rendered',
       rendererKey: 'blixis/blockquote',
-      semanticTag: 'p',
+      semanticTag: 'blockquote',
       clientHydration: 'on-interaction',
       assetPolicy: 'manifest-references-only',
       unsafeHtml: 'never',
@@ -5521,10 +5521,10 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       },
       tag: {
         type: 'enum',
-        default: 'p',
+        default: 'blockquote',
         description: 'Choose a supported option.',
         required: false,
-        options: ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'span', 'strong', 'small', 'div'],
+        options: ['blockquote', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'span', 'strong', 'small', 'div'],
         control: 'select',
       },
       marks: {
@@ -5656,7 +5656,15 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
     exampleInstance: {
       id: 'example-blockquote',
       type: 'blockquote',
-      props: { cssClasses: [], htmlId: '', ariaLabel: '', hidden: false, content: 'Sample text', tag: 'p', marks: [] },
+      props: {
+        cssClasses: [],
+        htmlId: '',
+        ariaLabel: '',
+        hidden: false,
+        content: 'Sample text',
+        tag: 'blockquote',
+        marks: [],
+      },
       styles: { base: {}, tablet: {}, mobile: {}, dark: {}, darkMobile: {} },
       children: [],
     },
@@ -5669,7 +5677,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'richtext',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -5933,7 +5941,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'list',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -6473,7 +6481,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'link',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -7050,7 +7058,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'container',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -7283,7 +7291,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'text',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -9106,7 +9114,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'counter',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -9925,7 +9933,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'richtext',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -10416,7 +10424,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'progress',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -11539,7 +11547,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'video',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -11793,7 +11801,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'audio',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -17098,7 +17106,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'navigation',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -17354,7 +17362,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'pagination',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -19706,7 +19714,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'steps',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -22068,7 +22076,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'simple',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -22302,7 +22310,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'progress',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -22520,7 +22528,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'simple',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -31563,7 +31571,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'steps',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -32017,7 +32025,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'text',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -33418,7 +33426,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'text',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -69917,7 +69925,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'layout',
     icon: 'solar:widget-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'div div layout div element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -69983,7 +69991,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'layout',
     icon: 'solar:minus-circle-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'spacer spacer layout spacer element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -69994,7 +70002,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'layout',
     icon: 'solar:minus-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'separator separator layout separator element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -70082,7 +70090,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'content',
     icon: 'solar:text-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'paragraph paragraph content paragraph element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -70093,7 +70101,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'content',
     icon: 'solar:text-italic-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'rich-text rich text content rich text element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -70104,7 +70112,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'content',
     icon: 'solar:text-field-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'eyebrow eyebrow content eyebrow element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -70115,7 +70123,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'content',
     icon: 'solar:chat-round-quote-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'blockquote blockquote content blockquote element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -70126,7 +70134,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'content',
     icon: 'solar:list-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'list list content list element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -70148,7 +70156,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'content',
     icon: 'solar:link-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'link link content link element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -70170,7 +70178,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'content',
     icon: 'solar:widget-2-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'button-group button group content button group element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -70181,7 +70189,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'content',
     icon: 'solar:tag-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'badge badge content badge element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -70258,7 +70266,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'content',
     icon: 'solar:graph-up-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'counter counter content counter element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -70291,7 +70299,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'content',
     icon: 'solar:text-selection-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'highlight-text highlight text content highlight text element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -70313,7 +70321,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'content',
     icon: 'solar:pie-chart-2-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'progress-ring progress ring content progress ring element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -70357,7 +70365,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'media',
     icon: 'solar:videocamera-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'video video media video element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -70368,7 +70376,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'media',
     icon: 'solar:music-note-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'audio audio media audio element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -70577,7 +70585,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'navigation',
     icon: 'solar:route-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'breadcrumbs breadcrumbs navigation breadcrumbs element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -70588,7 +70596,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'navigation',
     icon: 'solar:arrow-right-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'pagination pagination navigation pagination element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -70687,7 +70695,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'navigation',
     icon: 'solar:list-check-minimalistic-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'steps steps navigation steps element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -70786,7 +70794,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:widget-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'skeleton skeleton ui-components skeleton element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -70797,7 +70805,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:chart-square-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'progress progress ui-components progress element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -70808,7 +70816,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:refresh-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'spinner spinner ui-components spinner element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71171,7 +71179,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:history-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'timeline timeline ui-components timeline element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71193,7 +71201,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:inbox-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'empty-state empty state ui-components empty state element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71248,7 +71256,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:keyboard-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'keyboard-shortcut keyboard shortcut ui-components keyboard shortcut element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },

@@ -30,18 +30,21 @@ export function GeneratedControls({ element, editable }: { element: ElementNode;
   if (!definition) return null;
   const groups = definition['groups'] as Record<string, unknown> | undefined;
   const properties = definition['properties'] as Record<string, Property> | undefined;
+  const propertyControls = definition['propertyControls'] as Record<string, Property> | undefined;
   if (!properties) return null;
   const grouped = new Map<string, [string, Property][]>();
   for (const entry of Object.entries(properties)) {
-    const [, property] = entry;
+    const [name, property] = entry;
+    const control = propertyControls?.[name];
+    const configured = control ? { ...property, ...control } : property;
     if (
-      property['editorOnly'] === true ||
-      typeof property['control'] !== 'string' ||
+      configured['editorOnly'] === true ||
+      typeof configured['control'] !== 'string' ||
       (legacyCoreTypes.has(element.type) && legacyDefinition && Object.hasOwn(legacyDefinition.props, entry[0]))
     )
       continue;
-    const group = typeof property['group'] === 'string' ? property['group'] : 'content';
-    grouped.set(group, [...(grouped.get(group) ?? []), entry]);
+    const group = typeof configured['group'] === 'string' ? configured['group'] : 'content';
+    grouped.set(group, [...(grouped.get(group) ?? []), [name, configured]]);
   }
   const legacyProperty = (name: string): string => {
     if (!legacyCoreTypes.has(element.type)) return name;
@@ -107,6 +110,28 @@ export function GeneratedControls({ element, editable }: { element: ElementNode;
                   </select>
                 </div>
               );
+            if (control === 'media-picker')
+              return (
+                <div className="blx-inspector-field" key={name}>
+                  <label htmlFor={id}>{label}</label>
+                  <input
+                    {...common}
+                    type="number"
+                    min={1}
+                    step={1}
+                    value={typeof value === 'string' && /^attachment:[1-9]\d{0,8}$/.test(value) ? value.slice(11) : ''}
+                    onChange={(event) => {
+                      const next = event.currentTarget.value;
+                      if (next === '') {
+                        commit(name, property, null);
+                        return;
+                      }
+                      if (/^[1-9]\d{0,8}$/.test(next)) commit(name, property, 'attachment:' + next);
+                    }}
+                  />
+                  <p className="blx-inspector-hint">{t('inspector.generated.attachmentIdHelp')}</p>
+                </div>
+              );
             if (
               control === 'repeater' ||
               control === 'list' ||
@@ -114,6 +139,76 @@ export function GeneratedControls({ element, editable }: { element: ElementNode;
               control === 'media-repeater'
             ) {
               const rows: unknown[] = Array.isArray(value) ? value : [];
+              if (
+                control === 'repeater' &&
+                name === 'steps' &&
+                ['blixis/steps', 'blixis/timeline'].includes(element.type)
+              ) {
+                return (
+                  <fieldset className="blx-inspector-field" key={name}>
+                    <legend>{label}</legend>
+                    {rows.map((row, index) => {
+                      const item =
+                        row !== null && typeof row === 'object' && !Array.isArray(row)
+                          ? (row as Record<string, Json>)
+                          : {};
+                      return (
+                        <div key={name + '-' + String(index)} className="blx-generated-repeater-row">
+                          <label>
+                            {t('inspector.generated.stepTitle', { index: index + 1 })}
+                            <input
+                              value={read(item['title'])}
+                              disabled={!editable}
+                              onChange={(event) => {
+                                const next: Json[] = rows.map((old, rowIndex) =>
+                                  rowIndex === index ? { ...item, title: event.currentTarget.value } : (old as Json),
+                                );
+                                commit(name, property, next);
+                              }}
+                            />
+                          </label>
+                          <label>
+                            {t('inspector.generated.stepDescription', { index: index + 1 })}
+                            <textarea
+                              value={read(item['description'])}
+                              disabled={!editable}
+                              onChange={(event) => {
+                                const next: Json[] = rows.map((old, rowIndex) =>
+                                  rowIndex === index
+                                    ? { ...item, description: event.currentTarget.value }
+                                    : (old as Json),
+                                );
+                                commit(name, property, next);
+                              }}
+                            />
+                          </label>
+                          <button
+                            type="button"
+                            disabled={!editable}
+                            onClick={() => {
+                              commit(name, property, rows.filter((_, rowIndex) => rowIndex !== index) as Json);
+                            }}
+                          >
+                            {t('inspector.generated.remove')}
+                          </button>
+                        </div>
+                      );
+                    })}
+                    <button
+                      type="button"
+                      disabled={!editable}
+                      onClick={() => {
+                        commit(name, property, [
+                          ...(rows as Json[]),
+                          { id: 'step-' + String(rows.length + 1), title: '', description: '' },
+                        ]);
+                      }}
+                    >
+                      {t('inspector.generated.addStep')}
+                    </button>
+                  </fieldset>
+                );
+              }
               return (
                 <fieldset className="blx-inspector-field" key={name}>
                   <legend>{label}</legend>

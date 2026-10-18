@@ -68,7 +68,11 @@ function validProperty(type: string, property: Record<string, unknown>, value: u
           : item !== null && typeof item === 'object' && !Array.isArray(item),
       )
     );
-  if (type === 'asset-ref') return typeof value === 'string' && /^asset:[a-zA-Z0-9_-]{1,64}$/.test(value);
+  if (type === 'asset-ref')
+    return (
+      value === null ||
+      (typeof value === 'string' && /^(?:(?:asset:)?[a-zA-Z0-9_-]{1,128}|attachment:[1-9]\d{0,8})$/.test(value))
+    );
   if (type === 'url') return typeof value === 'string' && isSafeUrl(value);
   return (
     value === null ||

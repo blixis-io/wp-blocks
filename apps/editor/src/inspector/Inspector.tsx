@@ -271,9 +271,9 @@ export function Inspector({
     () => (element === null ? undefined : getElementDefinitionV2(element.type)),
     [element],
   );
-  const editable = editingEnabled && definition !== undefined;
+  const editable = editingEnabled && (definition !== undefined || generatedDefinition?.status === 'ready');
   if (element === null && tab === 'content') return <PageSettingsPanel editingEnabled={editingEnabled} />;
-  if (element === null || definition === undefined)
+  if (element === null || (definition === undefined && generatedDefinition?.status !== 'ready'))
     return (
       <p className="blx-empty">
         {tab === 'advanced' ? t('inspector.comingSoon') : t(`inspector.${tab}.empty` as never)}
@@ -295,6 +295,7 @@ export function Inspector({
   ]);
   if (tab === 'content' && generatedDefinition?.status === 'ready' && !legacyCoreTypes.has(element.type))
     return <GeneratedControls element={element} editable={editable} />;
+  if (definition === undefined) return <p className="blx-empty">{t('inspector.style.empty')}</p>;
   if (tab === 'style')
     return (
       <div className="blx-inspector-sections">

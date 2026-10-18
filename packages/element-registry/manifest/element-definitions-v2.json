@@ -1469,7 +1469,7 @@
         ]
       },
       "archetype": "container",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -4321,7 +4321,7 @@
         ]
       },
       "archetype": "simple",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -4676,7 +4676,7 @@
         ]
       },
       "archetype": "simple",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -8512,7 +8512,7 @@
         ]
       },
       "archetype": "richtext",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -8967,7 +8967,7 @@
         ]
       },
       "archetype": "richtext",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -9422,7 +9422,7 @@
         ]
       },
       "archetype": "richtext",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -9459,7 +9459,7 @@
       "rendering": {
         "strategy": "php-server-rendered",
         "rendererKey": "blixis/blockquote",
-        "semanticTag": "p",
+        "semanticTag": "blockquote",
         "clientHydration": "on-interaction",
         "assetPolicy": "manifest-references-only",
         "unsafeHtml": "never",
@@ -9534,10 +9534,11 @@
         },
         "tag": {
           "type": "enum",
-          "default": "p",
+          "default": "blockquote",
           "description": "Choose a supported option.",
           "required": false,
           "options": [
+            "blockquote",
             "p",
             "h1",
             "h2",
@@ -9856,7 +9857,7 @@
           "ariaLabel": "",
           "hidden": false,
           "content": "Sample text",
-          "tag": "p",
+          "tag": "blockquote",
           "marks": []
         },
         "styles": {
@@ -9877,7 +9878,7 @@
         ]
       },
       "archetype": "richtext",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -10310,7 +10311,7 @@
         ]
       },
       "archetype": "list",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -11203,7 +11204,7 @@
         ]
       },
       "archetype": "link",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -12251,7 +12252,7 @@
         ]
       },
       "archetype": "container",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -12628,7 +12629,7 @@
         ]
       },
       "archetype": "text",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -15616,7 +15617,7 @@
         ]
       },
       "archetype": "counter",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -17036,7 +17037,7 @@
         ]
       },
       "archetype": "richtext",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -17890,7 +17891,7 @@
         ]
       },
       "archetype": "progress",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -19777,7 +19778,7 @@
         ]
       },
       "archetype": "video",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -20175,7 +20176,7 @@
         ]
       },
       "archetype": "audio",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -28973,7 +28974,7 @@
         ]
       },
       "archetype": "navigation",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -29406,7 +29407,7 @@
         ]
       },
       "archetype": "pagination",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -33344,7 +33345,7 @@
         ]
       },
       "archetype": "steps",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -37216,7 +37217,7 @@
         ]
       },
       "archetype": "simple",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -37620,7 +37621,7 @@
         ]
       },
       "archetype": "progress",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -37975,7 +37976,7 @@
         ]
       },
       "archetype": "simple",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -52919,7 +52920,7 @@
         ]
       },
       "archetype": "steps",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -53658,7 +53659,7 @@
         ]
       },
       "archetype": "text",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -56046,7 +56047,7 @@
         ]
       },
       "archetype": "text",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",

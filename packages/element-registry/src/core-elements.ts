@@ -254,10 +254,37 @@ export function createCoreRegistry(): ElementRegistry {
   return registry;
 }
 
-/** Editor registry extends the six stable core contracts with the generated phase 0 template palette entries. */
+/** Editor registry extends stable core contracts with generated elements whose current editor/runtime slice is ready. */
 export function createEditorRegistry(): ElementRegistry {
   const registry = createCoreRegistry();
-  const editorReady = ['stack', 'row', 'columns', 'grid', 'card', 'site-logo'];
+  const editorReady = [
+    'stack',
+    'row',
+    'columns',
+    'grid',
+    'card',
+    'site-logo',
+    'div',
+    'spacer',
+    'separator',
+    'list',
+    'link',
+    'paragraph',
+    'rich-text',
+    'eyebrow',
+    'blockquote',
+    'badge',
+    'button-group',
+    'counter',
+    'progress-ring',
+    'highlight-text',
+    'steps',
+    'breadcrumbs',
+    'pagination',
+    'progress',
+    'spinner',
+    'skeleton',
+  ];
   const aliases = [
     {
       id: 'page',
@@ -392,10 +419,36 @@ export function createEditorRegistry(): ElementRegistry {
             : raw['category'] === 'interactive'
               ? 'interactive'
               : 'layout',
+      // Editor registration is permission to author static document data; tier stays on the generated palette metadata.
+      // Entitlement does not gate insertion or rendering.
       tier: 'free',
       requiresApi: 1,
       props,
-      styleProperties: [],
+      styleProperties: Object.keys((raw['style'] as { allowed?: Record<string, unknown> } | undefined)?.allowed ?? {})
+        .map((property) => property.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`))
+        .filter((property) =>
+          [
+            'font-family',
+            'font-weight',
+            'font-size',
+            'line-height',
+            'letter-spacing',
+            'text-transform',
+            'color',
+            'margin',
+            'padding',
+            'width',
+            'height',
+            'text-align',
+            'display',
+            'border-radius',
+            'border-width',
+            'border-style',
+            'border-color',
+            'box-shadow',
+            'background-color',
+          ].includes(property),
+        ),
       allowedParents:
         source.id === 'page'
           ? ['#root']
