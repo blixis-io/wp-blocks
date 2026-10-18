@@ -316,12 +316,14 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 	 * @param string      $hooks Validated element hooks.
 	 */
 	private function render_gallery( ElementNode $node, string $hooks ): string {
-		$assets  = $node->value( 'assets', [] );
-		$assets  = is_array( $assets ) ? array_slice( $assets, 0, 32 ) : [];
-		$columns = $node->value( 'columns', 3 );
-		$columns = is_numeric( $columns ) ? max( 1, min( 6, (int) $columns ) ) : 3;
-		$label   = $node->value( 'ariaLabel', 'Image gallery' );
-		$html    = '<div' . $hooks . ' data-blx-columns="' . $columns . '"' . ( is_string( $label ) && '' !== trim( $label ) ? ' role="group" aria-label="' . Escape::attr( $label ) . '"' : '' ) . '><ul>';
+		$assets   = $node->value( 'assets', [] );
+		$assets   = is_array( $assets ) ? array_slice( $assets, 0, 32 ) : [];
+		$columns  = $node->value( 'columns', 3 );
+		$columns  = is_numeric( $columns ) ? max( 1, min( 6, (int) $columns ) ) : 3;
+		$label    = $node->value( 'ariaLabel', 'Image gallery' );
+		$lightbox = 'blixis/lightbox' === $node->type || true === $node->value( 'lightbox', false );
+		$gallery  = in_array( $node->type, [ 'blixis/gallery', 'blixis/lightbox' ], true ) ? ' data-blx-gallery' : '';
+		$html     = '<div' . $hooks . $gallery . ' data-blx-columns="' . $columns . '"' . ( $lightbox ? ' data-blx-lightbox-gallery data-blx-lightbox-label="' . Escape::attr( __( 'Image preview', 'blixis-builder' ) ) . '" data-blx-lightbox-close="' . Escape::attr( __( 'Close image preview', 'blixis-builder' ) ) . '"' : '' ) . ( is_string( $label ) && '' !== trim( $label ) ? ' role="group" aria-label="' . Escape::attr( $label ) . '"' : '' ) . '><ul>';
 		foreach ( $assets as $reference ) {
 			if ( ! is_string( $reference ) ) {
 				continue;
@@ -330,14 +332,15 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 			if ( ! is_array( $image ) || ! is_string( $image['url'] ?? null ) || ! SafeUrl::accepts( $image['url'] ) ) {
 				continue;
 			}
-				$alt    = is_string( $image['alt'] ?? null ) ? $image['alt'] : '';
-				$srcset = is_string( $image['srcset'] ?? null ) ? \Blixis\Builder\Media\MediaPolicy::srcset( $image['srcset'] ) : null;
-				$sizes  = null !== $srcset && is_string( $image['sizes'] ?? null ) ? \Blixis\Builder\Media\MediaPolicy::sizes( $image['sizes'] ) : null;
-				$html  .= '<li><img src="' . Escape::url( $image['url'] ) . '"' . ( null === $srcset ? '' : ' srcset="' . Escape::attr( $srcset ) . '"' ) . ( null === $sizes ? '' : ' sizes="' . Escape::attr( $sizes ) . '"' ) . ' width="' . (int) ( $image['width'] ?? 0 ) . '" height="' . (int) ( $image['height'] ?? 0 ) . '" alt="' . Escape::attr( $alt ) . '" loading="lazy" decoding="async">';
+			$alt    = is_string( $image['alt'] ?? null ) ? $image['alt'] : '';
+			$srcset = is_string( $image['srcset'] ?? null ) ? \Blixis\Builder\Media\MediaPolicy::srcset( $image['srcset'] ) : null;
+			$sizes  = null !== $srcset && is_string( $image['sizes'] ?? null ) ? \Blixis\Builder\Media\MediaPolicy::sizes( $image['sizes'] ) : null;
+			$img    = '<img src="' . Escape::url( $image['url'] ) . '"' . ( null === $srcset ? '' : ' srcset="' . Escape::attr( $srcset ) . '"' ) . ( null === $sizes ? '' : ' sizes="' . Escape::attr( $sizes ) . '"' ) . ' width="' . (int) ( $image['width'] ?? 0 ) . '" height="' . (int) ( $image['height'] ?? 0 ) . '" alt="' . Escape::attr( $alt ) . '" loading="lazy" decoding="async">';
+			$html  .= '<li>' . ( $lightbox ? '<a href="' . Escape::url( $image['url'] ) . '" data-blx-lightbox-trigger aria-label="' . Escape::attr( '' !== $alt ? $alt : __( 'Open image', 'blixis-builder' ) ) . '">' . $img . '</a>' : $img );
 			if ( true === $node->value( 'captions', false ) && '' !== $alt ) {
 				$html .= '<figcaption>' . Escape::html( $alt ) . '</figcaption>';
 			}
-				$html .= '</li>';
+			$html .= '</li>';
 		}
 		return $html . '</ul></div>';
 	}

@@ -7,10 +7,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const repositoryRoot = process.cwd().endsWith('/apps/editor') ? resolve(process.cwd(), '../..') : process.cwd();
 const runtime = readFileSync(resolve(repositoryRoot, 'wordpress/plugin/assets/frontend/elements.js'), 'utf8');
+const originalDialogShowModal = Object.getOwnPropertyDescriptor(HTMLDialogElement.prototype, 'showModal');
+const originalDialogClose = Object.getOwnPropertyDescriptor(HTMLDialogElement.prototype, 'close');
 
 type InitResizablePanels = (root: HTMLElement) => void;
 type InitMarquee = (root: HTMLElement) => void;
 type InitFrontendElement = (root: HTMLElement) => void;
+type InitLightbox = (root: HTMLElement) => void;
 
 function makePanels(orientation = 'horizontal', minimum = 20) {
   const root = document.createElement('div');
@@ -39,6 +42,11 @@ afterEach(() => {
   delete (window as Window & { blxInitCodeBlock?: InitFrontendElement }).blxInitCodeBlock;
   delete (window as Window & { blxInitCountdown?: InitFrontendElement }).blxInitCountdown;
   delete (window as Window & { blxInitActionButton?: InitFrontendElement }).blxInitActionButton;
+  delete (window as Window & { blxInitLightbox?: InitLightbox }).blxInitLightbox;
+  if (originalDialogShowModal) Object.defineProperty(HTMLDialogElement.prototype, 'showModal', originalDialogShowModal);
+  else delete (HTMLDialogElement.prototype as Partial<HTMLDialogElement>).showModal;
+  if (originalDialogClose) Object.defineProperty(HTMLDialogElement.prototype, 'close', originalDialogClose);
+  else delete (HTMLDialogElement.prototype as Partial<HTMLDialogElement>).close;
 });
 
 describe('public content element enhancement', () => {
@@ -184,5 +192,45 @@ describe('public resizable-panels enhancement', () => {
     expect(handle.getAttribute('aria-valuenow')).toBe('70');
     expect(Number(first.style.flexGrow)).toBeCloseTo(1.4);
     expect(Number(second.style.flexGrow)).toBeCloseTo(0.6);
+  });
+});
+
+describe('public gallery lightbox enhancement', () => {
+  it('opens a native dialog and restores focus after closing', () => {
+    Object.defineProperty(HTMLDialogElement.prototype, 'showModal', {
+      configurable: true,
+      value: function showModal(this: HTMLDialogElement) {
+        this.setAttribute('open', '');
+      },
+    });
+    Object.defineProperty(HTMLDialogElement.prototype, 'close', {
+      configurable: true,
+      value: function close(this: HTMLDialogElement) {
+        this.removeAttribute('open');
+        this.dispatchEvent(new window.Event('close'));
+      },
+    });
+    const root = document.createElement('div');
+    root.setAttribute('data-blx-lightbox-gallery', '');
+    root.setAttribute('data-blx-lightbox-label', 'Image preview');
+    root.innerHTML =
+      '<a href="https://example.test/photo.jpg" data-blx-lightbox-trigger aria-label="Photo"><img alt="Garden"></a>';
+    document.body.append(root);
+    const trigger = root.querySelector<HTMLAnchorElement>('a');
+    if (!trigger) throw new Error('lightbox trigger missing');
+    const initializer = (loadInitializer(), (window as Window & { blxInitLightbox?: InitLightbox }).blxInitLightbox);
+    if (!initializer) throw new Error('lightbox initializer missing');
+    initializer(root);
+    trigger.focus();
+    trigger.click();
+
+    const dialog = root.querySelector<HTMLDialogElement>('dialog');
+    const close = dialog?.querySelector<HTMLButtonElement>('button');
+    expect(dialog?.getAttribute('aria-label')).toBe('Image preview');
+    expect(dialog?.hasAttribute('open')).toBe(true);
+    expect(close?.getAttribute('aria-label')).toBe('Close image preview');
+    close?.click();
+    expect(root.querySelector('dialog')).toBeNull();
+    expect(document.activeElement).toBe(trigger);
   });
 });

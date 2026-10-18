@@ -179,12 +179,14 @@ export function GeneratedControls({ element, editable }: { element: ElementNode;
                     </button>
                     <MediaDialog
                       open={mediaPicker === name}
-                      onOpenChange={(open) => setMediaPicker(open ? name : null)}
+                      onOpenChange={(open) => {
+                        setMediaPicker(open ? name : null);
+                      }}
                       client={mediaClient}
                       canUpload={canUpload}
                       onUse={(item) => {
                         if (rows.length < maxItems) {
-                          commit(name, property, [...(rows as Json[]), `attachment:${item.id}`]);
+                          commit(name, property, [...(rows as Json[]), `attachment:${String(item.id)}`]);
                         }
                         setMediaPicker(null);
                       }}

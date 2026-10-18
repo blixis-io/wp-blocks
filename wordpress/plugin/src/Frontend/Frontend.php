@@ -58,8 +58,9 @@ final class Frontend {
 		}
 		$has_resizable_panels = str_contains( $page['html'], 'data-blx-resizable-panels=' );
 		$has_marquee          = str_contains( $page['html'], 'data-blx-marquee=' );
-		$has_content_elements = str_contains( $page['html'], 'data-blx-code-block' ) || str_contains( $page['html'], 'data-blx-countdown' ) || str_contains( $page['html'], 'data-blx-animated-headline' ) || str_contains( $page['html'], 'data-blx-tooltip-text' ) || str_contains( $page['html'], 'data-blx-action=' );
-		$has_content_runtime  = str_contains( $page['html'], 'data-blx-code-block' ) || str_contains( $page['html'], 'data-blx-countdown' ) || str_contains( $page['html'], 'data-blx-action=' );
+		$has_lightbox         = str_contains( $page['html'], 'data-blx-lightbox-gallery' );
+		$has_content_elements = str_contains( $page['html'], 'data-blx-code-block' ) || str_contains( $page['html'], 'data-blx-countdown' ) || str_contains( $page['html'], 'data-blx-animated-headline' ) || str_contains( $page['html'], 'data-blx-tooltip-text' ) || str_contains( $page['html'], 'data-blx-action=' ) || $has_lightbox;
+		$has_content_runtime  = str_contains( $page['html'], 'data-blx-code-block' ) || str_contains( $page['html'], 'data-blx-countdown' ) || str_contains( $page['html'], 'data-blx-action=' ) || $has_lightbox;
 		$inline_styles        = array_filter( [ $page['css'], $has_resizable_panels ? ResizablePanelsCss::css() : '', $has_marquee ? MarqueeCss::css() : '', $has_content_elements ? ContentElementsCss::css() : '' ] );
 		if ( [] !== $inline_styles ) {
 			\wp_register_style( self::STYLE_HANDLE, false, [], \Blixis\Builder\VERSION );

@@ -12,10 +12,12 @@ use Blixis\Builder\Frontend\MarqueeCss;
 use Blixis\Builder\Preview\PreviewSanitizer;
 use Blixis\Builder\Registry\ElementDefinitionRegistry;
 use Blixis\Builder\Render\AssetReferenceResolver;
+use Blixis\Builder\Render\CoreDocumentRenderer;
 use Blixis\Builder\Render\DefinitionArchetypeRenderer;
 use Blixis\Builder\Render\ElementNode;
 use Blixis\Builder\Render\MediaResolver;
 use Blixis\Builder\Render\PlayableMediaResolver;
+use Blixis\Builder\Render\WordPressMediaResolver;
 use Blixis\Builder\Render\RenderContext;
 use PHPUnit\Framework\TestCase;
 
@@ -36,6 +38,15 @@ final class ElementDefinitionRegistryTest extends TestCase {
 		$this->assertSame( 'ready', $registry->get( 'grid' )['status'] ?? null );
 		$this->assertSame( 'ready', $registry->get( 'avatar' )['status'] ?? null );
 		$this->assertSame( 'ready', $registry->get( 'post-title' )['status'] ?? null );
+	}
+
+	/** The document renderer keeps a configured safe local icon glyph instead of silently using the default. */
+	public function test_document_render_preserves_local_icon_reference(): void {
+		$document = json_decode( '{"root":[{"id":"icon-svg1","type":"blixis/icon-svg","props":{"icon":"solar:info-circle-linear","size":48,"decorative":true},"children":[]}]}' );
+		$html     = ( new CoreDocumentRenderer( \Blixis\Builder\Registry\ElementRegistry::from_manifest_file( \dirname( __DIR__ ) . '/data/core-elements.json' ), new WordPressMediaResolver() ) )->render( $document, 'en_US', 'light' );
+		$this->assertStringContainsString( 'data-blx-icon="solar:info-circle-linear"', $html );
+		$this->assertStringContainsString( 'width="48" height="48"', $html );
+		$this->assertTrue( PreviewSanitizer::accepts( $html ) );
 	}
 
 	/** Static WordPress text elements render their escaped fallback when no post context is present. */
@@ -756,7 +767,7 @@ final class ElementDefinitionRegistryTest extends TestCase {
 			)
 		);
 		$this->assertSame(
-			'<div data-blx-id="gallery-1" data-blx-type="blixis/gallery" data-blx-columns="2" role="group" aria-label="Gallery"><ul><li><img src="https://example.test/photo.jpg" width="640" height="480" alt="House &amp; garden" loading="lazy" decoding="async"><figcaption>House &amp; garden</figcaption></li></ul></div>',
+			'<div data-blx-id="gallery-1" data-blx-type="blixis/gallery" data-blx-gallery data-blx-columns="2" role="group" aria-label="Gallery"><ul><li><img src="https://example.test/photo.jpg" width="640" height="480" alt="House &amp; garden" loading="lazy" decoding="async"><figcaption>House &amp; garden</figcaption></li></ul></div>',
 			$renderer->render(
 				new ElementNode(
 					'gallery-1',
@@ -767,6 +778,17 @@ final class ElementDefinitionRegistryTest extends TestCase {
 						'captions'  => true,
 						'ariaLabel' => 'Gallery',
 					]
+				),
+				new RenderContext()
+			)
+		);
+		$this->assertSame(
+			'<div data-blx-id="lightbox-1" data-blx-type="blixis/lightbox" data-blx-gallery data-blx-columns="3" data-blx-lightbox-gallery data-blx-lightbox-label="Image preview" data-blx-lightbox-close="Close image preview" role="group" aria-label="Image gallery"><ul><li><a href="https://example.test/photo.jpg" data-blx-lightbox-trigger aria-label="House &amp; garden"><img src="https://example.test/photo.jpg" width="640" height="480" alt="House &amp; garden" loading="lazy" decoding="async"></a></li></ul></div>',
+			$renderer->render(
+				new ElementNode(
+					'lightbox-1',
+					'blixis/lightbox',
+					[ 'assets' => [ 'photo' ] ]
 				),
 				new RenderContext()
 			)
