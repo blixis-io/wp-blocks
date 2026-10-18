@@ -44,6 +44,8 @@ Archetypes are renderer families, not serialized element types. Catalog counts:
 
 The list and counts are derived from `catalog.json`; the current catalogue has fewer than the 47 archetypes stated in the original request. No archetypes were invented to fill the count. P1 rendering accepts the `simple` archetype and honors the layout definitions' allowlisted semantic tag, bounded HTML id, escaped accessible label, and hidden state. A separator emits a native horizontal rule and a spacer remains non-semantic; complex layout behaviors remain planned until their behavior and editor controls are implemented. The v2 palette status still needs to be promoted by the editor integration slice; PHP has definition-driven renderers for the template-critical subset.
 
+The P2 renderer also emits escaped ordered/unordered list items, allowlisted language labels for static code blocks, and guarded links with safe target/rel behavior. These PHP output primitives do not by themselves promote an element to `ready`: editor controls, preview parity, and any promised interaction still need completion.
+
 ## Instance and compatibility contract
 
 An instance is `{ id, type, props, styles, children }`. IDs are stable. Definition properties supply validation type, enum/options, bounds, defaults, required status, `localizable`, `editorOnly`, and a control. Translatable data stays in locale content streams. `editorOnly` values are excluded from saved frontend props. Unknown types/properties round-trip for forward compatibility and render through the static safe fallback.

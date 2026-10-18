@@ -42,7 +42,7 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 	 * @param string $archetype Archetype name.
 	 */
 	public function supports( string $archetype ): bool {
-		return in_array( $archetype, [ 'container','simple','text','richtext','heading','button','link','image','navigation','list','card','layout','section','page','site-header','site-footer','site-logo','row','columns','grid','stack' ], true ); }
+		return in_array( $archetype, [ 'container','simple','text','richtext','heading','button','link','image','navigation','list','code','card','layout','section','page','site-header','site-footer','site-logo','row','columns','grid','stack' ], true ); }
 	/** Render an element with escaped text and allowlisted tags/attributes.
 	 *
 	 * @param ElementNode   $node Element input.
@@ -74,6 +74,27 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		}
 		if ( 'separator' === $id ) {
 			return '<hr' . $hooks . ' aria-hidden="true">';
+		}
+		if ( 'list' === $archetype ) {
+			return $this->render_list( $node, $hooks );
+		}
+		if ( 'code' === $archetype ) {
+			$language = $node->value( 'language', 'text' );
+			$allowed  = [ 'text', 'html', 'css', 'js', 'ts', 'json', 'php', 'bash' ];
+			$language = is_string( $language ) && in_array( $language, $allowed, true ) ? $language : 'text';
+			$code     = $node->value( 'code', '' );
+			return '<pre' . $hooks . '><code class="language-' . Escape::attr( $language ) . '">' . Escape::html( is_string( $code ) ? $code : '' ) . '</code></pre>';
+		}
+		if ( 'link' === $archetype ) {
+			$label  = $node->value( 'label', '' );
+			$href   = $node->value( 'href', '#' );
+			$target = '_blank' === $node->value( 'target', '_self' ) ? '_blank' : '_self';
+			$rel    = $node->value( 'rel', 'noopener noreferrer' );
+			$rel    = is_string( $rel ) && in_array( $rel, [ 'noopener noreferrer', 'nofollow', 'sponsored', 'ugc' ], true ) ? $rel : 'noopener noreferrer';
+			if ( '_blank' === $target && 'noopener noreferrer' !== $rel ) {
+				$rel = 'noopener noreferrer ' . $rel;
+			}
+			return '<a' . $hooks . ' href="' . Escape::url( is_string( $href ) ? $href : '#' ) . '" target="' . $target . '" rel="' . Escape::attr( $rel ) . '">' . Escape::html( is_string( $label ) ? $label : '' ) . '</a>';
 		}
 		if ( 'container' === $id ) {
 			$width = $node->value( 'maxWidthToken', $node->value( 'maxWidth', 'default' ) );
@@ -113,6 +134,34 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 			return '<div' . $hooks . ' data-blx-missing-media></div>';
 		}
 		return '<' . $tag . $hooks . '>' . $context->children_html . '</' . $tag . '>';
+	}
+
+	/** Render a bounded list of escaped text entries.
+	 *
+	 * @param ElementNode $node List element.
+	 * @param string      $hooks Validated element hooks.
+	 */
+	private function render_list( ElementNode $node, string $hooks ): string {
+		$items      = $node->value( 'items', [] );
+		$ordered    = true === $node->value( 'ordered', false ) || 'number' === $node->value( 'listStyle' );
+		$list_style = $node->value( 'listStyle', 'bullet' );
+		$styles     = [ 'bullet', 'number', 'none', 'check' ];
+		$list_style = is_string( $list_style ) && in_array( $list_style, $styles, true ) ? $list_style : 'bullet';
+		$tag        = $ordered ? 'ol' : 'ul';
+		$html       = '<' . $tag . $hooks . ' data-blx-list-style="' . Escape::attr( $list_style ) . '">';
+		if ( ! is_array( $items ) ) {
+			$items = [];
+		}
+		foreach ( array_slice( $items, 0, 100 ) as $item ) {
+			if ( $item instanceof \stdClass ) {
+				$item = get_object_vars( $item );
+			}
+			$text = is_array( $item ) ? ( $item['text'] ?? $item['label'] ?? '' ) : $item;
+			if ( is_string( $text ) ) {
+				$html .= '<li>' . Escape::html( $text ) . '</li>';
+			}
+		}
+		return $html . '</' . $tag . '>';
 	}
 
 	/** Resolve layout semantics with a fixed tag allowlist.

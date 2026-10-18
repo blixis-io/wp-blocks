@@ -87,5 +87,49 @@ final class ElementDefinitionRegistryTest extends TestCase {
 				new RenderContext( '<b>Child</b>' )
 			)
 		);
+		$this->assertSame(
+			'<ol data-blx-id="list-1" data-blx-type="blixis/list" data-blx-list-style="number"><li>One &amp; two</li><li>&lt;script&gt;</li></ol>',
+			$renderer->render(
+				new ElementNode(
+					'list-1',
+					'blixis/list',
+					[
+						'items'     => [ [ 'text' => 'One & two' ], [ 'label' => '<script>' ] ],
+						'ordered'   => true,
+						'listStyle' => 'number',
+					]
+				),
+				new RenderContext()
+			)
+		);
+		$this->assertSame(
+			'<pre data-blx-id="code-1" data-blx-type="blixis/code-block"><code class="language-php">&lt;?php &amp; &lt;?&gt;</code></pre>',
+			$renderer->render(
+				new ElementNode(
+					'code-1',
+					'blixis/code-block',
+					[
+						'language' => 'php',
+						'code'     => '<?php & <?>',
+					]
+				),
+				new RenderContext()
+			)
+		);
+		$this->assertSame(
+			'<a data-blx-id="link-1" data-blx-type="blixis/link" href="#" target="_blank" rel="noopener noreferrer">Open &lt;menu&gt;</a>',
+			$renderer->render(
+				new ElementNode(
+					'link-1',
+					'blixis/link',
+					[
+						'label'  => 'Open <menu>',
+						'href'   => 'javascript:alert(1)',
+						'target' => '_blank',
+					]
+				),
+				new RenderContext()
+			)
+		);
 	}
 }
