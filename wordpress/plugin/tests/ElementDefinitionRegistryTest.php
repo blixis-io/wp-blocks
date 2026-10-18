@@ -226,6 +226,20 @@ final class ElementDefinitionRegistryTest extends TestCase {
 			'<span data-blx-id="spinner-1" data-blx-type="blixis/spinner" role="status" aria-label="Loading"><span aria-hidden="true" data-blx-spinner></span></span>',
 			$renderer->render( new ElementNode( 'spinner-1', 'blixis/spinner', [ 'ariaLabel' => 'Loading' ] ), new RenderContext() )
 		);
+		$this->assertSame(
+			'<span data-blx-id="dynamic-1" data-blx-type="blixis/post-title">Fallback &amp; title</span>',
+			$renderer->render(
+				new ElementNode(
+					'dynamic-1',
+					'blixis/post-title',
+					[
+						'binding'  => [ 'source' => 'php://filter' ],
+						'fallback' => 'Fallback & title',
+					]
+				),
+				new RenderContext()
+			)
+		);
 	}
 
 	/** P3 images and galleries resolve only approved image references and escape captions. */

@@ -52,6 +52,10 @@ P4 adds renderer fallbacks for the catalog's navigation item structures, native 
 
 P5 adds static semantic output for alerts/live regions, native progress indicators with clamped values, and decorative skeleton/spinner markers. Dismiss, toast timing, choice/input behavior, charts, and other interactive UI components remain planned until their editor and enhancement contracts exist.
 
+P7 resolves only a fixed set of current WordPress post/site values (title, plain-text content/excerpt, date, author, category names, and tagline), escapes the result, and uses the authored fallback when no WordPress value is available. Binding metadata is never evaluated as code. Query loops, user/meta-selected fields, filters, and provider embeds remain planned pending bounded query and permission contracts.
+
+P6 form submission and file upload remain planned: the catalog does not define a REST route, nonce/capability model, data-retention policy, spam provider, or upload destination contract. P8 commerce behavior remains planned and requires an installed WooCommerce adapter; no cart, checkout, or payment behavior is synthesized by the core renderer. P9 animation elements remain planned; preserve reduced-motion defaults and ADR 0013's GSAP distribution limits when adding progressive enhancement.
+
 ## Instance and compatibility contract
 
 An instance is `{ id, type, props, styles, children }`. IDs are stable. Definition properties supply validation type, enum/options, bounds, defaults, required status, `localizable`, `editorOnly`, and a control. Translatable data stays in locale content streams. `editorOnly` values are excluded from saved frontend props. Unknown types/properties round-trip for forward compatibility and render through the static safe fallback.

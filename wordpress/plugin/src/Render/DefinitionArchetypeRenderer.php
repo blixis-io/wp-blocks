@@ -42,7 +42,7 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 	 * @param string $archetype Archetype name.
 	 */
 	public function supports( string $archetype ): bool {
-		return in_array( $archetype, [ 'container','simple','text','richtext','heading','button','link','image','gallery','navigation','list','code','accordion','tabs','steps','alert','progress','card','layout','section','page','site-header','site-footer','site-logo','row','columns','grid','stack' ], true ); }
+		return in_array( $archetype, [ 'container','simple','text','richtext','heading','button','link','image','gallery','navigation','list','code','accordion','tabs','steps','alert','progress','dynamic','card','layout','section','page','site-header','site-footer','site-logo','row','columns','grid','stack' ], true ); }
 	/** Render an element with escaped text and allowlisted tags/attributes.
 	 *
 	 * @param ElementNode   $node Element input.
@@ -133,6 +133,9 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		if ( 'progress' === $archetype ) {
 			return $this->render_progress( $node, $hooks );
 		}
+		if ( 'dynamic' === $archetype ) {
+			return $this->render_dynamic( $node, $hooks );
+		}
 		if ( in_array( $id, [ 'skeleton', 'spinner' ], true ) ) {
 			return 'spinner' === $id
 				? '<span' . $hooks . ' role="status"' . ( is_string( $node->value( 'ariaLabel' ) ) ? ' aria-label="' . Escape::attr( $node->value( 'ariaLabel' ) ) . '"' : '' ) . '><span aria-hidden="true" data-blx-spinner></span></span>'
@@ -204,6 +207,43 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 			}
 		}
 		return $html . '</ul></div>';
+	}
+
+	/** Resolve a small allowlist of current-post and site values without executing document bindings.
+	 *
+	 * @param ElementNode $node Dynamic definition.
+	 * @param string      $hooks Validated element hooks.
+	 */
+	private function render_dynamic( ElementNode $node, string $hooks ): string {
+		$value   = null;
+		$post_id = function_exists( 'get_the_ID' ) ? get_the_ID() : false;
+		if ( 'post-title' === $node->type && function_exists( 'get_the_title' ) ) {
+			$value = get_the_title();
+		} elseif ( 'post-excerpt' === $node->type && function_exists( 'get_the_excerpt' ) ) {
+			$value = get_the_excerpt();
+		} elseif ( 'post-content' === $node->type && function_exists( 'get_post_field' ) && is_int( $post_id ) && $post_id > 0 ) {
+			$value = get_post_field( 'post_content', $post_id );
+		} elseif ( 'post-date' === $node->type && function_exists( 'get_the_date' ) ) {
+			$value = get_the_date();
+		} elseif ( 'post-author' === $node->type && function_exists( 'get_the_author' ) ) {
+			$value = get_the_author();
+		} elseif ( 'site-tagline' === $node->type && function_exists( 'get_bloginfo' ) ) {
+			$value = get_bloginfo( 'description' );
+		} elseif ( 'post-terms' === $node->type && function_exists( 'get_the_terms' ) && is_int( $post_id ) && $post_id > 0 ) {
+			$terms = get_the_terms( $post_id, 'category' );
+			if ( is_array( $terms ) ) {
+				$value = implode( ', ', array_filter( array_map( static fn ( mixed $term ): string => $term instanceof \WP_Term ? $term->name : '', $terms ) ) );
+			}
+		}
+		if ( ! is_string( $value ) || '' === trim( $value ) ) {
+			$value = $node->value( 'fallback', '' );
+		}
+		$value = is_string( $value ) ? $value : '';
+		if ( in_array( $node->type, [ 'blixis/post-content', 'blixis/post-excerpt' ], true ) && function_exists( 'wp_strip_all_tags' ) ) {
+			$value = wp_strip_all_tags( $value );
+		}
+		$tag = 'blixis/post-content' === $node->type ? 'div' : 'span';
+		return '<' . $tag . $hooks . '>' . Escape::html( $value ) . '</' . $tag . '>';
 	}
 
 	/** Render a static alert with semantic live-region behavior.
