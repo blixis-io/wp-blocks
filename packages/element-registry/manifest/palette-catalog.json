@@ -809,7 +809,7 @@
       "category": "ui-components",
       "icon": "solar:user-circle-linear",
       "tier": "free",
-      "status": "planned",
+      "status": "ready",
       "keywords": "avatar avatar ui-components avatar element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
     },
     {

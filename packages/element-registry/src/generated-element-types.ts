@@ -21606,7 +21606,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'image',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -70772,7 +70772,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:user-circle-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'avatar avatar ui-components avatar element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },

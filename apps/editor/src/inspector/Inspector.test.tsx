@@ -927,6 +927,18 @@ describe('Inspector controls', () => {
     expect(store.getState().document?.root[0]?.props['src']).toBe('attachment:42');
   });
 
+  it('stores avatar attachment references and localizes alternative text', async () => {
+    const { store } = await mount('blixis/avatar', { tab: 'content', reactive: false });
+    fireEvent.change(document.querySelector('input[type="number"]') as HTMLInputElement, {
+      target: { value: '42' },
+    });
+    fireEvent.change(screen.getByRole('textbox', { name: 'Alternative text' }), {
+      target: { value: 'Profile photo' },
+    });
+    expect(store.getState().document?.root[0]?.props['assetRef']).toBe('attachment:42');
+    expect(store.getState().document?.translations['en_US']?.['target']?.values['alt']).toBe('Profile photo');
+  });
+
   it('edits localized step titles and descriptions with the generated repeater', async () => {
     const { store } = await mount('blixis/steps', { tab: 'content', reactive: false });
     fireEvent.change(screen.getByRole('textbox', { name: 'Step 1 title' }), {
