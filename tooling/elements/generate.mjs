@@ -46,6 +46,7 @@ const editorReady = new Set([
   'eyebrow',
   'blockquote',
   'badge',
+  'button-group',
   'image',
   'section',
   'text',

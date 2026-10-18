@@ -124,6 +124,13 @@ final class ElementDefinitionRegistryTest extends TestCase {
 			$renderer->render( new ElementNode( 'badge-1', 'blixis/badge', [ 'content' => 'New' ] ), new RenderContext() )
 		);
 		$this->assertSame(
+			'<div data-blx-id="button-group-1" data-blx-type="blixis/button-group" role="group" aria-label="Actions &amp; links"><button>Save</button></div>',
+			$renderer->render(
+				new ElementNode( 'button-group-1', 'blixis/button-group', [ 'ariaLabel' => 'Actions & links' ] ),
+				new RenderContext( '<button>Save</button>' )
+			)
+		);
+		$this->assertSame(
 			'<hr data-blx-id="separator-1" data-blx-type="blixis/separator" aria-hidden="true">',
 			$renderer->render( new ElementNode( 'separator-1', 'blixis/separator', [] ), new RenderContext() )
 		);

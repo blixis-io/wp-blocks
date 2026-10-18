@@ -68,6 +68,9 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 			}
 		}
 		$hooks = Escape::hooks( $node );
+		if ( 'button-group' === $id ) {
+			$hooks .= ' role="group"';
+		}
 		if ( 'container' === $archetype ) {
 			$fallback = 'section' === $id ? 'section' : 'div';
 			$tag      = $this->semantic_tag( $node->value( 'semanticTag', $node->value( 'tag', $fallback ) ), $fallback );

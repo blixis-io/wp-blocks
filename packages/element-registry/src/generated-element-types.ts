@@ -7058,7 +7058,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'container',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -70178,7 +70178,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'content',
     icon: 'solar:widget-2-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'button-group button group content button group element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },

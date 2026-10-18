@@ -82,7 +82,7 @@ describe('left panel and element palette', () => {
     const palette = screen.getByRole('region', { name: 'Elements' });
     for (const name of ['Section', 'Container', 'Heading', 'Text', 'Image', 'Button'])
       expect(within(palette).getByRole('button', { name })).toBeTruthy();
-    expect(within(palette).getAllByRole('button')).toHaveLength(32);
+    expect(within(palette).getAllByRole('button')).toHaveLength(33);
   });
 
   it('remembers the selected left tab for the current session', async () => {
@@ -383,6 +383,7 @@ describe('left panel and element palette', () => {
     ['blixis/eyebrow', 'el-container-1'],
     ['blixis/blockquote', 'el-container-1'],
     ['blixis/badge', 'el-container-1'],
+    ['blixis/button-group', 'el-container-1'],
     ['blixis/progress', 'el-container-1'],
     ['blixis/spinner', 'el-container-1'],
     ['blixis/skeleton', 'el-container-1'],
