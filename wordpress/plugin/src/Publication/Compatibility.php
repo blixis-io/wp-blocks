@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Blixis\Builder\Publication;
 
 use Blixis\Builder\Registry\ElementRegistry;
+use Blixis\Builder\Registry\ElementDefinitionRegistry;
 
 \defined( 'ABSPATH' ) || exit;
 
@@ -25,7 +26,8 @@ final class Compatibility {
 	 * @return list<array{id: string, reason: string}>
 	 */
 	public static function problems( \stdClass $entries, array $recorded_types, array $layout_types, ElementRegistry $registry ): array {
-		$problems = [];
+		$problems    = [];
+		$definitions = ElementDefinitionRegistry::from_manifest_file( \dirname( __DIR__, 2 ) . '/data/element-definitions-v2.json' );
 		foreach ( \get_object_vars( $entries ) as $id => $entry ) {
 			$id   = (string) $id;
 			$type = $layout_types[ $id ] ?? null;
@@ -46,8 +48,10 @@ final class Compatibility {
 			$definition = $registry->get( $type );
 			$values     = $entry instanceof \stdClass && ( $entry->values ?? null ) instanceof \stdClass ? \get_object_vars( $entry->values ) : [];
 			foreach ( \array_keys( $values ) as $property ) {
-				$classification = $definition['props'][ $property ]['classification'] ?? null;
-				if ( ! \in_array( $classification, [ 'translatable', 'locale-specific' ], true ) ) {
+				$classification      = $definition['props'][ $property ]['classification'] ?? null;
+				$definition_property = $definitions->property( $type, (string) $property );
+				$allowed             = \in_array( $classification, [ 'translatable', 'locale-specific' ], true ) || ( \is_array( $definition_property ) && true === ( $definition_property['localizable'] ?? false ) );
+				if ( ! $allowed ) {
 					$problems[] = [
 						'id'     => $id,
 						'reason' => 'not-translatable',

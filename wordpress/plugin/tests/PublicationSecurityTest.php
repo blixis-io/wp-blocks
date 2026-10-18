@@ -112,6 +112,11 @@ final class PublicationSecurityTest extends TestCase {
 		$template_event = ( new AuditEvent( 7, 0, null, 'template-font-install', null, null, 0, 0, 'business', [ 'inter', '../bad' ] ) )->data();
 		$this->assertSame( 'business', $template_event['templateId'] ?? null );
 		$this->assertSame( [ 'inter' ], $template_event['familySlugs'] ?? null );
+		$import_event = ( new AuditEvent( 7, 0, null, 'template-import', null, null, 0, 0, 'business', [ 'business_logo' ] ) )->data();
+		$this->assertSame( 'template-import', $import_event['kind'] );
+		$this->assertSame( 'business', $import_event['templateId'] ?? null );
+		$this->assertSame( [ 'business_logo' ], $import_event['assetReferences'] ?? null );
+		$this->assertArrayNotHasKey( 'content', $import_event );
 	}
 
 	/** The production sink invokes the documented WordPress action with the safe payload. */

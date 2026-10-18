@@ -49,6 +49,10 @@ import code from '@iconify-icons/solar/code-linear';
 import clearFormatting from '@iconify-icons/solar/eraser-linear';
 import sidebarClose from '@iconify-icons/solar/sidebar-close-line-duotone';
 import sidebarOpen from '@iconify-icons/solar/sidebar-open-line-duotone';
+import gridLayout from '@iconify-icons/solar/widget-4-linear';
+import layers from '@iconify-icons/solar/layers-linear';
+import menuDotsGrid from '@iconify-icons/solar/menu-dots-linear';
+import card from '@iconify-icons/solar/card-linear';
 import type { ElementDefinition } from '@blixis/wp-element-registry';
 
 interface SolarIconData {
@@ -96,6 +100,10 @@ export const ICONS = {
   panelRight,
   sidebarClose,
   sidebarOpen,
+  gridLayout,
+  layers,
+  menuDotsGrid,
+  card,
   text,
   add,
   copy,
@@ -155,5 +163,18 @@ export const ELEMENT_ICONS = {
   'blixis/button': 'button',
 } satisfies Record<ElementDefinition['type'], IconName>;
 export function elementIconName(type: string): IconName {
-  return Object.hasOwn(ELEMENT_ICONS, type) ? ELEMENT_ICONS[type as keyof typeof ELEMENT_ICONS] : 'fallback';
+  if (Object.hasOwn(ELEMENT_ICONS, type)) return ELEMENT_ICONS[type as keyof typeof ELEMENT_ICONS];
+  const generated: Record<string, IconName> = {
+    'blixis/page': 'pages',
+    'blixis/stack': 'layers',
+    'blixis/row': 'menuDotsGrid',
+    'blixis/columns': 'section',
+    'blixis/grid': 'gridLayout',
+    'blixis/card': 'card',
+    'blixis/navigation': 'link',
+    'blixis/site-header': 'section',
+    'blixis/site-footer': 'section',
+    'blixis/site-logo': 'image',
+  };
+  return generated[type] ?? 'fallback';
 }

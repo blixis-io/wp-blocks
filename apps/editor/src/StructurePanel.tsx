@@ -21,6 +21,7 @@ import { useI18n } from './i18n-react';
 import { useEditorStore, useEditorStoreApi } from './state';
 import { ElementId } from './ElementId';
 import { readSessionStorage, writeSessionStorage } from './storage';
+import { ELEMENT_DEFINITIONS_V2, ELEMENT_PALETTE_V2, getElementDefinitionV2 } from '@blixis/wp-element-registry';
 
 interface Row {
   node: ElementNode;
@@ -31,7 +32,18 @@ interface Row {
   setSize: number;
   guideStops: boolean[];
 }
-const PALETTE_CATEGORIES = ['layout', 'content', 'media', 'interactive'] as const;
+const PALETTE_CATEGORIES = [
+  'layout',
+  'content',
+  'media',
+  'navigation',
+  'interactive',
+  'forms',
+  'wordpress',
+  'commerce',
+  'ui-components',
+  'advanced-motion',
+] as const;
 let nextCreatedElementId = 0;
 
 function flatten(root: readonly ElementNode[], expanded: ReadonlySet<string>): Row[] {
@@ -146,6 +158,18 @@ const OutlineItem = memo(function OutlineItem({
   const { t } = useI18n();
   const store = useEditorStoreApi();
   const selected = useEditorStore((state) => state.selectedId === node.id);
+  const documentRoot = useEditorStore((state) => state.document?.root ?? []);
+  const parentNode = parent
+    ? (() => {
+        const path = findPath(documentRoot, parent);
+        return path ? nodeAt(documentRoot, path) : undefined;
+      })()
+    : undefined;
+  const parentStructure = parentNode
+    ? (getElementDefinitionV2(parentNode.type)?.['structure'] as Record<string, unknown> | undefined)
+    : undefined;
+  const minimum = typeof parentStructure?.['minChildren'] === 'number' ? parentStructure['minChildren'] : 0;
+  const canDelete = !parentNode || parentNode.children.length > minimum;
   const setExpanded = useEditorStore((state) => state.setExpanded);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuTriggerRef = useRef<HTMLButtonElement>(null);
@@ -265,6 +289,7 @@ const OutlineItem = memo(function OutlineItem({
           <button
             type="button"
             role="menuitem"
+            disabled={!canDelete}
             onClick={() => {
               store.getState().dispatch({ type: 'remove', id: node.id });
               setMenuOpen(false);
@@ -470,19 +495,40 @@ function Palette({ editingEnabled }: { editingEnabled: boolean }) {
   const registry = useEditorStore((state) => state.registry);
   const [query, setQuery] = useState('');
   const [insertFailed, setInsertFailed] = useState(false);
+  const [showPlanned, setShowPlanned] = useState(() => {
+    try {
+      return window.localStorage.getItem('blixis-show-planned-elements') === 'true';
+    } catch {
+      return false;
+    }
+  });
   const buttonRefs = useRef<HTMLButtonElement[]>([]);
   const definitions = useMemo(() => {
     const categoryOrder = new Map(PALETTE_CATEGORIES.map((category, index) => [category, index]));
+    const originalOrder = new Map(
+      ['blixis/container', 'blixis/section', 'blixis/heading', 'blixis/text', 'blixis/image', 'blixis/button'].map(
+        (type, index) => [type, index],
+      ),
+    );
     return registry
       .list()
-      .filter((definition) =>
-        `${elementLabel(definition.type, t)} ${definition.title} ${definition.type} ${definition.category}`
+      .filter((definition) => {
+        const generated = ELEMENT_DEFINITIONS_V2.find((item) => `blixis/${item.id}` === definition.type);
+        const paletteEntry = ELEMENT_PALETTE_V2.find((item) => item.id === definition.type);
+        const description = typeof generated?.['description'] === 'string' ? generated['description'] : '';
+        const keywords = paletteEntry?.keywords ?? '';
+        return `${elementLabel(definition.type, t)} ${definition.title} ${definition.type} ${definition.category} ${description} ${keywords}`
           .toLocaleLowerCase()
-          .includes(query.trim().toLocaleLowerCase()),
-      )
+          .includes(query.trim().toLocaleLowerCase());
+      })
       .sort(
         (a, b) =>
-          (categoryOrder.get(a.category) ?? 0) - (categoryOrder.get(b.category) ?? 0) || a.title.localeCompare(b.title),
+          (originalOrder.has(a.type) ? 0 : 1) - (originalOrder.has(b.type) ? 0 : 1) ||
+          (originalOrder.has(a.type) && originalOrder.has(b.type)
+            ? (originalOrder.get(a.type) ?? 0) - (originalOrder.get(b.type) ?? 0)
+            : (categoryOrder.get(ELEMENT_PALETTE_V2.find((item) => item.id === a.type)?.category ?? a.category) ?? 0) -
+                (categoryOrder.get(ELEMENT_PALETTE_V2.find((item) => item.id === b.type)?.category ?? b.category) ??
+                  0) || a.title.localeCompare(b.title)),
       );
   }, [registry, query, t]);
   const onGridKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
@@ -509,6 +555,21 @@ function Palette({ editingEnabled }: { editingEnabled: boolean }) {
           }}
         />
       </label>
+      <label className="blx-planned-toggle">
+        <input
+          type="checkbox"
+          checked={showPlanned}
+          onChange={(event) => {
+            setShowPlanned(event.currentTarget.checked);
+            try {
+              window.localStorage.setItem('blixis-show-planned-elements', String(event.currentTarget.checked));
+            } catch {
+              /* storage can be unavailable */
+            }
+          }}
+        />
+        {t('panel.showPlannedElements')}
+      </label>
       {insertFailed ? (
         <p role="status" className="blx-inspector-error">
           {t('panel.palette.insertFailed')}
@@ -517,7 +578,11 @@ function Palette({ editingEnabled }: { editingEnabled: boolean }) {
       <ScrollArea label={t('panel.elements')} className="blx-palette-scroll">
         <div className="blx-palette-groups">
           {PALETTE_CATEGORIES.map((category) => {
-            const members = definitions.filter((definition) => definition.category === category);
+            const members = definitions.filter(
+              (definition) =>
+                (ELEMENT_PALETTE_V2.find((item) => item.id === definition.type)?.category ?? definition.category) ===
+                category,
+            );
             if (members.length === 0) return null;
             return (
               <section key={category} aria-label={t(`panel.category.${category}`)} className="blx-palette-category">
@@ -545,6 +610,42 @@ function Palette({ editingEnabled }: { editingEnabled: boolean }) {
               </section>
             );
           })}
+          {showPlanned ? (
+            <section aria-label={t('panel.category.planned')} className="blx-palette-category">
+              <h3>{t('panel.category.planned')}</h3>
+              <div className="blx-element-grid">
+                {ELEMENT_DEFINITIONS_V2.filter(
+                  (item) =>
+                    item.status === 'planned' &&
+                    `${typeof item['title'] === 'string' ? item['title'] : item.id} ${item.id} ${typeof item['description'] === 'string' ? item['description'] : ''}`
+                      .toLocaleLowerCase()
+                      .includes(query.trim().toLocaleLowerCase()),
+                ).map((item) => {
+                  const title = typeof item['title'] === 'string' ? item['title'] : item.id;
+                  const subscription = item['subscription'];
+                  const subscriptionRecord =
+                    subscription !== null && typeof subscription === 'object'
+                      ? (subscription as { minimumTier?: unknown })
+                      : undefined;
+                  const tier =
+                    typeof subscriptionRecord?.minimumTier === 'string' ? subscriptionRecord.minimumTier : 'free';
+                  return (
+                    <div
+                      key={item.id}
+                      className="blx-element-card blx-element-planned"
+                      data-tier={tier}
+                      aria-label={`${title}, ${t('panel.planned')}`}
+                      aria-disabled="true"
+                    >
+                      <Icon name={elementIconName(`blixis/${item.id}`)} size={20} />
+                      <span>{title}</span>
+                      <small>{t('panel.planned')}</small>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          ) : null}
         </div>
       </ScrollArea>
     </>
@@ -561,21 +662,32 @@ function paletteInsertionPoint(
   registry: Registry,
   type: string,
 ): { parentId: string | null; index: number } | null {
+  const hasRoom = (parentId: string | null): boolean => {
+    if (parentId === null) return true;
+    const path = findPath(document.root, parentId);
+    const parent = path ? nodeAt(document.root, path) : undefined;
+    if (!parent) return false;
+    const structure = getElementDefinitionV2(parent.type)?.['structure'] as Record<string, unknown> | undefined;
+    const maximum = structure?.['maxChildren'];
+    return typeof maximum !== 'number' || parent.children.length < maximum;
+  };
   if (selectedId) {
     const path = findPath(document.root, selectedId);
     const selected = path ? nodeAt(document.root, path) : undefined;
-    if (selected && registry.canNest(selected.type, type, 'create'))
+    if (selected && registry.canNest(selected.type, type, 'create') && hasRoom(selected.id))
       return { parentId: selected.id, index: selected.children.length };
     if (path) {
       const parentPath = path.slice(0, -1);
       const parent = parentPath.length ? nodeAt(document.root, parentPath) : undefined;
-      if (registry.canNest(parent?.type ?? null, type, 'create'))
+      if (registry.canNest(parent?.type ?? null, type, 'create') && hasRoom(parent?.id ?? null))
         return { parentId: parent?.id ?? null, index: (path[path.length - 1] ?? -1) + 1 };
     }
   }
-  if (registry.canNest(null, type, 'create')) return { parentId: null, index: document.root.length };
+  if (registry.canNest(null, type, 'create') && hasRoom(null)) return { parentId: null, index: document.root.length };
   // Nothing selected and the page root does not accept this element: append it to the last root container that does.
-  const container = [...document.root].reverse().find((node) => registry.canNest(node.type, type, 'create'));
+  const container = [...document.root]
+    .reverse()
+    .find((node) => registry.canNest(node.type, type, 'create') && hasRoom(node.id));
   return container ? { parentId: container.id, index: container.children.length } : null;
 }
 
@@ -607,6 +719,7 @@ function PaletteCard({
     <button
       ref={refButton}
       data-element-type={definition.type}
+      data-tier={definition.tier}
       type="button"
       className="blx-element-card ed-focus-ring"
       tabIndex={index === 0 ? 0 : -1}

@@ -44,6 +44,9 @@ const NOT_SHARED_DATA = [
   'tests/fixtures/package.json',
   'tests/fixtures/tsconfig.json',
   'tests/fixtures/contracts.json',
+  'packages/element-registry/manifest/element-definitions-v2.json',
+  'packages/element-registry/manifest/palette-catalog.json',
+  'wordpress/plugin/data/element-definitions-v2.json',
   'tooling/fixtures/',
 ];
 const SKIPPED_DIRECTORIES = new Set(['node_modules', 'vendor', '.git', 'dist', 'coverage', 'docs']);

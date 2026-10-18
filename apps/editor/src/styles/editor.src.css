@@ -1105,6 +1105,14 @@
       font-size: var(--ed-font-xs);
       font-weight: 600;
     }
+    .blx-planned-toggle {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.4rem 0.65rem;
+      color: var(--ed-fg-muted);
+      font-size: var(--ed-font-xs);
+    }
     .blx-element-card {
       display: flex;
       min-inline-size: 0;
@@ -1127,6 +1135,15 @@
     .blx-element-card[aria-disabled='true'] {
       cursor: not-allowed;
       opacity: 0.55;
+    }
+    .blx-element-card[data-tier]::after {
+      content: attr(data-tier);
+      color: var(--ed-fg-muted);
+      font-size: 9px;
+      text-transform: capitalize;
+    }
+    .blx-element-planned {
+      cursor: not-allowed;
     }
     .blx-empty {
       padding: 0.75rem;

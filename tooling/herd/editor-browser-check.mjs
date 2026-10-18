@@ -69,6 +69,7 @@ try {
   const pending = new Map();
   const problems = [];
   const apiResponses = [];
+  const apiRequests = new Map();
   const contexts = new Map(); // frameId -> default execution context id (for evaluating inside a specific frame)
   ws.onmessage = (event) => {
     const message = JSON.parse(event.data);
@@ -79,10 +80,22 @@ try {
       // The unsaved-changes guard (beforeunload) opens a dialog when the check reloads a dirty editor: accept, as "Leave".
       ws.send(JSON.stringify({ id: (seq += 1), method: 'Page.handleJavaScriptDialog', params: { accept: true } }));
     } else if (
+      message.method === 'Network.requestWillBeSent' &&
+      /blixis\/v1|rest_route=\/blixis\/v1/.test(message.params.request.url)
+    ) {
+      apiRequests.set(message.params.requestId, {
+        method: message.params.request.method,
+        postData: message.params.request.postData ?? null,
+      });
+    } else if (
       message.method === 'Network.responseReceived' &&
       /blixis\/v1|rest_route=\/blixis\/v1/.test(message.params.response.url)
     ) {
-      apiResponses.push({ url: message.params.response.url, status: message.params.response.status });
+      apiResponses.push({
+        url: message.params.response.url,
+        status: message.params.response.status,
+        ...apiRequests.get(message.params.requestId),
+      });
     } else if (message.method === 'Runtime.executionContextCreated') {
       const { id, auxData } = message.params.context;
       if (auxData?.frameId && auxData.isDefault) contexts.set(auxData.frameId, id);
@@ -241,6 +254,64 @@ try {
   );
   assert.equal(shell.adminChrome, false, 'no wp-admin chrome in the editor document');
   assert.equal(shell.scrolls, false, 'the editor fills the viewport without page scroll');
+
+  // Template-critical registry elements must be insertable and immediately visible in both the tree and shared PHP canvas.
+  // Radix Tabs require a real pointer sequence; the tree is unmounted while Elements is active.
+  for (const [type, label] of [
+    ['page', 'Page'],
+    ['stack', 'Stack'],
+    ['row', 'Row'],
+    ['columns', 'Columns'],
+    ['grid', 'Grid'],
+    ['card', 'Card'],
+    ['navigation', 'Navigation'],
+    ['site-header', 'Site Header'],
+    ['site-footer', 'Site Footer'],
+    ['site-logo', 'Site Logo'],
+  ]) {
+    const elementsTab = 'nav[aria-label="Structure"] [role="tab"]:nth-child(2)';
+    await ev(`document.querySelector(${JSON.stringify(elementsTab)})?.scrollIntoView({ block: 'nearest' })`);
+    await clickReal(elementsTab);
+    const cardSelector = `button[data-element-type="blixis/${type}"]`;
+    await ev(`document.querySelector(${JSON.stringify(cardSelector)})?.scrollIntoView({ block: 'center' })`);
+    assert.equal(
+      await ev(`document.querySelector(${JSON.stringify(cardSelector)})?.getAttribute('aria-disabled')`),
+      'false',
+      `${label} palette entry is insertable`,
+    );
+    await clickReal(cardSelector);
+    const structureTab = 'nav[aria-label="Structure"] [role="tab"]:nth-child(1)';
+    await ev(`document.querySelector(${JSON.stringify(structureTab)})?.scrollIntoView({ block: 'nearest' })`);
+    await clickReal(structureTab);
+    let insertedId = null;
+    for (let attempt = 0; attempt < 40 && !insertedId; attempt++) {
+      insertedId = await ev(
+        `document.querySelector('.blx-outline-item[aria-selected="true"]')?.getAttribute('data-id') ?? null`,
+      );
+      if (!insertedId) await sleep(150);
+    }
+    assert.ok(insertedId?.startsWith('el-new-'), `${label} appears as a new structure row`);
+    let canvasState = null;
+    const insertedSelector = JSON.stringify(`[data-blx-id="${insertedId}"]`);
+    for (let attempt = 0; attempt < 40; attempt++) {
+      canvasState = await ev(
+        `(() => { try { const frame=document.querySelector('main iframe'), doc=frame?.contentDocument; return { found:!!doc?.querySelector(${insertedSelector}), accessible:!!doc, ids:doc?[...doc.querySelectorAll('[data-blx-id]')].map(node=>node.getAttribute('data-blx-id')).slice(0,24):[], body:doc?.body?.innerText?.slice(0,160) ?? null, src:frame?.src ?? null }; } catch(error) { return { error:String(error) }; } })()`,
+      );
+      if (canvasState?.found) break;
+      await sleep(150);
+    }
+    assert.equal(
+      canvasState?.found,
+      true,
+      `${label} appears in the shared renderer canvas: ${JSON.stringify(canvasState)}`,
+    );
+    if (type !== 'page') {
+      await clickReal('button[aria-label="Undo"]');
+      await sleep(250);
+    }
+  }
+  await clickReal('button[aria-label="Undo"]');
+  await sleep(250);
 
   // Redesigned header: menus use real pointer activation, Escape restores focus, and the fixed header row never grows.
   const headerBottom = await ev(`document.querySelector('.blx-header').getBoundingClientRect().bottom`);
@@ -3359,7 +3430,7 @@ try {
   const wrong = apiResponses.filter((entry) => entry.status !== 200);
   assert.ok(
     apiResponses.length >= 3 && wrong.length === 0,
-    `layout, both content streams and the previews load with 200 (${JSON.stringify(apiResponses)})`,
+    `layout, both content streams and the previews load with 200 (${JSON.stringify(wrong)})`,
   );
 
   if (SCREENSHOT) {

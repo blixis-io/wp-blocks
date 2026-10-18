@@ -1,0 +1,2303 @@
+{
+  "schemaVersion": "1.0.0",
+  "kind": "blixis-element-catalog",
+  "status": "proposed",
+  "counts": {
+    "total": 253,
+    "byTier": {
+      "free": 93,
+      "plus": 103,
+      "pro": 57
+    },
+    "byCategory": {
+      "layout": 16,
+      "content": 23,
+      "media": 19,
+      "navigation": 19,
+      "ui-components": 48,
+      "forms": 24,
+      "wordpress": 30,
+      "commerce": 26,
+      "advanced-motion": 48
+    }
+  },
+  "elements": [
+    {
+      "id": "section",
+      "name": "Section",
+      "category": "layout",
+      "minimumTier": "free",
+      "icon": "solar:layers-linear",
+      "file": "elements/layout/section.json",
+      "archetype": "container"
+    },
+    {
+      "id": "container",
+      "name": "Container",
+      "category": "layout",
+      "minimumTier": "free",
+      "icon": "solar:widget-2-linear",
+      "file": "elements/layout/container.json",
+      "archetype": "container"
+    },
+    {
+      "id": "div",
+      "name": "Div",
+      "category": "layout",
+      "minimumTier": "free",
+      "icon": "solar:widget-linear",
+      "file": "elements/layout/div.json",
+      "archetype": "container"
+    },
+    {
+      "id": "flex",
+      "name": "Flex",
+      "category": "layout",
+      "minimumTier": "free",
+      "icon": "solar:posts-carousel-horizontal-linear",
+      "file": "elements/layout/flex.json",
+      "archetype": "container"
+    },
+    {
+      "id": "grid",
+      "name": "Grid",
+      "category": "layout",
+      "minimumTier": "free",
+      "icon": "solar:widget-4-linear",
+      "file": "elements/layout/grid.json",
+      "archetype": "container"
+    },
+    {
+      "id": "columns",
+      "name": "Columns",
+      "category": "layout",
+      "minimumTier": "free",
+      "icon": "solar:widget-3-linear",
+      "file": "elements/layout/columns.json",
+      "archetype": "container"
+    },
+    {
+      "id": "stack",
+      "name": "Stack",
+      "category": "layout",
+      "minimumTier": "free",
+      "icon": "solar:layers-minimalistic-linear",
+      "file": "elements/layout/stack.json",
+      "archetype": "container"
+    },
+    {
+      "id": "row",
+      "name": "Row",
+      "category": "layout",
+      "minimumTier": "free",
+      "icon": "solar:menu-dots-linear",
+      "file": "elements/layout/row.json",
+      "archetype": "container"
+    },
+    {
+      "id": "spacer",
+      "name": "Spacer",
+      "category": "layout",
+      "minimumTier": "free",
+      "icon": "solar:minus-circle-linear",
+      "file": "elements/layout/spacer.json",
+      "archetype": "simple"
+    },
+    {
+      "id": "separator",
+      "name": "Separator",
+      "category": "layout",
+      "minimumTier": "free",
+      "icon": "solar:minus-linear",
+      "file": "elements/layout/separator.json",
+      "archetype": "simple"
+    },
+    {
+      "id": "aspect-ratio",
+      "name": "Aspect Ratio",
+      "category": "layout",
+      "minimumTier": "free",
+      "icon": "solar:maximize-square-linear",
+      "file": "elements/layout/aspect-ratio.json",
+      "archetype": "container"
+    },
+    {
+      "id": "scroll-area",
+      "name": "Scroll Area",
+      "category": "layout",
+      "minimumTier": "free",
+      "icon": "solar:square-arrow-down-linear",
+      "file": "elements/layout/scroll-area.json",
+      "archetype": "container"
+    },
+    {
+      "id": "sticky-container",
+      "name": "Sticky Container",
+      "category": "layout",
+      "minimumTier": "plus",
+      "icon": "solar:pin-linear",
+      "file": "elements/layout/sticky-container.json",
+      "archetype": "container"
+    },
+    {
+      "id": "resizable-panels",
+      "name": "Resizable Panels",
+      "category": "layout",
+      "minimumTier": "plus",
+      "icon": "solar:slider-horizontal-linear",
+      "file": "elements/layout/resizable-panels.json",
+      "archetype": "container"
+    },
+    {
+      "id": "split-layout",
+      "name": "Split Layout",
+      "category": "layout",
+      "minimumTier": "plus",
+      "icon": "solar:widget-3-linear",
+      "file": "elements/layout/split-layout.json",
+      "archetype": "container"
+    },
+    {
+      "id": "marquee-layout",
+      "name": "Marquee Layout",
+      "category": "layout",
+      "minimumTier": "pro",
+      "icon": "solar:repeat-linear",
+      "file": "elements/layout/marquee-layout.json",
+      "archetype": "container"
+    },
+    {
+      "id": "heading",
+      "name": "Heading",
+      "category": "content",
+      "minimumTier": "free",
+      "icon": "solar:text-bold-linear",
+      "file": "elements/content/heading.json",
+      "archetype": "richtext"
+    },
+    {
+      "id": "paragraph",
+      "name": "Paragraph",
+      "category": "content",
+      "minimumTier": "free",
+      "icon": "solar:text-linear",
+      "file": "elements/content/paragraph.json",
+      "archetype": "richtext"
+    },
+    {
+      "id": "rich-text",
+      "name": "Rich Text",
+      "category": "content",
+      "minimumTier": "free",
+      "icon": "solar:text-italic-linear",
+      "file": "elements/content/rich-text.json",
+      "archetype": "richtext"
+    },
+    {
+      "id": "eyebrow",
+      "name": "Eyebrow",
+      "category": "content",
+      "minimumTier": "free",
+      "icon": "solar:text-field-linear",
+      "file": "elements/content/eyebrow.json",
+      "archetype": "richtext"
+    },
+    {
+      "id": "blockquote",
+      "name": "Blockquote",
+      "category": "content",
+      "minimumTier": "free",
+      "icon": "solar:chat-round-quote-linear",
+      "file": "elements/content/blockquote.json",
+      "archetype": "richtext"
+    },
+    {
+      "id": "list",
+      "name": "List",
+      "category": "content",
+      "minimumTier": "free",
+      "icon": "solar:list-linear",
+      "file": "elements/content/list.json",
+      "archetype": "list"
+    },
+    {
+      "id": "icon-list",
+      "name": "Icon List",
+      "category": "content",
+      "minimumTier": "free",
+      "icon": "solar:list-check-linear",
+      "file": "elements/content/icon-list.json",
+      "archetype": "list"
+    },
+    {
+      "id": "link",
+      "name": "Link",
+      "category": "content",
+      "minimumTier": "free",
+      "icon": "solar:link-linear",
+      "file": "elements/content/link.json",
+      "archetype": "link"
+    },
+    {
+      "id": "button",
+      "name": "Button",
+      "category": "content",
+      "minimumTier": "free",
+      "icon": "solar:plain-linear",
+      "file": "elements/content/button.json",
+      "archetype": "button"
+    },
+    {
+      "id": "button-group",
+      "name": "Button Group",
+      "category": "content",
+      "minimumTier": "free",
+      "icon": "solar:widget-2-linear",
+      "file": "elements/content/button-group.json",
+      "archetype": "container"
+    },
+    {
+      "id": "badge",
+      "name": "Badge",
+      "category": "content",
+      "minimumTier": "free",
+      "icon": "solar:tag-linear",
+      "file": "elements/content/badge.json",
+      "archetype": "text"
+    },
+    {
+      "id": "icon",
+      "name": "Icon",
+      "category": "content",
+      "minimumTier": "free",
+      "icon": "solar:star-linear",
+      "file": "elements/content/icon.json",
+      "archetype": "icon"
+    },
+    {
+      "id": "icon-button",
+      "name": "Icon Button",
+      "category": "content",
+      "minimumTier": "free",
+      "icon": "solar:add-circle-linear",
+      "file": "elements/content/icon-button.json",
+      "archetype": "button"
+    },
+    {
+      "id": "code-block",
+      "name": "Code Block",
+      "category": "content",
+      "minimumTier": "plus",
+      "icon": "solar:code-linear",
+      "file": "elements/content/code-block.json",
+      "archetype": "code"
+    },
+    {
+      "id": "syntax-highlighter",
+      "name": "Syntax Highlighter",
+      "category": "content",
+      "minimumTier": "plus",
+      "icon": "solar:code-square-linear",
+      "file": "elements/content/syntax-highlighter.json",
+      "archetype": "code"
+    },
+    {
+      "id": "table-of-contents",
+      "name": "Table Of Contents",
+      "category": "content",
+      "minimumTier": "plus",
+      "icon": "solar:list-linear",
+      "file": "elements/content/table-of-contents.json",
+      "archetype": "navigation"
+    },
+    {
+      "id": "countdown",
+      "name": "Countdown",
+      "category": "content",
+      "minimumTier": "plus",
+      "icon": "solar:clock-circle-linear",
+      "file": "elements/content/countdown.json",
+      "archetype": "countdown"
+    },
+    {
+      "id": "counter",
+      "name": "Counter",
+      "category": "content",
+      "minimumTier": "plus",
+      "icon": "solar:graph-up-linear",
+      "file": "elements/content/counter.json",
+      "archetype": "counter"
+    },
+    {
+      "id": "animated-headline",
+      "name": "Animated Headline",
+      "category": "content",
+      "minimumTier": "pro",
+      "icon": "solar:text-bold-circle-linear",
+      "file": "elements/content/animated-headline.json",
+      "archetype": "richtext"
+    },
+    {
+      "id": "gradient-text",
+      "name": "Gradient Text",
+      "category": "content",
+      "minimumTier": "plus",
+      "icon": "solar:palette-linear",
+      "file": "elements/content/gradient-text.json",
+      "archetype": "richtext"
+    },
+    {
+      "id": "highlight-text",
+      "name": "Highlight Text",
+      "category": "content",
+      "minimumTier": "free",
+      "icon": "solar:text-selection-linear",
+      "file": "elements/content/highlight-text.json",
+      "archetype": "richtext"
+    },
+    {
+      "id": "tooltip-text",
+      "name": "Tooltip Text",
+      "category": "content",
+      "minimumTier": "plus",
+      "icon": "solar:info-circle-linear",
+      "file": "elements/content/tooltip-text.json",
+      "archetype": "richtext"
+    },
+    {
+      "id": "progress-ring",
+      "name": "Progress Ring",
+      "category": "content",
+      "minimumTier": "plus",
+      "icon": "solar:pie-chart-2-linear",
+      "file": "elements/content/progress-ring.json",
+      "archetype": "progress"
+    },
+    {
+      "id": "image",
+      "name": "Image",
+      "category": "media",
+      "minimumTier": "free",
+      "icon": "solar:gallery-linear",
+      "file": "elements/media/image.json",
+      "archetype": "image"
+    },
+    {
+      "id": "picture",
+      "name": "Picture",
+      "category": "media",
+      "minimumTier": "free",
+      "icon": "solar:gallery-wide-linear",
+      "file": "elements/media/picture.json",
+      "archetype": "image"
+    },
+    {
+      "id": "icon-svg",
+      "name": "Icon Svg",
+      "category": "media",
+      "minimumTier": "free",
+      "icon": "solar:gallery-minimalistic-linear",
+      "file": "elements/media/icon-svg.json",
+      "archetype": "icon"
+    },
+    {
+      "id": "video",
+      "name": "Video",
+      "category": "media",
+      "minimumTier": "free",
+      "icon": "solar:videocamera-linear",
+      "file": "elements/media/video.json",
+      "archetype": "video"
+    },
+    {
+      "id": "audio",
+      "name": "Audio",
+      "category": "media",
+      "minimumTier": "free",
+      "icon": "solar:music-note-linear",
+      "file": "elements/media/audio.json",
+      "archetype": "audio"
+    },
+    {
+      "id": "gallery",
+      "name": "Gallery",
+      "category": "media",
+      "minimumTier": "plus",
+      "icon": "solar:gallery-linear",
+      "file": "elements/media/gallery.json",
+      "archetype": "gallery"
+    },
+    {
+      "id": "lightbox",
+      "name": "Lightbox",
+      "category": "media",
+      "minimumTier": "plus",
+      "icon": "solar:full-screen-linear",
+      "file": "elements/media/lightbox.json",
+      "archetype": "gallery"
+    },
+    {
+      "id": "before-after",
+      "name": "Before After",
+      "category": "media",
+      "minimumTier": "plus",
+      "icon": "solar:slider-vertical-linear",
+      "file": "elements/media/before-after.json",
+      "archetype": "image"
+    },
+    {
+      "id": "image-comparison",
+      "name": "Image Comparison",
+      "category": "media",
+      "minimumTier": "plus",
+      "icon": "solar:layers-linear",
+      "file": "elements/media/image-comparison.json",
+      "archetype": "image"
+    },
+    {
+      "id": "video-background",
+      "name": "Video Background",
+      "category": "media",
+      "minimumTier": "plus",
+      "icon": "solar:videocamera-record-linear",
+      "file": "elements/media/video-background.json",
+      "archetype": "video"
+    },
+    {
+      "id": "lottie",
+      "name": "Lottie",
+      "category": "media",
+      "minimumTier": "pro",
+      "icon": "solar:magic-stick-3-linear",
+      "file": "elements/media/lottie.json",
+      "archetype": "lottie"
+    },
+    {
+      "id": "svg-animation",
+      "name": "Svg Animation",
+      "category": "media",
+      "minimumTier": "pro",
+      "icon": "solar:magic-stick-3-linear",
+      "file": "elements/media/svg-animation.json",
+      "archetype": "animation"
+    },
+    {
+      "id": "three-d-scene",
+      "name": "Three D Scene",
+      "category": "media",
+      "minimumTier": "pro",
+      "icon": "solar:box-linear",
+      "file": "elements/media/three-d-scene.json",
+      "archetype": "animation"
+    },
+    {
+      "id": "map",
+      "name": "Map",
+      "category": "media",
+      "minimumTier": "plus",
+      "icon": "solar:map-point-linear",
+      "file": "elements/media/map.json",
+      "archetype": "map"
+    },
+    {
+      "id": "embed",
+      "name": "Embed",
+      "category": "media",
+      "minimumTier": "free",
+      "icon": "solar:code-linear",
+      "file": "elements/media/embed.json",
+      "archetype": "embed"
+    },
+    {
+      "id": "iframe",
+      "name": "Iframe",
+      "category": "media",
+      "minimumTier": "free",
+      "icon": "solar:window-frame-linear",
+      "file": "elements/media/iframe.json",
+      "archetype": "embed"
+    },
+    {
+      "id": "pdf-viewer",
+      "name": "Pdf Viewer",
+      "category": "media",
+      "minimumTier": "plus",
+      "icon": "solar:document-linear",
+      "file": "elements/media/pdf-viewer.json",
+      "archetype": "embed"
+    },
+    {
+      "id": "image-hotspots",
+      "name": "Image Hotspots",
+      "category": "media",
+      "minimumTier": "pro",
+      "icon": "solar:target-linear",
+      "file": "elements/media/image-hotspots.json",
+      "archetype": "image"
+    },
+    {
+      "id": "panorama-360",
+      "name": "Panorama 360",
+      "category": "media",
+      "minimumTier": "pro",
+      "icon": "solar:compass-linear",
+      "file": "elements/media/panorama-360.json",
+      "archetype": "image"
+    },
+    {
+      "id": "site-logo",
+      "name": "Site Logo",
+      "category": "navigation",
+      "minimumTier": "free",
+      "icon": "solar:home-linear",
+      "file": "elements/navigation/site-logo.json",
+      "archetype": "image"
+    },
+    {
+      "id": "site-title",
+      "name": "Site Title",
+      "category": "navigation",
+      "minimumTier": "free",
+      "icon": "solar:text-linear",
+      "file": "elements/navigation/site-title.json",
+      "archetype": "text"
+    },
+    {
+      "id": "nav-menu",
+      "name": "Nav Menu",
+      "category": "navigation",
+      "minimumTier": "free",
+      "icon": "solar:hamburger-menu-linear",
+      "file": "elements/navigation/nav-menu.json",
+      "archetype": "navigation"
+    },
+    {
+      "id": "mobile-menu",
+      "name": "Mobile Menu",
+      "category": "navigation",
+      "minimumTier": "plus",
+      "icon": "solar:hamburger-menu-linear",
+      "file": "elements/navigation/mobile-menu.json",
+      "archetype": "navigation"
+    },
+    {
+      "id": "breadcrumbs",
+      "name": "Breadcrumbs",
+      "category": "navigation",
+      "minimumTier": "free",
+      "icon": "solar:route-linear",
+      "file": "elements/navigation/breadcrumbs.json",
+      "archetype": "navigation"
+    },
+    {
+      "id": "pagination",
+      "name": "Pagination",
+      "category": "navigation",
+      "minimumTier": "free",
+      "icon": "solar:arrow-right-linear",
+      "file": "elements/navigation/pagination.json",
+      "archetype": "pagination"
+    },
+    {
+      "id": "anchor-links",
+      "name": "Anchor Links",
+      "category": "navigation",
+      "minimumTier": "free",
+      "icon": "solar:link-circle-linear",
+      "file": "elements/navigation/anchor-links.json",
+      "archetype": "navigation"
+    },
+    {
+      "id": "back-to-top",
+      "name": "Back To Top",
+      "category": "navigation",
+      "minimumTier": "free",
+      "icon": "solar:arrow-up-linear",
+      "file": "elements/navigation/back-to-top.json",
+      "archetype": "button"
+    },
+    {
+      "id": "tabs",
+      "name": "Tabs",
+      "category": "navigation",
+      "minimumTier": "free",
+      "icon": "solar:layers-linear",
+      "file": "elements/navigation/tabs.json",
+      "archetype": "tabs"
+    },
+    {
+      "id": "accordion",
+      "name": "Accordion",
+      "category": "navigation",
+      "minimumTier": "free",
+      "icon": "solar:list-down-linear",
+      "file": "elements/navigation/accordion.json",
+      "archetype": "accordion"
+    },
+    {
+      "id": "collapsible",
+      "name": "Collapsible",
+      "category": "navigation",
+      "minimumTier": "free",
+      "icon": "solar:list-arrow-down-linear",
+      "file": "elements/navigation/collapsible.json",
+      "archetype": "accordion"
+    },
+    {
+      "id": "navigation-menu",
+      "name": "Navigation Menu",
+      "category": "navigation",
+      "minimumTier": "plus",
+      "icon": "solar:menu-dots-square-linear",
+      "file": "elements/navigation/navigation-menu.json",
+      "archetype": "navigation"
+    },
+    {
+      "id": "mega-menu",
+      "name": "Mega Menu",
+      "category": "navigation",
+      "minimumTier": "pro",
+      "icon": "solar:menu-dots-linear",
+      "file": "elements/navigation/mega-menu.json",
+      "archetype": "navigation"
+    },
+    {
+      "id": "sidebar-navigation",
+      "name": "Sidebar Navigation",
+      "category": "navigation",
+      "minimumTier": "plus",
+      "icon": "solar:sidebar-minimalistic-linear",
+      "file": "elements/navigation/sidebar-navigation.json",
+      "archetype": "navigation"
+    },
+    {
+      "id": "steps",
+      "name": "Steps",
+      "category": "navigation",
+      "minimumTier": "plus",
+      "icon": "solar:list-check-minimalistic-linear",
+      "file": "elements/navigation/steps.json",
+      "archetype": "steps"
+    },
+    {
+      "id": "wizard-steps",
+      "name": "Wizard Steps",
+      "category": "navigation",
+      "minimumTier": "plus",
+      "icon": "solar:list-check-linear",
+      "file": "elements/navigation/wizard-steps.json",
+      "archetype": "steps"
+    },
+    {
+      "id": "scroll-spy",
+      "name": "Scroll Spy",
+      "category": "navigation",
+      "minimumTier": "pro",
+      "icon": "solar:eye-scan-linear",
+      "file": "elements/navigation/scroll-spy.json",
+      "archetype": "navigation"
+    },
+    {
+      "id": "sticky-header",
+      "name": "Sticky Header",
+      "category": "navigation",
+      "minimumTier": "plus",
+      "icon": "solar:pin-linear",
+      "file": "elements/navigation/sticky-header.json",
+      "archetype": "navigation"
+    },
+    {
+      "id": "offcanvas",
+      "name": "Offcanvas",
+      "category": "navigation",
+      "minimumTier": "plus",
+      "icon": "solar:sidebar-minimalistic-linear",
+      "file": "elements/navigation/offcanvas.json",
+      "archetype": "overlay"
+    },
+    {
+      "id": "card",
+      "name": "Card",
+      "category": "ui-components",
+      "minimumTier": "free",
+      "icon": "solar:card-linear",
+      "file": "elements/ui-components/card.json",
+      "archetype": "card"
+    },
+    {
+      "id": "alert",
+      "name": "Alert",
+      "category": "ui-components",
+      "minimumTier": "free",
+      "icon": "solar:danger-circle-linear",
+      "file": "elements/ui-components/alert.json",
+      "archetype": "alert"
+    },
+    {
+      "id": "avatar",
+      "name": "Avatar",
+      "category": "ui-components",
+      "minimumTier": "free",
+      "icon": "solar:user-circle-linear",
+      "file": "elements/ui-components/avatar.json",
+      "archetype": "image"
+    },
+    {
+      "id": "avatar-group",
+      "name": "Avatar Group",
+      "category": "ui-components",
+      "minimumTier": "plus",
+      "icon": "solar:users-group-rounded-linear",
+      "file": "elements/ui-components/avatar-group.json",
+      "archetype": "gallery"
+    },
+    {
+      "id": "skeleton",
+      "name": "Skeleton",
+      "category": "ui-components",
+      "minimumTier": "free",
+      "icon": "solar:widget-linear",
+      "file": "elements/ui-components/skeleton.json",
+      "archetype": "simple"
+    },
+    {
+      "id": "progress",
+      "name": "Progress",
+      "category": "ui-components",
+      "minimumTier": "free",
+      "icon": "solar:chart-square-linear",
+      "file": "elements/ui-components/progress.json",
+      "archetype": "progress"
+    },
+    {
+      "id": "spinner",
+      "name": "Spinner",
+      "category": "ui-components",
+      "minimumTier": "free",
+      "icon": "solar:refresh-linear",
+      "file": "elements/ui-components/spinner.json",
+      "archetype": "simple"
+    },
+    {
+      "id": "switch",
+      "name": "Switch",
+      "category": "ui-components",
+      "minimumTier": "free",
+      "icon": "solar:settings-minimalistic-linear",
+      "file": "elements/ui-components/switch.json",
+      "archetype": "toggle"
+    },
+    {
+      "id": "checkbox",
+      "name": "Checkbox",
+      "category": "ui-components",
+      "minimumTier": "free",
+      "icon": "solar:check-square-linear",
+      "file": "elements/ui-components/checkbox.json",
+      "archetype": "toggle"
+    },
+    {
+      "id": "radio-group",
+      "name": "Radio Group",
+      "category": "ui-components",
+      "minimumTier": "free",
+      "icon": "solar:check-circle-linear",
+      "file": "elements/ui-components/radio-group.json",
+      "archetype": "choice"
+    },
+    {
+      "id": "select",
+      "name": "Select",
+      "category": "ui-components",
+      "minimumTier": "free",
+      "icon": "solar:alt-arrow-down-linear",
+      "file": "elements/ui-components/select.json",
+      "archetype": "choice"
+    },
+    {
+      "id": "combobox",
+      "name": "Combobox",
+      "category": "ui-components",
+      "minimumTier": "plus",
+      "icon": "solar:list-linear",
+      "file": "elements/ui-components/combobox.json",
+      "archetype": "choice"
+    },
+    {
+      "id": "toggle",
+      "name": "Toggle",
+      "category": "ui-components",
+      "minimumTier": "free",
+      "icon": "solar:settings-minimalistic-linear",
+      "file": "elements/ui-components/toggle.json",
+      "archetype": "toggle"
+    },
+    {
+      "id": "toggle-group",
+      "name": "Toggle Group",
+      "category": "ui-components",
+      "minimumTier": "plus",
+      "icon": "solar:widget-2-linear",
+      "file": "elements/ui-components/toggle-group.json",
+      "archetype": "choice"
+    },
+    {
+      "id": "slider",
+      "name": "Slider",
+      "category": "ui-components",
+      "minimumTier": "free",
+      "icon": "solar:slider-horizontal-linear",
+      "file": "elements/ui-components/slider.json",
+      "archetype": "range"
+    },
+    {
+      "id": "range-slider",
+      "name": "Range Slider",
+      "category": "ui-components",
+      "minimumTier": "plus",
+      "icon": "solar:slider-horizontal-linear",
+      "file": "elements/ui-components/range-slider.json",
+      "archetype": "range"
+    },
+    {
+      "id": "input",
+      "name": "Input",
+      "category": "ui-components",
+      "minimumTier": "free",
+      "icon": "solar:text-field-linear",
+      "file": "elements/ui-components/input.json",
+      "archetype": "input"
+    },
+    {
+      "id": "textarea",
+      "name": "Textarea",
+      "category": "ui-components",
+      "minimumTier": "free",
+      "icon": "solar:text-square-linear",
+      "file": "elements/ui-components/textarea.json",
+      "archetype": "input"
+    },
+    {
+      "id": "label",
+      "name": "Label",
+      "category": "ui-components",
+      "minimumTier": "free",
+      "icon": "solar:tag-linear",
+      "file": "elements/ui-components/label.json",
+      "archetype": "text"
+    },
+    {
+      "id": "calendar",
+      "name": "Calendar",
+      "category": "ui-components",
+      "minimumTier": "plus",
+      "icon": "solar:calendar-linear",
+      "file": "elements/ui-components/calendar.json",
+      "archetype": "calendar"
+    },
+    {
+      "id": "date-picker",
+      "name": "Date Picker",
+      "category": "ui-components",
+      "minimumTier": "plus",
+      "icon": "solar:calendar-mark-linear",
+      "file": "elements/ui-components/date-picker.json",
+      "archetype": "calendar"
+    },
+    {
+      "id": "date-range-picker",
+      "name": "Date Range Picker",
+      "category": "ui-components",
+      "minimumTier": "pro",
+      "icon": "solar:calendar-linear",
+      "file": "elements/ui-components/date-range-picker.json",
+      "archetype": "calendar"
+    },
+    {
+      "id": "popover",
+      "name": "Popover",
+      "category": "ui-components",
+      "minimumTier": "plus",
+      "icon": "solar:chat-round-linear",
+      "file": "elements/ui-components/popover.json",
+      "archetype": "overlay"
+    },
+    {
+      "id": "tooltip",
+      "name": "Tooltip",
+      "category": "ui-components",
+      "minimumTier": "free",
+      "icon": "solar:question-circle-linear",
+      "file": "elements/ui-components/tooltip.json",
+      "archetype": "overlay"
+    },
+    {
+      "id": "hover-card",
+      "name": "Hover Card",
+      "category": "ui-components",
+      "minimumTier": "plus",
+      "icon": "solar:card-linear",
+      "file": "elements/ui-components/hover-card.json",
+      "archetype": "overlay"
+    },
+    {
+      "id": "dialog",
+      "name": "Dialog",
+      "category": "ui-components",
+      "minimumTier": "plus",
+      "icon": "solar:window-frame-linear",
+      "file": "elements/ui-components/dialog.json",
+      "archetype": "overlay"
+    },
+    {
+      "id": "alert-dialog",
+      "name": "Alert Dialog",
+      "category": "ui-components",
+      "minimumTier": "plus",
+      "icon": "solar:danger-circle-linear",
+      "file": "elements/ui-components/alert-dialog.json",
+      "archetype": "overlay"
+    },
+    {
+      "id": "drawer",
+      "name": "Drawer",
+      "category": "ui-components",
+      "minimumTier": "plus",
+      "icon": "solar:sidebar-minimalistic-linear",
+      "file": "elements/ui-components/drawer.json",
+      "archetype": "overlay"
+    },
+    {
+      "id": "sheet",
+      "name": "Sheet",
+      "category": "ui-components",
+      "minimumTier": "plus",
+      "icon": "solar:sidebar-minimalistic-linear",
+      "file": "elements/ui-components/sheet.json",
+      "archetype": "overlay"
+    },
+    {
+      "id": "dropdown-menu",
+      "name": "Dropdown Menu",
+      "category": "ui-components",
+      "minimumTier": "free",
+      "icon": "solar:menu-dots-linear",
+      "file": "elements/ui-components/dropdown-menu.json",
+      "archetype": "navigation"
+    },
+    {
+      "id": "context-menu",
+      "name": "Context Menu",
+      "category": "ui-components",
+      "minimumTier": "plus",
+      "icon": "solar:menu-dots-circle-linear",
+      "file": "elements/ui-components/context-menu.json",
+      "archetype": "navigation"
+    },
+    {
+      "id": "command-palette",
+      "name": "Command Palette",
+      "category": "ui-components",
+      "minimumTier": "pro",
+      "icon": "solar:command-linear",
+      "file": "elements/ui-components/command-palette.json",
+      "archetype": "command"
+    },
+    {
+      "id": "carousel",
+      "name": "Carousel",
+      "category": "ui-components",
+      "minimumTier": "free",
+      "icon": "solar:gallery-wide-linear",
+      "file": "elements/ui-components/carousel.json",
+      "archetype": "carousel"
+    },
+    {
+      "id": "toast",
+      "name": "Toast",
+      "category": "ui-components",
+      "minimumTier": "free",
+      "icon": "solar:bell-linear",
+      "file": "elements/ui-components/toast.json",
+      "archetype": "alert"
+    },
+    {
+      "id": "notification-center",
+      "name": "Notification Center",
+      "category": "ui-components",
+      "minimumTier": "plus",
+      "icon": "solar:bell-bing-linear",
+      "file": "elements/ui-components/notification-center.json",
+      "archetype": "alert"
+    },
+    {
+      "id": "data-table",
+      "name": "Data Table",
+      "category": "ui-components",
+      "minimumTier": "plus",
+      "icon": "solar:table-linear",
+      "file": "elements/ui-components/data-table.json",
+      "archetype": "datatable"
+    },
+    {
+      "id": "sortable-table",
+      "name": "Sortable Table",
+      "category": "ui-components",
+      "minimumTier": "plus",
+      "icon": "solar:sort-vertical-linear",
+      "file": "elements/ui-components/sortable-table.json",
+      "archetype": "datatable"
+    },
+    {
+      "id": "chart",
+      "name": "Chart",
+      "category": "ui-components",
+      "minimumTier": "plus",
+      "icon": "solar:chart-2-linear",
+      "file": "elements/ui-components/chart.json",
+      "archetype": "chart"
+    },
+    {
+      "id": "stat-card",
+      "name": "Stat Card",
+      "category": "ui-components",
+      "minimumTier": "free",
+      "icon": "solar:chart-linear",
+      "file": "elements/ui-components/stat-card.json",
+      "archetype": "counter"
+    },
+    {
+      "id": "timeline",
+      "name": "Timeline",
+      "category": "ui-components",
+      "minimumTier": "plus",
+      "icon": "solar:history-linear",
+      "file": "elements/ui-components/timeline.json",
+      "archetype": "steps"
+    },
+    {
+      "id": "rating",
+      "name": "Rating",
+      "category": "ui-components",
+      "minimumTier": "free",
+      "icon": "solar:star-linear",
+      "file": "elements/ui-components/rating.json",
+      "archetype": "rating"
+    },
+    {
+      "id": "empty-state",
+      "name": "Empty State",
+      "category": "ui-components",
+      "minimumTier": "free",
+      "icon": "solar:inbox-linear",
+      "file": "elements/ui-components/empty-state.json",
+      "archetype": "text"
+    },
+    {
+      "id": "copy-button",
+      "name": "Copy Button",
+      "category": "ui-components",
+      "minimumTier": "free",
+      "icon": "solar:copy-linear",
+      "file": "elements/ui-components/copy-button.json",
+      "archetype": "button"
+    },
+    {
+      "id": "loading-button",
+      "name": "Loading Button",
+      "category": "ui-components",
+      "minimumTier": "free",
+      "icon": "solar:refresh-linear",
+      "file": "elements/ui-components/loading-button.json",
+      "archetype": "button"
+    },
+    {
+      "id": "segmented-control",
+      "name": "Segmented Control",
+      "category": "ui-components",
+      "minimumTier": "free",
+      "icon": "solar:widget-2-linear",
+      "file": "elements/ui-components/segmented-control.json",
+      "archetype": "choice"
+    },
+    {
+      "id": "breadcrumb-ui",
+      "name": "Breadcrumb Ui",
+      "category": "ui-components",
+      "minimumTier": "free",
+      "icon": "solar:route-linear",
+      "file": "elements/ui-components/breadcrumb-ui.json",
+      "archetype": "navigation"
+    },
+    {
+      "id": "keyboard-shortcut",
+      "name": "Keyboard Shortcut",
+      "category": "ui-components",
+      "minimumTier": "free",
+      "icon": "solar:keyboard-linear",
+      "file": "elements/ui-components/keyboard-shortcut.json",
+      "archetype": "text"
+    },
+    {
+      "id": "scroll-indicator",
+      "name": "Scroll Indicator",
+      "category": "ui-components",
+      "minimumTier": "plus",
+      "icon": "solar:arrow-down-linear",
+      "file": "elements/ui-components/scroll-indicator.json",
+      "archetype": "progress"
+    },
+    {
+      "id": "form",
+      "name": "Form",
+      "category": "forms",
+      "minimumTier": "free",
+      "icon": "solar:clipboard-text-linear",
+      "file": "elements/forms/form.json",
+      "archetype": "form"
+    },
+    {
+      "id": "text-field",
+      "name": "Text Field",
+      "category": "forms",
+      "minimumTier": "free",
+      "icon": "solar:text-field-linear",
+      "file": "elements/forms/text-field.json",
+      "archetype": "input"
+    },
+    {
+      "id": "email-field",
+      "name": "Email Field",
+      "category": "forms",
+      "minimumTier": "free",
+      "icon": "solar:letter-linear",
+      "file": "elements/forms/email-field.json",
+      "archetype": "input"
+    },
+    {
+      "id": "password-field",
+      "name": "Password Field",
+      "category": "forms",
+      "minimumTier": "free",
+      "icon": "solar:lock-password-linear",
+      "file": "elements/forms/password-field.json",
+      "archetype": "input"
+    },
+    {
+      "id": "phone-field",
+      "name": "Phone Field",
+      "category": "forms",
+      "minimumTier": "plus",
+      "icon": "solar:phone-linear",
+      "file": "elements/forms/phone-field.json",
+      "archetype": "input"
+    },
+    {
+      "id": "number-field",
+      "name": "Number Field",
+      "category": "forms",
+      "minimumTier": "free",
+      "icon": "solar:hashtag-linear",
+      "file": "elements/forms/number-field.json",
+      "archetype": "input"
+    },
+    {
+      "id": "url-field",
+      "name": "Url Field",
+      "category": "forms",
+      "minimumTier": "free",
+      "icon": "solar:link-linear",
+      "file": "elements/forms/url-field.json",
+      "archetype": "input"
+    },
+    {
+      "id": "search-field",
+      "name": "Search Field",
+      "category": "forms",
+      "minimumTier": "free",
+      "icon": "solar:magnifer-linear",
+      "file": "elements/forms/search-field.json",
+      "archetype": "input"
+    },
+    {
+      "id": "file-upload",
+      "name": "File Upload",
+      "category": "forms",
+      "minimumTier": "plus",
+      "icon": "solar:upload-linear",
+      "file": "elements/forms/file-upload.json",
+      "archetype": "upload"
+    },
+    {
+      "id": "dropzone-upload",
+      "name": "Dropzone Upload",
+      "category": "forms",
+      "minimumTier": "plus",
+      "icon": "solar:upload-track-linear",
+      "file": "elements/forms/dropzone-upload.json",
+      "archetype": "upload"
+    },
+    {
+      "id": "otp-input",
+      "name": "Otp Input",
+      "category": "forms",
+      "minimumTier": "plus",
+      "icon": "solar:shield-keyhole-linear",
+      "file": "elements/forms/otp-input.json",
+      "archetype": "input"
+    },
+    {
+      "id": "tag-input",
+      "name": "Tag Input",
+      "category": "forms",
+      "minimumTier": "plus",
+      "icon": "solar:tag-linear",
+      "file": "elements/forms/tag-input.json",
+      "archetype": "input"
+    },
+    {
+      "id": "multi-select",
+      "name": "Multi Select",
+      "category": "forms",
+      "minimumTier": "plus",
+      "icon": "solar:list-check-linear",
+      "file": "elements/forms/multi-select.json",
+      "archetype": "choice"
+    },
+    {
+      "id": "signature-field",
+      "name": "Signature Field",
+      "category": "forms",
+      "minimumTier": "pro",
+      "icon": "solar:pen-linear",
+      "file": "elements/forms/signature-field.json",
+      "archetype": "input"
+    },
+    {
+      "id": "repeater-field",
+      "name": "Repeater Field",
+      "category": "forms",
+      "minimumTier": "plus",
+      "icon": "solar:copy-linear",
+      "file": "elements/forms/repeater-field.json",
+      "archetype": "form"
+    },
+    {
+      "id": "hidden-field",
+      "name": "Hidden Field",
+      "category": "forms",
+      "minimumTier": "free",
+      "icon": "solar:eye-closed-linear",
+      "file": "elements/forms/hidden-field.json",
+      "archetype": "input"
+    },
+    {
+      "id": "captcha",
+      "name": "Captcha",
+      "category": "forms",
+      "minimumTier": "plus",
+      "icon": "solar:shield-check-linear",
+      "file": "elements/forms/captcha.json",
+      "archetype": "form"
+    },
+    {
+      "id": "submit-button",
+      "name": "Submit Button",
+      "category": "forms",
+      "minimumTier": "free",
+      "icon": "solar:plain-linear",
+      "file": "elements/forms/submit-button.json",
+      "archetype": "button"
+    },
+    {
+      "id": "form-success",
+      "name": "Form Success",
+      "category": "forms",
+      "minimumTier": "free",
+      "icon": "solar:check-circle-linear",
+      "file": "elements/forms/form-success.json",
+      "archetype": "alert"
+    },
+    {
+      "id": "form-error",
+      "name": "Form Error",
+      "category": "forms",
+      "minimumTier": "free",
+      "icon": "solar:danger-circle-linear",
+      "file": "elements/forms/form-error.json",
+      "archetype": "alert"
+    },
+    {
+      "id": "conditional-fields",
+      "name": "Conditional Fields",
+      "category": "forms",
+      "minimumTier": "plus",
+      "icon": "solar:filter-linear",
+      "file": "elements/forms/conditional-fields.json",
+      "archetype": "form"
+    },
+    {
+      "id": "multi-step-form",
+      "name": "Multi Step Form",
+      "category": "forms",
+      "minimumTier": "pro",
+      "icon": "solar:list-check-linear",
+      "file": "elements/forms/multi-step-form.json",
+      "archetype": "steps"
+    },
+    {
+      "id": "newsletter-signup",
+      "name": "Newsletter Signup",
+      "category": "forms",
+      "minimumTier": "free",
+      "icon": "solar:letter-linear",
+      "file": "elements/forms/newsletter-signup.json",
+      "archetype": "form"
+    },
+    {
+      "id": "contact-form",
+      "name": "Contact Form",
+      "category": "forms",
+      "minimumTier": "free",
+      "icon": "solar:letter-opened-linear",
+      "file": "elements/forms/contact-form.json",
+      "archetype": "form"
+    },
+    {
+      "id": "post-title",
+      "name": "Post Title",
+      "category": "wordpress",
+      "minimumTier": "free",
+      "icon": "solar:document-text-linear",
+      "file": "elements/wordpress/post-title.json",
+      "archetype": "dynamic"
+    },
+    {
+      "id": "post-content",
+      "name": "Post Content",
+      "category": "wordpress",
+      "minimumTier": "free",
+      "icon": "solar:document-text-linear",
+      "file": "elements/wordpress/post-content.json",
+      "archetype": "dynamic"
+    },
+    {
+      "id": "post-excerpt",
+      "name": "Post Excerpt",
+      "category": "wordpress",
+      "minimumTier": "free",
+      "icon": "solar:text-linear",
+      "file": "elements/wordpress/post-excerpt.json",
+      "archetype": "dynamic"
+    },
+    {
+      "id": "featured-image",
+      "name": "Featured Image",
+      "category": "wordpress",
+      "minimumTier": "free",
+      "icon": "solar:gallery-linear",
+      "file": "elements/wordpress/featured-image.json",
+      "archetype": "image"
+    },
+    {
+      "id": "post-date",
+      "name": "Post Date",
+      "category": "wordpress",
+      "minimumTier": "free",
+      "icon": "solar:calendar-linear",
+      "file": "elements/wordpress/post-date.json",
+      "archetype": "dynamic"
+    },
+    {
+      "id": "post-author",
+      "name": "Post Author",
+      "category": "wordpress",
+      "minimumTier": "free",
+      "icon": "solar:user-linear",
+      "file": "elements/wordpress/post-author.json",
+      "archetype": "dynamic"
+    },
+    {
+      "id": "post-terms",
+      "name": "Post Terms",
+      "category": "wordpress",
+      "minimumTier": "free",
+      "icon": "solar:tag-linear",
+      "file": "elements/wordpress/post-terms.json",
+      "archetype": "dynamic"
+    },
+    {
+      "id": "post-meta",
+      "name": "Post Meta",
+      "category": "wordpress",
+      "minimumTier": "plus",
+      "icon": "solar:database-linear",
+      "file": "elements/wordpress/post-meta.json",
+      "archetype": "dynamic"
+    },
+    {
+      "id": "site-tagline",
+      "name": "Site Tagline",
+      "category": "wordpress",
+      "minimumTier": "free",
+      "icon": "solar:text-linear",
+      "file": "elements/wordpress/site-tagline.json",
+      "archetype": "dynamic"
+    },
+    {
+      "id": "site-search",
+      "name": "Site Search",
+      "category": "wordpress",
+      "minimumTier": "free",
+      "icon": "solar:magnifer-linear",
+      "file": "elements/wordpress/site-search.json",
+      "archetype": "form"
+    },
+    {
+      "id": "comments-list",
+      "name": "Comments List",
+      "category": "wordpress",
+      "minimumTier": "plus",
+      "icon": "solar:chat-line-linear",
+      "file": "elements/wordpress/comments-list.json",
+      "archetype": "dynamic"
+    },
+    {
+      "id": "comment-form",
+      "name": "Comment Form",
+      "category": "wordpress",
+      "minimumTier": "plus",
+      "icon": "solar:chat-line-linear",
+      "file": "elements/wordpress/comment-form.json",
+      "archetype": "form"
+    },
+    {
+      "id": "query-loop",
+      "name": "Query Loop",
+      "category": "wordpress",
+      "minimumTier": "plus",
+      "icon": "solar:repeat-linear",
+      "file": "elements/wordpress/query-loop.json",
+      "archetype": "loop"
+    },
+    {
+      "id": "loop-item",
+      "name": "Loop Item",
+      "category": "wordpress",
+      "minimumTier": "plus",
+      "icon": "solar:widget-2-linear",
+      "file": "elements/wordpress/loop-item.json",
+      "archetype": "container"
+    },
+    {
+      "id": "query-pagination",
+      "name": "Query Pagination",
+      "category": "wordpress",
+      "minimumTier": "plus",
+      "icon": "solar:arrow-right-linear",
+      "file": "elements/wordpress/query-pagination.json",
+      "archetype": "pagination"
+    },
+    {
+      "id": "acf-field",
+      "name": "Acf Field",
+      "category": "wordpress",
+      "minimumTier": "plus",
+      "icon": "solar:database-linear",
+      "file": "elements/wordpress/acf-field.json",
+      "archetype": "dynamic"
+    },
+    {
+      "id": "meta-box-field",
+      "name": "Meta Box Field",
+      "category": "wordpress",
+      "minimumTier": "plus",
+      "icon": "solar:database-linear",
+      "file": "elements/wordpress/meta-box-field.json",
+      "archetype": "dynamic"
+    },
+    {
+      "id": "custom-field",
+      "name": "Custom Field",
+      "category": "wordpress",
+      "minimumTier": "plus",
+      "icon": "solar:database-linear",
+      "file": "elements/wordpress/custom-field.json",
+      "archetype": "dynamic"
+    },
+    {
+      "id": "user-profile",
+      "name": "User Profile",
+      "category": "wordpress",
+      "minimumTier": "plus",
+      "icon": "solar:user-rounded-linear",
+      "file": "elements/wordpress/user-profile.json",
+      "archetype": "dynamic"
+    },
+    {
+      "id": "taxonomy-filter",
+      "name": "Taxonomy Filter",
+      "category": "wordpress",
+      "minimumTier": "plus",
+      "icon": "solar:filter-linear",
+      "file": "elements/wordpress/taxonomy-filter.json",
+      "archetype": "filter"
+    },
+    {
+      "id": "post-filter",
+      "name": "Post Filter",
+      "category": "wordpress",
+      "minimumTier": "plus",
+      "icon": "solar:filter-linear",
+      "file": "elements/wordpress/post-filter.json",
+      "archetype": "filter"
+    },
+    {
+      "id": "ajax-load-more",
+      "name": "Ajax Load More",
+      "category": "wordpress",
+      "minimumTier": "plus",
+      "icon": "solar:refresh-linear",
+      "file": "elements/wordpress/ajax-load-more.json",
+      "archetype": "button"
+    },
+    {
+      "id": "related-posts",
+      "name": "Related Posts",
+      "category": "wordpress",
+      "minimumTier": "plus",
+      "icon": "solar:link-circle-linear",
+      "file": "elements/wordpress/related-posts.json",
+      "archetype": "loop"
+    },
+    {
+      "id": "author-box",
+      "name": "Author Box",
+      "category": "wordpress",
+      "minimumTier": "plus",
+      "icon": "solar:user-id-linear",
+      "file": "elements/wordpress/author-box.json",
+      "archetype": "card"
+    },
+    {
+      "id": "table-of-posts",
+      "name": "Table Of Posts",
+      "category": "wordpress",
+      "minimumTier": "plus",
+      "icon": "solar:table-linear",
+      "file": "elements/wordpress/table-of-posts.json",
+      "archetype": "datatable"
+    },
+    {
+      "id": "wp-shortcode",
+      "name": "Wp Shortcode",
+      "category": "wordpress",
+      "minimumTier": "plus",
+      "icon": "solar:code-linear",
+      "file": "elements/wordpress/wp-shortcode.json",
+      "archetype": "embed"
+    },
+    {
+      "id": "wp-block-embed",
+      "name": "Wp Block Embed",
+      "category": "wordpress",
+      "minimumTier": "plus",
+      "icon": "solar:widget-2-linear",
+      "file": "elements/wordpress/wp-block-embed.json",
+      "archetype": "embed"
+    },
+    {
+      "id": "template-part",
+      "name": "Template Part",
+      "category": "wordpress",
+      "minimumTier": "plus",
+      "icon": "solar:layers-linear",
+      "file": "elements/wordpress/template-part.json",
+      "archetype": "dynamic"
+    },
+    {
+      "id": "dynamic-tag",
+      "name": "Dynamic Tag",
+      "category": "wordpress",
+      "minimumTier": "plus",
+      "icon": "solar:tag-linear",
+      "file": "elements/wordpress/dynamic-tag.json",
+      "archetype": "dynamic"
+    },
+    {
+      "id": "dynamic-condition",
+      "name": "Dynamic Condition",
+      "category": "wordpress",
+      "minimumTier": "pro",
+      "icon": "solar:filter-linear",
+      "file": "elements/wordpress/dynamic-condition.json",
+      "archetype": "dynamic"
+    },
+    {
+      "id": "product-card",
+      "name": "Product Card",
+      "category": "commerce",
+      "minimumTier": "pro",
+      "icon": "solar:bag-linear",
+      "file": "elements/commerce/product-card.json",
+      "archetype": "product"
+    },
+    {
+      "id": "product-grid",
+      "name": "Product Grid",
+      "category": "commerce",
+      "minimumTier": "pro",
+      "icon": "solar:widget-4-linear",
+      "file": "elements/commerce/product-grid.json",
+      "archetype": "loop"
+    },
+    {
+      "id": "product-title",
+      "name": "Product Title",
+      "category": "commerce",
+      "minimumTier": "pro",
+      "icon": "solar:text-bold-linear",
+      "file": "elements/commerce/product-title.json",
+      "archetype": "dynamic"
+    },
+    {
+      "id": "product-image",
+      "name": "Product Image",
+      "category": "commerce",
+      "minimumTier": "pro",
+      "icon": "solar:gallery-linear",
+      "file": "elements/commerce/product-image.json",
+      "archetype": "image"
+    },
+    {
+      "id": "product-gallery",
+      "name": "Product Gallery",
+      "category": "commerce",
+      "minimumTier": "pro",
+      "icon": "solar:gallery-linear",
+      "file": "elements/commerce/product-gallery.json",
+      "archetype": "gallery"
+    },
+    {
+      "id": "product-price",
+      "name": "Product Price",
+      "category": "commerce",
+      "minimumTier": "pro",
+      "icon": "solar:dollar-linear",
+      "file": "elements/commerce/product-price.json",
+      "archetype": "dynamic"
+    },
+    {
+      "id": "product-rating",
+      "name": "Product Rating",
+      "category": "commerce",
+      "minimumTier": "pro",
+      "icon": "solar:star-linear",
+      "file": "elements/commerce/product-rating.json",
+      "archetype": "rating"
+    },
+    {
+      "id": "add-to-cart",
+      "name": "Add To Cart",
+      "category": "commerce",
+      "minimumTier": "pro",
+      "icon": "solar:cart-plus-linear",
+      "file": "elements/commerce/add-to-cart.json",
+      "archetype": "button"
+    },
+    {
+      "id": "product-variants",
+      "name": "Product Variants",
+      "category": "commerce",
+      "minimumTier": "pro",
+      "icon": "solar:settings-linear",
+      "file": "elements/commerce/product-variants.json",
+      "archetype": "choice"
+    },
+    {
+      "id": "product-stock",
+      "name": "Product Stock",
+      "category": "commerce",
+      "minimumTier": "pro",
+      "icon": "solar:box-linear",
+      "file": "elements/commerce/product-stock.json",
+      "archetype": "dynamic"
+    },
+    {
+      "id": "product-description",
+      "name": "Product Description",
+      "category": "commerce",
+      "minimumTier": "pro",
+      "icon": "solar:text-linear",
+      "file": "elements/commerce/product-description.json",
+      "archetype": "dynamic"
+    },
+    {
+      "id": "product-tabs",
+      "name": "Product Tabs",
+      "category": "commerce",
+      "minimumTier": "pro",
+      "icon": "solar:layers-linear",
+      "file": "elements/commerce/product-tabs.json",
+      "archetype": "tabs"
+    },
+    {
+      "id": "cart-icon",
+      "name": "Cart Icon",
+      "category": "commerce",
+      "minimumTier": "pro",
+      "icon": "solar:cart-linear",
+      "file": "elements/commerce/cart-icon.json",
+      "archetype": "icon"
+    },
+    {
+      "id": "mini-cart",
+      "name": "Mini Cart",
+      "category": "commerce",
+      "minimumTier": "pro",
+      "icon": "solar:cart-linear",
+      "file": "elements/commerce/mini-cart.json",
+      "archetype": "overlay"
+    },
+    {
+      "id": "cart-table",
+      "name": "Cart Table",
+      "category": "commerce",
+      "minimumTier": "pro",
+      "icon": "solar:cart-large-linear",
+      "file": "elements/commerce/cart-table.json",
+      "archetype": "datatable"
+    },
+    {
+      "id": "checkout-form",
+      "name": "Checkout Form",
+      "category": "commerce",
+      "minimumTier": "pro",
+      "icon": "solar:card-linear",
+      "file": "elements/commerce/checkout-form.json",
+      "archetype": "form"
+    },
+    {
+      "id": "checkout-summary",
+      "name": "Checkout Summary",
+      "category": "commerce",
+      "minimumTier": "pro",
+      "icon": "solar:bill-list-linear",
+      "file": "elements/commerce/checkout-summary.json",
+      "archetype": "card"
+    },
+    {
+      "id": "coupon-field",
+      "name": "Coupon Field",
+      "category": "commerce",
+      "minimumTier": "pro",
+      "icon": "solar:ticket-linear",
+      "file": "elements/commerce/coupon-field.json",
+      "archetype": "input"
+    },
+    {
+      "id": "account-menu",
+      "name": "Account Menu",
+      "category": "commerce",
+      "minimumTier": "pro",
+      "icon": "solar:user-circle-linear",
+      "file": "elements/commerce/account-menu.json",
+      "archetype": "navigation"
+    },
+    {
+      "id": "product-search",
+      "name": "Product Search",
+      "category": "commerce",
+      "minimumTier": "pro",
+      "icon": "solar:magnifer-linear",
+      "file": "elements/commerce/product-search.json",
+      "archetype": "form"
+    },
+    {
+      "id": "product-filters",
+      "name": "Product Filters",
+      "category": "commerce",
+      "minimumTier": "pro",
+      "icon": "solar:filter-linear",
+      "file": "elements/commerce/product-filters.json",
+      "archetype": "filter"
+    },
+    {
+      "id": "product-categories",
+      "name": "Product Categories",
+      "category": "commerce",
+      "minimumTier": "pro",
+      "icon": "solar:widget-2-linear",
+      "file": "elements/commerce/product-categories.json",
+      "archetype": "navigation"
+    },
+    {
+      "id": "wishlist-button",
+      "name": "Wishlist Button",
+      "category": "commerce",
+      "minimumTier": "pro",
+      "icon": "solar:heart-linear",
+      "file": "elements/commerce/wishlist-button.json",
+      "archetype": "button"
+    },
+    {
+      "id": "upsells",
+      "name": "Upsells",
+      "category": "commerce",
+      "minimumTier": "pro",
+      "icon": "solar:arrow-up-linear",
+      "file": "elements/commerce/upsells.json",
+      "archetype": "loop"
+    },
+    {
+      "id": "cross-sells",
+      "name": "Cross Sells",
+      "category": "commerce",
+      "minimumTier": "pro",
+      "icon": "solar:link-circle-linear",
+      "file": "elements/commerce/cross-sells.json",
+      "archetype": "loop"
+    },
+    {
+      "id": "order-summary",
+      "name": "Order Summary",
+      "category": "commerce",
+      "minimumTier": "pro",
+      "icon": "solar:bill-linear",
+      "file": "elements/commerce/order-summary.json",
+      "archetype": "card"
+    },
+    {
+      "id": "entrance-animation",
+      "name": "Entrance Animation",
+      "category": "advanced-motion",
+      "minimumTier": "pro",
+      "icon": "solar:magic-stick-3-linear",
+      "file": "elements/advanced-motion/entrance-animation.json",
+      "archetype": "animation"
+    },
+    {
+      "id": "scroll-reveal",
+      "name": "Scroll Reveal",
+      "category": "advanced-motion",
+      "minimumTier": "pro",
+      "icon": "solar:eye-linear",
+      "file": "elements/advanced-motion/scroll-reveal.json",
+      "archetype": "animation"
+    },
+    {
+      "id": "scroll-parallax",
+      "name": "Scroll Parallax",
+      "category": "advanced-motion",
+      "minimumTier": "pro",
+      "icon": "solar:layers-linear",
+      "file": "elements/advanced-motion/scroll-parallax.json",
+      "archetype": "parallax"
+    },
+    {
+      "id": "mouse-parallax",
+      "name": "Mouse Parallax",
+      "category": "advanced-motion",
+      "minimumTier": "pro",
+      "icon": "solar:cursor-linear",
+      "file": "elements/advanced-motion/mouse-parallax.json",
+      "archetype": "parallax"
+    },
+    {
+      "id": "scroll-progress",
+      "name": "Scroll Progress",
+      "category": "advanced-motion",
+      "minimumTier": "pro",
+      "icon": "solar:chart-linear",
+      "file": "elements/advanced-motion/scroll-progress.json",
+      "archetype": "progress"
+    },
+    {
+      "id": "scroll-timeline",
+      "name": "Scroll Timeline",
+      "category": "advanced-motion",
+      "minimumTier": "pro",
+      "icon": "solar:clock-circle-linear",
+      "file": "elements/advanced-motion/scroll-timeline.json",
+      "archetype": "animation"
+    },
+    {
+      "id": "stagger-container",
+      "name": "Stagger Container",
+      "category": "advanced-motion",
+      "minimumTier": "pro",
+      "icon": "solar:sort-by-time-linear",
+      "file": "elements/advanced-motion/stagger-container.json",
+      "archetype": "animation"
+    },
+    {
+      "id": "split-text",
+      "name": "Split Text",
+      "category": "advanced-motion",
+      "minimumTier": "pro",
+      "icon": "solar:text-bold-linear",
+      "file": "elements/advanced-motion/split-text.json",
+      "archetype": "animation"
+    },
+    {
+      "id": "typewriter",
+      "name": "Typewriter",
+      "category": "advanced-motion",
+      "minimumTier": "pro",
+      "icon": "solar:text-linear",
+      "file": "elements/advanced-motion/typewriter.json",
+      "archetype": "animation"
+    },
+    {
+      "id": "number-ticker",
+      "name": "Number Ticker",
+      "category": "advanced-motion",
+      "minimumTier": "plus",
+      "icon": "solar:calculator-linear",
+      "file": "elements/advanced-motion/number-ticker.json",
+      "archetype": "counter"
+    },
+    {
+      "id": "text-reveal",
+      "name": "Text Reveal",
+      "category": "advanced-motion",
+      "minimumTier": "plus",
+      "icon": "solar:text-bold-linear",
+      "file": "elements/advanced-motion/text-reveal.json",
+      "archetype": "animation"
+    },
+    {
+      "id": "logo-marquee",
+      "name": "Logo Marquee",
+      "category": "advanced-motion",
+      "minimumTier": "plus",
+      "icon": "solar:repeat-linear",
+      "file": "elements/advanced-motion/logo-marquee.json",
+      "archetype": "carousel"
+    },
+    {
+      "id": "magnetic-button",
+      "name": "Magnetic Button",
+      "category": "advanced-motion",
+      "minimumTier": "pro",
+      "icon": "solar:cursor-linear",
+      "file": "elements/advanced-motion/magnetic-button.json",
+      "archetype": "button"
+    },
+    {
+      "id": "ripple-button",
+      "name": "Ripple Button",
+      "category": "advanced-motion",
+      "minimumTier": "plus",
+      "icon": "solar:waterdrop-linear",
+      "file": "elements/advanced-motion/ripple-button.json",
+      "archetype": "button"
+    },
+    {
+      "id": "hover-tilt",
+      "name": "Hover Tilt",
+      "category": "advanced-motion",
+      "minimumTier": "pro",
+      "icon": "solar:refresh-linear",
+      "file": "elements/advanced-motion/hover-tilt.json",
+      "archetype": "animation"
+    },
+    {
+      "id": "flip-card",
+      "name": "Flip Card",
+      "category": "advanced-motion",
+      "minimumTier": "plus",
+      "icon": "solar:card-linear",
+      "file": "elements/advanced-motion/flip-card.json",
+      "archetype": "card"
+    },
+    {
+      "id": "animated-gradient",
+      "name": "Animated Gradient",
+      "category": "advanced-motion",
+      "minimumTier": "plus",
+      "icon": "solar:palette-linear",
+      "file": "elements/advanced-motion/animated-gradient.json",
+      "archetype": "animation"
+    },
+    {
+      "id": "sticky-scroll-story",
+      "name": "Sticky Scroll Story",
+      "category": "advanced-motion",
+      "minimumTier": "pro",
+      "icon": "solar:book-linear",
+      "file": "elements/advanced-motion/sticky-scroll-story.json",
+      "archetype": "animation"
+    },
+    {
+      "id": "horizontal-scroll",
+      "name": "Horizontal Scroll",
+      "category": "advanced-motion",
+      "minimumTier": "pro",
+      "icon": "solar:arrow-right-linear",
+      "file": "elements/advanced-motion/horizontal-scroll.json",
+      "archetype": "animation"
+    },
+    {
+      "id": "scroll-snap-carousel",
+      "name": "Scroll Snap Carousel",
+      "category": "advanced-motion",
+      "minimumTier": "plus",
+      "icon": "solar:gallery-wide-linear",
+      "file": "elements/advanced-motion/scroll-snap-carousel.json",
+      "archetype": "carousel"
+    },
+    {
+      "id": "cursor-follower",
+      "name": "Cursor Follower",
+      "category": "advanced-motion",
+      "minimumTier": "pro",
+      "icon": "solar:cursor-linear",
+      "file": "elements/advanced-motion/cursor-follower.json",
+      "archetype": "animation"
+    },
+    {
+      "id": "interactive-particles",
+      "name": "Interactive Particles",
+      "category": "advanced-motion",
+      "minimumTier": "pro",
+      "icon": "solar:stars-linear",
+      "file": "elements/advanced-motion/interactive-particles.json",
+      "archetype": "animation"
+    },
+    {
+      "id": "spotlight-card",
+      "name": "Spotlight Card",
+      "category": "advanced-motion",
+      "minimumTier": "plus",
+      "icon": "solar:flashlight-linear",
+      "file": "elements/advanced-motion/spotlight-card.json",
+      "archetype": "card"
+    },
+    {
+      "id": "reorder-list",
+      "name": "Reorder List",
+      "category": "advanced-motion",
+      "minimumTier": "plus",
+      "icon": "solar:sort-vertical-linear",
+      "file": "elements/advanced-motion/reorder-list.json",
+      "archetype": "list"
+    },
+    {
+      "id": "swipe-deck",
+      "name": "Swipe Deck",
+      "category": "advanced-motion",
+      "minimumTier": "pro",
+      "icon": "solar:hand-shake-linear",
+      "file": "elements/advanced-motion/swipe-deck.json",
+      "archetype": "carousel"
+    },
+    {
+      "id": "long-press-action",
+      "name": "Long Press Action",
+      "category": "advanced-motion",
+      "minimumTier": "plus",
+      "icon": "solar:hand-shake-linear",
+      "file": "elements/advanced-motion/long-press-action.json",
+      "archetype": "button"
+    },
+    {
+      "id": "hold-to-confirm",
+      "name": "Hold To Confirm",
+      "category": "advanced-motion",
+      "minimumTier": "plus",
+      "icon": "solar:shield-check-linear",
+      "file": "elements/advanced-motion/hold-to-confirm.json",
+      "archetype": "button"
+    },
+    {
+      "id": "like-burst",
+      "name": "Like Burst",
+      "category": "advanced-motion",
+      "minimumTier": "plus",
+      "icon": "solar:heart-linear",
+      "file": "elements/advanced-motion/like-burst.json",
+      "archetype": "button"
+    },
+    {
+      "id": "icon-morph",
+      "name": "Icon Morph",
+      "category": "advanced-motion",
+      "minimumTier": "plus",
+      "icon": "solar:magic-stick-3-linear",
+      "file": "elements/advanced-motion/icon-morph.json",
+      "archetype": "icon"
+    },
+    {
+      "id": "loading-skeleton-swap",
+      "name": "Loading Skeleton Swap",
+      "category": "advanced-motion",
+      "minimumTier": "plus",
+      "icon": "solar:refresh-linear",
+      "file": "elements/advanced-motion/loading-skeleton-swap.json",
+      "archetype": "animation"
+    },
+    {
+      "id": "streaming-text",
+      "name": "Streaming Text",
+      "category": "advanced-motion",
+      "minimumTier": "pro",
+      "icon": "solar:text-linear",
+      "file": "elements/advanced-motion/streaming-text.json",
+      "archetype": "animation"
+    },
+    {
+      "id": "live-activity",
+      "name": "Live Activity",
+      "category": "advanced-motion",
+      "minimumTier": "plus",
+      "icon": "solar:pulse-linear",
+      "file": "elements/advanced-motion/live-activity.json",
+      "archetype": "alert"
+    },
+    {
+      "id": "presence-avatars",
+      "name": "Presence Avatars",
+      "category": "advanced-motion",
+      "minimumTier": "plus",
+      "icon": "solar:users-group-rounded-linear",
+      "file": "elements/advanced-motion/presence-avatars.json",
+      "archetype": "gallery"
+    },
+    {
+      "id": "typing-indicator",
+      "name": "Typing Indicator",
+      "category": "advanced-motion",
+      "minimumTier": "plus",
+      "icon": "solar:chat-round-dots-linear",
+      "file": "elements/advanced-motion/typing-indicator.json",
+      "archetype": "animation"
+    },
+    {
+      "id": "new-items-pill",
+      "name": "New Items Pill",
+      "category": "advanced-motion",
+      "minimumTier": "plus",
+      "icon": "solar:add-circle-linear",
+      "file": "elements/advanced-motion/new-items-pill.json",
+      "archetype": "alert"
+    },
+    {
+      "id": "expanding-search",
+      "name": "Expanding Search",
+      "category": "advanced-motion",
+      "minimumTier": "plus",
+      "icon": "solar:magnifer-linear",
+      "file": "elements/advanced-motion/expanding-search.json",
+      "archetype": "input"
+    },
+    {
+      "id": "inline-validation",
+      "name": "Inline Validation",
+      "category": "advanced-motion",
+      "minimumTier": "plus",
+      "icon": "solar:shield-check-linear",
+      "file": "elements/advanced-motion/inline-validation.json",
+      "archetype": "input"
+    },
+    {
+      "id": "floating-label",
+      "name": "Floating Label",
+      "category": "advanced-motion",
+      "minimumTier": "plus",
+      "icon": "solar:text-field-linear",
+      "file": "elements/advanced-motion/floating-label.json",
+      "archetype": "input"
+    },
+    {
+      "id": "password-strength",
+      "name": "Password Strength",
+      "category": "advanced-motion",
+      "minimumTier": "plus",
+      "icon": "solar:lock-password-linear",
+      "file": "elements/advanced-motion/password-strength.json",
+      "archetype": "input"
+    },
+    {
+      "id": "value-flash",
+      "name": "Value Flash",
+      "category": "advanced-motion",
+      "minimumTier": "plus",
+      "icon": "solar:graph-up-linear",
+      "file": "elements/advanced-motion/value-flash.json",
+      "archetype": "counter"
+    },
+    {
+      "id": "poll-results",
+      "name": "Poll Results",
+      "category": "advanced-motion",
+      "minimumTier": "plus",
+      "icon": "solar:chart-linear",
+      "file": "elements/advanced-motion/poll-results.json",
+      "archetype": "chart"
+    },
+    {
+      "id": "filter-grid",
+      "name": "Filter Grid",
+      "category": "advanced-motion",
+      "minimumTier": "plus",
+      "icon": "solar:filter-linear",
+      "file": "elements/advanced-motion/filter-grid.json",
+      "archetype": "filter"
+    },
+    {
+      "id": "show-more",
+      "name": "Show More",
+      "category": "advanced-motion",
+      "minimumTier": "free",
+      "icon": "solar:alt-arrow-down-linear",
+      "file": "elements/advanced-motion/show-more.json",
+      "archetype": "button"
+    },
+    {
+      "id": "blur-up-image",
+      "name": "Blur Up Image",
+      "category": "advanced-motion",
+      "minimumTier": "plus",
+      "icon": "solar:gallery-linear",
+      "file": "elements/advanced-motion/blur-up-image.json",
+      "archetype": "image"
+    },
+    {
+      "id": "reading-progress",
+      "name": "Reading Progress",
+      "category": "advanced-motion",
+      "minimumTier": "plus",
+      "icon": "solar:chart-linear",
+      "file": "elements/advanced-motion/reading-progress.json",
+      "archetype": "progress"
+    },
+    {
+      "id": "hide-on-scroll",
+      "name": "Hide On Scroll",
+      "category": "advanced-motion",
+      "minimumTier": "plus",
+      "icon": "solar:eye-closed-linear",
+      "file": "elements/advanced-motion/hide-on-scroll.json",
+      "archetype": "animation"
+    },
+    {
+      "id": "lightbox-gesture",
+      "name": "Lightbox Gesture",
+      "category": "advanced-motion",
+      "minimumTier": "plus",
+      "icon": "solar:full-screen-linear",
+      "file": "elements/advanced-motion/lightbox-gesture.json",
+      "archetype": "gallery"
+    },
+    {
+      "id": "slider-detents",
+      "name": "Slider Detents",
+      "category": "advanced-motion",
+      "minimumTier": "plus",
+      "icon": "solar:slider-horizontal-linear",
+      "file": "elements/advanced-motion/slider-detents.json",
+      "archetype": "range"
+    }
+  ]
+}

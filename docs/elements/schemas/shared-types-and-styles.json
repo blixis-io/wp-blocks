@@ -1,0 +1,524 @@
+{
+  "schemaVersion": "1.0.0",
+  "styleResolution": {
+    "levels": [
+      "base",
+      "breakpoint",
+      "appearance",
+      "appearance+breakpoint"
+    ],
+    "defaultBreakpoints": {
+      "mobileMax": "767px",
+      "tabletMax": "1023px"
+    },
+    "breakpointDirection": "max-width",
+    "conflict": "appearance beats breakpoint at same resolution unless combined override present"
+  },
+  "propertyTypes": {
+    "color-or-token": {
+      "examples": [
+        "#2563eb",
+        "var(--blixis-primary)"
+      ]
+    },
+    "asset-ref": {
+      "example": "asset:hero"
+    },
+    "binding": {
+      "example": {
+        "source": "wordpress-post",
+        "path": "post.title",
+        "fallback": ""
+      }
+    },
+    "css-length": {
+      "example": {
+        "value": 24,
+        "unit": "px"
+      }
+    },
+    "box-sides": {
+      "example": {
+        "top": {
+          "value": 16,
+          "unit": "px"
+        },
+        "right": {
+          "value": 24,
+          "unit": "px"
+        },
+        "bottom": {
+          "value": 16,
+          "unit": "px"
+        },
+        "left": {
+          "value": 24,
+          "unit": "px"
+        }
+      }
+    },
+    "box-corners": {
+      "example": {
+        "topLeft": {
+          "value": 8,
+          "unit": "px"
+        },
+        "topRight": {
+          "value": 8,
+          "unit": "px"
+        },
+        "bottomRight": {
+          "value": 8,
+          "unit": "px"
+        },
+        "bottomLeft": {
+          "value": 8,
+          "unit": "px"
+        }
+      }
+    }
+  },
+  "styleProperties": {
+    "display": {
+      "type": "enum",
+      "options": [
+        "block",
+        "inline",
+        "inline-block",
+        "flex",
+        "inline-flex",
+        "grid",
+        "inline-grid",
+        "none"
+      ],
+      "default": null
+    },
+    "position": {
+      "type": "enum",
+      "options": [
+        "static",
+        "relative",
+        "absolute",
+        "fixed",
+        "sticky"
+      ],
+      "default": null
+    },
+    "width": {
+      "type": "css-length",
+      "units": [
+        "px",
+        "%",
+        "rem",
+        "em",
+        "vw",
+        "svw",
+        "auto",
+        "min-content",
+        "max-content",
+        "fit-content",
+        "clamp"
+      ],
+      "default": null
+    },
+    "minWidth": {
+      "type": "css-length",
+      "units": [
+        "px",
+        "%",
+        "rem",
+        "vw"
+      ],
+      "default": null
+    },
+    "maxWidth": {
+      "type": "css-length",
+      "units": [
+        "px",
+        "%",
+        "rem",
+        "vw",
+        "none"
+      ],
+      "default": null
+    },
+    "height": {
+      "type": "css-length",
+      "units": [
+        "px",
+        "%",
+        "rem",
+        "vh",
+        "dvh",
+        "auto"
+      ],
+      "default": null
+    },
+    "minHeight": {
+      "type": "css-length",
+      "units": [
+        "px",
+        "rem",
+        "vh",
+        "dvh"
+      ],
+      "default": null
+    },
+    "maxHeight": {
+      "type": "css-length",
+      "units": [
+        "px",
+        "rem",
+        "vh",
+        "dvh",
+        "none"
+      ],
+      "default": null
+    },
+    "overflow": {
+      "type": "enum",
+      "options": [
+        "visible",
+        "hidden",
+        "auto",
+        "scroll",
+        "clip"
+      ],
+      "default": null
+    },
+    "margin": {
+      "type": "box-sides",
+      "units": [
+        "px",
+        "%",
+        "rem",
+        "em",
+        "auto"
+      ],
+      "sides": [
+        "top",
+        "right",
+        "bottom",
+        "left"
+      ],
+      "linkable": true,
+      "default": null
+    },
+    "padding": {
+      "type": "box-sides",
+      "units": [
+        "px",
+        "%",
+        "rem",
+        "em"
+      ],
+      "sides": [
+        "top",
+        "right",
+        "bottom",
+        "left"
+      ],
+      "linkable": true,
+      "default": null
+    },
+    "gap": {
+      "type": "css-length",
+      "units": [
+        "px",
+        "rem",
+        "em",
+        "%"
+      ],
+      "default": null
+    },
+    "backgroundColor": {
+      "type": "color-or-token",
+      "default": null
+    },
+    "backgroundImage": {
+      "type": "image-ref-or-gradient",
+      "default": null
+    },
+    "color": {
+      "type": "color-or-token",
+      "default": null
+    },
+    "fontFamily": {
+      "type": "font-reference",
+      "default": null
+    },
+    "fontSize": {
+      "type": "css-length",
+      "units": [
+        "px",
+        "rem",
+        "em",
+        "clamp"
+      ],
+      "default": null
+    },
+    "fontWeight": {
+      "type": "number",
+      "min": 100,
+      "max": 900,
+      "step": 100,
+      "default": null
+    },
+    "lineHeight": {
+      "type": "number-or-css-length",
+      "default": null
+    },
+    "letterSpacing": {
+      "type": "css-length",
+      "units": [
+        "px",
+        "em",
+        "rem"
+      ],
+      "default": null
+    },
+    "textAlign": {
+      "type": "enum",
+      "options": [
+        "left",
+        "center",
+        "right",
+        "start",
+        "end",
+        "justify"
+      ],
+      "default": null
+    },
+    "borderStyle": {
+      "type": "enum",
+      "options": [
+        "none",
+        "solid",
+        "dashed",
+        "dotted",
+        "double"
+      ],
+      "default": null
+    },
+    "borderWidth": {
+      "type": "box-sides",
+      "units": [
+        "px",
+        "rem"
+      ],
+      "linkable": true,
+      "default": null
+    },
+    "borderColor": {
+      "type": "color-or-token",
+      "default": null
+    },
+    "borderRadius": {
+      "type": "box-corners",
+      "corners": [
+        "topLeft",
+        "topRight",
+        "bottomRight",
+        "bottomLeft"
+      ],
+      "units": [
+        "px",
+        "%",
+        "rem"
+      ],
+      "linkable": true,
+      "default": null
+    },
+    "boxShadow": {
+      "type": "shadow-or-token",
+      "default": null
+    },
+    "opacity": {
+      "type": "number",
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "default": null
+    },
+    "transform": {
+      "type": "css-transform-list",
+      "default": null
+    },
+    "transition": {
+      "type": "transition-list",
+      "default": null
+    },
+    "zIndex": {
+      "type": "integer",
+      "default": null
+    },
+    "visibility": {
+      "type": "enum",
+      "options": [
+        "visible",
+        "hidden",
+        "collapse"
+      ],
+      "default": null
+    },
+    "flexDirection": {
+      "type": "enum",
+      "options": [
+        "row",
+        "column",
+        "row-reverse",
+        "column-reverse"
+      ],
+      "default": null
+    },
+    "flexWrap": {
+      "type": "enum",
+      "options": [
+        "nowrap",
+        "wrap",
+        "wrap-reverse"
+      ],
+      "default": null
+    },
+    "justifyContent": {
+      "type": "enum",
+      "options": [
+        "start",
+        "end",
+        "center",
+        "between",
+        "around",
+        "evenly"
+      ],
+      "default": null
+    },
+    "alignItems": {
+      "type": "enum",
+      "options": [
+        "start",
+        "end",
+        "center",
+        "stretch",
+        "baseline"
+      ],
+      "default": null
+    },
+    "gridTemplateColumns": {
+      "type": "css-grid-template",
+      "default": null
+    },
+    "gridAutoFlow": {
+      "type": "enum",
+      "options": [
+        "row",
+        "column",
+        "dense",
+        "row dense",
+        "column dense"
+      ],
+      "default": null
+    },
+    "objectFit": {
+      "type": "enum",
+      "options": [
+        "cover",
+        "contain",
+        "fill",
+        "none",
+        "scale-down"
+      ],
+      "default": null
+    },
+    "objectPosition": {
+      "type": "css-position",
+      "default": null
+    },
+    "aspectRatio": {
+      "type": "ratio",
+      "default": null
+    },
+    "cursor": {
+      "type": "enum",
+      "options": [
+        "auto",
+        "default",
+        "pointer",
+        "grab",
+        "grabbing",
+        "not-allowed"
+      ],
+      "default": null
+    },
+    "filter": {
+      "type": "css-filter-list",
+      "default": null
+    },
+    "backdropFilter": {
+      "type": "css-filter-list",
+      "default": null
+    }
+  },
+  "controlGroups": {
+    "content": {
+      "tab": "Content",
+      "groups": [
+        "General",
+        "Content Source",
+        "Localization",
+        "Accessibility"
+      ]
+    },
+    "style": {
+      "tab": "Style",
+      "groups": [
+        "Layout",
+        "Typography",
+        "Background",
+        "Spacing",
+        "Borders",
+        "Effects",
+        "Responsive",
+        "Light/Dark"
+      ]
+    },
+    "animation": {
+      "tab": "Animations",
+      "groups": [
+        "Presets",
+        "Trigger",
+        "Timeline",
+        "From/To",
+        "Parallax",
+        "Reduced Motion"
+      ]
+    },
+    "advanced": {
+      "tab": "Advanced",
+      "groups": [
+        "Attributes",
+        "Classes",
+        "Visibility",
+        "Conditions",
+        "Custom CSS"
+      ]
+    }
+  },
+  "capabilityModel": {
+    "minimumTier": "free | plus | pro",
+    "tierOrder": [
+      "free",
+      "plus",
+      "pro"
+    ],
+    "rule": "minimumTier controls editing and activation; saved output should not break on downgrade",
+    "security": "check on PHP server; never trust client tier"
+  },
+  "instanceContract": {
+    "id": "element unique id",
+    "type": "element registry id",
+    "props": "per-element properties",
+    "styles": "base/tablet/mobile/dark/darkMobile etc",
+    "children": "nested element instances",
+    "localeContent": "per-locale segments; do not duplicate layout tree"
+  }
+}

@@ -151,9 +151,8 @@ final class RichText {
 						'highlight' => 'blx-mh-',
 						'weight'    => 'blx-mw-',
 					] as $key => $prefix ) {
-						if ( \property_exists( $mark->style, $key ) ) {
-							$styles[] = $prefix . $mark->style->$key;
-						}
+						if ( \property_exists( $mark->style, $key ) && \is_string( $mark->style->$key ) && 1 === \preg_match( '/^[a-z0-9-]{1,40}$/D', $mark->style->$key ) && ( 'weight' !== $key || null === $tokens || \in_array( $mark->style->$key, $tokens, true ) ) && ( ! \in_array( $key, [ 'color', 'highlight' ], true ) || null === $tokens || \in_array( $mark->style->$key, $tokens, true ) ) ) {
+							$styles[] = $prefix . $mark->style->$key; }
 					}
 				}
 			}

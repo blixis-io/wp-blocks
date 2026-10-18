@@ -455,7 +455,7 @@
             "$ref": "#/$defs/node"
           },
           "importable": {
-            "const": false
+            "type": "boolean"
           },
           "importabilityReasons": {
             "type": "array",

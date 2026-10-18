@@ -63,7 +63,7 @@ function checkDefinition(def: ElementDefinition, source: Source): string[] {
     );
   for (const [name, prop] of Object.entries(def.props)) {
     const where = `property ${name}`;
-    if (prop.classification === 'translatable' && !['string', 'text'].includes(prop.kind))
+    if (prop.classification === 'translatable' && !['string', 'text', 'json'].includes(prop.kind))
       errors.push(`${where}: only string or text properties can be translatable`);
     if (prop.classification === 'locale-specific' && !['string', 'url', 'media'].includes(prop.kind))
       errors.push(`${where}: ${prop.kind} properties cannot be locale-specific`);

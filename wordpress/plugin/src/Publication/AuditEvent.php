@@ -40,14 +40,14 @@ final class AuditEvent {
 		private readonly ?string $template_id = null,
 		private readonly array $family_slugs = []
 	) {
-		if ( ! \in_array( $kind, [ 'publish', 'rollback', 'unpublish', 'page-settings', 'template-font-install' ], true ) ) {
+		if ( ! \in_array( $kind, [ 'publish', 'rollback', 'unpublish', 'page-settings', 'template-font-install', 'template-import' ], true ) ) {
 			throw new \InvalidArgumentException( 'Invalid audit event kind.' );
 		}
 	}
 
 	/** Return a content-free hook payload.
 	 *
-	 * @return array{actor:int,post:int,locale:?string,kind:string,layoutSnapshot:?int,contentSnapshot:?int,pointerRevision:int,time:string,templateId?:string,familySlugs?:list<string>}
+	 * @return array{actor:int,post:int,locale:?string,kind:string,layoutSnapshot:?int,contentSnapshot:?int,pointerRevision:int,time:string,templateId?:string,familySlugs?:list<string>,assetReferences?:list<string>}
 	 */
 	public function data(): array {
 		$data = [
@@ -61,8 +61,24 @@ final class AuditEvent {
 			'time'            => \gmdate( 'Y-m-d\TH:i:s\Z', $this->time ?? \time() ),
 		];
 		if ( null !== $this->template_id ) {
-			$data['templateId']  = $this->template_id;
-			$data['familySlugs'] = array_values( array_filter( $this->family_slugs, static fn( $slug ) => is_string( $slug ) && preg_match( '/^[a-z0-9-]{1,64}$/D', $slug ) ) );
+			$data['templateId'] = $this->template_id;
+			$identifiers        = [];
+			foreach ( $this->family_slugs as $slug ) {
+				if ( is_string( $slug ) && preg_match( '/^[a-z0-9_-]{1,96}$/D', $slug ) ) {
+					$identifiers[] = $slug;
+				}
+			}
+			if ( 'template-import' === $this->kind ) {
+				$data['assetReferences'] = $identifiers;
+			} else {
+				$families = [];
+				foreach ( $identifiers as $identifier ) {
+					if ( preg_match( '/^[a-z0-9-]{1,64}$/D', $identifier ) ) {
+						$families[] = $identifier;
+					}
+				}
+				$data['familySlugs'] = $families;
+			}
 		}
 		return $data;
 	}

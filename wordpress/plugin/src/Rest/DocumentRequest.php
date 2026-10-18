@@ -10,6 +10,8 @@ declare(strict_types=1);
 namespace Blixis\Builder\Rest;
 
 use Blixis\Builder\Storage\Envelope;
+use Blixis\Builder\Registry\ElementDefinitionRegistry;
+use Blixis\Builder\Registry\DefinitionPropsValidator;
 use Blixis\Builder\Storage\LocaleMismatchException;
 use Blixis\Builder\Storage\MetaKeys;
 use Blixis\Builder\Storage\RevisionRing;
@@ -133,7 +135,7 @@ final class DocumentRequest {
 		}
 		if ( MetaKeys::LAYOUT === $key ) {
 			$layout = Envelope::decode( $body, $key );
-			if ( null !== $layout && \property_exists( $layout, 'root' ) && ! PreviewDocument::accepts( $layout ) ) {
+			if ( null !== $layout && \property_exists( $layout, 'root' ) && ( ! PreviewDocument::accepts( $layout ) || ! $this->definition_props_valid( $layout ) ) ) {
 				return DocumentResult::error( 422, 'blixis_invalid_document', 'Invalid document.' );
 			}
 		}
@@ -158,6 +160,20 @@ final class DocumentRequest {
 		} catch ( \RuntimeException $exception ) {
 			return self::storage_error();
 		}
+	}
+
+	/** Check every v2 value before storing the layout.
+	 *
+	 * @param \stdClass $layout Layout envelope.
+	 */
+	private function definition_props_valid( \stdClass $layout ): bool {
+		$definitions = ElementDefinitionRegistry::from_manifest_file( dirname( __DIR__, 2 ) . '/data/element-definitions-v2.json' );
+		$validator   = new DefinitionPropsValidator( $definitions );
+		foreach ( $layout->root as $node ) {
+			if ( ! $node instanceof \stdClass || ! $validator->accepts( $node ) ) {
+				return false; }
+		}
+		return true;
 	}
 
 	/**

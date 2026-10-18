@@ -12,7 +12,7 @@ use Blixis\Builder\Media\MediaPolicy;
 \defined( 'ABSPATH' ) || exit;
 
 /** The only renderer-side WordPress boundary. */
-final class WordPressMediaResolver implements MediaResolver {
+final class WordPressMediaResolver implements AssetReferenceResolver {
 	/**
 	 * Apply the documented contract.
 	 *
@@ -36,5 +36,28 @@ final class WordPressMediaResolver implements MediaResolver {
 			'srcset' => (string) \wp_get_attachment_image_srcset( $attachment_id, 'full' ),
 			'sizes'  => (string) \wp_get_attachment_image_sizes( $attachment_id, 'full' ),
 		];
+	}
+
+	/** Resolve only an attachment previously imported from a bundled pack asset.
+	 *
+	 * @param string $reference Stable pack asset key.
+	 * @return array{url:string,width:int,height:int,alt:string,srcset?:string,sizes?:string}|null Resolved image.
+	 */
+	public function resolve_reference( string $reference ): ?array {
+		if ( 1 !== \preg_match( '/^(?:asset:)?[a-z0-9][a-z0-9_-]{0,127}$/D', $reference ) ) {
+			return null;
+		}
+		$attachments = \get_posts(
+			[
+				'post_type'      => 'attachment',
+				'post_status'    => 'inherit',
+				'posts_per_page' => 1,
+				'fields'         => 'ids',
+				'meta_key'       => '_blixis_template_asset_ref', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- Exact indexed importer marker query.
+				'meta_value'     => $reference, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- Exact importer-owned value.
+			]
+		);
+		$id          = is_array( $attachments ) ? (int) ( $attachments[0] ?? 0 ) : 0;
+		return $id > 0 ? $this->resolve( $id ) : null;
 	}
 }

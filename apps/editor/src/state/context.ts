@@ -1,4 +1,4 @@
-import { createCoreRegistry, type ElementRegistry } from '@blixis/wp-element-registry';
+import { createEditorRegistry, type ElementRegistry } from '@blixis/wp-element-registry';
 import type { CommandContext, CommandError, CommandErrorCode } from '@blixis/wp-core';
 import { readStorage, writeStorage } from '../storage';
 import type { RestClient } from './deps';
@@ -68,7 +68,7 @@ export interface ResolvedDeps {
 export const DEFAULT_HISTORY_LIMIT = 200;
 
 export function resolveDeps(deps: EditorStoreDeps): ResolvedDeps {
-  const registry = deps.registry ?? createCoreRegistry();
+  const registry = deps.registry ?? createEditorRegistry();
   return {
     client: deps.client,
     bootstrap: deps.bootstrap,

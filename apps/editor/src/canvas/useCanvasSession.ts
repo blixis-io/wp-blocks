@@ -10,7 +10,7 @@ import {
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ApiError, RestClient } from '../api/types';
 import { directionOf } from '../i18n';
-import { createCoreRegistry } from '@blixis/wp-element-registry';
+import { createEditorRegistry } from '@blixis/wp-element-registry';
 import { findPath, nodeAt, validateRichText, type Json, type RichText } from '@blixis/wp-core';
 import { isDirty, type EditorStore, type Viewport } from '../state';
 
@@ -180,7 +180,7 @@ export function useCanvasSession(options: CanvasSessionOptions): CanvasSession {
     let textFrame: number | null = null;
     let pendingText: string | null = null;
     let saveAfterEditCommit = false;
-    const registry = createCoreRegistry();
+    const registry = createEditorRegistry();
     const startEdit = (id: string, prop: string, caret?: number, focus = true) => {
       const state = store.getState();
       if (

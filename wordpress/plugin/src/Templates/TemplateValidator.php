@@ -8,16 +8,28 @@
 declare(strict_types=1);
 namespace Blixis\Builder\Templates;
 
+use Blixis\Builder\Registry\ElementDefinitionRegistry;
+
 /** Rejects unsafe or structurally unsupported template packs before they reach clients. */
 final class TemplateValidator {
 	private const FONTS    = [ 'Plus Jakarta Sans', 'Inter', 'Space Grotesk', 'DM Sans', 'Manrope', 'Outfit' ];
 	private const MAX_JSON = 2_000_000;
-	/**
-	 * Cached core element registry.
+	/** Nodes visited in the current document.
 	 *
-	 * @var array<string,list<string>>|null
+	 * @var int
 	 */
-	private static ?array $registry = null;
+	private int $node_count = 0;
+	/** Element ids seen in the current document.
+	 *
+	 * @var array<string,true>
+	 */
+	private array $node_ids = [];
+	/**
+	 * Cached generated element registry.
+	 *
+	 * @var ElementDefinitionRegistry|null
+	 */
+	private static ?ElementDefinitionRegistry $registry = null;
 
 	/** Validate a pack directory.
 	 *
@@ -30,6 +42,28 @@ final class TemplateValidator {
 		} catch ( \Throwable $error ) {
 			return [ 'template structure is malformed' ];
 		}
+	}
+	/** Report registry/property mismatches that keep otherwise safe documents from import.
+	 *
+	 * @param string $directory Template pack root.
+	 * @return list<string> Reasons.
+	 */
+	public function importability_reasons( string $directory ): array {
+		$file = $directory . '/template.json';
+		$data = is_file( $file ) ? json_decode( (string) file_get_contents( $file ), true ) : null; // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Local bundled pack.
+		if ( ! is_array( $data ) || ! is_array( $data['documents'] ?? null ) ) {
+			return [ 'Template document data is malformed.' ];
+		}
+		$reasons = [];
+		foreach ( $data['documents'] as $document ) {
+			$errors           = [];
+			$this->node_count = 0;
+			$this->node_ids   = [];
+			$this->node( $document['root'] ?? [], '$.root', $errors, $data['assets'] ?? [], $reasons, self::registry() );
+		}
+		$reasons = array_values( array_unique( $reasons ) );
+		sort( $reasons );
+		return $reasons;
 	}
 	/** Validate the pack JSON, assets, tokens and documents.
 	 *
@@ -214,7 +248,9 @@ final class TemplateValidator {
 			}
 			if ( ( $document['type'] ?? null ) !== 'page' || ! in_array( $document['status'] ?? null, [ 'draft','publish' ], true ) ) {
 				$errors[] = "$.documents[$i] has invalid type or status"; }
-			$unsupported = [];
+			$unsupported      = [];
+			$this->node_count = 0;
+			$this->node_ids   = [];
 			$this->node( $document['root'] ?? [], "$.documents[$i].root", $errors, $data['assets'] ?? [], $unsupported, $registry );
 			$reasons = array_values( array_unique( $unsupported ) );
 			sort( $reasons );
@@ -357,20 +393,29 @@ final class TemplateValidator {
 	}
 	/** Validate a document node recursively.
 	 *
-	 * @param mixed                      $node Node data.
-	 * @param string                     $path JSON path.
-	 * @param string[]                   $errors Errors to append.
-	 * @param array<string,mixed>        $assets Pack assets.
-	 * @param array<int|string,mixed>    $unsupported Registry mismatches to append.
-	 * @param array<string,list<string>> $registry Registered types and properties.
+	 * @param mixed                     $node Node data.
+	 * @param string                    $path JSON path.
+	 * @param string[]                  $errors Errors to append.
+	 * @param array<string,mixed>       $assets Pack assets.
+	 * @param array<int|string,mixed>   $unsupported Registry mismatches to append.
+	 * @param ElementDefinitionRegistry $registry Generated definitions.
 	 */
-	private function node( mixed $node, string $path, array &$errors, array $assets, array &$unsupported, array $registry ): void {
+	private function node( mixed $node, string $path, array &$errors, array $assets, array &$unsupported, ElementDefinitionRegistry $registry ): void {
+		$depth = substr_count( $path, '.children[' ) + 1;
+		if ( $depth > 32 || ++$this->node_count > 5000 ) {
+			$errors[] = "$path exceeds tree limits";
+			return; }
 		if ( ! is_array( $node ) ) {
 			$errors[] = "$path must be an object";
 			return; }
 		$this->keys( $node, [ 'id','type','props','children','animations','styles' ], $path, $errors );
-		$type = $node['type'] ?? '';
-		if ( ! isset( $registry[ $type ] ) ) {
+		$type    = $node['type'] ?? '';
+		$node_id = $node['id'] ?? null;
+		if ( ! is_string( $node_id ) || 1 !== preg_match( '/^[a-z0-9][a-z0-9_-]{2,63}$/D', $node_id ) || isset( $this->node_ids[ $node_id ] ) ) {
+			$errors[] = "$path.id is invalid or duplicated";
+		} elseif ( is_string( $node_id ) ) {
+			$this->node_ids[ $node_id ] = true; }
+		if ( null === $registry->get( (string) $type ) ) {
 			$unsupported[] = "Element type \"$type\" is not available in the core element registry.";
 			foreach ( $node['props'] ?? [] as $unsupported_prop => $unused ) {
 				$unsupported[] = "Element type \"$type\" has prop \"$unsupported_prop\" with no core schema."; }
@@ -378,7 +423,14 @@ final class TemplateValidator {
 		$props = $node['props'] ?? [];
 		if ( is_array( $props ) ) {
 			foreach ( $props as $key => $value ) {
-				if ( isset( $registry[ $type ] ) && ! in_array( $key, $registry[ $type ], true ) ) {
+				$property = null !== $registry->get( (string) $type ) ? $registry->property( (string) $type, (string) $key ) : null;
+				if ( null !== $property && ! $this->property_value_valid( $property, $value ) ) {
+					$unsupported[] = "Element type \"$type\" prop \"$key\" has a value outside its definition.";
+				}
+				if ( 'placeholderAssets' === $key && ( ! is_array( $value ) || ! array_is_list( $value ) || array_filter( $value, static fn ( mixed $reference ): bool => ! is_string( $reference ) || ! isset( $assets[ $reference ] ) ) ) ) {
+					$unsupported[] = "Element type \"$type\" prop \"$key\" must reference bundled assets.";
+				}
+				if ( null !== $registry->get( (string) $type ) && null === $property ) {
 					$unsupported[] = "Element type \"$type\" uses unsupported prop \"$key\"."; }
 				$this->inspect_prop( (string) $key, $value, "$path.props.$key", $errors );
 				if ( 'assetRef' === $key && ( ! is_string( $value ) || ! isset( $assets[ $value ] ) ) ) {
@@ -408,28 +460,52 @@ final class TemplateValidator {
 	}
 	/** Read the repository's element manifest without invoking WordPress.
 	 *
-	 * @return array<string,list<string>> Registered element types and props.
+	 * @return ElementDefinitionRegistry Generated definitions.
 	 */
-	private static function registry(): array {
+	private static function registry(): ElementDefinitionRegistry {
 		if ( null !== self::$registry ) {
 			return self::$registry; }
-		$file = dirname( __DIR__, 2 ) . '/data/core-elements.json';
-		$json = file_get_contents( $file ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Read the local core manifest.
-		if ( false === $json ) {
-			self::$registry = [];
-			return self::$registry; }
-		$manifest = json_decode( $json, true );
-		$registry = [];
-		foreach ( $manifest['elements'] ?? [] as $element ) {
-			if ( ! is_array( $element ) || ! is_string( $element['type'] ?? null ) ) {
-				continue; }
-			$type = str_starts_with( $element['type'], 'blixis/' ) ? substr( $element['type'], 7 ) : '';
-			if ( '' !== $type ) {
-				$props             = is_array( $element['props'] ?? null ) ? array_keys( $element['props'] ) : [];
-				$registry[ $type ] = array_values( array_filter( $props, 'is_string' ) ); }
-		}
-		self::$registry = $registry;
+		self::$registry = ElementDefinitionRegistry::from_manifest_file( dirname( __DIR__, 2 ) . '/data/element-definitions-v2.json' );
 		return self::$registry;
+	}
+	/** Check a property against the definition's declared primitive type and enum.
+	 *
+	 * @param array<string,mixed> $property Property metadata.
+	 * @param mixed               $value Value to validate.
+	 */
+	private function property_value_valid( array $property, mixed $value ): bool {
+		$type = $property['type'] ?? '';
+		if ( 'string' === $type && is_array( $value ) && array_is_list( $value ) ) {
+			foreach ( $value as $part ) {
+				if ( ! is_array( $part ) || ! is_string( $part['text'] ?? null ) || array_diff( array_keys( $part ), [ 'text', 'marks' ] ) ) {
+					return false;
+				}
+			}
+			return true;
+		}
+		if ( 'null' === gettype( $value ) ) {
+			return in_array( $type, [ 'asset-ref','media','string' ], true );
+		}
+		$valid = match ( $type ) {
+			'string', 'url', 'token', 'asset-ref' => is_string( $value ),
+			'enum' => is_string( $value ) && in_array( $value, $property['options'] ?? [], true ),
+			'rich-text' => is_string( $value ) || ( $value instanceof \stdClass && \Blixis\Builder\Render\RichText::valid( $value ) ), 'boolean' => is_bool( $value ), 'number', 'integer' => is_int( $value ) || is_float( $value ),
+			'array<string>' => is_array( $value ) && array_is_list( $value ) && count( array_filter( $value, 'is_string' ) ) === count( $value ),
+			'array<number>', 'array<object>' => is_array( $value ) && array_is_list( $value ), 'object' => is_array( $value ) && ! array_is_list( $value ), default => false };
+		if ( ! $valid ) {
+			return false;
+		}
+		if ( is_string( $value ) && isset( $property['options'] ) && ! in_array( $value, $property['options'], true ) ) {
+			return false;
+		}
+		if ( is_numeric( $value ) ) {
+			if ( isset( $property['min'] ) && $value < $property['min'] ) {
+				return false;
+			} if ( isset( $property['max'] ) && $value > $property['max'] ) {
+				return false;
+			}
+		}
+		return true;
 	}
 	/** Inspect nested prop values for HTML, unsafe URL properties, and oversized text.
 	 *

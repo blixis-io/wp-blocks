@@ -10,6 +10,7 @@ namespace Blixis\Builder\Rest;
 
 use Blixis\Builder\Templates\Library;
 use Blixis\Builder\Templates\FontInstaller;
+use Blixis\Builder\Templates\Importer;
 use Blixis\Builder\Publication\WordPressRateLimiter;
 use Blixis\Builder\Publication\AuditEvent;
 use Blixis\Builder\Publication\WordPressAuditSink;
@@ -91,6 +92,15 @@ final class TemplateController {
 				'callback'            => [ self::class,'install' ],
 			]
 		);
+		register_rest_route(
+			'blixis/v1',
+			'/templates/(?P<id>[a-z0-9-]+)/import',
+			[
+				'methods'             => 'POST',
+				'permission_callback' => [ self::class, 'import_permission' ],
+				'callback'            => [ self::class, 'import' ],
+			]
+		);
 	}
 	/** Require theme configuration capability.
 	 *
@@ -98,6 +108,55 @@ final class TemplateController {
 	 */
 	public static function permission(): bool {
 		return current_user_can( 'edit_theme_options' ); }
+	/** Import requires page editing and theme configuration; WordPress REST cookie auth enforces its REST nonce. */
+	public static function import_permission(): bool|\WP_Error {
+		return current_user_can( 'edit_pages' ) && current_user_can( 'edit_theme_options' ) ? true : new \WP_Error( 'rest_forbidden', 'You are not allowed to import templates.', [ 'status' => 403 ] );
+	}
+	/** Import a template using a validated request.
+	 *
+	 * @param \WP_REST_Request $request Request with raw body and route identity.
+	 */
+	public static function import( \WP_REST_Request $request ): \WP_REST_Response|\WP_Error {
+		$limit = Importer::record_attempt( get_current_user_id() );
+		if ( is_wp_error( $limit ) ) {
+			return $limit;
+		}
+		$data = self::parse_import_body( $request->get_body() );
+		if ( is_wp_error( $data ) ) {
+			return $data;
+		}
+		$id   = (string) RouteParams::get( $request, 'id' );
+		$card = Library::instance()->find( $id );
+		if ( ! $card ) {
+			return new \WP_Error( 'blixis_template_not_found', 'Template not found.', [ 'status' => 404 ] );
+		}
+		$result = ( new Importer() )->import( $id, $data, true );
+		return is_wp_error( $result ) ? $result : self::response( $result );
+	}
+	/** Strict JSON body policy shared by REST and the setup adapter.
+	 *
+	 * @param string $raw Raw request body.
+	 * @return array<string,bool>|\WP_Error
+	 */
+	public static function parse_import_body( string $raw ): array|\WP_Error {
+		if ( strlen( $raw ) > 4096 ) {
+			return new \WP_Error( 'blixis_invalid_template_request', 'Template import request is invalid.', [ 'status' => 400 ] );
+		}
+		$decoded = '' === $raw ? new \stdClass() : json_decode( $raw );
+		if ( ! $decoded instanceof \stdClass ) {
+			return new \WP_Error( 'blixis_invalid_template_request', 'Template import request is invalid.', [ 'status' => 400 ] );
+		}
+		$data = get_object_vars( $decoded );
+		if ( array_diff( array_keys( $data ), [ 'createPages', 'setHomePage', 'createNavigation', 'overwriteExisting' ] ) ) {
+			return new \WP_Error( 'blixis_invalid_template_request', 'Template import request is invalid.', [ 'status' => 400 ] );
+		}
+		foreach ( $data as $value ) {
+			if ( ! is_bool( $value ) ) {
+				return new \WP_Error( 'blixis_invalid_template_request', 'Template import request is invalid.', [ 'status' => 400 ] );
+			}
+		}
+		return $data;
+	}
 	/** Return validated template cards.
 	 *
 	 * @return \WP_REST_Response Cards.

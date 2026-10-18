@@ -42,7 +42,13 @@ final class TemplateValidatorTest extends TestCase {
 		foreach ( $directories as $dir ) {
 			$data = json_decode( self::read_file( $dir . '/template.json' ) );
 			$this->assertTrue( $schema_validator->validate( $data, $schema )->isValid(), basename( $dir ) );
-			$this->assertSame( [], ( new TemplateValidator() )->validate( $dir ), basename( $dir ) );}
+			$this->assertSame( [], ( new TemplateValidator() )->validate( $dir ), basename( $dir ) );
+			foreach ( $data->documents as $document ) {
+				$this->assertTrue( $document->importable, basename( $dir ) );
+				$reasons = get_object_vars( $document )['importabilityReasons'] ?? [];
+				$this->assertSame( [], $reasons, basename( $dir ) );
+			}
+		}
 	}
 	/** Reject hostile paths, flags, content and unknown schema fields. */
 	public function test_rejects_hostile_asset_paths_flags_documents_and_unknown_keys(): void {
@@ -76,6 +82,19 @@ final class TemplateValidatorTest extends TestCase {
 		$unknown   = static function ( &$d ): void {
 			$d['unexpected'] = true;
 		};
+		$deep      = static function ( &$d ): void {
+			$node =& $d['documents'][0]['root'];
+			for ( $i = 0; $i < 35; ++$i ) {
+				$node['children'] = [
+					[
+						'id'       => 'deep-' . $i,
+						'type'     => 'blixis/stack',
+						'props'    => [],
+						'children' => [],
+					],
+				];
+				$node             =& $node['children'][0]; }
+		};
 		$color     = static function ( &$d ): void {
 			$d['designTokens']['colors']['light']['primary'] = 'red';
 		};
@@ -89,6 +108,7 @@ final class TemplateValidatorTest extends TestCase {
 		$this->assertStringContainsString( 'unsafe path', implode( ' ', $check( $remote ) ) );
 		$this->assertStringContainsString( 'security', implode( ' ', $check( $scripts ) ) );
 		$this->assertStringContainsString( 'unknown', implode( ' ', $check( $unknown ) ) );
+		$this->assertStringContainsString( 'tree limits', implode( ' ', $check( $deep ) ), 'deep trees are rejected by the template validator' );
 		$this->assertStringContainsString( '#RRGGBB', implode( ' ', $check( $color ) ) );
 		$this->assertStringContainsString( 'not bundled', implode( ' ', $check( $font ) ) );
 		$this->assertStringContainsString( 'not a declared locale', implode( ' ', $check( $locale ) ) );

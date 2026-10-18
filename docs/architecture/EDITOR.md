@@ -31,6 +31,12 @@ Panel controls use the registered Solar duotone `sidebarClose` and `sidebarOpen`
 
 The canvas selection toolbar's More menu is rendered as a stage-level overlay sibling rather than inside the clipped selection overlay. Its position flips above or below the toolbar and shifts horizontally to remain inside the visible canvas frame. The open state belongs to the Canvas component and survives rectangle refreshes; selection changes, Escape and outside pointer presses close it. The Publish action keeps the localized label “Publish” / “Publiceren” in every state; its accessible name and shared tooltip describe the pending publication state. Enabled state uses the primary/on-primary token pair, and disabled state uses the muted foreground on the secondary surface without applying whole-button opacity.
 
+### Generated element editor (BWB-161)
+
+The editor palette uses v2 generated element definitions for search metadata and status, and the editor registry adapts definitions marked `ready` into the existing document command contract. The original six-element registry remains available to integrations that consume its stable manifest. Planned entries are hidden unless **Show planned elements** is enabled (preference key `blixis-show-planned-elements`) and are always disabled. Tier appears as palette metadata and does not gate insertion. Generated inspector fields are grouped by each definition's property group and use the declared control vocabulary; localizable values are written into the active content locale stream.
+
+The source catalogue currently has no definitions for the template instance types `page`, `navigation`, `site-header`, or `site-footer`. The editor registers compatibility aliases using `section` and `nav-menu` metadata as a temporary bridge. These aliases are not canonical generated definitions; their complete structure/property contracts must move into `docs/elements` before the catalogue can be the full source of truth. Navigation repeater values use the active locale stream and bounded JSON property validation. Canvas preview continues to request HTML from the shared PHP renderer pipeline.
+
 ## Shell layout and landmarks
 
 The editor fills the viewport (`position: fixed; inset: 0`, CSS grid, no page scroll).

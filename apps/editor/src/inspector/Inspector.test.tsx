@@ -146,6 +146,27 @@ async function mount(
   return { store, ...view };
 }
 
+describe('generated inspector controls', () => {
+  it('edits navigation repeater rows in the active locale stream', async () => {
+    const user = userEvent.setup();
+    const { store, container } = await mount('blixis/navigation');
+    expect(await axeViolations(container)).toEqual([]);
+    await user.click(screen.getByRole('button', { name: 'Add item' }));
+    expect(store.getState().document?.translations['en_US']?.['target']?.values['items']).toEqual([
+      { id: 'home', label: 'Home', href: '/' },
+      { label: '', href: '' },
+    ]);
+    const addChildButton = screen.getAllByRole('button', { name: 'Add child link' }).at(0);
+    expect(addChildButton).toBeDefined();
+    if (!addChildButton) return;
+    await user.click(addChildButton);
+    expect(store.getState().document?.translations['en_US']?.['target']?.values['items']).toEqual([
+      { id: 'home', label: 'Home', href: '/', children: [{ label: '', href: '' }] },
+      { label: '', href: '' },
+    ]);
+  });
+});
+
 describe('Inspector controls', () => {
   it.each([
     ['en_US', 'Title'],

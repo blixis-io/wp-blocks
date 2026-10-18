@@ -29,6 +29,7 @@
       "required": [
         "blixis-builder.php",
         "data/core-elements.json",
+        "data/element-definitions-v2.json",
         "data/css-properties.json",
         "assets/editor/editor.js",
         "assets/editor/editor.css",

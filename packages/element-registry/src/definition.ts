@@ -1,5 +1,12 @@
 import { z } from 'zod';
-import { ElementTypeSchema, PropertyIdSchema, richToPlain, validateRichText, type Json } from '@blixis/wp-core';
+import {
+  admitValue,
+  ElementTypeSchema,
+  PropertyIdSchema,
+  richToPlain,
+  validateRichText,
+  type Json,
+} from '@blixis/wp-core';
 import { isSafeUrl } from './url.ts';
 
 /** Version of the registration contract. A definition may require at most this version (docs/architecture/EXTENSION-API.md). */
@@ -58,6 +65,7 @@ export const PropDefinitionSchema = z.discriminatedUnion('kind', [
   /** A WordPress media-library attachment id (a positive integer). */
   z.strictObject({ ...common, kind: z.literal('media'), default: z.number().int().min(1).optional() }),
   z.strictObject({ ...common, kind: z.literal('url'), default: z.string().max(2048).optional() }),
+  z.strictObject({ ...common, kind: z.literal('json'), default: z.unknown().optional() }),
 ]);
 export type PropDefinition = z.infer<typeof PropDefinitionSchema>;
 
@@ -114,5 +122,7 @@ export function valueSchemaFor(def: PropDefinition): z.ZodType<Json> {
       return z.number().int().min(1);
     case 'url':
       return z.string().refine(isSafeUrl, 'not a safe URL (allowed: http, https, mailto, tel and relative links)');
+    case 'json':
+      return z.custom<Json>((value) => admitValue(value).ok);
   }
 }

@@ -6,7 +6,7 @@
 //   BLX_EXPECT_WP, BLX_EXPECT_PHP              smoke test expectations (version prefixes)
 import { spawn, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { auditHtml } from '../a11y/audit-html.mjs';
@@ -350,6 +350,231 @@ async function smoke() {
         const catalog = await templateApi('', { cookie: adminCookie, nonce: adminNonce });
         const templateCards = await json(catalog);
         check(catalog.status === 200 && templateCards.length === 4, 'admin template catalog lists all four packs');
+        // Rate-limit windows persist between smoke runs: start every run with clean windows.
+        command(
+          'eval',
+          "global $wpdb; $wpdb->query( \"DELETE FROM {$wpdb->options} WHERE option_name LIKE '\\\\_transient\\\\_blxtpl\\\\_%' OR option_name LIKE '\\\\_transient\\\\_timeout\\\\_blxtpl\\\\_%' OR option_name LIKE '\\\\_transient\\\\_blximp\\\\_%' OR option_name LIKE '\\\\_transient\\\\_timeout\\\\_blximp\\\\_%'\" );",
+        );
+        for (const postId of command(
+          'post',
+          'list',
+          '--post_type=page',
+          '--meta_key=_blixis_template_import',
+          '--format=ids',
+        )
+          .split(/\s+/)
+          .filter(Boolean)) {
+          command('post', 'delete', postId, '--force');
+        }
+        for (const attachmentId of command(
+          'post',
+          'list',
+          '--post_type=attachment',
+          '--meta_key=_blixis_template_asset_file',
+          '--format=ids',
+        )
+          .split(/\s+/)
+          .filter(Boolean)) {
+          command('post', 'delete', attachmentId, '--force');
+        }
+        command(
+          'eval',
+          `foreach (get_terms(['taxonomy' => 'nav_menu', 'hide_empty' => false]) as $menu) { if (preg_match('/^(business|creative-agency|modern-homes|online-store) navigation$/', $menu->name)) wp_delete_nav_menu($menu->term_id); }`,
+        );
+        const rollbackProbe = command(
+          'eval',
+          `wp_set_current_user(1); add_filter('wp_handle_sideload_prefilter', static function ($file) { if ('preview.webp' === basename($file['name'] ?? '')) return new WP_Error('smoke_sideload_failure', 'forced rollback probe'); return $file; }); $result = (new \\Blixis\\Builder\\Templates\\Importer())->import('business', ['createPages' => true, 'createNavigation' => false]); remove_all_filters('wp_handle_sideload_prefilter'); $pages = get_posts(['post_type' => 'page', 'post_status' => ['draft', 'publish'], 'numberposts' => -1, 'fields' => 'ids', 'meta_key' => '_blixis_template_import', 'meta_value' => 'business']); $assets = get_posts(['post_type' => 'attachment', 'post_status' => 'inherit', 'numberposts' => -1, 'fields' => 'ids', 'meta_key' => '_blixis_template_asset_file']); echo (is_wp_error($result) ? $result->get_error_code() : 'unexpected_success') . ':' . count($pages) . ':' . count($assets);`,
+        );
+        check(
+          rollbackProbe === 'blixis_template_import_failed:0:0',
+          'a sideload failure rolls back created draft pages and earlier attachments',
+        );
+        const importedPages = [];
+        command(
+          'option',
+          'update',
+          'blixis_locales',
+          JSON.stringify({
+            version: 1,
+            defaultLocale: 'en_US',
+            enabledLocales: ['en_US', 'nl_NL'],
+            fallback: 'source',
+          }),
+          '--format=json',
+        );
+        const importableCards = templateCards;
+        const commerceCard = templateCards.find((card) => card.id === 'online-store');
+        check(
+          importableCards.length === 4 && importableCards.every((card) => card.importable),
+          'all four bundled templates are reported importable',
+        );
+        check(
+          commerceCard?.importable === true && (commerceCard?.reasons ?? []).length === 0,
+          'online-store imports with safe compatibility fallbacks for deferred WooCommerce rendering',
+        );
+        for (const card of importableCards) {
+          const imported = await templateApi(`/${card.id}/import`, {
+            cookie: adminCookie,
+            nonce: adminNonce,
+            method: 'POST',
+            body: JSON.stringify({ createPages: true, createNavigation: false }),
+          });
+          const result = await json(imported);
+          check(imported.status === 200 && result.pages?.length > 0, `${card.id} imports as draft pages`);
+          if (result.pages?.[0]) importedPages.push({ card, page: result.pages[0], assets: result.assets ?? {} });
+          const duplicate = await templateApi(`/${card.id}/import`, {
+            cookie: adminCookie,
+            nonce: adminNonce,
+            method: 'POST',
+            body: JSON.stringify({ createPages: true, createNavigation: false }),
+          });
+          check(duplicate.status === 409, `${card.id} refuses a duplicate import when overwriteExisting is false`);
+          const hostile = await templateApi(`/${card.id}/import`, {
+            cookie: adminCookie,
+            nonce: adminNonce,
+            method: 'POST',
+            body: JSON.stringify({ createPages: true, publish: true }),
+          });
+          check(hostile.status === 400, `${card.id} rejects unknown import options`);
+          const editorImport = await templateApi(`/${card.id}/import`, {
+            cookie: editorCookie,
+            nonce: editorNonce,
+            method: 'POST',
+            body: JSON.stringify({ createPages: true }),
+          });
+          const subscriberImport = await templateApi(`/${card.id}/import`, {
+            cookie: subscriberCookie,
+            nonce: subscriberNonce,
+            method: 'POST',
+            body: JSON.stringify({ createPages: true }),
+          });
+          check(
+            editorImport.status === 403 && subscriberImport.status === 403,
+            `${card.id} denies editor and subscriber roles`,
+          );
+        }
+        check(importedPages.length === 4, 'all four importable template imports returned pages');
+        const expectedAssetFiles = importableCards.reduce(
+          (count, card) => count + Object.keys(card.assets ?? {}).length,
+          0,
+        );
+        const missingImportNonce = await http(`${base}/?rest_route=/blixis/v1/templates/business/import`, {
+          method: 'POST',
+          headers: {
+            cookie: adminCookie,
+            'x-wp-nonce': 'invalid-template-smoke-nonce',
+            'content-type': 'application/json',
+          },
+          body: '{"createPages":true}',
+        });
+        check(
+          missingImportNonce.status === 403 && (await missingImportNonce.json()).code === 'rest_cookie_invalid_nonce',
+          'template import rejects a cookie-authenticated REST write with an invalid nonce',
+        );
+        for (const imported of importedPages) {
+          const draft = command('post', 'get', String(imported.page.postId), '--format=json');
+          check(JSON.parse(draft).post_status === 'draft', 'imported template pages remain drafts');
+          const markerCounts = command(
+            'db',
+            'query',
+            "SELECT COUNT(*), COUNT(DISTINCT meta_value) FROM wp_postmeta WHERE meta_key = '_blixis_template_asset_file'",
+            '--skip-column-names',
+          )
+            .trim()
+            .split(/\s+/)
+            .map(Number);
+          check(
+            markerCounts[0] === expectedAssetFiles && markerCounts[0] === markerCounts[1],
+            'bundled files are sideloaded once per pack file',
+          );
+          const layoutResponse = await http(`${base}/?rest_route=/blixis/v1/documents/${imported.page.postId}/layout`, {
+            headers: { cookie: adminCookie, 'x-wp-nonce': adminNonce },
+          });
+          const savedLayout = await layoutResponse.json();
+          const walk = (nodes) => (Array.isArray(nodes) ? nodes.flatMap((node) => [node, ...walk(node.children)]) : []);
+          const types = walk(savedLayout.document?.root).map((node) => node.type);
+          check(
+            layoutResponse.status === 200 && types.includes('page') && types.includes('heading'),
+            `${imported.card.id} stores the expected page and heading element tree`,
+          );
+          const publish = await http(`${base}/?rest_route=/blixis/v1/documents/${imported.page.postId}/publish`, {
+            method: 'POST',
+            headers: {
+              cookie: adminCookie,
+              'x-wp-nonce': adminNonce,
+              'content-type': 'application/json',
+              'if-match': '"0"',
+            },
+            body: JSON.stringify({ layout: true, locale: 'en_US' }),
+          });
+          check(
+            publish.status === 200,
+            `${imported.card.id} imported draft publishes through the existing REST publisher`,
+          );
+          // The importer only creates DRAFT posts (and the builder publish does not change post status): publish the post like an author would.
+          command('post', 'update', String(imported.page.postId), '--post_status=publish');
+          const permalink = command('post', 'get', String(imported.page.postId), '--field=guid').trim();
+          const rendered = await (await http(permalink)).text();
+          const pack = JSON.parse(
+            readFileSync(join(root, 'wordpress/plugin/templates/packs', imported.card.id, 'template.json'), 'utf8'),
+          );
+          const templateHeading = (nodes) => {
+            for (const node of Array.isArray(nodes) ? nodes : []) {
+              if (node.type === 'heading' && node.id === 'hero-title') {
+                return (node.props?.content ?? []).map((part) => part.text ?? '').join('');
+              }
+              const nested = templateHeading(node.children);
+              if (nested) return nested;
+            }
+            return '';
+          };
+          const expectedHeading = templateHeading(pack.documents?.[0]?.root ? [pack.documents[0].root] : []);
+          const renderedText = rendered.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ');
+          check(
+            rendered.includes('data-blx-document') &&
+              rendered.includes('data-blx-id=') &&
+              Boolean(expectedHeading) &&
+              renderedText.includes(expectedHeading.replace(/\s+/g, ' ').trim()) &&
+              /<h1\b/i.test(rendered) &&
+              !/<script[^>]*>\s*alert\(/i.test(rendered) &&
+              !/href=["']javascript:/i.test(rendered),
+            'published imported page renders expected elements without unsafe script or URL output',
+          );
+          if (imported.card.id === 'online-store') {
+            check(
+              rendered.includes('data-blx-unsupported') &&
+                rendered.includes('data-blx-type="woocommerce-cart-link"') &&
+                rendered.includes('data-blx-type="woocommerce-product-grid"') &&
+                rendered.includes('data-blx-id="cart"') &&
+                rendered.includes('data-blx-id="product-query"'),
+              'WooCommerce nodes survive publication as safe static fallbacks with stable element IDs',
+            );
+          }
+          if (imported.card.id === 'business') {
+            const dutchPublish = await http(
+              `${base}/?rest_route=/blixis/v1/documents/${imported.page.postId}/publish`,
+              {
+                method: 'POST',
+                headers: {
+                  cookie: adminCookie,
+                  'x-wp-nonce': adminNonce,
+                  'content-type': 'application/json',
+                  'if-match': '"1"',
+                },
+                body: JSON.stringify({ layout: false, locale: 'nl_NL' }),
+              },
+            );
+            check(dutchPublish.status === 200, 'business imported Dutch localization publishes under nl_NL');
+            const dutchUrl = new URL(permalink);
+            dutchUrl.pathname = `/nl${dutchUrl.pathname}`;
+            const dutchRendered = await (await http(dutchUrl.toString())).text();
+            const dutchText = dutchRendered.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ');
+            check(
+              dutchRendered.includes('data-blx-document') && dutchText.includes('Samen bouwen aan morgen'),
+              'published imported business page renders its Dutch hero text at the nl_NL route',
+            );
+          }
+        }
         for (const card of templateCards) {
           const preview = await http(card.previewUrl);
           check(
@@ -357,6 +582,30 @@ async function smoke() {
             `${card.id} preview URL serves an image`,
           );
         }
+        for (const postId of command(
+          'post',
+          'list',
+          '--post_type=page',
+          '--meta_key=_blixis_template_import',
+          '--format=ids',
+        )
+          .split(/\s+/)
+          .filter(Boolean))
+          command('post', 'delete', postId, '--force');
+        for (const attachmentId of command(
+          'post',
+          'list',
+          '--post_type=attachment',
+          '--meta_key=_blixis_template_asset_file',
+          '--format=ids',
+        )
+          .split(/\s+/)
+          .filter(Boolean))
+          command('post', 'delete', attachmentId, '--force');
+        command(
+          'eval',
+          `foreach (get_terms(['taxonomy' => 'nav_menu', 'hide_empty' => false]) as $menu) { if (preg_match('/^(business|creative-agency|modern-homes|online-store) navigation$/', $menu->name)) wp_delete_nav_menu($menu->term_id); }`,
+        );
         const collection = await http(`${base}/?rest_route=/wp/v2/font-collections/blixis`, {
           headers: { cookie: adminCookie, 'x-wp-nonce': adminNonce },
         });
@@ -1669,6 +1918,8 @@ async function smoke() {
         const unchanged = await json(await api(`${hostileTarget}/layout`, { cookie: adminCookie, nonce: adminNonce }));
         check(unchanged.revision === 0, 'hostile bodies never change stored data');
         command('post', 'delete', hostileTarget, '--force');
+        // The template import block enabled nl_NL: later blocks assume the default single-language site.
+        command('option', 'delete', 'blixis_locales');
         // Locale routing (BWB-111): prefix routes, published-only locales, hreflang, lang and dir, fallback policy, route safety.
         const setLocales = (value) =>
           command('option', 'update', 'blixis_locales', JSON.stringify(value), '--format=json');
@@ -2860,17 +3111,18 @@ async function smoke() {
             check(response.status === 302, 'style layout step advances');
             html = await stepPage(5);
             check(
-              html.includes('Can’t be imported yet') &&
-                html.includes('Technical details') &&
-                html.includes('blx-import-details-list') &&
-                !html.replace(/<details[\s\S]*?<\/details>/g, '').includes('<li>Element type'),
-              'content import controls summarize refusals and collapse technical details',
+              html.includes('Import template content') &&
+                html.includes('name="importOptions[createPages]"') &&
+                html.includes('name="importOptions[createNavigation]"') &&
+                html.includes('name="action" value="blixis_import_template"') &&
+                html.includes('Import selected content'),
+              'importable template content step exposes real option checkboxes and an Import action',
             );
             response = await submit(5, html, {});
             check(response.status === 302, 'content step advances without reporting fake imports');
             check(
-              html.includes('blx-import-summary') && /required elements are unavailable/i.test(html),
-              'content step keeps a concise import summary',
+              html.includes('blx-import-summary') && !/required elements are unavailable/i.test(html),
+              'content step reports the selected template importability honestly',
             );
             // BWB-035: applying persists the design system, completes setup and prints the saved tokens.
             html = await stepPage(6);
@@ -2919,8 +3171,7 @@ async function smoke() {
               finishPage.status === 200 &&
                 /<h1[^>]*>Setup <span>Complete!<\/span><\/h1>/.test(finishHtml) &&
                 finishHtml.includes('Your site is ready!') &&
-                finishHtml.includes('Launch Website') &&
-                finishHtml.includes('Demo content import unavailable'),
+                finishHtml.includes('Launch Website'),
               'successful apply shows the honest Finish success state',
             );
             check(

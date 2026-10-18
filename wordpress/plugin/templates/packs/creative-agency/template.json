@@ -718,37 +718,8 @@
           }
         ]
       },
-      "importable": false,
-      "importabilityReasons": [
-        "Element type \"button\" uses unsupported prop \"target\".",
-        "Element type \"card\" has prop \"variant\" with no core schema.",
-        "Element type \"card\" is not available in the core element registry.",
-        "Element type \"columns\" has prop \"ratios\" with no core schema.",
-        "Element type \"columns\" is not available in the core element registry.",
-        "Element type \"container\" uses unsupported prop \"maxWidthToken\".",
-        "Element type \"grid\" has prop \"columns\" with no core schema.",
-        "Element type \"grid\" has prop \"gapToken\" with no core schema.",
-        "Element type \"grid\" is not available in the core element registry.",
-        "Element type \"heading\" uses unsupported prop \"content\".",
-        "Element type \"heading\" uses unsupported prop \"tag\".",
-        "Element type \"image\" uses unsupported prop \"assetRef\".",
-        "Element type \"image\" uses unsupported prop \"fit\".",
-        "Element type \"image\" uses unsupported prop \"loading\".",
-        "Element type \"navigation\" has prop \"items\" with no core schema.",
-        "Element type \"navigation\" is not available in the core element registry.",
-        "Element type \"page\" is not available in the core element registry.",
-        "Element type \"row\" is not available in the core element registry.",
-        "Element type \"section\" uses unsupported prop \"semanticTag\".",
-        "Element type \"section\" uses unsupported prop \"variant\".",
-        "Element type \"site-footer\" is not available in the core element registry.",
-        "Element type \"site-header\" has prop \"sticky\" with no core schema.",
-        "Element type \"site-header\" is not available in the core element registry.",
-        "Element type \"site-logo\" has prop \"assetRef\" with no core schema.",
-        "Element type \"site-logo\" has prop \"link\" with no core schema.",
-        "Element type \"site-logo\" is not available in the core element registry.",
-        "Element type \"stack\" is not available in the core element registry.",
-        "Element type \"text\" uses unsupported prop \"content\"."
-      ]
+      "importable": true,
+      "importabilityReasons": []
     }
   ],
   "localizations": {

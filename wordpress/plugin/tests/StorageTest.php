@@ -52,7 +52,7 @@ final class StorageTest extends TestCase {
 		foreach ( [ MetaKeys::LAYOUT, MetaKeys::PUBLISHED, MetaKeys::content( 'nl_NL' ), MetaKeys::snap_layout( 1 ), MetaKeys::snap_content( 'en_US', 12 ) ] as $key ) {
 			$this->assertTrue( MetaKeys::is_valid_key( $key ), $key );
 		}
-		foreach ( [ '_blixis_content_../x', '_blixis_content_NL_nl', '_blixis_content_' . \str_repeat( 'a', 21 ), '_blixis_content___proto__', '_blixis_content_en_US;DROP', '_blixis_snap_layout_0', '_blixis_snap_layout_01', '_blixis_snap_content_nl_NL_0' ] as $key ) {
+		foreach ( [ '_blixis_content_../x', '_blixis_content_NL_nl', '_blixis_content_' . \str_repeat( 'a', 21 ), '_blixis_content___proto__', '_blixis_content_en_US;DROP', '_blixis_content_en', '_blixis_snap_layout_0', '_blixis_snap_layout_01', '_blixis_snap_content_nl_NL_0' ] as $key ) {
 			$this->assertFalse( MetaKeys::is_valid_key( $key ), $key );
 		}
 	}

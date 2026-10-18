@@ -51,6 +51,7 @@ function repo(extra = (r) => r) {
   put('wordpress/plugin/blixis-builder.php', '<?php\n/**\n * Plugin Name: Blixis Builder\n * Version: 0.1.0\n */\n');
   put('wordpress/plugin/bin/tool.php', '<?php // cli\n', 0o755);
   put('wordpress/plugin/data/core-elements.json', '{"apiVersion":1,"elements":[]}\n');
+  put('wordpress/plugin/data/element-definitions-v2.json', '{"schemaVersion":"2.0.0","definitions":[]}\n');
   put('wordpress/plugin/data/css-properties.json', '{"properties":{}}\n');
   put('wordpress/plugin/assets/editor/editor.js', '(()=>{})();\n');
   put('wordpress/plugin/assets/editor/editor.css', '.blx-editor{}\n');
@@ -144,6 +145,7 @@ test('entries are sorted, timestamps fixed to the DOS epoch, permissions normali
       'blixis-builder/blixis-builder.php',
       'blixis-builder/data/core-elements.json',
       'blixis-builder/data/css-properties.json',
+      'blixis-builder/data/element-definitions-v2.json',
       'blixis-builder/languages/blixis-builder-nl_NL.mo',
     ],
   );
