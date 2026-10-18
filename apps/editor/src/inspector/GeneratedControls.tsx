@@ -130,12 +130,20 @@ export function GeneratedControls({ element, editable }: { element: ElementNode;
                       type="button"
                       aria-label={`${label}: ${t(read(value) ? 'inspector.generated.changeMediaAsset' : 'inspector.generated.chooseMediaAsset')}`}
                       disabled={!editable}
-                      onClick={() => setMediaPicker(name)}
+                      onClick={() => {
+                        setMediaPicker(name);
+                      }}
                     >
                       {t(read(value) ? 'inspector.generated.changeMediaAsset' : 'inspector.generated.chooseMediaAsset')}
                     </button>
                     {read(value) && (
-                      <button type="button" disabled={!editable} onClick={() => commit(name, property, null)}>
+                      <button
+                        type="button"
+                        disabled={!editable}
+                        onClick={() => {
+                          commit(name, property, null);
+                        }}
+                      >
                         {t('inspector.generated.remove')}
                       </button>
                     )}
