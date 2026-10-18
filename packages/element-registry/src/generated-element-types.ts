@@ -21311,7 +21311,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'alert',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -70761,7 +70761,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:danger-circle-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'alert alert ui-components alert element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },

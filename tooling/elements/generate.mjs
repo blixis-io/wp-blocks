@@ -70,6 +70,7 @@ const editorReady = new Set([
   'progress',
   'spinner',
   'skeleton',
+  'alert',
 ]);
 for (const entry of catalog.elements) {
   const definition = await readJson(path.join(definitionsDir, entry.file));

@@ -28,6 +28,7 @@ describe('generated v2 element registry', () => {
     expect(isElementInsertableV2('blixis/keyboard-shortcut')).toBe(true);
     expect(isElementInsertableV2('blixis/timeline')).toBe(true);
     expect(isElementInsertableV2('blixis/avatar')).toBe(true);
+    expect(isElementInsertableV2('blixis/alert')).toBe(true);
   });
 
   it('validates declared props and rejects undeclared and editor-only values', () => {
