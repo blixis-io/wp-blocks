@@ -17098,7 +17098,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'navigation',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -17354,7 +17354,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'pagination',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -70577,7 +70577,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'navigation',
     icon: 'solar:route-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'breadcrumbs breadcrumbs navigation breadcrumbs element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -70588,7 +70588,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'navigation',
     icon: 'solar:arrow-right-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'pagination pagination navigation pagination element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },

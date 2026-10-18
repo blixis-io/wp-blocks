@@ -380,6 +380,8 @@ describe('generated editor registry', () => {
       'list',
       'link',
       'steps',
+      'breadcrumbs',
+      'pagination',
       'progress',
       'spinner',
       'skeleton',

@@ -270,6 +270,8 @@ export function createEditorRegistry(): ElementRegistry {
     'list',
     'link',
     'steps',
+    'breadcrumbs',
+    'pagination',
     'progress',
     'spinner',
     'skeleton',

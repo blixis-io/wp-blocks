@@ -639,7 +639,7 @@
       "category": "navigation",
       "icon": "solar:route-linear",
       "tier": "free",
-      "status": "planned",
+      "status": "ready",
       "keywords": "breadcrumbs breadcrumbs navigation breadcrumbs element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
     },
     {
@@ -649,7 +649,7 @@
       "category": "navigation",
       "icon": "solar:arrow-right-linear",
       "tier": "free",
-      "status": "planned",
+      "status": "ready",
       "keywords": "pagination pagination navigation pagination element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
     },
     {

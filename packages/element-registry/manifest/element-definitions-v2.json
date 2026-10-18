@@ -28973,7 +28973,7 @@
         ]
       },
       "archetype": "navigation",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -29406,7 +29406,7 @@
         ]
       },
       "archetype": "pagination",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",

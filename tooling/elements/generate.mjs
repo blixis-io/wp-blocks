@@ -50,6 +50,8 @@ const editorReady = new Set([
   'list',
   'link',
   'steps',
+  'breadcrumbs',
+  'pagination',
   'progress',
   'spinner',
   'skeleton',
