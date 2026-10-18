@@ -1469,7 +1469,7 @@
         ]
       },
       "archetype": "container",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -4321,7 +4321,7 @@
         ]
       },
       "archetype": "simple",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -4676,7 +4676,7 @@
         ]
       },
       "archetype": "simple",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",

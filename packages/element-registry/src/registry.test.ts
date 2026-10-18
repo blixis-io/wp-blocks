@@ -361,7 +361,7 @@ describe('registration rules', () => {
 });
 
 describe('generated editor registry', () => {
-  it('adds the ten template-critical palette types while preserving the legacy core registry', () => {
+	it('adds ready template palette types with authored style metadata', () => {
     const registry = createEditorRegistry();
     for (const id of [
       'page',
@@ -374,6 +374,9 @@ describe('generated editor registry', () => {
       'site-header',
       'site-footer',
       'site-logo',
+      'div',
+      'spacer',
+      'separator',
     ])
       expect(registry.has(`blixis/${id}`)).toBe(true);
     expect(createCoreRegistry().list()).toHaveLength(6);
@@ -383,6 +386,7 @@ describe('generated editor registry', () => {
       kind: 'json',
       classification: 'translatable',
     });
+    expect(registry.get('blixis/spacer')?.styleProperties).toContain('height');
   });
 });
 

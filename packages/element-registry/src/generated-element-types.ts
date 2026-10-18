@@ -1050,7 +1050,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'container',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -2588,7 +2588,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'simple',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -2806,7 +2806,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'simple',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -69917,7 +69917,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'layout',
     icon: 'solar:widget-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'div div layout div element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -69983,7 +69983,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'layout',
     icon: 'solar:minus-circle-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'spacer spacer layout spacer element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -69994,7 +69994,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'layout',
     icon: 'solar:minus-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'separator separator layout separator element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },

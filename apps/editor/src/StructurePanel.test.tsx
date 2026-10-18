@@ -82,7 +82,7 @@ describe('left panel and element palette', () => {
     const palette = screen.getByRole('region', { name: 'Elements' });
     for (const name of ['Section', 'Container', 'Heading', 'Text', 'Image', 'Button'])
       expect(within(palette).getByRole('button', { name })).toBeTruthy();
-    expect(within(palette).getAllByRole('button')).toHaveLength(16);
+    expect(within(palette).getAllByRole('button')).toHaveLength(19);
   });
 
   it('remembers the selected left tab for the current session', async () => {
@@ -370,6 +370,9 @@ describe('left panel and element palette', () => {
     ['blixis/text', 'el-container-1'],
     ['blixis/image', 'el-container-1'],
     ['blixis/button', 'el-container-1'],
+    ['blixis/div', 'el-container-1'],
+    ['blixis/spacer', 'el-container-1'],
+    ['blixis/separator', 'el-container-1'],
   ])('inserts %s with only the registered invariant defaults', async (type, parent) => {
     const user = userEvent.setup();
     const { store } = renderEditor();

@@ -13,8 +13,9 @@ describe('generated v2 element registry', () => {
     expect(getElementDefinitionV2('blixis/heading')?.id).toBe('heading');
     expect(isElementInsertableV2('blixis/heading')).toBe(true);
     expect(isElementInsertableV2('blixis/grid')).toBe(true);
-    expect(isElementInsertableV2('blixis/div')).toBe(false);
+    expect(isElementInsertableV2('blixis/div')).toBe(true);
     expect(isElementInsertableV2('blixis/div', true)).toBe(true);
+    expect(isElementInsertableV2('blixis/flex')).toBe(false);
   });
 
   it('validates declared props and rejects undeclared and editor-only values', () => {
