@@ -251,6 +251,7 @@ export const en_US = {
   'inspector.prop.maxWidth': 'Maximum width',
   'inspector.prop.attachmentId': 'Media attachment ID',
   'inspector.prop.src': 'Media source attachment',
+  'inspector.prop.icon': 'Icon',
   'inspector.prop.poster': 'Poster image attachment',
   'inspector.prop.content': 'Content',
   'inspector.prop.alt': 'Alternative text',

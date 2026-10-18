@@ -939,6 +939,18 @@ describe('Inspector controls', () => {
     expect(screen.getByRole('combobox', { name: 'Button style' })).toBeTruthy();
   });
 
+  it('renders the icon picker with only supported local SVG glyphs', async () => {
+    const { store } = await mount('blixis/icon-svg', { tab: 'content', reactive: false });
+    const icon = screen.getByRole<HTMLSelectElement>('combobox', { name: 'Icon' });
+    expect(Array.from(icon.options).map((option) => option.value)).toEqual([
+      'solar:star-linear',
+      'solar:check-circle-linear',
+      'solar:info-circle-linear',
+    ]);
+    fireEvent.change(icon, { target: { value: 'solar:info-circle-linear' } });
+    expect(store.getState().document?.root[0]?.props['icon']).toBe('solar:info-circle-linear');
+  });
+
   it('stores attachment references from generated media controls', async () => {
     const { store } = await mount('blixis/video', { tab: 'content', reactive: false });
     fireEvent.change(screen.getByRole('spinbutton', { name: 'Media source attachment' }), {

@@ -257,6 +257,7 @@ export const nl_NL: Record<MessageKey, string> = {
   'inspector.prop.maxWidth': 'Maximale breedte',
   'inspector.prop.attachmentId': 'Media-bijlage-ID',
   'inspector.prop.src': 'Media-bron',
+  'inspector.prop.icon': 'Pictogram',
   'inspector.prop.poster': 'Posterafbeelding',
   'inspector.prop.content': 'Inhoud',
   'inspector.prop.alt': 'Alternatieve tekst',

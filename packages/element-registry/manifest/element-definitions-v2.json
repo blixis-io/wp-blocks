@@ -19159,7 +19159,12 @@
           "default": "solar:star-linear",
           "description": "Full Iconify identifier (solar namespace).",
           "required": false,
-          "control": "icon-picker"
+          "control": "icon-picker",
+          "options": [
+            "solar:star-linear",
+            "solar:check-circle-linear",
+            "solar:info-circle-linear"
+          ]
         },
         "size": {
           "type": "number",
@@ -19454,7 +19459,7 @@
         ]
       },
       "archetype": "icon",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",

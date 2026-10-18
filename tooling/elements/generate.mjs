@@ -47,6 +47,7 @@ const editorReady = new Set([
   'post-terms',
   'icon-list',
   'icon',
+  'icon-svg',
   'icon-button',
   'code-block',
   'syntax-highlighter',

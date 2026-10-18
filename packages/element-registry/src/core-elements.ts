@@ -276,6 +276,7 @@ export function createEditorRegistry(): ElementRegistry {
     'post-terms',
     'icon-list',
     'icon',
+    'icon-svg',
     'icon-button',
     'code-block',
     'syntax-highlighter',
