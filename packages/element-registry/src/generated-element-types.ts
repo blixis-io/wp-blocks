@@ -18425,7 +18425,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'tabs',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -18686,7 +18686,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'accordion',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -70872,7 +70872,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'navigation',
     icon: 'solar:layers-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'tabs tabs navigation tabs element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -70883,7 +70883,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'navigation',
     icon: 'solar:list-down-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'accordion accordion navigation accordion element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },

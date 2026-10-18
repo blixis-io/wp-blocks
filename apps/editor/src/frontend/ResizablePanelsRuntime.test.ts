@@ -17,6 +17,7 @@ type InitLightbox = (root: HTMLElement) => void;
 type InitImageComparison = (root: HTMLElement) => void;
 type InitMap = (root: HTMLElement) => void;
 type InitPanorama = (root: HTMLElement) => void;
+type InitDisclosure = (root: HTMLElement) => void;
 
 function makePanels(orientation = 'horizontal', minimum = 20) {
   const root = document.createElement('div');
@@ -49,6 +50,8 @@ afterEach(() => {
   delete (window as Window & { blxInitImageComparison?: InitImageComparison }).blxInitImageComparison;
   delete (window as Window & { blxInitMap?: InitMap }).blxInitMap;
   delete (window as Window & { blxInitPanorama?: InitPanorama }).blxInitPanorama;
+  delete (window as Window & { blxInitAccordion?: InitDisclosure }).blxInitAccordion;
+  delete (window as Window & { blxInitTabs?: InitDisclosure }).blxInitTabs;
   if (originalDialogShowModal) Object.defineProperty(HTMLDialogElement.prototype, 'showModal', originalDialogShowModal);
   else delete (HTMLDialogElement.prototype as Partial<HTMLDialogElement>).showModal;
   if (originalDialogClose) Object.defineProperty(HTMLDialogElement.prototype, 'close', originalDialogClose);
@@ -56,6 +59,48 @@ afterEach(() => {
 });
 
 describe('public content element enhancement', () => {
+  it('enhances fallback links into keyboard-operable tabs', () => {
+    const root = document.createElement('div');
+    root.setAttribute('data-blx-tabs', '');
+    root.setAttribute('data-blx-tabs-default', 'details');
+    root.innerHTML =
+      '<nav><ul><li><a id="tab-overview" href="#panel-overview" data-blx-tab-key="overview">Overview</a></li><li><a id="tab-details" href="#panel-details" data-blx-tab-key="details">Details</a></li></ul></nav><section id="panel-overview"><p>Overview text</p></section><section id="panel-details"><p>Details text</p></section>';
+    document.body.append(root);
+    runInNewContext(runtime, { window, document });
+    const initialize = (window as Window & { blxInitTabs?: InitDisclosure }).blxInitTabs;
+    if (!initialize) throw new Error('tabs initializer missing');
+    initialize(root);
+    const links = Array.from(root.querySelectorAll<HTMLAnchorElement>('nav a'));
+    const panels = Array.from(root.querySelectorAll<HTMLElement>('section'));
+    expect(links.map((link) => link.getAttribute('aria-selected'))).toEqual(['false', 'true']);
+    expect(panels.map((panel) => panel.hidden)).toEqual([true, false]);
+    links[1]?.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+    expect(links.map((link) => link.getAttribute('aria-selected'))).toEqual(['true', 'false']);
+    expect(document.activeElement).toBe(links[0]);
+    expect(panels.map((panel) => panel.hidden)).toEqual([false, true]);
+  });
+
+  it('keeps a single-open accordion to one expanded item', () => {
+    const root = document.createElement('div');
+    root.setAttribute('data-blx-accordion', '');
+    root.setAttribute('data-blx-accordion-multiple', 'false');
+    root.setAttribute('data-blx-accordion-collapsible', 'true');
+    root.innerHTML =
+      '<details><summary>One</summary><p>First</p></details><details><summary>Two</summary><p>Second</p></details>';
+    document.body.append(root);
+    runInNewContext(runtime, { window, document });
+    const initialize = (window as Window & { blxInitAccordion?: InitDisclosure }).blxInitAccordion;
+    if (!initialize) throw new Error('accordion initializer missing');
+    initialize(root);
+    const items = Array.from(root.querySelectorAll<HTMLDetailsElement>('details'));
+    if (!items[0] || !items[1]) throw new Error('accordion items missing');
+    items[0].open = true;
+    items[0].dispatchEvent(new Event('toggle'));
+    items[1].open = true;
+    items[1].dispatchEvent(new Event('toggle'));
+    expect(items.map((item) => item.open)).toEqual([false, true]);
+  });
+
   it('copies code and reports the result through a live status', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(window.navigator, 'clipboard', { configurable: true, value: { writeText } });

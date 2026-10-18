@@ -15,6 +15,16 @@ final class ContentElementsCss {
 	/** Return deterministic, scoped CSS. */
 	public static function css(): string {
 		return '[data-blx-code-line-numbers]{counter-reset:blx-code-line}'
+			. '[data-blx-tabs] nav[role="tablist"] ul{display:flex;flex-wrap:wrap;gap:.25rem;list-style:none;margin:0;padding:0;border-block-end:1px solid currentColor}'
+			. '[data-blx-tabs][data-blx-tabs-orientation="vertical"] nav[role="tablist"] ul{flex-direction:column;align-items:stretch;border-block-end:0;border-inline-start:1px solid currentColor}'
+			. '[data-blx-tabs] [role="tab"]{display:block;padding:.55rem .8rem;border:0;border-block-end:.2rem solid transparent;background:transparent;color:inherit;font:inherit;text-decoration:none}'
+			. '[data-blx-tabs][data-blx-tabs-orientation="vertical"] [role="tab"]{border-block-end:0;border-inline-start:.2rem solid transparent}'
+			. '[data-blx-tabs] [role="tab"][aria-selected="true"]{border-color:currentColor;font-weight:700}'
+			. '[data-blx-tabs] [role="tab"]:focus-visible{outline:2px solid currentColor;outline-offset:2px}'
+			. '[data-blx-tabs] [role="tabpanel"]{padding-block:.75rem}'
+			. '[data-blx-tabs] [role="tabpanel"][hidden]{display:none}'
+			. '[data-blx-accordion] details+details{border-block-start:1px solid currentColor}'
+			. '[data-blx-accordion] summary{cursor:pointer;padding-block:.5rem}'
 			. '[data-blx-code-line]{display:block}'
 			. '[data-blx-code-line-numbers] [data-blx-code-line]{counter-increment:blx-code-line}'
 			. '[data-blx-code-line-numbers] [data-blx-code-line]::before{content:counter(blx-code-line);display:inline-block;min-width:2.5em;margin-inline-end:1em;opacity:.5;text-align:end;user-select:none}'

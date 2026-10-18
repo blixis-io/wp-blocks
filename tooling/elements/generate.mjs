@@ -72,6 +72,8 @@ const editorReady = new Set([
   'card',
   'avatar',
   'navigation',
+  'tabs',
+  'accordion',
   'site-header',
   'site-footer',
   'site-logo',
