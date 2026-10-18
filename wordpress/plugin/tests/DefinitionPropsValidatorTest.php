@@ -55,4 +55,13 @@ final class DefinitionPropsValidatorTest extends TestCase {
 		$this->assertTrue( $validator->accepts( $valid ) );
 		$this->assertFalse( $validator->accepts( $invalid ) );
 	}
+
+	/** Array item types are recursively checked for attachment-backed asset references. */
+	public function test_validates_array_asset_references(): void {
+		$validator = new DefinitionPropsValidator( ElementDefinitionRegistry::from_manifest_file( dirname( __DIR__ ) . '/data/element-definitions-v2.json' ) );
+		$valid     = json_decode( '{"id":"avatar-group-1","type":"blixis/avatar-group","props":{"assets":["attachment:42","asset:profile"]},"children":[]}' );
+		$invalid   = json_decode( '{"id":"avatar-group-2","type":"blixis/avatar-group","props":{"assets":["javascript:alert(1)"]},"children":[]}' );
+		$this->assertTrue( $validator->accepts( $valid ) );
+		$this->assertFalse( $validator->accepts( $invalid ) );
+	}
 }

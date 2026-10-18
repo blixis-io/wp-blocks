@@ -139,6 +139,61 @@ export function GeneratedControls({ element, editable }: { element: ElementNode;
               control === 'media-repeater'
             ) {
               const rows: unknown[] = Array.isArray(value) ? value : [];
+              if (control === 'media-repeater' && property['type'] === 'array<asset-ref>') {
+                return (
+                  <fieldset className="blx-inspector-field" key={name}>
+                    <legend>{label}</legend>
+                    {rows.map((reference, index) => (
+                      <div key={`${name}-${String(index)}`} className="blx-generated-repeater-row">
+                        <label>
+                          {t('inspector.generated.mediaAsset', { index: index + 1 })}
+                          <input
+                            type="text"
+                            value={read(reference)}
+                            placeholder="attachment:42"
+                            disabled={!editable}
+                            onChange={(event) => {
+                              const nextReference = event.currentTarget.value.trim();
+                              if (nextReference === '') {
+                                commit(name, property, rows.filter((_, rowIndex) => rowIndex !== index) as Json);
+                                return;
+                              }
+                              if (!/^(?:(?:asset:)?[a-zA-Z0-9_-]{1,128}|attachment:[1-9]\d{0,8})$/.test(nextReference))
+                                return;
+                              commit(
+                                name,
+                                property,
+                                rows.map((old, rowIndex) =>
+                                  rowIndex === index ? nextReference : (old as Json),
+                                ) as Json,
+                              );
+                            }}
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          disabled={!editable}
+                          onClick={() => {
+                            commit(name, property, rows.filter((_, rowIndex) => rowIndex !== index) as Json);
+                          }}
+                        >
+                          {t('inspector.generated.remove')}
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      disabled={!editable}
+                      onClick={() => {
+                        commit(name, property, [...(rows as Json[]), null]);
+                      }}
+                    >
+                      {t('inspector.generated.addMediaAsset')}
+                    </button>
+                    <p className="blx-inspector-hint">{t('inspector.generated.attachmentIdHelp')}</p>
+                  </fieldset>
+                );
+              }
               if (
                 control === 'repeater' &&
                 name === 'steps' &&

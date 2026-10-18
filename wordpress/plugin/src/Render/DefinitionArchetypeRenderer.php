@@ -281,24 +281,22 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		$columns = is_numeric( $columns ) ? max( 1, min( 6, (int) $columns ) ) : 3;
 		$label   = $node->value( 'ariaLabel', 'Image gallery' );
 		$html    = '<div' . $hooks . ' data-blx-columns="' . $columns . '"' . ( is_string( $label ) && '' !== trim( $label ) ? ' role="group" aria-label="' . Escape::attr( $label ) . '"' : '' ) . '><ul>';
-		if ( $this->media instanceof AssetReferenceResolver ) {
-			foreach ( $assets as $reference ) {
-				if ( ! is_string( $reference ) ) {
-					continue;
-				}
-				$image = $this->media->resolve_reference( $reference );
-				if ( ! is_array( $image ) || ! is_string( $image['url'] ?? null ) || ! SafeUrl::accepts( $image['url'] ) ) {
-					continue;
-				}
+		foreach ( $assets as $reference ) {
+			if ( ! is_string( $reference ) ) {
+				continue;
+			}
+			$image = $this->resolve_image_reference( $reference );
+			if ( ! is_array( $image ) || ! is_string( $image['url'] ?? null ) || ! SafeUrl::accepts( $image['url'] ) ) {
+				continue;
+			}
 				$alt    = is_string( $image['alt'] ?? null ) ? $image['alt'] : '';
 				$srcset = is_string( $image['srcset'] ?? null ) ? \Blixis\Builder\Media\MediaPolicy::srcset( $image['srcset'] ) : null;
 				$sizes  = null !== $srcset && is_string( $image['sizes'] ?? null ) ? \Blixis\Builder\Media\MediaPolicy::sizes( $image['sizes'] ) : null;
 				$html  .= '<li><img src="' . Escape::url( $image['url'] ) . '"' . ( null === $srcset ? '' : ' srcset="' . Escape::attr( $srcset ) . '"' ) . ( null === $sizes ? '' : ' sizes="' . Escape::attr( $sizes ) . '"' ) . ' width="' . (int) ( $image['width'] ?? 0 ) . '" height="' . (int) ( $image['height'] ?? 0 ) . '" alt="' . Escape::attr( $alt ) . '" loading="lazy" decoding="async">';
-				if ( true === $node->value( 'captions', false ) && '' !== $alt ) {
-					$html .= '<figcaption>' . Escape::html( $alt ) . '</figcaption>';
-				}
-				$html .= '</li>';
+			if ( true === $node->value( 'captions', false ) && '' !== $alt ) {
+				$html .= '<figcaption>' . Escape::html( $alt ) . '</figcaption>';
 			}
+				$html .= '</li>';
 		}
 		return $html . '</ul></div>';
 	}
@@ -702,13 +700,7 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		if ( ! is_string( $reference ) ) {
 			return '';
 		}
-		if ( preg_match( '/^attachment:([1-9][0-9]{0,8})$/D', $reference, $matches ) ) {
-			$image = $this->media->resolve( (int) $matches[1] );
-		} elseif ( $this->media instanceof AssetReferenceResolver ) {
-			$image = $this->media->resolve_reference( $reference );
-		} else {
-			return '';
-		}
+		$image = $this->resolve_image_reference( $reference );
 		if ( null === $image || ! SafeUrl::accepts( $image['url'] ) ) {
 			return '';
 		}
@@ -725,5 +717,17 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		$priority      = is_string( $priority ) && in_array( $priority, [ 'auto', 'high', 'low' ], true ) ? $priority : 'auto';
 		$priority_attr = 'auto' !== $priority ? ' fetchpriority="' . $priority . '"' : '';
 		return '<img' . Escape::hooks( $node ) . ' src="' . Escape::url( $image['url'] ) . '"' . ( null === $srcset ? '' : ' srcset="' . Escape::attr( $srcset ) . '"' ) . ( null === $sizes ? '' : ' sizes="' . Escape::attr( $sizes ) . '"' ) . ' width="' . (int) $image['width'] . '" height="' . (int) $image['height'] . '" alt="' . Escape::attr( $alt ) . '" loading="' . $loading . '"' . $priority_attr . ' decoding="async">';
+	}
+
+	/** Resolve either an attachment id or a bundled asset key as a safe image.
+	 *
+	 * @param string $reference Saved asset reference.
+	 * @return array{url:string,width:int,height:int,alt:string,srcset?:string,sizes?:string}|null Resolved image.
+	 */
+	private function resolve_image_reference( string $reference ): ?array {
+		if ( 1 === preg_match( '/^attachment:([1-9][0-9]{0,8})$/D', $reference, $matches ) ) {
+			return $this->media->resolve( (int) $matches[1] );
+		}
+		return $this->media instanceof AssetReferenceResolver ? $this->media->resolve_reference( $reference ) : null;
 	}
 }

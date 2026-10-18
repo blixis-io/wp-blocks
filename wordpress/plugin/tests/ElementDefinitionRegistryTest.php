@@ -84,6 +84,21 @@ final class ElementDefinitionRegistryTest extends TestCase {
 			)
 		);
 		$this->assertSame(
+			'<div data-blx-id="avatar-group-1" data-blx-type="blixis/avatar-group" data-blx-columns="2" role="group" aria-label="Team"><ul><li><img src="https://example.test/avatar.png" width="64" height="64" alt="Profile" loading="lazy" decoding="async"></li></ul></div>',
+			$renderer->render(
+				new ElementNode(
+					'avatar-group-1',
+					'blixis/avatar-group',
+					[
+						'assets'    => [ 'attachment:42' ],
+						'columns'   => 2,
+						'ariaLabel' => 'Team',
+					]
+				),
+				new RenderContext()
+			)
+		);
+		$this->assertSame(
 			'<main data-blx-id="layout-1" data-blx-type="blixis/div" id="content-area" aria-label="Main &amp; content" hidden><p>Child</p></main>',
 			$renderer->render(
 				new ElementNode(

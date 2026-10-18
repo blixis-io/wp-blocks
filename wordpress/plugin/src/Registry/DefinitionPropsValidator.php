@@ -49,7 +49,20 @@ final class DefinitionPropsValidator {
 	 * @param mixed               $value Candidate value.
 	 */
 	private function value( array $property, mixed $value ): bool {
-		$type  = $property['type'] ?? '';
+		$type = $property['type'] ?? '';
+		if ( is_string( $type ) && str_starts_with( $type, 'array<' ) && str_ends_with( $type, '>' ) ) {
+			if ( ! is_array( $value ) || ! array_is_list( $value ) ) {
+				return false;
+			}
+			$item_property         = $property;
+			$item_property['type'] = substr( $type, 6, -1 );
+			foreach ( $value as $item ) {
+				if ( ! $this->value( $item_property, $item ) ) {
+					return false;
+				}
+			}
+			return true;
+		}
 		$valid = match ( $type ) {
 			'string' => is_string( $value ) || ( $value instanceof \stdClass && \Blixis\Builder\Render\RichText::valid( $value ) ),
 			'url', 'token' => is_string( $value ),
@@ -57,9 +70,6 @@ final class DefinitionPropsValidator {
 			'rich-text' => is_string( $value ) || ( $value instanceof \stdClass && \Blixis\Builder\Render\RichText::valid( $value ) ),
 			'enum' => is_string( $value ) && in_array( $value, $property['options'] ?? [], true ),
 			'boolean' => is_bool( $value ), 'number' => is_int( $value ) || is_float( $value ), 'integer' => is_int( $value ),
-			'array<string>' => is_array( $value ) && array_is_list( $value ) && count( array_filter( $value, 'is_string' ) ) === count( $value ),
-			'array<number>' => is_array( $value ) && array_is_list( $value ) && count( array_filter( $value, 'is_numeric' ) ) === count( $value ),
-			'array<object>' => is_array( $value ) && array_is_list( $value ),
 			'object' => $value instanceof \stdClass || ( is_array( $value ) && ! array_is_list( $value ) ),
 			'media-id' => null === $value || ( is_int( $value ) && $value >= 0 ),
 			default => false,

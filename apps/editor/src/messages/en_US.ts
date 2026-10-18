@@ -153,6 +153,8 @@ export const en_US = {
   'inspector.generated.link': 'link',
   'inspector.generated.children': 'Child links',
   'inspector.generated.attachmentIdHelp': 'Enter a WordPress media attachment ID.',
+  'inspector.generated.mediaAsset': 'Image {index} reference',
+  'inspector.generated.addMediaAsset': 'Add image',
   'inspector.generated.stepTitle': 'Step {index} title',
   'inspector.generated.stepDescription': 'Step {index} description',
   'inspector.generated.addStep': 'Add step',

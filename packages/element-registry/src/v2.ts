@@ -59,21 +59,18 @@ function validProperty(type: string, property: Record<string, unknown>, value: u
     );
   }
   if (type === 'enum') return options.includes(value);
-  if (type.startsWith('array<'))
-    return (
-      Array.isArray(value) &&
-      value.every((item) =>
-        type === 'array<string>'
-          ? typeof item === 'string'
-          : item !== null && typeof item === 'object' && !Array.isArray(item),
-      )
-    );
+  if (type.startsWith('array<') && type.endsWith('>')) {
+    if (!Array.isArray(value)) return false;
+    const itemType = type.slice('array<'.length, -1);
+    return value.every((item) => validProperty(itemType, property, item));
+  }
   if (type === 'asset-ref')
     return (
       value === null ||
       (typeof value === 'string' && /^(?:(?:asset:)?[a-zA-Z0-9_-]{1,128}|attachment:[1-9]\d{0,8})$/.test(value))
     );
   if (type === 'url') return typeof value === 'string' && isSafeUrl(value);
+  if (type === 'object') return value !== null && typeof value === 'object' && !Array.isArray(value);
   return (
     value === null ||
     typeof value === 'string' ||

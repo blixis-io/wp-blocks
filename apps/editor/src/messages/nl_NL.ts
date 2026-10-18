@@ -157,6 +157,8 @@ export const nl_NL: Record<MessageKey, string> = {
   'inspector.generated.link': 'link',
   'inspector.generated.children': 'Onderliggende links',
   'inspector.generated.attachmentIdHelp': 'Voer een WordPress-media-ID in.',
+  'inspector.generated.mediaAsset': 'Afbeeldingsverwijzing {index}',
+  'inspector.generated.addMediaAsset': 'Afbeelding toevoegen',
   'inspector.generated.stepTitle': 'Titel van stap {index}',
   'inspector.generated.stepDescription': 'Beschrijving van stap {index}',
   'inspector.generated.addStep': 'Stap toevoegen',
