@@ -247,6 +247,9 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 			if ( 'image-hotspots' === $id ) {
 				return $this->render_image_hotspots( $node, $hooks );
 			}
+			if ( 'panorama-360' === $id ) {
+				return $this->render_panorama( $node, $hooks );
+			}
 			if ( in_array( $id, [ 'before-after', 'image-comparison' ], true ) ) {
 				return $this->render_image_comparison( $node, $hooks );
 			}
@@ -525,6 +528,25 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 			$html .= '<figcaption>' . Escape::html( $caption ) . '</figcaption>';
 		}
 		return $html . '</figure>';
+	}
+
+	/** Render a keyboard and touch-operable horizontal panorama with a static image fallback.
+	 *
+	 * @param ElementNode $node Element input.
+	 * @param string      $hooks Validated element hooks.
+	 */
+	private function render_panorama( ElementNode $node, string $hooks ): string {
+		$image = $this->asset_image( $node, false );
+		if ( '' === $image ) {
+			return '<div' . $hooks . ' data-blx-missing-media></div>';
+		}
+		$label   = $node->value( 'ariaLabel', __( '360 degree panorama', 'blixis-builder' ) );
+		$label   = is_string( $label ) && '' !== trim( $label ) ? trim( $label ) : __( '360 degree panorama', 'blixis-builder' );
+		$id      = 'blx-panorama-instructions-' . preg_replace( '/[^a-zA-Z0-9_-]/', '-', $node->id );
+		$html    = '<figure' . $hooks . ' data-blx-panorama><div tabindex="0" role="region" aria-label="' . Escape::attr( $label ) . '" aria-describedby="' . Escape::attr( $id ) . '" data-blx-panorama-viewer>' . $image . '</div>';
+		$html   .= '<p id="' . Escape::attr( $id ) . '" data-blx-panorama-instructions>' . Escape::html( __( 'Use the Left and Right Arrow keys to explore the panorama.', 'blixis-builder' ) ) . '</p>';
+		$caption = $node->value( 'caption', '' );
+		return $html . ( is_string( $caption ) && '' !== $caption ? '<figcaption>' . Escape::html( $caption ) . '</figcaption>' : '' ) . '</figure>';
 	}
 
 	/** Parse only positive media attachment IDs or explicit attachment references.

@@ -16047,7 +16047,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'image',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -70773,7 +70773,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'media',
     icon: 'solar:compass-linear',
     tier: 'pro',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'panorama-360 panorama 360 media panorama 360 element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },

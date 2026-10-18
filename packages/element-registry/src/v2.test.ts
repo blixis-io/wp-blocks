@@ -31,6 +31,7 @@ describe('generated v2 element registry', () => {
     expect(isElementInsertableV2('blixis/embed')).toBe(true);
     expect(isElementInsertableV2('blixis/iframe')).toBe(true);
     expect(isElementInsertableV2('blixis/pdf-viewer')).toBe(true);
+    expect(isElementInsertableV2('blixis/panorama-360')).toBe(true);
     expect(isElementInsertableV2('blixis/empty-state')).toBe(true);
     expect(isElementInsertableV2('blixis/keyboard-shortcut')).toBe(true);
     expect(isElementInsertableV2('blixis/timeline')).toBe(true);

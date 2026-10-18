@@ -151,6 +151,34 @@
     });
   };
 
+  const initPanorama = (root) => {
+    const viewer = root.querySelector('[data-blx-panorama-viewer]');
+    if (!viewer || viewer.dataset.blxPanoramaReady === 'true') return;
+    viewer.dataset.blxPanoramaReady = 'true';
+    viewer.addEventListener('keydown', (event) => {
+      if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+      event.preventDefault();
+      viewer.scrollLeft = Math.max(
+        0,
+        viewer.scrollLeft + (event.key === 'ArrowRight' ? 1 : -1) * (event.shiftKey ? 160 : 48),
+      );
+    });
+    let drag = null;
+    viewer.addEventListener('pointerdown', (event) => {
+      if (event.button !== 0) return;
+      drag = { x: event.clientX, scrollLeft: viewer.scrollLeft, pointerId: event.pointerId };
+    });
+    viewer.addEventListener('pointermove', (event) => {
+      if (!drag || event.pointerId !== drag.pointerId) return;
+      viewer.scrollLeft = drag.scrollLeft + drag.x - event.clientX;
+    });
+    const finish = (event) => {
+      if (drag && event.pointerId === drag.pointerId) drag = null;
+    };
+    viewer.addEventListener('pointerup', finish);
+    viewer.addEventListener('pointercancel', finish);
+  };
+
   const initActionButton = (button) => {
     if (button.dataset.blxActionReady === 'true') return;
     button.dataset.blxActionReady = 'true';
@@ -272,6 +300,7 @@
     document.querySelectorAll('[data-blx-lightbox-gallery]').forEach(initLightbox);
     document.querySelectorAll('[data-blx-image-comparison]').forEach(initImageComparison);
     document.querySelectorAll('[data-blx-map]').forEach(initMap);
+    document.querySelectorAll('[data-blx-panorama]').forEach(initPanorama);
   };
   window.blxInitMarquee = initMarquee;
   window.blxInitResizablePanels = initResizablePanels;
@@ -281,6 +310,7 @@
   window.blxInitLightbox = initLightbox;
   window.blxInitImageComparison = initImageComparison;
   window.blxInitMap = initMap;
+  window.blxInitPanorama = initPanorama;
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
   else init();
 })();

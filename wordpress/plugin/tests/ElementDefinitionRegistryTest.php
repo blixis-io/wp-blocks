@@ -799,6 +799,23 @@ final class ElementDefinitionRegistryTest extends TestCase {
 		$this->assertStringContainsString( '&lt;script&gt;unsafe&lt;/script&gt;', $hotspots );
 		$this->assertStringNotContainsString( 'javascript:', $hotspots );
 		$this->assertTrue( PreviewSanitizer::accepts( $hotspots ) );
+		$panorama = $renderer->render(
+			new ElementNode(
+				'panorama-1',
+				'blixis/panorama-360',
+				[
+					'assetRef' => 'photo',
+					'alt'      => 'Coastline',
+					'caption'  => 'West coast',
+				]
+			),
+			new RenderContext()
+		);
+		$this->assertStringContainsString( 'data-blx-panorama', $panorama );
+		$this->assertStringContainsString( 'role="region" aria-label="360 degree panorama"', $panorama );
+		$this->assertStringContainsString( 'alt="Coastline"', $panorama );
+		$this->assertStringContainsString( '<figcaption>West coast</figcaption>', $panorama );
+		$this->assertTrue( PreviewSanitizer::accepts( $panorama ) );
 		$this->assertSame(
 			'<div data-blx-id="gallery-1" data-blx-type="blixis/gallery" data-blx-gallery data-blx-columns="2" role="group" aria-label="Gallery"><ul><li><img src="https://example.test/photo.jpg" width="640" height="480" alt="House &amp; garden" loading="lazy" decoding="async"><figcaption>House &amp; garden</figcaption></li></ul></div>',
 			$renderer->render(
