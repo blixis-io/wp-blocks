@@ -361,7 +361,7 @@ describe('registration rules', () => {
 });
 
 describe('generated editor registry', () => {
-	it('adds ready template palette types with authored style metadata', () => {
+  it('adds ready template palette types with authored style metadata', () => {
     const registry = createEditorRegistry();
     for (const id of [
       'page',
