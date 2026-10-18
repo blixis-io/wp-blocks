@@ -319,6 +319,9 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		if ( ! is_array( $source ) || ! is_string( $source['url'] ?? null ) || ! SafeUrl::accepts( $source['url'] ) || ! is_string( $source['mime'] ?? null ) || ! \Blixis\Builder\Media\PlayableMediaPolicy::allows( $kind, $source['mime'] ) ) {
 			return '<div' . $hooks . ' data-blx-missing-media></div>';
 		}
+		if ( 'video-background' === preg_replace( '~^blixis/~', '', $node->type ) ) {
+			return $this->render_video_background( $node, $hooks, $source );
+		}
 		$controls = true === $node->value( 'controls', true );
 		$autoplay = true === $node->value( 'autoplay', false );
 		$loop     = true === $node->value( 'loop', false );
@@ -339,7 +342,41 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 				$attrs .= ' poster="' . Escape::url( $poster['url'] ) . '"';
 			}
 		}
-		return '<' . $kind . $hooks . $attrs . '><source src="' . Escape::url( $source['url'] ) . '" type="' . Escape::attr( $source['mime'] ) . '"></' . $kind . '>';
+		$track = '';
+		if ( 'video' === $kind && $this->media instanceof TextTrackResolver ) {
+			$caption_id = $this->attachment_id( $node->value( 'captionTrack' ) );
+			$captions   = null === $caption_id ? null : $this->media->resolve_text_track( $caption_id );
+			if ( is_array( $captions ) && is_string( $captions['url'] ?? null ) && SafeUrl::accepts( $captions['url'] ) ) {
+				$site_locale = function_exists( 'get_locale' ) ? (string) get_locale() : 'en';
+				$language    = strtolower( (string) strtok( str_replace( '_', '-', $site_locale ), '-' ) );
+				$language    = 1 === preg_match( '/^[a-z]{2,3}$/D', $language ) ? $language : 'en';
+				$track       = '<track kind="captions" src="' . Escape::url( $captions['url'] ) . '" srclang="' . $language . '" label="' . Escape::attr( __( 'Captions', 'blixis-builder' ) ) . '">';
+			}
+		}
+		return '<' . $kind . $hooks . $attrs . '><source src="' . Escape::url( $source['url'] ) . '" type="' . Escape::attr( $source['mime'] ) . '">' . $track . '</' . $kind . '>';
+	}
+
+	/** Render a decorative background video with a poster and accessible fallback.
+	 *
+	 * @param ElementNode                   $node   Element input.
+	 * @param string                        $hooks  Validated element hooks.
+	 * @param array{url:string,mime:string} $source Validated video attachment.
+	 */
+	private function render_video_background( ElementNode $node, string $hooks, array $source ): string {
+		$poster_id = $this->attachment_id( $node->value( 'poster' ) );
+		$poster    = null === $poster_id ? null : $this->media->resolve( $poster_id );
+		$poster    = is_array( $poster ) && is_string( $poster['url'] ?? null ) && SafeUrl::accepts( $poster['url'] ) ? ' poster="' . Escape::url( $poster['url'] ) . '"' : '';
+		$label     = $node->value( 'ariaLabel', '' );
+		$label     = is_string( $label ) ? trim( $label ) : '';
+		$controls  = true === $node->value( 'controls', false );
+		$autoplay  = true === $node->value( 'autoplay', false );
+		$loop      = true === $node->value( 'loop', false );
+		$muted     = $autoplay || true === $node->value( 'muted', true );
+		$preload   = $node->value( 'preload', 'metadata' );
+		$preload   = in_array( $preload, [ 'none', 'metadata', 'auto' ], true ) ? $preload : 'metadata';
+		$attrs     = ( $controls ? ' controls' : '' ) . ( $autoplay ? ' autoplay' : '' ) . ( $loop ? ' loop' : '' ) . ( $muted ? ' muted' : '' ) . ' playsinline preload="' . $preload . '"';
+		$attrs    .= ( '' !== $label ? ' aria-label="' . Escape::attr( $label ) . '"' : ( $controls ? '' : ' aria-hidden="true" tabindex="-1"' ) );
+		return '<video' . $hooks . $attrs . $poster . '><source src="' . Escape::url( $source['url'] ) . '" type="' . Escape::attr( $source['mime'] ) . '"></video>';
 	}
 
 	/** Parse only positive media attachment IDs or explicit attachment references.

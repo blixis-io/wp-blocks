@@ -13242,7 +13242,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       },
       controls: {
         type: 'boolean',
-        default: true,
+        default: false,
         description: 'Toggle behaviour.',
         required: false,
         control: 'switch',
