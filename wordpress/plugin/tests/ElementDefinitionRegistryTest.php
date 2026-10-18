@@ -934,8 +934,8 @@ final class ElementDefinitionRegistryTest extends TestCase {
 		);
 	}
 
-	/** P3 embeds and PDF previews keep external content sandboxed and labelled. */
-	public function test_embeds_and_pdf_previews_are_sandboxed_and_have_fallback_links(): void {
+	/** P3 external media uses safe fallbacks, consent controls and accessible labels. */
+	public function test_external_media_and_maps_use_safe_fallbacks_and_controls(): void {
 		$registry = ElementDefinitionRegistry::from_manifest_file( \dirname( __DIR__ ) . '/data/element-definitions-v2.json' );
 		$media    = new class() implements MediaResolver {
 			/** No media attachments are configured.
@@ -977,6 +977,40 @@ final class ElementDefinitionRegistryTest extends TestCase {
 		$this->assertStringContainsString( 'height="640"', $pdf );
 		$this->assertStringContainsString( '>User guide</a>', $pdf );
 		$this->assertSame( '<div data-blx-id="pdf-2" data-blx-type="blixis/pdf-viewer" data-blx-missing-media></div>', $renderer->render( new ElementNode( 'pdf-2', 'blixis/pdf-viewer', [ 'url' => 'https://files.example/guide.html' ] ), new RenderContext() ) );
+		$map = $renderer->render(
+			new ElementNode(
+				'map-1',
+				'blixis/map',
+				[
+					'center'          => [
+						'lat' => 52.37,
+						'lng' => 4.89,
+					],
+					'zoom'            => 13,
+					'consentRequired' => true,
+					'markers'         => [
+						[
+							'lat'   => 52.38,
+							'lng'   => 4.90,
+							'label' => '<Station>',
+						],
+						[
+							'lat'   => 120,
+							'lng'   => 4,
+							'label' => 'Invalid',
+						],
+					],
+				]
+			),
+			new RenderContext()
+		);
+		$this->assertStringContainsString( 'data-blx-map-load', $map );
+		$this->assertStringContainsString( 'bbox=', $map );
+		$this->assertStringNotContainsString( '<iframe', $map );
+		$this->assertStringContainsString( '&lt;Station&gt;', $map );
+		$this->assertStringNotContainsString( 'Invalid', $map );
+		$consented_map = $renderer->render( new ElementNode( 'map-2', 'blixis/map', [ 'consentRequired' => false ] ), new RenderContext() );
+		$this->assertStringContainsString( '<iframe class="blx-map-frame"', $consented_map );
 	}
 
 	/** P4 breadcrumbs and pagination expose safe, accessible page navigation. */
