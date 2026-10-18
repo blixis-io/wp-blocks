@@ -305,7 +305,21 @@ export function Inspector({
             typography: ['font-family', 'font-weight', 'font-size', 'line-height', 'letter-spacing', 'text-transform'],
             color: ['color', 'background-color'],
             boxModel: [],
-            layout: ['width', 'height', 'text-align', 'display'],
+            layout: [
+              'width',
+              'height',
+              'text-align',
+              'display',
+              'aspect-ratio',
+              'flex-direction',
+              'flex-wrap',
+              'justify-content',
+              'align-items',
+              'grid-template-columns',
+              'overflow-x',
+              'overflow-y',
+              'position',
+            ],
             effects: ['border-radius', 'border-style', 'border-color', 'box-shadow'],
           };
           const fields = STYLE_FIELDS.filter(
