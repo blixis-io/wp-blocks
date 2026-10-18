@@ -88,6 +88,12 @@ describe('left panel and element palette', () => {
       'Scroll Area',
       'Sticky Container',
       'Split Layout',
+      'Post Title',
+      'Post Content',
+      'Post Excerpt',
+      'Post Date',
+      'Post Author',
+      'Site Tagline',
       'Heading',
       'Text',
       'Image',
@@ -96,7 +102,7 @@ describe('left panel and element palette', () => {
       'Table Of Contents',
     ])
       expect(within(palette).getByRole('button', { name })).toBeTruthy();
-    expect(within(palette).getAllByRole('button')).toHaveLength(44);
+    expect(within(palette).getAllByRole('button')).toHaveLength(50);
   });
 
   it('remembers the selected left tab for the current session', async () => {

@@ -1109,6 +1109,12 @@ async function smoke() {
               },
               children: [],
             },
+            ...['post-title', 'post-content', 'post-excerpt', 'post-date', 'post-author', 'site-tagline'].map((id) => ({
+              id: `dynamic-${id}`,
+              type: `blixis/${id}`,
+              props: { fallback: 'Dynamic fallback' },
+              children: [],
+            })),
           ]),
           defaultLocale: 'en_US',
           locales: ['en_US', 'nl_NL'],
@@ -1152,6 +1158,12 @@ async function smoke() {
             (richBody.html ?? '').includes('aria-label="On this page"') &&
             (richBody.html ?? '').includes('<a href="#getting-started">Getting started</a>'),
           'a table of contents renders an accessible navigation landmark with safe fragment links',
+        );
+        check(
+          ['post-title', 'post-content', 'post-excerpt', 'post-date', 'post-author', 'site-tagline'].every((id) =>
+            (richBody.html ?? '').includes(`data-blx-id="dynamic-${id}"`),
+          ),
+          'static WordPress text elements render in the real preview',
         );
         check(
           (richBody.html ?? '').includes('Hello &lt;b&gt;there&lt;/b&gt;') &&
