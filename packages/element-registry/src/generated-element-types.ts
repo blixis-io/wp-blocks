@@ -16841,7 +16841,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'navigation',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -17095,7 +17095,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'navigation',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -17859,7 +17859,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'navigation',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -18173,7 +18173,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'button',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -18947,7 +18947,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'accordion',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -19201,7 +19201,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'navigation',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -19709,7 +19709,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'navigation',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -20459,7 +20459,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'navigation',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -20716,7 +20716,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'navigation',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -70806,7 +70806,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'navigation',
     icon: 'solar:hamburger-menu-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'nav-menu nav menu navigation nav menu element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -70817,7 +70817,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'navigation',
     icon: 'solar:hamburger-menu-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'mobile-menu mobile menu navigation mobile menu element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -70850,7 +70850,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'navigation',
     icon: 'solar:link-circle-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'anchor-links anchor links navigation anchor links element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -70861,7 +70861,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'navigation',
     icon: 'solar:arrow-up-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'back-to-top back to top navigation back to top element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -70894,7 +70894,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'navigation',
     icon: 'solar:list-arrow-down-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'collapsible collapsible navigation collapsible element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -70905,7 +70905,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'navigation',
     icon: 'solar:menu-dots-square-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'navigation-menu navigation menu navigation navigation menu element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -70927,7 +70927,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'navigation',
     icon: 'solar:sidebar-minimalistic-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'sidebar-navigation sidebar navigation navigation sidebar navigation element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -70960,7 +70960,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'navigation',
     icon: 'solar:eye-scan-linear',
     tier: 'pro',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'scroll-spy scroll spy navigation scroll spy element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -70971,7 +70971,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'navigation',
     icon: 'solar:pin-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'sticky-header sticky header navigation sticky header element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },

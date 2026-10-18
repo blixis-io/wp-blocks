@@ -243,3 +243,21 @@ msgstr "Na"
 
 msgid "Compare images"
 msgstr "Afbeeldingen vergelijken"
+
+msgid "Back to top"
+msgstr "Naar boven"
+
+msgid "Menu"
+msgstr "Menu"
+
+msgid "Mobile navigation"
+msgstr "Mobiele navigatie"
+
+msgid "Navigation"
+msgstr "Navigatie"
+
+msgid "Sections"
+msgstr "Onderdelen"
+
+msgid "Sidebar navigation"
+msgstr "Zijbalknavigatie"

@@ -9,6 +9,7 @@ const repositoryRoot = process.cwd().endsWith('/apps/editor') ? resolve(process.
 const runtime = readFileSync(resolve(repositoryRoot, 'wordpress/plugin/assets/frontend/elements.js'), 'utf8');
 const originalDialogShowModal = Object.getOwnPropertyDescriptor(HTMLDialogElement.prototype, 'showModal');
 const originalDialogClose = Object.getOwnPropertyDescriptor(HTMLDialogElement.prototype, 'close');
+const originalIntersectionObserver = Object.getOwnPropertyDescriptor(window, 'IntersectionObserver');
 
 type InitResizablePanels = (root: HTMLElement) => void;
 type InitMarquee = (root: HTMLElement) => void;
@@ -18,6 +19,7 @@ type InitImageComparison = (root: HTMLElement) => void;
 type InitMap = (root: HTMLElement) => void;
 type InitPanorama = (root: HTMLElement) => void;
 type InitDisclosure = (root: HTMLElement) => void;
+type InitScrollSpy = (root: HTMLElement) => void;
 
 function makePanels(orientation = 'horizontal', minimum = 20) {
   const root = document.createElement('div');
@@ -52,6 +54,9 @@ afterEach(() => {
   delete (window as Window & { blxInitPanorama?: InitPanorama }).blxInitPanorama;
   delete (window as Window & { blxInitAccordion?: InitDisclosure }).blxInitAccordion;
   delete (window as Window & { blxInitTabs?: InitDisclosure }).blxInitTabs;
+  delete (window as Window & { blxInitScrollSpy?: InitScrollSpy }).blxInitScrollSpy;
+  if (originalIntersectionObserver) Object.defineProperty(window, 'IntersectionObserver', originalIntersectionObserver);
+  else delete (window as unknown as { IntersectionObserver?: typeof IntersectionObserver }).IntersectionObserver;
   if (originalDialogShowModal) Object.defineProperty(HTMLDialogElement.prototype, 'showModal', originalDialogShowModal);
   else delete (HTMLDialogElement.prototype as Partial<HTMLDialogElement>).showModal;
   if (originalDialogClose) Object.defineProperty(HTMLDialogElement.prototype, 'close', originalDialogClose);
@@ -59,6 +64,62 @@ afterEach(() => {
 });
 
 describe('public content element enhancement', () => {
+  it('marks the closest visible same-page section in a scroll-spy navigation', () => {
+    let callback: IntersectionObserverCallback | undefined;
+    class TestIntersectionObserver {
+      observedTargets: Element[] = [];
+      constructor(observerCallback: IntersectionObserverCallback) {
+        callback = observerCallback;
+      }
+      observe(target: Element) {
+        this.observedTargets.push(target);
+      }
+      disconnect() {
+        this.observedTargets.splice(0);
+      }
+      unobserve(target: Element) {
+        const index = this.observedTargets.indexOf(target);
+        if (index >= 0) this.observedTargets.splice(index, 1);
+      }
+      takeRecords() {
+        return [];
+      }
+      root = null;
+      rootMargin = '0px';
+      thresholds = [0];
+    }
+    Object.defineProperty(window, 'IntersectionObserver', { configurable: true, value: TestIntersectionObserver });
+    const first = document.createElement('section');
+    first.id = 'first-section';
+    const second = document.createElement('section');
+    second.id = 'second-section';
+    document.body.append(first, second);
+    const root = document.createElement('nav');
+    root.setAttribute('data-blx-scroll-spy', '');
+    root.innerHTML =
+      '<a href="#first-section">First</a><a href="http://elsewhere.test/#second">External</a><a href="#second-section">Second</a>';
+    document.body.append(root);
+    runInNewContext(runtime, { window, document });
+    const initialize = (window as Window & { blxInitScrollSpy?: InitScrollSpy }).blxInitScrollSpy;
+    if (!initialize || !callback) throw new Error('scroll-spy initializer missing');
+    initialize(root);
+    expect(root.dataset['blxScrollSpyReady']).toBe('true');
+    expect(callback).toBeDefined();
+    const links = root.querySelectorAll('a');
+    Object.defineProperty(second, 'getBoundingClientRect', { value: () => ({ top: 12 }) });
+    Object.defineProperty(first, 'getBoundingClientRect', { value: () => ({ top: 80 }) });
+    callback(
+      [
+        { target: first, isIntersecting: true },
+        { target: second, isIntersecting: true },
+      ] as unknown as IntersectionObserverEntry[],
+      {} as IntersectionObserver,
+    );
+    expect(links[0]?.hasAttribute('aria-current')).toBe(false);
+    expect(links[1]?.hasAttribute('aria-current')).toBe(false);
+    expect(links[2]?.getAttribute('aria-current')).toBe('location');
+  });
+
   it('enhances fallback links into keyboard-operable tabs', () => {
     const root = document.createElement('div');
     root.setAttribute('data-blx-tabs', '');

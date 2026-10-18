@@ -28451,7 +28451,7 @@
         ]
       },
       "archetype": "navigation",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -28872,7 +28872,7 @@
         ]
       },
       "archetype": "navigation",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -30151,7 +30151,7 @@
         ]
       },
       "archetype": "navigation",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -30705,7 +30705,7 @@
         ]
       },
       "archetype": "button",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -31991,7 +31991,7 @@
         ]
       },
       "archetype": "accordion",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -32414,7 +32414,7 @@
         ]
       },
       "archetype": "navigation",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -33257,7 +33257,7 @@
         ]
       },
       "archetype": "navigation",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -34501,7 +34501,7 @@
         ]
       },
       "archetype": "navigation",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -34938,7 +34938,7 @@
         ]
       },
       "archetype": "navigation",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
