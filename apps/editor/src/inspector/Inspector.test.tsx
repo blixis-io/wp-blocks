@@ -68,6 +68,22 @@ const mediaFixture: MediaItem = {
   height: 480,
   mime: 'image/png',
 };
+const videoFixture: MediaItem = {
+  ...mediaFixture,
+  id: 43,
+  url: `${location.origin}/lesson.mp4`,
+  thumbUrl: '',
+  title: 'Gallery video',
+  mime: 'video/mp4',
+};
+const audioFixture: MediaItem = {
+  ...mediaFixture,
+  id: 44,
+  url: `${location.origin}/lesson.mp3`,
+  thumbUrl: '',
+  title: 'Gallery audio',
+  mime: 'audio/mpeg',
+};
 
 function ReactiveInspector({ tab, editable }: { tab: 'content' | 'style' | 'advanced'; editable: boolean }) {
   const element = useEditorStore(
@@ -140,8 +156,14 @@ async function mount(
           bootstrap={makeBootstrap()}
           client={{
             get: () => Promise.resolve({ ok: true, value: mediaFixture }),
-            list: () => Promise.resolve({ ok: true, value: { items: [mediaFixture], total: 1, totalPages: 1 } }),
-            upload: () => Promise.resolve({ ok: true, value: mediaFixture }),
+            list: ({ mediaKind = 'image' } = {}) => {
+              const item = mediaKind === 'video' ? videoFixture : mediaKind === 'audio' ? audioFixture : mediaFixture;
+              return Promise.resolve({ ok: true, value: { items: [item], total: 1, totalPages: 1 } });
+            },
+            upload: (_file, { mediaKind = 'image' } = {}) => {
+              const item = mediaKind === 'video' ? videoFixture : mediaKind === 'audio' ? audioFixture : mediaFixture;
+              return Promise.resolve({ ok: true, value: item });
+            },
           }}
         >
           <div className="blx-editor" data-editor-theme={options.chromeTheme ?? 'light'}>
@@ -973,10 +995,10 @@ describe('Inspector controls', () => {
 
   it('stores attachment references from generated media controls', async () => {
     const { store } = await mount('blixis/video', { tab: 'content', reactive: false });
-    fireEvent.click(screen.getByRole('button', { name: 'Media source attachment: Choose image' }));
-    fireEvent.click(await screen.findByRole('option', { name: /Gallery image/ }));
-    fireEvent.click(screen.getByRole('button', { name: 'Use image' }));
-    expect(store.getState().document?.root[0]?.props['src']).toBe('attachment:42');
+    fireEvent.click(screen.getByRole('button', { name: 'Media source attachment: Choose video' }));
+    fireEvent.click(await screen.findByRole('option', { name: /Gallery video/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Use video' }));
+    expect(store.getState().document?.root[0]?.props['src']).toBe('attachment:43');
   });
 
   it('stores avatar attachment references and localizes alternative text', async () => {

@@ -1,6 +1,11 @@
-import type { ApiResult, MediaClient, MediaItem } from './types';
+import type { ApiResult, MediaClient, MediaItem, MediaKind } from './types';
 
-const IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/avif']);
+const MEDIA_MIMES: Record<MediaKind, ReadonlySet<string>> = {
+  image: new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/avif']),
+  video: new Set(['video/mp4', 'video/webm', 'video/ogg']),
+  audio: new Set(['audio/mpeg', 'audio/ogg', 'audio/wav', 'audio/mp4', 'audio/aac', 'audio/webm']),
+  caption: new Set(['text/vtt']),
+};
 const FIELDS = 'id,source_url,alt_text,title,media_details,mime_type';
 interface Options {
   wpRestRoot: string;
@@ -63,7 +68,7 @@ export function createMediaClient({
       return null;
     }
   };
-  const parseItem = (value: unknown): MediaItem | 'unsafe-url' | null => {
+  const parseItem = (value: unknown, mediaKind: MediaKind = 'image'): MediaItem | 'unsafe-url' | null => {
     if (!object(value) || !integer(value['id']) || value['id'] < 1 || !object(value['media_details'])) return null;
     const details = value['media_details'];
     const sizes = object(details['sizes']) ? details['sizes'] : {};
@@ -75,12 +80,12 @@ export function createMediaClient({
       title === null ||
       typeof value['alt_text'] !== 'string' ||
       typeof value['mime_type'] !== 'string' ||
-      !IMAGE_TYPES.has(value['mime_type'])
+      !MEDIA_MIMES[mediaKind].has(value['mime_type'])
     )
       return null;
     const url = safeUrl(value['source_url']);
     if (!url) return 'unsafe-url';
-    const thumb = thumbCandidate ?? url;
+    const thumb = thumbCandidate ?? (mediaKind === 'image' ? url : '');
     return {
       id: value['id'],
       url,
@@ -190,19 +195,20 @@ export function createMediaClient({
         return item === 'unsafe-url' ? null : item;
       });
     },
-    list: ({ search, page = 1, perPage = 24, signal } = {}) => {
+    list: ({ search, page = 1, perPage = 24, mediaKind = 'image', signal } = {}) => {
       if (!Number.isSafeInteger(page) || page < 1 || !Number.isSafeInteger(perPage) || perPage < 1 || perPage > 100)
         return Promise.resolve(failure('http', 'media_invalid_pagination', 400));
       if (!base) return Promise.resolve(failure('network'));
       const url = new URL('media', base);
-      url.searchParams.set('media_type', 'image');
+      url.searchParams.set('media_type', mediaKind === 'caption' ? 'text' : mediaKind);
+      if (mediaKind === 'caption') url.searchParams.set('mime_type', 'text/vtt');
       url.searchParams.set('per_page', String(perPage));
       url.searchParams.set('page', String(page));
       url.searchParams.set('_fields', FIELDS);
       if (search?.trim()) url.searchParams.set('search', search.trim().slice(0, 200));
       return request(url, { method: 'GET' }, signal, (value, response) => {
         if (!Array.isArray(value)) return null;
-        const parsedItems = value.map(parseItem);
+        const parsedItems = value.map((item) => parseItem(item, mediaKind));
         if (parsedItems.some((item) => item === null)) return null;
         const items = parsedItems.filter((item): item is MediaItem => item !== null && item !== 'unsafe-url');
         const total = response.headers.get('X-WP-Total');
@@ -213,8 +219,9 @@ export function createMediaClient({
         return integer(totalCount) && integer(totalPages) ? { items, total: totalCount, totalPages } : null;
       });
     },
-    upload: (file, { signal } = {}) => {
-      if (!IMAGE_TYPES.has(file.type)) return Promise.resolve(failure('http', 'media_unsupported_type', 415));
+    upload: (file, { mediaKind = 'image', signal } = {}) => {
+      if (!MEDIA_MIMES[mediaKind].has(file.type))
+        return Promise.resolve(failure('http', 'media_unsupported_type', 415));
       if (file.size <= 0) return Promise.resolve(failure('http', 'media_empty_file', 400));
       if (file.size > maxUploadBytes) return Promise.resolve(failure('too-large', 'media_file_too_large', 413));
       if (!base) return Promise.resolve(failure('network'));
@@ -237,7 +244,7 @@ export function createMediaClient({
         },
         signal,
         (value) => {
-          const item = parseItem(value);
+          const item = parseItem(value, mediaKind);
           return item === 'unsafe-url' ? null : item;
         },
       );

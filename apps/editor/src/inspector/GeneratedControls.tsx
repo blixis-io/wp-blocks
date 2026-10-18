@@ -6,6 +6,7 @@ import { useI18n } from '../i18n-react';
 import { InspectorSection } from './InspectorSection';
 import { MediaDialog } from '../media/MediaDialog';
 import { useMediaServices } from '../media/MediaContext';
+import type { MediaKind } from '../api/types';
 
 type Property = Record<string, unknown>;
 const read = (value: unknown): string => (typeof value === 'string' || typeof value === 'number' ? String(value) : '');
@@ -124,17 +125,60 @@ export function GeneratedControls({ element, editable }: { element: ElementNode;
                 <div className="blx-inspector-field" key={name}>
                   <label htmlFor={id}>{label}</label>
                   <div className="blx-generated-media-picker">
-                    <code>{read(value) || t('inspector.generated.noMediaAsset')}</code>
+                    <code>
+                      {read(value) ||
+                        t(
+                          property['mediaKind'] === 'video'
+                            ? 'inspector.generated.noVideoAsset'
+                            : property['mediaKind'] === 'audio'
+                              ? 'inspector.generated.noAudioAsset'
+                              : property['mediaKind'] === 'caption'
+                                ? 'inspector.generated.noCaptionAsset'
+                                : 'inspector.generated.noMediaAsset',
+                        )}
+                    </code>
                     <button
                       id={id}
                       type="button"
-                      aria-label={`${label}: ${t(read(value) ? 'inspector.generated.changeMediaAsset' : 'inspector.generated.chooseMediaAsset')}`}
+                      aria-label={`${label}: ${t(
+                        property['mediaKind'] === 'video'
+                          ? read(value)
+                            ? 'inspector.generated.changeVideoAsset'
+                            : 'inspector.generated.chooseVideoAsset'
+                          : property['mediaKind'] === 'audio'
+                            ? read(value)
+                              ? 'inspector.generated.changeAudioAsset'
+                              : 'inspector.generated.chooseAudioAsset'
+                            : property['mediaKind'] === 'caption'
+                              ? read(value)
+                                ? 'inspector.generated.changeCaptionAsset'
+                                : 'inspector.generated.chooseCaptionAsset'
+                              : read(value)
+                                ? 'inspector.generated.changeMediaAsset'
+                                : 'inspector.generated.chooseMediaAsset',
+                      )}`}
                       disabled={!editable}
                       onClick={() => {
                         setMediaPicker(name);
                       }}
                     >
-                      {t(read(value) ? 'inspector.generated.changeMediaAsset' : 'inspector.generated.chooseMediaAsset')}
+                      {t(
+                        property['mediaKind'] === 'video'
+                          ? read(value)
+                            ? 'inspector.generated.changeVideoAsset'
+                            : 'inspector.generated.chooseVideoAsset'
+                          : property['mediaKind'] === 'audio'
+                            ? read(value)
+                              ? 'inspector.generated.changeAudioAsset'
+                              : 'inspector.generated.chooseAudioAsset'
+                            : property['mediaKind'] === 'caption'
+                              ? read(value)
+                                ? 'inspector.generated.changeCaptionAsset'
+                                : 'inspector.generated.chooseCaptionAsset'
+                              : read(value)
+                                ? 'inspector.generated.changeMediaAsset'
+                                : 'inspector.generated.chooseMediaAsset',
+                      )}
                     </button>
                     {read(value) && (
                       <button
@@ -155,6 +199,13 @@ export function GeneratedControls({ element, editable }: { element: ElementNode;
                     }}
                     client={mediaClient}
                     canUpload={canUpload}
+                    mediaKind={
+                      (property['mediaKind'] === 'video' ||
+                      property['mediaKind'] === 'audio' ||
+                      property['mediaKind'] === 'caption'
+                        ? property['mediaKind']
+                        : 'image') as MediaKind
+                    }
                     onUse={(item) => {
                       commit(name, property, `attachment:${String(item.id)}`);
                       setMediaPicker(null);
