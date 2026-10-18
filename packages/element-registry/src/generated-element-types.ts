@@ -8475,7 +8475,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       },
       ariaLabel: {
         type: 'string',
-        default: 'Main navigation',
+        default: 'On this page',
         description: 'Text content. Localizable per locale.',
         required: false,
         localizable: true,
@@ -8643,7 +8643,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'navigation',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -70247,7 +70247,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'content',
     icon: 'solar:list-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'table-of-contents table of contents content table of contents element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },

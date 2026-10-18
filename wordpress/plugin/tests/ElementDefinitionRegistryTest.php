@@ -122,6 +122,26 @@ final class ElementDefinitionRegistryTest extends TestCase {
 			)
 		);
 		$this->assertSame(
+			'<nav data-blx-id="toc-1" data-blx-type="blixis/table-of-contents" aria-label="On this page"><ul><li><a href="#getting-started">Getting started</a></li></ul></nav>',
+			$renderer->render(
+				new ElementNode(
+					'toc-1',
+					'blixis/table-of-contents',
+					[
+						'ariaLabel' => 'On this page',
+						'items'     => [
+							[
+								'id'    => 'start',
+								'label' => 'Getting started',
+								'href'  => '#getting-started',
+							],
+						],
+					]
+				),
+				new RenderContext()
+			)
+		);
+		$this->assertSame(
 			'<blockquote data-blx-id="quote-1" data-blx-type="blixis/blockquote">Evidence &amp; context</blockquote>',
 			$renderer->render( new ElementNode( 'quote-1', 'blixis/blockquote', [ 'content' => 'Evidence & context' ] ), new RenderContext() )
 		);

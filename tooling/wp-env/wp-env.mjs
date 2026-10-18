@@ -1088,6 +1088,15 @@ async function smoke() {
                 },
               ],
             },
+            {
+              id: 'toc1',
+              type: 'blixis/table-of-contents',
+              props: {
+                ariaLabel: 'On this page',
+                items: [{ id: 'start', label: 'Getting started', href: '#getting-started' }],
+              },
+              children: [],
+            },
           ]),
           defaultLocale: 'en_US',
           locales: ['en_US', 'nl_NL'],
@@ -1114,6 +1123,12 @@ async function smoke() {
             (richBody.html ?? '').includes('data-blx-scroll-area tabindex="0" role="region"') &&
             (richBody.html ?? '').includes('data-blx-id="scroll-text"'),
           'a scroll area renders a labeled, keyboard-focusable region with its child content',
+        );
+        check(
+          (richBody.html ?? '').includes('<nav data-blx-id="toc1"') &&
+            (richBody.html ?? '').includes('aria-label="On this page"') &&
+            (richBody.html ?? '').includes('<a href="#getting-started">Getting started</a>'),
+          'a table of contents renders an accessible navigation landmark with safe fragment links',
         );
         check(
           (richBody.html ?? '').includes('Hello &lt;b&gt;there&lt;/b&gt;') &&

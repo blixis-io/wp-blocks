@@ -289,6 +289,7 @@ export function createEditorRegistry(): ElementRegistry {
     'spinner',
     'skeleton',
     'alert',
+    'table-of-contents',
   ];
   const aliases = [
     {

@@ -1599,6 +1599,19 @@ describe('Inspector controls', () => {
     expect(store.getState().document?.root[0]?.style?.[0]?.declarations['max-height']).toBe('320px');
   });
 
+  it('edits table of contents links through the generated navigation editor', async () => {
+    const { store } = await mount('blixis/table-of-contents', { tab: 'content' });
+    fireEvent.change(screen.getByRole('textbox', { name: 'inspector.prop.items 1' }), {
+      target: { value: 'Getting started' },
+    });
+    fireEvent.change(screen.getByRole('textbox', { name: 'inspector.prop.items 1 link' }), {
+      target: { value: '#getting-started' },
+    });
+    expect(store.getState().document?.translations['en_US']?.['target']?.values['items']).toEqual([
+      { id: 'home', label: 'Getting started', href: '#getting-started' },
+    ]);
+  });
+
   it.each(['blixis/section', 'blixis/container', 'blixis/heading', 'blixis/text', 'blixis/image', 'blixis/button'])(
     'renders all supported Style sections for %s and keeps disabled gradient placeholder',
     async (type) => {
