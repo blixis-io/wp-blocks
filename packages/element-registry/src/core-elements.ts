@@ -271,6 +271,7 @@ export function createEditorRegistry(): ElementRegistry {
     'post-date',
     'post-author',
     'site-tagline',
+    'post-terms',
     'columns',
     'grid',
     'card',

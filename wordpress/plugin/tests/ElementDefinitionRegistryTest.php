@@ -48,7 +48,7 @@ final class ElementDefinitionRegistryTest extends TestCase {
 			}
 		};
 		$renderer = new DefinitionArchetypeRenderer( $registry, $media );
-		foreach ( [ 'post-title', 'post-excerpt', 'post-date', 'post-author', 'site-tagline' ] as $type ) {
+		foreach ( [ 'post-title', 'post-excerpt', 'post-date', 'post-author', 'post-terms', 'site-tagline' ] as $type ) {
 			$this->assertSame(
 				'<span data-blx-id="dynamic-1" data-blx-type="blixis/' . $type . '">Fallback &amp; title</span>',
 				$renderer->render(

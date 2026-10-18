@@ -380,6 +380,7 @@ describe('generated editor registry', () => {
       'post-date',
       'post-author',
       'site-tagline',
+      'post-terms',
       'alert',
       'table-of-contents',
       'card',

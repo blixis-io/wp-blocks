@@ -34,7 +34,15 @@ describe('generated v2 element registry', () => {
     expect(isElementInsertableV2('blixis/table-of-contents')).toBe(true);
     expect(isElementInsertableV2('blixis/sticky-container')).toBe(true);
     expect(isElementInsertableV2('blixis/split-layout')).toBe(true);
-    for (const type of ['post-title', 'post-content', 'post-excerpt', 'post-date', 'post-author', 'site-tagline']) {
+    for (const type of [
+      'post-title',
+      'post-content',
+      'post-excerpt',
+      'post-date',
+      'post-author',
+      'site-tagline',
+      'post-terms',
+    ]) {
       expect(isElementInsertableV2(`blixis/${type}`)).toBe(true);
     }
   });
