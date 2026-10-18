@@ -767,6 +767,38 @@ final class ElementDefinitionRegistryTest extends TestCase {
 				new RenderContext()
 			)
 		);
+		$hotspots = $renderer->render(
+			new ElementNode(
+				'hotspots-1',
+				'blixis/image-hotspots',
+				[
+					'assetRef' => 'photo',
+					'alt'      => 'Room plan',
+					'caption'  => 'Explore the room',
+					'hotspots' => [
+						[
+							'label' => 'Window',
+							'x'     => 105,
+							'y'     => 25,
+							'href'  => 'https://example.test/window',
+						],
+						[
+							'label' => '<script>unsafe</script>',
+							'x'     => 5,
+							'y'     => 75,
+							'href'  => 'javascript:alert(1)',
+						],
+					],
+				]
+			),
+			new RenderContext()
+		);
+		$this->assertStringContainsString( 'data-blx-image-hotspots', $hotspots );
+		$this->assertStringContainsString( '--blx-hotspot-x:100%;--blx-hotspot-y:25%', $hotspots );
+		$this->assertStringContainsString( '<a href="https://example.test/window">Window</a>', $hotspots );
+		$this->assertStringContainsString( '&lt;script&gt;unsafe&lt;/script&gt;', $hotspots );
+		$this->assertStringNotContainsString( 'javascript:', $hotspots );
+		$this->assertTrue( PreviewSanitizer::accepts( $hotspots ) );
 		$this->assertSame(
 			'<div data-blx-id="gallery-1" data-blx-type="blixis/gallery" data-blx-gallery data-blx-columns="2" role="group" aria-label="Gallery"><ul><li><img src="https://example.test/photo.jpg" width="640" height="480" alt="House &amp; garden" loading="lazy" decoding="async"><figcaption>House &amp; garden</figcaption></li></ul></div>',
 			$renderer->render(

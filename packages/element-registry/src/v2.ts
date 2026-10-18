@@ -60,7 +60,8 @@ function validProperty(type: string, property: Record<string, unknown>, value: u
   }
   if (type === 'enum') return options.includes(value);
   if (type.startsWith('array<') && type.endsWith('>')) {
-    if (!Array.isArray(value)) return false;
+    if (!Array.isArray(value) || (typeof property['maxItems'] === 'number' && value.length > property['maxItems']))
+      return false;
     const itemType = type.slice('array<'.length, -1);
     return value.every((item) => validProperty(itemType, property, item));
   }

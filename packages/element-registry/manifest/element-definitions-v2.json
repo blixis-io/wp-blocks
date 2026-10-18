@@ -26268,6 +26268,14 @@
           "required": false,
           "localizable": true,
           "control": "textarea"
+        },
+        "hotspots": {
+          "type": "array<object>",
+          "default": [],
+          "description": "Accessible image hotspot locations and optional links.",
+          "required": false,
+          "maxItems": 32,
+          "control": "repeater"
         }
       },
       "propertyControls": {
@@ -26335,6 +26343,12 @@
           "control": "textarea",
           "group": "Content",
           "localizable": true,
+          "supportsDynamicBinding": false
+        },
+        "hotspots": {
+          "control": "repeater",
+          "group": "Content",
+          "localizable": false,
           "supportsDynamicBinding": false
         }
       },
@@ -26615,7 +26629,7 @@
         ]
       },
       "archetype": "image",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",

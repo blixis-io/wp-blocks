@@ -265,6 +265,105 @@ export function GeneratedControls({ element, editable }: { element: ElementNode;
                   </fieldset>
                 );
               }
+              if (control === 'repeater' && name === 'hotspots' && element.type === 'blixis/image-hotspots') {
+                const maxItems = typeof property['maxItems'] === 'number' ? Math.min(32, property['maxItems']) : 32;
+                const hotspotRows = rows as Json[];
+                return (
+                  <fieldset className="blx-inspector-field" key={name}>
+                    <legend>{label}</legend>
+                    {hotspotRows.map((row, index) => {
+                      const item =
+                        row !== null && typeof row === 'object' && !Array.isArray(row)
+                          ? (row as Record<string, Json>)
+                          : {};
+                      const update = (field: string, nextValue: Json) => {
+                        commit(
+                          name,
+                          property,
+                          hotspotRows.map((old, rowIndex) =>
+                            rowIndex === index ? { ...item, [field]: nextValue } : old,
+                          ),
+                        );
+                      };
+                      return (
+                        <div key={`${name}-${String(index)}`} className="blx-generated-repeater-row">
+                          <label>
+                            {t('inspector.generated.hotspotLabel', { index: index + 1 })}
+                            <input
+                              value={read(item['label'])}
+                              disabled={!editable}
+                              onChange={(event) => {
+                                update('label', event.currentTarget.value);
+                              }}
+                            />
+                          </label>
+                          <label>
+                            {t('inspector.generated.hotspotX')}
+                            <input
+                              type="number"
+                              min="0"
+                              max="100"
+                              step="0.1"
+                              value={read(item['x'] ?? 50)}
+                              disabled={!editable}
+                              onChange={(event) => {
+                                update('x', Number(event.currentTarget.value));
+                              }}
+                            />
+                          </label>
+                          <label>
+                            {t('inspector.generated.hotspotY')}
+                            <input
+                              type="number"
+                              min="0"
+                              max="100"
+                              step="0.1"
+                              value={read(item['y'] ?? 50)}
+                              disabled={!editable}
+                              onChange={(event) => {
+                                update('y', Number(event.currentTarget.value));
+                              }}
+                            />
+                          </label>
+                          <label>
+                            {t('inspector.generated.hotspotLink')}
+                            <input
+                              type="url"
+                              value={read(item['href'])}
+                              disabled={!editable}
+                              onChange={(event) => {
+                                update('href', event.currentTarget.value);
+                              }}
+                            />
+                          </label>
+                          <button
+                            type="button"
+                            disabled={!editable}
+                            onClick={() => {
+                              commit(
+                                name,
+                                property,
+                                hotspotRows.filter((_, rowIndex) => rowIndex !== index),
+                              );
+                            }}
+                          >
+                            {t('inspector.generated.remove')}
+                          </button>
+                        </div>
+                      );
+                    })}
+                    <button
+                      type="button"
+                      disabled={!editable || rows.length >= maxItems}
+                      onClick={() => {
+                        commit(name, property, [...hotspotRows, { label: '', x: 50, y: 50, href: '' }]);
+                      }}
+                    >
+                      {t('inspector.generated.addHotspot')}
+                    </button>
+                  </fieldset>
+                );
+              }
               if (
                 control === 'repeater' &&
                 name === 'steps' &&

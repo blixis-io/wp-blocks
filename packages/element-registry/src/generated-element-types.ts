@@ -15592,6 +15592,14 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
         localizable: true,
         control: 'textarea',
       },
+      hotspots: {
+        type: 'array<object>',
+        default: [],
+        description: 'Accessible image hotspot locations and optional links.',
+        required: false,
+        maxItems: 32,
+        control: 'repeater',
+      },
     },
     propertyControls: {
       elementId: { control: 'text', group: 'Attributes', localizable: false, supportsDynamicBinding: false },
@@ -15605,6 +15613,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       fetchPriority: { control: 'select', group: 'Content', localizable: false, supportsDynamicBinding: false },
       sizes: { control: 'text', group: 'Content', localizable: false, supportsDynamicBinding: false },
       caption: { control: 'textarea', group: 'Content', localizable: true, supportsDynamicBinding: false },
+      hotspots: { control: 'repeater', group: 'Content', localizable: false, supportsDynamicBinding: false },
     },
     style: {
       allowed: {
@@ -15743,7 +15752,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'image',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -70753,7 +70762,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'media',
     icon: 'solar:target-linear',
     tier: 'pro',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'image-hotspots image hotspots media image hotspots element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },

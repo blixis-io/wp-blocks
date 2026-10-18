@@ -244,6 +244,9 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 			return $this->render_playable_media( $node, $hooks, $archetype );
 		}
 		if ( 'image' === $archetype && in_array( $id, [ 'image', 'picture', 'avatar', 'featured-image', 'product-image', 'before-after', 'image-comparison', 'image-hotspots', 'panorama-360', 'blur-up-image' ], true ) ) {
+			if ( 'image-hotspots' === $id ) {
+				return $this->render_image_hotspots( $node, $hooks );
+			}
 			if ( in_array( $id, [ 'before-after', 'image-comparison' ], true ) ) {
 				return $this->render_image_comparison( $node, $hooks );
 			}
@@ -475,6 +478,53 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 			$items[] = '<li><a href="' . Escape::url( $url ) . '" target="_blank" rel="noopener noreferrer">' . Escape::html( trim( $label ) ) . '</a></li>';
 		}
 		return [] === $items ? '' : '<ul aria-label="' . Escape::attr( __( 'Map locations', 'blixis-builder' ) ) . '">' . implode( '', $items ) . '</ul>';
+	}
+
+	/** Render image hotspots with visible pins and a keyboard-accessible destination list.
+	 *
+	 * @param ElementNode $node Element input.
+	 * @param string      $hooks Validated element hooks.
+	 */
+	private function render_image_hotspots( ElementNode $node, string $hooks ): string {
+		$image = $this->asset_image( $node, false );
+		if ( '' === $image ) {
+			return '<div' . $hooks . ' data-blx-missing-media></div>';
+		}
+		$hotspots = $node->value( 'hotspots', [] );
+		$hotspots = is_array( $hotspots ) && array_is_list( $hotspots ) ? array_slice( $hotspots, 0, 32 ) : [];
+		$pins     = [];
+		$links    = [];
+		foreach ( $hotspots as $index => $hotspot ) {
+			if ( ! is_array( $hotspot ) || ! is_numeric( $hotspot['x'] ?? null ) || ! is_numeric( $hotspot['y'] ?? null ) ) {
+				continue;
+			}
+			$x     = (float) $hotspot['x'];
+			$y     = (float) $hotspot['y'];
+			$label = $hotspot['label'] ?? '';
+			if ( ! is_finite( $x ) || ! is_finite( $y ) || ! is_string( $label ) || '' === trim( $label ) ) {
+				continue;
+			}
+			$x        = max( 0, min( 100, $x ) );
+			$y        = max( 0, min( 100, $y ) );
+			$x        = rtrim( rtrim( number_format( $x, 2, '.', '' ), '0' ), '.' );
+			$y        = rtrim( rtrim( number_format( $y, 2, '.', '' ), '0' ), '.' );
+			$position = '--blx-hotspot-x:' . $x . '%;--blx-hotspot-y:' . $y . '%';
+			$pins[]   = '<li aria-hidden="true" style="' . Escape::attr( $position ) . '"><span>' . ( $index + 1 ) . '</span></li>';
+			$href     = $hotspot['href'] ?? '';
+			$links[]  = '<li>' . ( is_string( $href ) && SafeUrl::accepts( $href ) ? '<a href="' . Escape::url( $href ) . '">' . Escape::html( trim( $label ) ) . '</a>' : Escape::html( trim( $label ) ) ) . '</li>';
+		}
+		$alt     = $node->value( 'alt', '' );
+		$alt     = is_string( $alt ) ? $alt : '';
+		$caption = $node->value( 'caption', '' );
+		$caption = is_string( $caption ) ? $caption : '';
+		$html    = '<figure' . $hooks . ' data-blx-image-hotspots><div class="blx-hotspots-canvas">' . $image . ( [] === $pins ? '' : '<ol aria-hidden="true">' . implode( '', $pins ) . '</ol>' ) . '</div>';
+		if ( [] !== $links ) {
+			$html .= '<ol aria-label="' . Escape::attr( __( 'Image hotspot locations', 'blixis-builder' ) ) . '">' . implode( '', $links ) . '</ol>';
+		}
+		if ( '' !== $caption ) {
+			$html .= '<figcaption>' . Escape::html( $caption ) . '</figcaption>';
+		}
+		return $html . '</figure>';
 	}
 
 	/** Parse only positive media attachment IDs or explicit attachment references.
@@ -1180,10 +1230,11 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 
 	/** Render an imported asset reference through the media resolver.
 	 *
-	 * @param ElementNode $node Element input.
+	 * @param ElementNode $node          Element input.
+	 * @param bool        $include_hooks Include the node's generated editor hooks.
 	 * @return string Safe image markup or an empty string.
 	 */
-	private function asset_image( ElementNode $node ): string {
+	private function asset_image( ElementNode $node, bool $include_hooks = true ): string {
 		$reference = $node->value( 'assetRef' );
 		if ( ! is_string( $reference ) ) {
 			return '';
@@ -1204,7 +1255,7 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		$priority      = $node->value( 'fetchPriority', 'auto' );
 		$priority      = is_string( $priority ) && in_array( $priority, [ 'auto', 'high', 'low' ], true ) ? $priority : 'auto';
 		$priority_attr = 'auto' !== $priority ? ' fetchpriority="' . $priority . '"' : '';
-		return '<img' . Escape::hooks( $node ) . ' src="' . Escape::url( $image['url'] ) . '"' . ( null === $srcset ? '' : ' srcset="' . Escape::attr( $srcset ) . '"' ) . ( null === $sizes ? '' : ' sizes="' . Escape::attr( $sizes ) . '"' ) . ' width="' . (int) $image['width'] . '" height="' . (int) $image['height'] . '" alt="' . Escape::attr( $alt ) . '" loading="' . $loading . '"' . $priority_attr . ' decoding="async">';
+		return '<img' . ( $include_hooks ? Escape::hooks( $node ) : '' ) . ' src="' . Escape::url( $image['url'] ) . '"' . ( null === $srcset ? '' : ' srcset="' . Escape::attr( $srcset ) . '"' ) . ( null === $sizes ? '' : ' sizes="' . Escape::attr( $sizes ) . '"' ) . ' width="' . (int) $image['width'] . '" height="' . (int) $image['height'] . '" alt="' . Escape::attr( $alt ) . '" loading="' . $loading . '"' . $priority_attr . ' decoding="async">';
 	}
 
 	/** Resolve either an attachment id or a bundled asset key as a safe image.

@@ -52,6 +52,7 @@ const editorReady = new Set([
   'picture',
   'before-after',
   'image-comparison',
+  'image-hotspots',
   'gallery',
   'lightbox',
   'code-block',

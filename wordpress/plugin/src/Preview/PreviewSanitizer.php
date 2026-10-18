@@ -124,6 +124,9 @@ final class PreviewSanitizer {
 	 * @param string $value Style value.
 	 */
 	private static function accepts_style( string $value ): bool {
+		if ( 1 === \preg_match( '/^--blx-hotspot-x:(?:100|[1-9]?[0-9](?:\.[0-9]{1,2})?)%;--blx-hotspot-y:(?:100|[1-9]?[0-9](?:\.[0-9]{1,2})?)%$/D', $value ) ) {
+			return true;
+		}
 		if ( 1 === \preg_match( '/^--blx-headline-index:(?:[0-9]|[1-9][0-9]|100)$/D', $value ) ) {
 			return true;
 		}
