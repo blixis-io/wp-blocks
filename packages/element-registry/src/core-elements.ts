@@ -266,6 +266,7 @@ export function createEditorRegistry(): ElementRegistry {
     'sticky-container',
     'split-layout',
     'resizable-panels',
+    'marquee-layout',
     'post-title',
     'post-content',
     'post-excerpt',

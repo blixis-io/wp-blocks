@@ -46,6 +46,22 @@ $layout  = static fn ( int $n, string $color ): string => wp_json_encode(
 					],
 				],
 			],
+			[
+				'id'       => 'el-marquee',
+				'type'     => 'blixis/marquee-layout',
+				'props'    => (object) [
+					'direction' => 'left',
+					'duration'  => 30,
+				],
+				'children' => [
+					[
+						'id'       => 'el-003',
+						'type'     => 'blixis/text',
+						'props'    => (object) [ 'text' => 'Moving ticker' ],
+						'children' => [],
+					],
+				],
+			],
 		],
 	]
 );
@@ -57,6 +73,10 @@ $content = static fn ( int $n, string $text ): string => wp_json_encode(
 			'el-001' => [
 				'status' => 'translated',
 				'values' => [ 'text' => $text ],
+			],
+			'el-003' => [
+				'status' => 'translated',
+				'values' => [ 'text' => 'Moving ticker' ],
 			],
 		],
 	]

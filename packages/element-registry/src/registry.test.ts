@@ -375,6 +375,7 @@ describe('generated editor registry', () => {
       'sticky-container',
       'split-layout',
       'resizable-panels',
+      'marquee-layout',
       'post-title',
       'post-content',
       'post-excerpt',

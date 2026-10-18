@@ -4293,6 +4293,23 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
         required: false,
         control: 'switch',
       },
+      direction: {
+        type: 'enum',
+        default: 'left',
+        description: 'Direction for the scrolling content.',
+        required: false,
+        options: ['left', 'right'],
+        control: 'select',
+      },
+      duration: {
+        type: 'integer',
+        default: 30,
+        description: 'Time in seconds for one complete scrolling cycle.',
+        required: false,
+        control: 'range',
+        minimum: 10,
+        maximum: 120,
+      },
     },
     propertyControls: {
       elementId: { control: 'text', group: 'Attributes', localizable: false, supportsDynamicBinding: false },
@@ -4302,6 +4319,15 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       hidden: { control: 'switch', group: 'Content', localizable: false, supportsDynamicBinding: false },
       semanticTag: { control: 'select', group: 'Content', localizable: false, supportsDynamicBinding: false },
       innerContainer: { control: 'switch', group: 'Content', localizable: false, supportsDynamicBinding: false },
+      direction: { control: 'select', group: 'Content', localizable: false, supportsDynamicBinding: false },
+      duration: {
+        control: 'range',
+        group: 'Content',
+        localizable: false,
+        supportsDynamicBinding: false,
+        minimum: 10,
+        maximum: 120,
+      },
     },
     style: {
       allowed: {
@@ -4394,7 +4420,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       stableElementIds: true,
     },
     accessibility: {
-      keyboardAccessible: false,
+      keyboardAccessible: true,
       requirements: [
         'semantic HTML',
         'accessible name where applicable',
@@ -4429,7 +4455,16 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
     exampleInstance: {
       id: 'example-marquee-layout',
       type: 'marquee-layout',
-      props: { cssClasses: [], htmlId: '', ariaLabel: '', hidden: false, semanticTag: 'div', innerContainer: false },
+      props: {
+        cssClasses: [],
+        htmlId: '',
+        ariaLabel: '',
+        hidden: false,
+        semanticTag: 'div',
+        innerContainer: false,
+        direction: 'left',
+        duration: 30,
+      },
       styles: { base: {}, tablet: {}, mobile: {}, dark: {}, darkMobile: {} },
       children: [],
     },
@@ -4442,7 +4477,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'container',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -70126,7 +70161,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'layout',
     icon: 'solar:repeat-linear',
     tier: 'pro',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'marquee-layout marquee layout layout marquee layout element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },

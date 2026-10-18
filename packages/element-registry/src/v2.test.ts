@@ -35,6 +35,7 @@ describe('generated v2 element registry', () => {
     expect(isElementInsertableV2('blixis/sticky-container')).toBe(true);
     expect(isElementInsertableV2('blixis/split-layout')).toBe(true);
     expect(isElementInsertableV2('blixis/resizable-panels')).toBe(true);
+    expect(isElementInsertableV2('blixis/marquee-layout')).toBe(true);
     for (const type of [
       'post-title',
       'post-content',

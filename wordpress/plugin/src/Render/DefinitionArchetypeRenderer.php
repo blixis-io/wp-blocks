@@ -82,6 +82,9 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		if ( 'resizable-panels' === $id ) {
 			return $this->render_resizable_panels( $node, $context->children_html_list, $hooks, $tag );
 		}
+		if ( 'marquee-layout' === $id ) {
+			return $this->render_marquee_layout( $node, $context->children_html, $hooks, $tag );
+		}
 		if ( 'scroll-area' === $id ) {
 			$label = $node->value( 'ariaLabel' );
 			return '<' . $tag . $hooks . ' data-blx-scroll-area tabindex="0"' . ( is_string( $label ) && '' !== trim( $label ) ? ' role="region"' : '' ) . '>' . $context->children_html . '</' . $tag . '>';
@@ -584,6 +587,33 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 			}
 		}
 		return $html . '</' . $tag . '>';
+	}
+
+	/** Render a reduced-motion-aware marquee with a pause control and inert duplicate track.
+	 *
+	 * @param ElementNode $node Element properties.
+	 * @param string      $children Pre-rendered child content.
+	 * @param string      $hooks Validated element hooks.
+	 * @param string      $tag Semantic wrapper tag.
+	 */
+	private function render_marquee_layout( ElementNode $node, string $children, string $hooks, string $tag ): string {
+		$direction = 'right' === $node->value( 'direction', 'left' ) ? 'right' : 'left';
+		$duration  = $node->value( 'duration', 30 );
+		$duration  = is_numeric( $duration ) ? max( 10, min( 120, (int) $duration ) ) : 30;
+		if ( '' === trim( $children ) ) {
+			return '<' . $tag . $hooks . ' data-blx-marquee="' . $direction . '" data-blx-marquee-duration="' . $duration . '"></' . $tag . '>';
+		}
+		$clone  = preg_replace( '/\s+id\s*=\s*(?:"[^"]*"|\'[^\']*\')/i', '', $children );
+		$clone  = is_string( $clone ) ? $clone : '';
+		$pause  = __( 'Pause scrolling', 'blixis-builder' );
+		$resume = __( 'Resume scrolling', 'blixis-builder' );
+		return '<' . $tag . $hooks . ' data-blx-marquee="' . $direction . '" data-blx-marquee-duration="' . $duration . '">'
+			. '<div data-blx-marquee-viewport><div data-blx-marquee-track>'
+			. '<div data-blx-marquee-group>' . $children . '</div>'
+			. '<div data-blx-marquee-group aria-hidden="true" inert>' . $clone . '</div>'
+			. '</div></div>'
+			. '<button type="button" data-blx-marquee-toggle data-blx-pause-label="' . Escape::attr( $pause ) . '" data-blx-resume-label="' . Escape::attr( $resume ) . '" aria-label="' . Escape::attr( $pause ) . '" aria-pressed="false">' . Escape::html( $pause ) . '</button>'
+			. '</' . $tag . '>';
 	}
 
 	/** Render bounded navigation entries with guarded links and nested children.

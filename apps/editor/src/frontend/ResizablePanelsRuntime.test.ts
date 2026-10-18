@@ -9,6 +9,7 @@ const repositoryRoot = process.cwd().endsWith('/apps/editor') ? resolve(process.
 const runtime = readFileSync(resolve(repositoryRoot, 'wordpress/plugin/assets/frontend/elements.js'), 'utf8');
 
 type InitResizablePanels = (root: HTMLElement) => void;
+type InitMarquee = (root: HTMLElement) => void;
 
 function makePanels(orientation = 'horizontal', minimum = 20) {
   const root = document.createElement('div');
@@ -33,6 +34,35 @@ function loadInitializer(): InitResizablePanels {
 afterEach(() => {
   document.body.replaceChildren();
   delete (window as Window & { blxInitResizablePanels?: InitResizablePanels }).blxInitResizablePanels;
+  delete (window as Window & { blxInitMarquee?: InitMarquee }).blxInitMarquee;
+});
+
+describe('public marquee enhancement', () => {
+  it('adds the pause and resume control behavior once', () => {
+    const root = document.createElement('div');
+    root.setAttribute('data-blx-marquee', 'left');
+    root.setAttribute('data-blx-marquee-duration', '45');
+    root.innerHTML =
+      '<div data-blx-marquee-track><div data-blx-marquee-group>content</div><div data-blx-marquee-group aria-hidden="true" inert>content</div></div><button data-blx-marquee-toggle data-blx-pause-label="Pause scrolling" data-blx-resume-label="Resume scrolling" aria-label="Pause scrolling" aria-pressed="false">Pause scrolling</button>';
+    document.body.append(root);
+    runInNewContext(runtime, { window, document });
+    const initialize = (window as Window & { blxInitMarquee?: InitMarquee }).blxInitMarquee;
+    const toggle = root.querySelector<HTMLButtonElement>('[data-blx-marquee-toggle]');
+    if (!initialize || !toggle) throw new Error('marquee initializer or control missing');
+    initialize(root);
+    initialize(root);
+
+    expect(root.dataset['blxMarqueeReady']).toBe('true');
+    expect(root.style.getPropertyValue('--blx-marquee-duration')).toBe('45s');
+    toggle.click();
+    expect(root.hasAttribute('data-blx-marquee-paused')).toBe(true);
+    expect(toggle.getAttribute('aria-pressed')).toBe('true');
+    expect(toggle.getAttribute('aria-label')).toBe('Resume scrolling');
+    toggle.click();
+    expect(root.hasAttribute('data-blx-marquee-paused')).toBe(false);
+    expect(toggle.getAttribute('aria-pressed')).toBe('false');
+    expect(toggle.getAttribute('aria-label')).toBe('Pause scrolling');
+  });
 });
 
 describe('public resizable-panels enhancement', () => {
