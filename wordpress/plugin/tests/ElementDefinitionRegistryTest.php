@@ -132,6 +132,66 @@ final class ElementDefinitionRegistryTest extends TestCase {
 				new RenderContext()
 			)
 		);
+		$this->assertSame(
+			'<div data-blx-id="accordion-1" data-blx-type="blixis/accordion"><details open><summary>Question &amp; answer</summary><div>&lt;script&gt;</div></details></div>',
+			$renderer->render(
+				new ElementNode(
+					'accordion-1',
+					'blixis/accordion',
+					[
+						'items'       => [
+							[
+								'id'      => 'q1',
+								'title'   => 'Question & answer',
+								'content' => '<script>',
+							],
+						],
+						'defaultOpen' => [ 'q1' ],
+					]
+				),
+				new RenderContext()
+			)
+		);
+		$this->assertSame(
+			'<ol data-blx-id="steps-1" data-blx-type="blixis/steps"><li aria-current="step"><span>First</span><p>Start &amp; finish</p></li><li><span>Second</span></li></ol>',
+			$renderer->render(
+				new ElementNode(
+					'steps-1',
+					'blixis/steps',
+					[
+						'steps'      => [
+							[
+								'title'       => 'First',
+								'description' => 'Start & finish',
+							],
+							[ 'title' => 'Second' ],
+						],
+						'activeStep' => 0,
+					]
+				),
+				new RenderContext()
+			)
+		);
+		$tab_id = 'blx-tab-' . substr( hash( 'sha256', 'tabs-1:0' ), 0, 12 );
+		$this->assertSame(
+			'<div data-blx-id="tabs-1" data-blx-type="blixis/tabs"><nav aria-label="Sections"><ul><li><a href="#' . $tab_id . '">Intro</a></li></ul></nav><section id="' . $tab_id . '"><h2>Intro</h2><p>Body &amp; copy</p></section></div>',
+			$renderer->render(
+				new ElementNode(
+					'tabs-1',
+					'blixis/tabs',
+					[
+						'items' => [
+							[
+								'id'      => 'intro',
+								'label'   => 'Intro',
+								'content' => 'Body & copy',
+							],
+						],
+					]
+				),
+				new RenderContext()
+			)
+		);
 	}
 
 	/** P3 images and galleries resolve only approved image references and escape captions. */

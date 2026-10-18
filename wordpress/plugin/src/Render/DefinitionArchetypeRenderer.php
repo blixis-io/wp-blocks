@@ -42,7 +42,7 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 	 * @param string $archetype Archetype name.
 	 */
 	public function supports( string $archetype ): bool {
-		return in_array( $archetype, [ 'container','simple','text','richtext','heading','button','link','image','gallery','navigation','list','code','card','layout','section','page','site-header','site-footer','site-logo','row','columns','grid','stack' ], true ); }
+		return in_array( $archetype, [ 'container','simple','text','richtext','heading','button','link','image','gallery','navigation','list','code','accordion','tabs','steps','card','layout','section','page','site-header','site-footer','site-logo','row','columns','grid','stack' ], true ); }
 	/** Render an element with escaped text and allowlisted tags/attributes.
 	 *
 	 * @param ElementNode   $node Element input.
@@ -114,8 +114,18 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 				return '<a' . $hooks . ' href="' . Escape::url( is_string( $href ) ? $href : '#' ) . '"' . $target_attr . '>' . $body . '</a>'; }
 			return '<' . $tag . $hooks . '>' . $body . '</' . $tag . '>';
 		}
-		if ( in_array( $id, [ 'navigation', 'navigation-menu' ], true ) && 'navigation' === $archetype && is_array( $node->value( 'items', null ) ) ) {
-			return '<nav' . $hooks . '><ul>' . $this->navigation_items( $node->value( 'items', [] ), 0 ) . '</ul></nav>';
+		if ( 'navigation' === $archetype && in_array( $id, [ 'navigation', 'navigation-menu', 'nav-menu', 'mobile-menu', 'breadcrumbs', 'table-of-contents', 'anchor-links', 'mega-menu', 'sidebar-navigation', 'scroll-spy', 'dropdown-menu', 'breadcrumb-ui' ], true ) && is_array( $node->value( 'items', null ) ) ) {
+			$label = $node->value( 'ariaLabel' );
+			return '<nav' . $hooks . ( is_string( $label ) && '' !== trim( $label ) ? ' aria-label="' . Escape::attr( $label ) . '"' : '' ) . '><ul>' . $this->navigation_items( $node->value( 'items', [] ), 0 ) . '</ul></nav>';
+		}
+		if ( 'accordion' === $archetype ) {
+			return $this->render_accordion( $node, $hooks );
+		}
+		if ( 'tabs' === $archetype ) {
+			return $this->render_tabs( $node, $hooks );
+		}
+		if ( 'steps' === $archetype ) {
+			return $this->render_steps( $node, $hooks );
 		}
 
 		if ( 'site-logo' === $id ) {
@@ -175,6 +185,101 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 			}
 		}
 		return $html . '</ul></div>';
+	}
+
+	/** Render disclosure sections with native keyboard and no-script behavior.
+	 *
+	 * @param ElementNode $node Accordion definition.
+	 * @param string      $hooks Validated element hooks.
+	 */
+	private function render_accordion( ElementNode $node, string $hooks ): string {
+		$items      = $node->value( 'items', [] );
+		$items      = is_array( $items ) ? array_slice( $items, 0, 100 ) : [];
+		$open       = $node->value( 'defaultOpen', [] );
+		$open       = is_array( $open ) ? $open : [];
+		$label      = $node->value( 'ariaLabel' );
+		$attributes = is_string( $label ) && '' !== trim( $label ) ? ' aria-label="' . Escape::attr( $label ) . '"' : '';
+		$html       = '<div' . $hooks . $attributes . '>';
+		foreach ( $items as $item ) {
+			$item = $this->record( $item );
+			if ( null === $item ) {
+				continue;
+			}
+			$id      = $item['id'] ?? '';
+			$title   = $item['title'] ?? $item['label'] ?? '';
+			$content = $item['content'] ?? '';
+			if ( ! is_string( $title ) || ! is_string( $content ) ) {
+				continue;
+			}
+			$html .= '<details' . ( is_string( $id ) && in_array( $id, $open, true ) ? ' open' : '' ) . '><summary>' . Escape::html( $title ) . '</summary><div>' . Escape::html( $content ) . '</div></details>';
+		}
+		return $html . '</div>';
+	}
+
+	/** Render all tab content with in-page links so content remains available without JavaScript.
+	 *
+	 * @param ElementNode $node Tabs definition.
+	 * @param string      $hooks Validated element hooks.
+	 */
+	private function render_tabs( ElementNode $node, string $hooks ): string {
+		$items  = $node->value( 'items', [] );
+		$items  = is_array( $items ) ? array_slice( $items, 0, 100 ) : [];
+		$label  = $node->value( 'ariaLabel' );
+		$nav    = '<nav aria-label="' . Escape::attr( is_string( $label ) && '' !== trim( $label ) ? $label : 'Sections' ) . '"><ul>';
+		$panels = '';
+		foreach ( $items as $index => $item ) {
+			$item = $this->record( $item );
+			if ( null === $item ) {
+				continue;
+			}
+			$title   = $item['label'] ?? $item['title'] ?? '';
+			$content = $item['content'] ?? '';
+			if ( ! is_string( $title ) || ! is_string( $content ) ) {
+				continue;
+			}
+			$id      = 'blx-tab-' . substr( hash( 'sha256', $node->id . ':' . (string) $index ), 0, 12 );
+			$nav    .= '<li><a href="#' . $id . '">' . Escape::html( $title ) . '</a></li>';
+			$panels .= '<section id="' . $id . '"><h2>' . Escape::html( $title ) . '</h2><p>' . Escape::html( $content ) . '</p></section>';
+		}
+		return '<div' . $hooks . '>' . $nav . '</ul></nav>' . $panels . '</div>';
+	}
+
+	/** Render a bounded ordered list with the current step announced accessibly.
+	 *
+	 * @param ElementNode $node Steps definition.
+	 * @param string      $hooks Validated element hooks.
+	 */
+	private function render_steps( ElementNode $node, string $hooks ): string {
+		$steps  = $node->value( 'steps', [] );
+		$steps  = is_array( $steps ) ? array_slice( $steps, 0, 100 ) : [];
+		$active = $node->value( 'activeStep', 0 );
+		$active = is_numeric( $active ) ? max( 0, (int) $active ) : 0;
+		$label  = $node->value( 'ariaLabel' );
+		$html   = '<ol' . $hooks . ( is_string( $label ) && '' !== trim( $label ) ? ' aria-label="' . Escape::attr( $label ) . '"' : '' ) . '>';
+		foreach ( $steps as $index => $step ) {
+			$step = $this->record( $step );
+			if ( null === $step || ! is_string( $step['title'] ?? null ) ) {
+				continue;
+			}
+			$html .= '<li' . ( $index === $active ? ' aria-current="step"' : '' ) . '><span>' . Escape::html( $step['title'] ) . '</span>';
+			if ( is_string( $step['description'] ?? null ) && '' !== $step['description'] ) {
+				$html .= '<p>' . Escape::html( $step['description'] ) . '</p>';
+			}
+			$html .= '</li>';
+		}
+		return $html . '</ol>';
+	}
+
+	/** Convert decoded JSON objects to arrays for bounded renderer access.
+	 *
+	 * @param mixed $value JSON value.
+	 * @return array<string,mixed>|null Object fields or null.
+	 */
+	private function record( mixed $value ): ?array {
+		if ( $value instanceof \stdClass ) {
+			$value = get_object_vars( $value );
+		}
+		return is_array( $value ) && ! array_is_list( $value ) ? $value : null;
 	}
 
 	/** Render a bounded list of escaped text entries.

@@ -48,6 +48,8 @@ The P2 renderer also emits escaped ordered/unordered list items, allowlisted lan
 
 For P3, image aliases resolve through the existing raster-image asset boundary, optional captions are escaped, and galleries render only resolved image references with bounded item/column counts. The WordPress media adapter intentionally resolves raster images only; video/audio attachment support and third-party embeds require a separate MIME/provider security contract and remain planned.
 
+P4 adds renderer fallbacks for the catalog's navigation item structures, native `<details>` accordion disclosures, linked tab sections that keep all content available without JavaScript, and ordered step lists with an `aria-current="step"` marker. The disclosures and linked sections preserve content when scripting is disabled; full tab switching, single-open accordion enforcement, and overlay interactions remain planned.
+
 ## Instance and compatibility contract
 
 An instance is `{ id, type, props, styles, children }`. IDs are stable. Definition properties supply validation type, enum/options, bounds, defaults, required status, `localizable`, `editorOnly`, and a control. Translatable data stays in locale content streams. `editorOnly` values are excluded from saved frontend props. Unknown types/properties round-trip for forward compatibility and render through the static safe fallback.
