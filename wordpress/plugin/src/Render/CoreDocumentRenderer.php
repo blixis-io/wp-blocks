@@ -96,11 +96,13 @@ final class CoreDocumentRenderer {
 				}
 				continue;
 			}
-			$child_html = '';
+			$child_html_list = [];
 			foreach ( $children as $_ ) {
-				$child_html = \array_pop( $output ) . $child_html;
+				$child_html_list[] = (string) \array_pop( $output );
 			}
-			$renderer = $this->renderers[ $node->type ] ?? $this->archetypes->resolve( $node->type );
+			$child_html_list = \array_reverse( $child_html_list );
+			$child_html      = \implode( '', $child_html_list );
+			$renderer        = $this->renderers[ $node->type ] ?? $this->archetypes->resolve( $node->type );
 			if ( ( null === $this->definitions->get( $node->type ) && null === $this->registry->get( $node->type ) ) || 1 !== \preg_match( '/^[a-z0-9][a-z0-9_-]{2,63}$/D', $node->id ) ) {
 				$output[] = '<div data-blx-invalid>' . $child_html . '</div>';
 				continue;
@@ -108,7 +110,7 @@ final class CoreDocumentRenderer {
 			$values = isset( $this->renderers[ $node->type ] ) ? $this->content->values( $node, $document, $locale, $fallback ) : $this->definition_values( $node, $document, $locale, $fallback );
 			if ( isset( $values['content'] ) && ! isset( $values['text'] ) ) {
 				$values['text'] = $values['content']; }
-			$output[] = $renderer->render( new ElementNode( $node->id, $node->type, $values, \is_array( $class_names[ $node->id ] ?? null ) ? $class_names[ $node->id ] : [] ), new RenderContext( $child_html, $token_ids ) );
+			$output[] = $renderer->render( new ElementNode( $node->id, $node->type, $values, \is_array( $class_names[ $node->id ] ?? null ) ? $class_names[ $node->id ] : [] ), new RenderContext( $child_html, $token_ids, $child_html_list ) );
 		}
 		return \implode( '', $output );
 	}

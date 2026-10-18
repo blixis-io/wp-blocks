@@ -56,10 +56,17 @@ final class Frontend {
 		if ( null === $page ) {
 			return;
 		}
-		if ( '' !== $page['css'] ) {
+		$has_resizable_panels = str_contains( $page['html'], 'data-blx-resizable-panels=' );
+		$inline_styles        = array_filter( [ $page['css'], $has_resizable_panels ? ResizablePanelsCss::css() : '' ] );
+		if ( [] !== $inline_styles ) {
 			\wp_register_style( self::STYLE_HANDLE, false, [], \Blixis\Builder\VERSION );
 			\wp_enqueue_style( self::STYLE_HANDLE );
-			\wp_add_inline_style( self::STYLE_HANDLE, $page['css'] );
+			\wp_add_inline_style( self::STYLE_HANDLE, implode( "\n", $inline_styles ) );
+		}
+		if ( $has_resizable_panels ) {
+			$asset_url = \plugins_url( 'assets/frontend/elements.js', \dirname( __DIR__, 2 ) . '/blixis-builder.php' );
+			\wp_register_script( 'blixis-builder-elements', $asset_url, [], \Blixis\Builder\VERSION, true );
+			\wp_enqueue_script( 'blixis-builder-elements' );
 		}
 		if ( ! ( new ThemeCompat( new WordPressCompatibilityReader() ) )->status()->compatible ) {
 			\wp_register_style( 'blixis-builder-fallback', false, [], \Blixis\Builder\VERSION );

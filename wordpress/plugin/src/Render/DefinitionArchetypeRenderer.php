@@ -79,6 +79,9 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		if ( 'spacer' === $id ) {
 			return '<div' . $hooks . ' aria-hidden="true"></div>';
 		}
+		if ( 'resizable-panels' === $id ) {
+			return $this->render_resizable_panels( $node, $context->children_html_list, $hooks, $tag );
+		}
 		if ( 'scroll-area' === $id ) {
 			$label = $node->value( 'ariaLabel' );
 			return '<' . $tag . $hooks . ' data-blx-scroll-area tabindex="0"' . ( is_string( $label ) && '' !== trim( $label ) ? ' role="region"' : '' ) . '>' . $context->children_html . '</' . $tag . '>';
@@ -551,6 +554,36 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 			$attributes .= ' hidden';
 		}
 		return $attributes;
+	}
+
+	/** Render child panels with keyboard-operable native separators.
+	 *
+	 * @param ElementNode $node Element properties.
+	 * @param string[]    $children Pre-rendered direct children.
+	 * @param string      $hooks Validated element hooks.
+	 * @param string      $tag Semantic wrapper tag.
+	 */
+	private function render_resizable_panels( ElementNode $node, array $children, string $hooks, string $tag ): string {
+		$orientation           = 'vertical' === $node->value( 'orientation', 'horizontal' ) ? 'vertical' : 'horizontal';
+		$minimum               = $node->value( 'minPanelSize', 20 );
+		$minimum               = is_numeric( $minimum ) ? max( 10, min( 40, (float) $minimum ) ) : 20.0;
+		$minimum_text          = rtrim( rtrim( sprintf( '%.2F', $minimum ), '0' ), '.' );
+		$separator_orientation = 'horizontal' === $orientation ? 'vertical' : 'horizontal';
+		$root                  = '<' . $tag . $hooks . ' data-blx-resizable-panels="' . $orientation . '" data-blx-resize-min="' . Escape::attr( $minimum_text ) . '">';
+		if ( count( $children ) < 2 ) {
+			return $root . implode( '', $children ) . '</' . $tag . '>';
+		}
+		$prefix = substr( $node->id, 0, 48 );
+		$html   = $root;
+		foreach ( $children as $index => $child ) {
+			$panel_id = $prefix . '-panel-' . ( $index + 1 );
+			$html    .= '<div id="' . Escape::attr( $panel_id ) . '" data-blx-resizable-panel>' . $child . '</div>';
+			if ( $index < count( $children ) - 1 ) {
+				$next_id = $prefix . '-panel-' . ( $index + 2 );
+				$html   .= '<div role="separator" aria-label="' . Escape::attr( __( 'Resize panel', 'blixis-builder' ) ) . '" aria-orientation="' . $separator_orientation . '" aria-controls="' . Escape::attr( $panel_id . ' ' . $next_id ) . '" aria-valuemin="' . Escape::attr( $minimum_text ) . '" aria-valuemax="' . Escape::attr( (string) ( 100 - $minimum ) ) . '" aria-valuenow="50" tabindex="0" data-blx-resize-handle></div>';
+			}
+		}
+		return $html . '</' . $tag . '>';
 	}
 
 	/** Render bounded navigation entries with guarded links and nested children.

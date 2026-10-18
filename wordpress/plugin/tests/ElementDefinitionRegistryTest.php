@@ -74,6 +74,44 @@ final class ElementDefinitionRegistryTest extends TestCase {
 		);
 	}
 
+	/** Resizable panels preserve child order and expose a labeled keyboard separator. */
+	public function test_resizable_panels_render_keyboard_separator_markup(): void {
+		$registry = ElementDefinitionRegistry::from_manifest_file( \dirname( __DIR__ ) . '/data/element-definitions-v2.json' );
+		$media    = new class() implements AssetReferenceResolver {
+			/** Resolve no attachment for layout renderer tests.
+			 *
+			 * @param int $attachment_id Attachment ID.
+			 */
+			public function resolve( int $attachment_id ): ?array {
+				return null;
+			}
+			/** Resolve no imported asset for layout renderer tests.
+			 *
+			 * @param string $reference Asset reference.
+			 */
+			public function resolve_reference( string $reference ): ?array {
+				return null;
+			}
+		};
+		$renderer = new DefinitionArchetypeRenderer( $registry, $media );
+		$html     = $renderer->render(
+			new ElementNode(
+				'panels-1',
+				'blixis/resizable-panels',
+				[
+					'orientation'  => 'horizontal',
+					'minPanelSize' => 20,
+				]
+			),
+			new RenderContext( '', null, [ '<p>First panel</p>', '<p>Second panel</p>' ] )
+		);
+		$this->assertStringContainsString( 'data-blx-resizable-panels="horizontal"', $html );
+		$this->assertStringContainsString( '<p>First panel</p>', $html );
+		$this->assertStringContainsString( '<p>Second panel</p>', $html );
+		$this->assertStringContainsString( 'role="separator" aria-label="Resize panel" aria-orientation="vertical"', $html );
+		$this->assertStringContainsString( 'aria-valuemin="20" aria-valuemax="80" aria-valuenow="50" tabindex="0"', $html );
+	}
+
 	/** Entitlements remain available by default while the filter is not installed. */
 	public function test_entitlement_defaults_to_available_without_a_filter(): void {
 		$registry = ElementDefinitionRegistry::from_manifest_file( \dirname( __DIR__ ) . '/data/element-definitions-v2.json' );
