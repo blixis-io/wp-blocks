@@ -122,6 +122,26 @@
       "description": "Toggle behaviour.",
       "required": false,
       "control": "switch"
+    },
+    "orientation": {
+      "type": "enum",
+      "default": "horizontal",
+      "description": "Arrange the panels side by side or stacked.",
+      "required": false,
+      "options": [
+        "horizontal",
+        "vertical"
+      ],
+      "control": "select"
+    },
+    "minPanelSize": {
+      "type": "number",
+      "default": 20,
+      "minimum": 10,
+      "maximum": 40,
+      "description": "Minimum size of either adjacent panel as a percentage of their combined space.",
+      "required": false,
+      "control": "number"
     }
   },
   "propertyControls": {
@@ -163,6 +183,18 @@
     },
     "innerContainer": {
       "control": "switch",
+      "group": "Content",
+      "localizable": false,
+      "supportsDynamicBinding": false
+    },
+    "orientation": {
+      "control": "select",
+      "group": "Content",
+      "localizable": false,
+      "supportsDynamicBinding": false
+    },
+    "minPanelSize": {
+      "control": "number",
       "group": "Content",
       "localizable": false,
       "supportsDynamicBinding": false
@@ -467,7 +499,9 @@
       "ariaLabel": "",
       "hidden": false,
       "semanticTag": "div",
-      "innerContainer": false
+      "innerContainer": false,
+      "orientation": "horizontal",
+      "minPanelSize": 20
     },
     "styles": {
       "base": {},

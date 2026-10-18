@@ -88,6 +88,7 @@ describe('left panel and element palette', () => {
       'Scroll Area',
       'Sticky Container',
       'Split Layout',
+      'Resizable Panels',
       'Post Title',
       'Post Content',
       'Post Excerpt',
@@ -103,7 +104,7 @@ describe('left panel and element palette', () => {
       'Table Of Contents',
     ])
       expect(within(palette).getByRole('button', { name })).toBeTruthy();
-    expect(within(palette).getAllByRole('button')).toHaveLength(51);
+    expect(within(palette).getAllByRole('button')).toHaveLength(52);
   });
 
   it('remembers the selected left tab for the current session', async () => {

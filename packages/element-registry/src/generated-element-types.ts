@@ -3739,6 +3739,23 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
         required: false,
         control: 'switch',
       },
+      orientation: {
+        type: 'enum',
+        default: 'horizontal',
+        description: 'Arrange the panels side by side or stacked.',
+        required: false,
+        options: ['horizontal', 'vertical'],
+        control: 'select',
+      },
+      minPanelSize: {
+        type: 'number',
+        default: 20,
+        minimum: 10,
+        maximum: 40,
+        description: 'Minimum size of either adjacent panel as a percentage of their combined space.',
+        required: false,
+        control: 'number',
+      },
     },
     propertyControls: {
       elementId: { control: 'text', group: 'Attributes', localizable: false, supportsDynamicBinding: false },
@@ -3748,6 +3765,8 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       hidden: { control: 'switch', group: 'Content', localizable: false, supportsDynamicBinding: false },
       semanticTag: { control: 'select', group: 'Content', localizable: false, supportsDynamicBinding: false },
       innerContainer: { control: 'switch', group: 'Content', localizable: false, supportsDynamicBinding: false },
+      orientation: { control: 'select', group: 'Content', localizable: false, supportsDynamicBinding: false },
+      minPanelSize: { control: 'number', group: 'Content', localizable: false, supportsDynamicBinding: false },
     },
     style: {
       allowed: {
@@ -3875,7 +3894,16 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
     exampleInstance: {
       id: 'example-resizable-panels',
       type: 'resizable-panels',
-      props: { cssClasses: [], htmlId: '', ariaLabel: '', hidden: false, semanticTag: 'div', innerContainer: false },
+      props: {
+        cssClasses: [],
+        htmlId: '',
+        ariaLabel: '',
+        hidden: false,
+        semanticTag: 'div',
+        innerContainer: false,
+        orientation: 'horizontal',
+        minPanelSize: 20,
+      },
       styles: { base: {}, tablet: {}, mobile: {}, dark: {}, darkMobile: {} },
       children: [],
     },
@@ -3888,7 +3916,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'container',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -70076,7 +70104,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'layout',
     icon: 'solar:slider-horizontal-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'resizable-panels resizable panels layout resizable panels element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },

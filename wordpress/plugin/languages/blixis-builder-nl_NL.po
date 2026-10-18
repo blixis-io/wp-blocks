@@ -115,6 +115,9 @@ msgstr "Selecteer media om de details te bekijken."
 msgid "Load more"
 msgstr "Meer laden"
 
+msgid "Resize panel"
+msgstr "Paneelgrootte aanpassen"
+
 msgid "Copy URL"
 msgstr "URL kopiëren"
 

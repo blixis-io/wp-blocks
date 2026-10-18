@@ -24,11 +24,27 @@ $layout  = static fn ( int $n, string $color ): string => wp_json_encode(
 		'layoutRevision' => $n,
 		'root'           => [
 			[
-				'id'       => 'el-001',
-				'type'     => 'blixis/heading',
-				'props'    => new stdClass(),
-				'children' => [],
-				'style'    => [ [ 'declarations' => [ 'color' => $color ] ] ],
+				'id'       => 'el-panels',
+				'type'     => 'blixis/resizable-panels',
+				'props'    => (object) [
+					'orientation'  => 'horizontal',
+					'minPanelSize' => 20,
+				],
+				'children' => [
+					[
+						'id'       => 'el-001',
+						'type'     => 'blixis/heading',
+						'props'    => new stdClass(),
+						'children' => [],
+						'style'    => [ [ 'declarations' => [ 'color' => $color ] ] ],
+					],
+					[
+						'id'       => 'el-002',
+						'type'     => 'blixis/text',
+						'props'    => (object) [ 'text' => 'Second panel' ],
+						'children' => [],
+					],
+				],
 			],
 		],
 	]

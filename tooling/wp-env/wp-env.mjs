@@ -1098,6 +1098,12 @@ async function smoke() {
                   props: {},
                   children: [node('split-a', 'blixis/text'), node('split-b', 'blixis/text')],
                 },
+                {
+                  id: 'resize1',
+                  type: 'blixis/resizable-panels',
+                  props: { orientation: 'horizontal', minPanelSize: 20 },
+                  children: [node('resize-a', 'blixis/text'), node('resize-b', 'blixis/text')],
+                },
               ],
             },
             {
@@ -1160,6 +1166,12 @@ async function smoke() {
             (richBody.html ?? '').includes('data-blx-id="split-a"') &&
             (richBody.html ?? '').includes('data-blx-id="split-b"'),
           'a split layout renders both panes through the real WordPress preview',
+        );
+        check(
+          (richBody.html ?? '').includes('data-blx-resizable-panels="horizontal"') &&
+            (richBody.html ?? '').includes('role="separator"') &&
+            (richBody.html ?? '').includes('aria-controls="resize1-panel-1 resize1-panel-2"'),
+          'resizable panels render a labeled, keyboard-focusable separator in the real WordPress preview',
         );
         check(
           (richBody.html ?? '').includes('<nav data-blx-id="toc1"') &&
@@ -1272,6 +1284,14 @@ async function smoke() {
         check(
           html.includes('data-blx-document') && html.includes('data-blx-id="el-001"') && html.includes('Published one'),
           'a published page renders its snapshot',
+        );
+        check(
+          html.includes('data-blx-resizable-panels="horizontal"') &&
+            html.includes('role="separator"') &&
+            html.includes('aria-controls="el-panels-panel-1 el-panels-panel-2"') &&
+            html.includes('data-blx-resizable-panel') &&
+            html.includes('id="blixis-builder-elements-js"'),
+          'published resizable panels include keyboard separators and enqueue the progressive enhancement runtime',
         );
         // A WordPress nonce is bound to the user's session token, so mint the nonces and the logged-in cookie in one session.
         const previewSession = JSON.parse(
