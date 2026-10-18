@@ -33,6 +33,37 @@ final class ElementDefinitionRegistryTest extends TestCase {
 		$this->assertSame( 'ready', $registry->get( 'heading' )['status'] ?? null );
 		$this->assertSame( 'ready', $registry->get( 'grid' )['status'] ?? null );
 		$this->assertSame( 'ready', $registry->get( 'avatar' )['status'] ?? null );
+		$this->assertSame( 'ready', $registry->get( 'post-title' )['status'] ?? null );
+	}
+
+	/** Static WordPress text elements render their escaped fallback when no post context is present. */
+	public function test_static_wordpress_text_elements_render_safe_fallbacks(): void {
+		$registry = ElementDefinitionRegistry::from_manifest_file( \dirname( __DIR__ ) . '/data/element-definitions-v2.json' );
+		$media    = new class() implements AssetReferenceResolver {
+			public function resolve( int $attachment_id ): ?array {
+				return null;
+			}
+			public function resolve_reference( string $reference ): ?array {
+				return null;
+			}
+		};
+		$renderer = new DefinitionArchetypeRenderer( $registry, $media );
+		foreach ( [ 'post-title', 'post-excerpt', 'post-date', 'post-author', 'site-tagline' ] as $type ) {
+			$this->assertSame(
+				'<span data-blx-id="dynamic-1" data-blx-type="blixis/' . $type . '">Fallback &amp; title</span>',
+				$renderer->render(
+					new ElementNode( 'dynamic-1', 'blixis/' . $type, [ 'fallback' => 'Fallback & title' ] ),
+					new RenderContext()
+				)
+			);
+		}
+		$this->assertSame(
+			'<div data-blx-id="dynamic-1" data-blx-type="blixis/post-content">Fallback &amp; title</div>',
+			$renderer->render(
+				new ElementNode( 'dynamic-1', 'blixis/post-content', [ 'fallback' => 'Fallback & title' ] ),
+				new RenderContext()
+			)
+		);
 	}
 
 	/** Entitlements remain available by default while the filter is not installed. */

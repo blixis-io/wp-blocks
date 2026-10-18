@@ -68628,7 +68628,7 @@
         ]
       },
       "archetype": "dynamic",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -69041,7 +69041,7 @@
         ]
       },
       "archetype": "dynamic",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -69454,7 +69454,7 @@
         ]
       },
       "archetype": "dynamic",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -70367,7 +70367,7 @@
         ]
       },
       "archetype": "dynamic",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -70780,7 +70780,7 @@
         ]
       },
       "archetype": "dynamic",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -72018,7 +72018,7 @@
         ]
       },
       "archetype": "dynamic",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",

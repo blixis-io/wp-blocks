@@ -41085,7 +41085,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'dynamic',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -41335,7 +41335,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'dynamic',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -41585,7 +41585,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'dynamic',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -42130,7 +42130,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'dynamic',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -42380,7 +42380,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'dynamic',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -43130,7 +43130,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'dynamic',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -71572,7 +71572,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'wordpress',
     icon: 'solar:document-text-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'post-title post title wordpress post title element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71583,7 +71583,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'wordpress',
     icon: 'solar:document-text-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'post-content post content wordpress post content element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71594,7 +71594,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'wordpress',
     icon: 'solar:text-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'post-excerpt post excerpt wordpress post excerpt element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71616,7 +71616,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'wordpress',
     icon: 'solar:calendar-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'post-date post date wordpress post date element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71627,7 +71627,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'wordpress',
     icon: 'solar:user-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'post-author post author wordpress post author element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71660,7 +71660,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'wordpress',
     icon: 'solar:text-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'site-tagline site tagline wordpress site tagline element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },

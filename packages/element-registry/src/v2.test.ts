@@ -34,6 +34,9 @@ describe('generated v2 element registry', () => {
     expect(isElementInsertableV2('blixis/table-of-contents')).toBe(true);
     expect(isElementInsertableV2('blixis/sticky-container')).toBe(true);
     expect(isElementInsertableV2('blixis/split-layout')).toBe(true);
+    for (const type of ['post-title', 'post-content', 'post-excerpt', 'post-date', 'post-author', 'site-tagline']) {
+      expect(isElementInsertableV2(`blixis/${type}`)).toBe(true);
+    }
   });
 
   it('validates declared props and rejects undeclared and editor-only values', () => {
