@@ -164,7 +164,7 @@ export function GeneratedControls({ element, editable }: { element: ElementNode;
                                 name,
                                 property,
                                 rows.map((old, rowIndex) =>
-                                  rowIndex === index ? nextReference : (old as Json),
+                                  rowIndex === index ? nextReference : old,
                                 ) as Json,
                               );
                             }}

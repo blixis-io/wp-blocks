@@ -937,7 +937,9 @@ describe('Inspector controls', () => {
 
   it('stores avatar attachment references and localizes alternative text', async () => {
     const { store } = await mount('blixis/avatar', { tab: 'content', reactive: false });
-    fireEvent.change(document.querySelector('input[type="number"]') as HTMLInputElement, {
+    const attachmentIdInput = document.querySelector<HTMLInputElement>('input[type="number"]');
+    if (!attachmentIdInput) throw new Error('Avatar attachment id input is missing');
+    fireEvent.change(attachmentIdInput, {
       target: { value: '42' },
     });
     fireEvent.change(screen.getByRole('textbox', { name: 'Alternative text' }), {
