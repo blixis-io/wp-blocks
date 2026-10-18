@@ -46,6 +46,8 @@ The list and counts are derived from `catalog.json`; the current catalogue has f
 
 The P2 renderer also emits escaped ordered/unordered list items, allowlisted language labels for static code blocks, and guarded links with safe target/rel behavior. These PHP output primitives do not by themselves promote an element to `ready`: editor controls, preview parity, and any promised interaction still need completion.
 
+For P3, image aliases resolve through the existing raster-image asset boundary, optional captions are escaped, and galleries render only resolved image references with bounded item/column counts. The WordPress media adapter intentionally resolves raster images only; video/audio attachment support and third-party embeds require a separate MIME/provider security contract and remain planned.
+
 ## Instance and compatibility contract
 
 An instance is `{ id, type, props, styles, children }`. IDs are stable. Definition properties supply validation type, enum/options, bounds, defaults, required status, `localizable`, `editorOnly`, and a control. Translatable data stays in locale content streams. `editorOnly` values are excluded from saved frontend props. Unknown types/properties round-trip for forward compatibility and render through the static safe fallback.

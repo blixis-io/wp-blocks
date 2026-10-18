@@ -9,6 +9,7 @@ namespace Blixis\Builder\Tests;
 
 use Blixis\Builder\Autoloader;
 use Blixis\Builder\Registry\ElementDefinitionRegistry;
+use Blixis\Builder\Render\AssetReferenceResolver;
 use Blixis\Builder\Render\DefinitionArchetypeRenderer;
 use Blixis\Builder\Render\ElementNode;
 use Blixis\Builder\Render\MediaResolver;
@@ -38,8 +39,8 @@ final class ElementDefinitionRegistryTest extends TestCase {
 		$this->assertSame( 'available', $registry->entitlement( 'heading' ) );
 	}
 
-	/** P1 layout wrappers retain accessible metadata and never emit arbitrary tags or IDs. */
-	public function test_layout_archetypes_render_safe_semantics_and_simple_elements(): void {
+	/** Definition renderers produce safe output for layout and content archetypes. */
+	public function test_definition_archetypes_render_safe_layout_and_content(): void {
 		$registry = ElementDefinitionRegistry::from_manifest_file( \dirname( __DIR__ ) . '/data/element-definitions-v2.json' );
 		$media    = new class() implements MediaResolver {
 			/** Resolve media references for renderer test.
@@ -126,6 +127,67 @@ final class ElementDefinitionRegistryTest extends TestCase {
 						'label'  => 'Open <menu>',
 						'href'   => 'javascript:alert(1)',
 						'target' => '_blank',
+					]
+				),
+				new RenderContext()
+			)
+		);
+	}
+
+	/** P3 images and galleries resolve only approved image references and escape captions. */
+	public function test_image_aliases_and_galleries_use_approved_media(): void {
+		$registry = ElementDefinitionRegistry::from_manifest_file( \dirname( __DIR__ ) . '/data/element-definitions-v2.json' );
+		$media    = new class() implements AssetReferenceResolver {
+			/** Resolve attachment ids for renderer test.
+			 *
+			 * @param int $attachment_id Attachment ID.
+			 */
+			public function resolve( int $attachment_id ): ?array {
+				return null;
+			}
+
+			/** Resolve only the approved fixture key.
+			 *
+			 * @param string $reference Asset reference.
+			 */
+			public function resolve_reference( string $reference ): ?array {
+				return 'photo' === $reference
+					? [
+						'url'    => 'https://example.test/photo.jpg',
+						'width'  => 640,
+						'height' => 480,
+						'alt'    => 'House & garden',
+					]
+					: null;
+			}
+		};
+		$renderer = new DefinitionArchetypeRenderer( $registry, $media );
+		$this->assertSame(
+			'<figure><img data-blx-id="picture-1" data-blx-type="blixis/picture" src="https://example.test/photo.jpg" width="640" height="480" alt="A house" loading="lazy" decoding="async"><figcaption>Caption &amp; detail</figcaption></figure>',
+			$renderer->render(
+				new ElementNode(
+					'picture-1',
+					'blixis/picture',
+					[
+						'assetRef' => 'photo',
+						'alt'      => 'A house',
+						'caption'  => 'Caption & detail',
+					]
+				),
+				new RenderContext()
+			)
+		);
+		$this->assertSame(
+			'<div data-blx-id="gallery-1" data-blx-type="blixis/gallery" data-blx-columns="2" role="group" aria-label="Gallery"><ul><li><img src="https://example.test/photo.jpg" width="640" height="480" alt="House &amp; garden" loading="lazy" decoding="async"><figcaption>House &amp; garden</figcaption></li></ul></div>',
+			$renderer->render(
+				new ElementNode(
+					'gallery-1',
+					'blixis/gallery',
+					[
+						'assets'    => [ 'photo', 'unapproved' ],
+						'columns'   => 2,
+						'captions'  => true,
+						'ariaLabel' => 'Gallery',
 					]
 				),
 				new RenderContext()

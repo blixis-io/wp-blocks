@@ -42,7 +42,7 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 	 * @param string $archetype Archetype name.
 	 */
 	public function supports( string $archetype ): bool {
-		return in_array( $archetype, [ 'container','simple','text','richtext','heading','button','link','image','navigation','list','code','card','layout','section','page','site-header','site-footer','site-logo','row','columns','grid','stack' ], true ); }
+		return in_array( $archetype, [ 'container','simple','text','richtext','heading','button','link','image','gallery','navigation','list','code','card','layout','section','page','site-header','site-footer','site-logo','row','columns','grid','stack' ], true ); }
 	/** Render an element with escaped text and allowlisted tags/attributes.
 	 *
 	 * @param ElementNode   $node Element input.
@@ -122,9 +122,16 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 			$href = $node->value( 'link', '/' );
 			return '<a' . $hooks . ' href="' . Escape::url( is_string( $href ) ? $href : '/' ) . '" aria-label="Site logo">' . $this->asset_image( $node ) . '</a>';
 		}
-		if ( 'image' === $id ) {
+		if ( 'gallery' === $archetype ) {
+			return $this->render_gallery( $node, $hooks );
+		}
+		if ( 'image' === $archetype && in_array( $id, [ 'image', 'picture', 'avatar', 'featured-image', 'product-image', 'before-after', 'image-comparison', 'image-hotspots', 'panorama-360', 'blur-up-image' ], true ) ) {
 			$image = $this->asset_image( $node );
 			if ( '' !== $image ) {
+				$caption = $node->value( 'caption', '' );
+				if ( is_string( $caption ) && '' !== $caption && in_array( $id, [ 'image', 'picture' ], true ) ) {
+					return '<figure>' . $image . '<figcaption>' . Escape::html( $caption ) . '</figcaption></figure>';
+				}
 				return $image;
 			}
 			$attachment_id = $node->value( 'attachmentId' );
@@ -134,6 +141,40 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 			return '<div' . $hooks . ' data-blx-missing-media></div>';
 		}
 		return '<' . $tag . $hooks . '>' . $context->children_html . '</' . $tag . '>';
+	}
+
+	/** Render a static gallery from approved image asset references.
+	 *
+	 * @param ElementNode $node Gallery element.
+	 * @param string      $hooks Validated element hooks.
+	 */
+	private function render_gallery( ElementNode $node, string $hooks ): string {
+		$assets  = $node->value( 'assets', [] );
+		$assets  = is_array( $assets ) ? array_slice( $assets, 0, 32 ) : [];
+		$columns = $node->value( 'columns', 3 );
+		$columns = is_numeric( $columns ) ? max( 1, min( 6, (int) $columns ) ) : 3;
+		$label   = $node->value( 'ariaLabel', 'Image gallery' );
+		$html    = '<div' . $hooks . ' data-blx-columns="' . $columns . '"' . ( is_string( $label ) && '' !== trim( $label ) ? ' role="group" aria-label="' . Escape::attr( $label ) . '"' : '' ) . '><ul>';
+		if ( $this->media instanceof AssetReferenceResolver ) {
+			foreach ( $assets as $reference ) {
+				if ( ! is_string( $reference ) ) {
+					continue;
+				}
+				$image = $this->media->resolve_reference( $reference );
+				if ( ! is_array( $image ) || ! is_string( $image['url'] ?? null ) || ! SafeUrl::accepts( $image['url'] ) ) {
+					continue;
+				}
+				$alt    = is_string( $image['alt'] ?? null ) ? $image['alt'] : '';
+				$srcset = is_string( $image['srcset'] ?? null ) ? \Blixis\Builder\Media\MediaPolicy::srcset( $image['srcset'] ) : null;
+				$sizes  = null !== $srcset && is_string( $image['sizes'] ?? null ) ? \Blixis\Builder\Media\MediaPolicy::sizes( $image['sizes'] ) : null;
+				$html  .= '<li><img src="' . Escape::url( $image['url'] ) . '"' . ( null === $srcset ? '' : ' srcset="' . Escape::attr( $srcset ) . '"' ) . ( null === $sizes ? '' : ' sizes="' . Escape::attr( $sizes ) . '"' ) . ' width="' . (int) ( $image['width'] ?? 0 ) . '" height="' . (int) ( $image['height'] ?? 0 ) . '" alt="' . Escape::attr( $alt ) . '" loading="lazy" decoding="async">';
+				if ( true === $node->value( 'captions', false ) && '' !== $alt ) {
+					$html .= '<figcaption>' . Escape::html( $alt ) . '</figcaption>';
+				}
+				$html .= '</li>';
+			}
+		}
+		return $html . '</ul></div>';
 	}
 
 	/** Render a bounded list of escaped text entries.
