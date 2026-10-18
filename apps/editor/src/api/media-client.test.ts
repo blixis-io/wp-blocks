@@ -12,6 +12,18 @@ function attachment(id = 9, source = `${origin}/uploads/full.jpg`) {
     mime_type: 'image/jpeg',
   };
 }
+function nonImageAttachment(kind: 'video' | 'audio' | 'caption', id = 11) {
+  const mime = kind === 'video' ? 'video/mp4' : kind === 'audio' ? 'audio/mpeg' : 'text/vtt';
+  const extension = kind === 'video' ? 'mp4' : kind === 'audio' ? 'mp3' : 'vtt';
+  return {
+    id,
+    source_url: `${origin}/uploads/${kind}.${extension}`,
+    alt_text: '',
+    title: { rendered: `Sample ${kind}` },
+    media_details: {},
+    mime_type: mime,
+  };
+}
 function response(value: unknown, headers: Record<string, string> = {}, status = 200) {
   return new Response(JSON.stringify(value), { status, headers: { 'Content-Type': 'application/json', ...headers } });
 }
@@ -71,6 +83,37 @@ describe('createMediaClient', () => {
     expect(new Headers(init?.headers).get('X-WP-Nonce')).toBe('rest-nonce');
   });
 
+  it.each(['video', 'audio', 'caption'] as const)(
+    'lists only approved %s attachments for that picker',
+    async (mediaKind) => {
+      const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(
+        response([nonImageAttachment(mediaKind)], {
+          'X-WP-Total': '1',
+          'X-WP-TotalPages': '1',
+        }),
+      );
+      const result = await client(fetchImpl).list({ mediaKind });
+      expect(result).toMatchObject({
+        ok: true,
+        value: {
+          items: [
+            {
+              id: 11,
+              mime: mediaKind === 'video' ? 'video/mp4' : mediaKind === 'audio' ? 'audio/mpeg' : 'text/vtt',
+              thumbUrl: '',
+            },
+          ],
+        },
+      });
+      const requestUrl = fetchImpl.mock.calls[0]?.[0];
+      expect(requestUrl instanceof URL ? requestUrl.searchParams.get('media_type') : null).toBe(
+        mediaKind === 'caption' ? 'text' : mediaKind,
+      );
+      if (requestUrl instanceof URL && mediaKind === 'caption')
+        expect(requestUrl.searchParams.get('mime_type')).toBe('text/vtt');
+    },
+  );
+
   it('rejects malformed response headers and invalid pagination', async () => {
     const fetchImpl = vi
       .fn<typeof fetch>()
@@ -102,6 +145,24 @@ describe('createMediaClient', () => {
     const oversized = await media.upload(new File(['x'.repeat(1001)], 'x.png', { type: 'image/png' }));
     expect(oversized.ok ? null : oversized.error.code).toBe('media_file_too_large');
     expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it('uploads only media matching the selected video, audio or caption field', async () => {
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(response(nonImageAttachment('video'), {}, 201))
+      .mockResolvedValueOnce(response(nonImageAttachment('audio', 12), {}, 201))
+      .mockResolvedValueOnce(response(nonImageAttachment('caption', 13), {}, 201));
+    const media = client(fetchImpl);
+    const video = new File(['video'], 'clip.mp4', { type: 'video/mp4' });
+    expect((await media.upload(video, { mediaKind: 'video' })).ok).toBe(true);
+    expect((await media.upload(video, { mediaKind: 'image' })).ok).toBe(false);
+    const audio = new File(['audio'], 'track.mp3', { type: 'audio/mpeg' });
+    expect((await media.upload(audio, { mediaKind: 'audio' })).ok).toBe(true);
+    expect(
+      (await media.upload(new File(['WEBVTT'], 'subtitles.vtt', { type: 'text/vtt' }), { mediaKind: 'caption' })).ok,
+    ).toBe(true);
+    expect(fetchImpl).toHaveBeenCalledTimes(3);
   });
 });
 

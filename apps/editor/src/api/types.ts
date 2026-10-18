@@ -74,15 +74,17 @@ export interface MediaPage {
   total: number;
   totalPages: number;
 }
+export type MediaKind = 'image' | 'video' | 'audio' | 'caption';
 export interface MediaClient {
   get(id: number, options?: { signal?: AbortSignal }): Promise<ApiResult<MediaItem>>;
   list(options?: {
     search?: string;
     page?: number;
     perPage?: number;
+    mediaKind?: MediaKind;
     signal?: AbortSignal;
   }): Promise<ApiResult<MediaPage>>;
-  upload(file: File, options?: { signal?: AbortSignal }): Promise<ApiResult<MediaItem>>;
+  upload(file: File, options?: { mediaKind?: MediaKind; signal?: AbortSignal }): Promise<ApiResult<MediaItem>>;
 }
 
 /** Entry of a stream's saved history. */

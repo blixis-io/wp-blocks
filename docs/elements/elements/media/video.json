@@ -195,7 +195,8 @@
       "control": "media-picker",
       "group": "Content",
       "localizable": false,
-      "supportsDynamicBinding": true
+      "supportsDynamicBinding": true,
+      "mediaKind": "video"
     },
     "poster": {
       "control": "media-picker",

@@ -162,7 +162,8 @@
       "control": "media-picker",
       "group": "Content",
       "localizable": false,
-      "supportsDynamicBinding": true
+      "supportsDynamicBinding": true,
+      "mediaKind": "audio"
     },
     "controls": {
       "control": "switch",

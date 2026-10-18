@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Dialog, DialogContent } from '@blixis/wp-editor-ui';
-import type { MediaClient, MediaItem } from '../api/types';
+import type { MediaClient, MediaItem, MediaKind } from '../api/types';
 import { useI18n } from '../i18n-react';
 
 export function MediaDialog({
@@ -8,12 +8,14 @@ export function MediaDialog({
   onOpenChange,
   client,
   canUpload,
+  mediaKind = 'image',
   onUse,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   client: MediaClient;
   canUpload: boolean;
+  mediaKind?: MediaKind;
   onUse: (item: MediaItem) => void;
 }) {
   const { t } = useI18n();
@@ -38,10 +40,20 @@ export function MediaDialog({
       setLoading(true);
       setFailure('');
       void client
-        .list({ search: query, page: nextPage })
+        .list({ search: query, page: nextPage, mediaKind })
         .then((result) => {
           if (!result.ok) {
-            setFailure(t('media.loadError'));
+            setFailure(
+              t(
+                mediaKind === 'video'
+                  ? 'media.videoLoadError'
+                  : mediaKind === 'audio'
+                    ? 'media.audioLoadError'
+                    : mediaKind === 'caption'
+                      ? 'media.captionLoadError'
+                      : 'media.loadError',
+              ),
+            );
             return;
           }
           const currentCount = append ? itemCount.current : 0;
@@ -56,7 +68,7 @@ export function MediaDialog({
           setLoading(false);
         });
     },
-    [client, t],
+    [client, mediaKind, t],
   );
   useEffect(() => {
     if (!open) return;
@@ -78,7 +90,7 @@ export function MediaDialog({
     setUploadError('');
     setUploadStatuses(selectedFiles.map((file) => ({ name: file.name, state: 'uploading' })));
     for (const [index, file] of selectedFiles.entries()) {
-      const result = await client.upload(file);
+      const result = await client.upload(file, { mediaKind });
       if (result.ok) {
         itemCount.current += 1;
         setItems((current) => [result.value, ...current]);
@@ -92,7 +104,15 @@ export function MediaDialog({
           result.error.code === 'media_file_too_large' || result.error.code === 'media_upload_too_large'
             ? t('media.uploadTooLarge')
             : result.error.code === 'media_unsupported_type'
-              ? t('media.unsupportedType')
+              ? t(
+                  mediaKind === 'video'
+                    ? 'media.videoUnsupportedType'
+                    : mediaKind === 'audio'
+                      ? 'media.audioUnsupportedType'
+                      : mediaKind === 'caption'
+                        ? 'media.captionUnsupportedType'
+                        : 'media.unsupportedType',
+                )
               : t('media.uploadError');
         setUploadStatuses((current) =>
           current.map((status, statusIndex) =>
@@ -110,11 +130,83 @@ export function MediaDialog({
       onOpenChange(false);
     }
   };
+  const titleKey =
+    mediaKind === 'video'
+      ? 'media.videoTitle'
+      : mediaKind === 'audio'
+        ? 'media.audioTitle'
+        : mediaKind === 'caption'
+          ? 'media.captionTitle'
+          : 'media.title';
+  const descriptionKey =
+    mediaKind === 'video'
+      ? 'media.videoDescription'
+      : mediaKind === 'audio'
+        ? 'media.audioDescription'
+        : mediaKind === 'caption'
+          ? 'media.captionDescription'
+          : 'media.description';
+  const searchKey =
+    mediaKind === 'video'
+      ? 'media.videoSearch'
+      : mediaKind === 'audio'
+        ? 'media.audioSearch'
+        : mediaKind === 'caption'
+          ? 'media.captionSearch'
+          : 'media.search';
+  const libraryKey =
+    mediaKind === 'video'
+      ? 'media.videoLibrary'
+      : mediaKind === 'audio'
+        ? 'media.audioLibrary'
+        : mediaKind === 'caption'
+          ? 'media.captionLibrary'
+          : 'media.library';
+  const emptyKey =
+    mediaKind === 'video'
+      ? 'media.videoEmpty'
+      : mediaKind === 'audio'
+        ? 'media.audioEmpty'
+        : mediaKind === 'caption'
+          ? 'media.captionEmpty'
+          : 'media.empty';
+  const uploadKey =
+    mediaKind === 'video'
+      ? 'media.videoUpload'
+      : mediaKind === 'audio'
+        ? 'media.audioUpload'
+        : mediaKind === 'caption'
+          ? 'media.captionUpload'
+          : 'media.upload';
+  const dropHintKey =
+    mediaKind === 'video'
+      ? 'media.videoDropHint'
+      : mediaKind === 'audio'
+        ? 'media.audioDropHint'
+        : mediaKind === 'caption'
+          ? 'media.captionDropHint'
+          : 'media.dropHint';
+  const useKey =
+    mediaKind === 'video'
+      ? 'media.useVideo'
+      : mediaKind === 'audio'
+        ? 'media.useAudio'
+        : mediaKind === 'caption'
+          ? 'media.useCaption'
+          : 'media.use';
+  const accept =
+    mediaKind === 'video'
+      ? 'video/mp4,video/webm,video/ogg'
+      : mediaKind === 'audio'
+        ? 'audio/mpeg,audio/ogg,audio/wav,audio/mp4,audio/aac,audio/webm'
+        : mediaKind === 'caption'
+          ? 'text/vtt,.vtt'
+          : 'image/jpeg,image/png,image/gif,image/webp,image/avif';
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        title={t('media.title')}
-        description={t('media.description')}
+        title={t(titleKey)}
+        description={t(descriptionKey)}
         closeLabel={t('media.close')}
         className="blx-media-dialog"
         onCloseAutoFocus={(event) => {
@@ -125,7 +217,7 @@ export function MediaDialog({
         }}
       >
         <div className="blx-media-tools">
-          <label htmlFor="blx-media-search">{t('media.search')}</label>
+          <label htmlFor="blx-media-search">{t(searchKey)}</label>
           <input
             id="blx-media-search"
             type="search"
@@ -137,15 +229,15 @@ export function MediaDialog({
           {canUpload ? (
             <>
               <button type="button" disabled={uploading} onClick={() => input.current?.click()}>
-                {uploading ? t('media.uploading') : t('media.upload')}
+                {uploading ? t('media.uploading') : t(uploadKey)}
               </button>
               <input
                 ref={input}
                 className="sr-only"
                 type="file"
                 multiple
-                accept="image/jpeg,image/png,image/gif,image/webp,image/avif"
-                aria-label={t('media.upload')}
+                accept={accept}
+                aria-label={t(uploadKey)}
                 onChange={(event) => {
                   void upload(event.currentTarget.files);
                   event.currentTarget.value = '';
@@ -190,11 +282,11 @@ export function MediaDialog({
               ))}
             </ul>
           ) : null}
-          {items.length === 0 && !loading && !failure ? <p className="blx-media-empty">{t('media.empty')}</p> : null}
+          {items.length === 0 && !loading && !failure ? <p className="blx-media-empty">{t(emptyKey)}</p> : null}
           <div
             role="listbox"
             tabIndex={0}
-            aria-label={t('media.library')}
+            aria-label={t(libraryKey)}
             aria-activedescendant={items[active] ? `blx-media-${String(items[active].id)}` : undefined}
             className="blx-media-grid"
             onKeyDown={(event) => {
@@ -260,7 +352,13 @@ export function MediaDialog({
                   }
                 }}
               >
-                <img src={item.thumbUrl} alt="" />
+                {item.thumbUrl ? (
+                  <img src={item.thumbUrl} alt="" />
+                ) : (
+                  <span className="blx-media-card-icon" aria-hidden="true">
+                    {mediaKind === 'video' ? '▶' : mediaKind === 'caption' ? 'CC' : '♫'}
+                  </span>
+                )}
                 <span>{item.title || item.url.split('/').pop()}</span>
                 {selected === item.id ? <b aria-hidden="true">✓</b> : null}
               </button>
@@ -278,7 +376,7 @@ export function MediaDialog({
               {t('media.loadMore')}
             </button>
           ) : null}
-          <p className="blx-media-drop-hint">{t('media.dropHint')}</p>
+          <p className="blx-media-drop-hint">{t(dropHintKey)}</p>
         </div>
         <footer className="blx-media-footer">
           <button
@@ -290,7 +388,7 @@ export function MediaDialog({
             {t('media.cancel')}
           </button>
           <button type="button" className="ed-button-primary" disabled={selected === null} onClick={confirm}>
-            {t('media.use')}
+            {t(useKey)}
           </button>
         </footer>
       </DialogContent>

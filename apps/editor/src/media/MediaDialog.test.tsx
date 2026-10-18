@@ -106,7 +106,11 @@ describe('MediaDialog and MediaField', () => {
     await screen.findByRole('option', { name: /Caption/ });
     fireEvent.change(screen.getByRole('searchbox', { name: 'Search images' }), { target: { value: 'banner' } });
     await waitFor(() => {
-      expect(vi.mocked(client.listSpy).mock.calls.at(-1)?.[0]).toEqual({ search: 'banner', page: 1 });
+      expect(vi.mocked(client.listSpy).mock.calls.at(-1)?.[0]).toEqual({
+        search: 'banner',
+        page: 1,
+        mediaKind: 'image',
+      });
     });
     fireEvent.click(screen.getByRole('button', { name: 'Load more' }));
     expect(await screen.findByRole('option', { name: /Caption/ })).toBeTruthy();

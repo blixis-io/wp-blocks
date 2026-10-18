@@ -19658,7 +19658,8 @@
           "control": "media-picker",
           "group": "Content",
           "localizable": false,
-          "supportsDynamicBinding": true
+          "supportsDynamicBinding": true,
+          "mediaKind": "video"
         },
         "poster": {
           "control": "media-picker",
@@ -20110,7 +20111,8 @@
           "control": "media-picker",
           "group": "Content",
           "localizable": false,
-          "supportsDynamicBinding": true
+          "supportsDynamicBinding": true,
+          "mediaKind": "audio"
         },
         "controls": {
           "control": "switch",
@@ -22487,7 +22489,8 @@
           "control": "media-picker",
           "group": "Content",
           "localizable": false,
-          "supportsDynamicBinding": true
+          "supportsDynamicBinding": true,
+          "mediaKind": "video"
         },
         "poster": {
           "control": "media-picker",
@@ -22529,7 +22532,8 @@
           "control": "media-picker",
           "group": "Content",
           "localizable": false,
-          "supportsDynamicBinding": false
+          "supportsDynamicBinding": false,
+          "mediaKind": "caption"
         }
       },
       "style": {
