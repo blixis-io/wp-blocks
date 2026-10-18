@@ -1086,6 +1086,12 @@ async function smoke() {
                     },
                   ],
                 },
+                {
+                  id: 'sticky1',
+                  type: 'blixis/sticky-container',
+                  props: { sticky: true, stickyOffset: 16 },
+                  children: [node('sticky-child', 'blixis/text')],
+                },
               ],
             },
             {
@@ -1123,6 +1129,11 @@ async function smoke() {
             (richBody.html ?? '').includes('data-blx-scroll-area tabindex="0" role="region"') &&
             (richBody.html ?? '').includes('data-blx-id="scroll-text"'),
           'a scroll area renders a labeled, keyboard-focusable region with its child content',
+        );
+        check(
+          (richBody.html ?? '').includes('data-blx-id="sticky1"') &&
+            (richBody.html ?? '').includes('data-blx-id="sticky-child"'),
+          'a sticky container renders its child content through the real WordPress preview',
         );
         check(
           (richBody.html ?? '').includes('<nav data-blx-id="toc1"') &&

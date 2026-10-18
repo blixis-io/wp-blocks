@@ -382,6 +382,20 @@ final class Compiler {
 				]
 			);
 		}
+		if ( 'sticky-container' === $type && true === ( $props['sticky'] ?? true ) ) {
+			$offset = $props['stickyOffset'] ?? 0;
+			if ( ( \is_int( $offset ) || \is_float( $offset ) ) && $offset >= 0 && $offset <= 200 ) {
+				$add(
+					null,
+					[
+						'position' => 'sticky',
+						'top'      => rtrim( rtrim( sprintf( '%.2F', $offset ), '0' ), '.' ) . 'px',
+					]
+				);
+			} else {
+				$issues[] = self::issue( 'invalid-layout-prop', $path . '.props.stickyOffset', 'stickyOffset must be a number from 0 to 200' );
+			}
+		}
 		$columns = $props['columns'] ?? null;
 		if ( \is_array( $columns ) && ! \array_is_list( $columns ) ) {
 			foreach ( [

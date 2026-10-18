@@ -90,6 +90,15 @@ final class CssCompilerTest extends TestCase {
 					'props'    => [ 'sticky' => true ],
 					'children' => [],
 				],
+				[
+					'id'       => 'sticky-one',
+					'type'     => 'sticky-container',
+					'props'    => [
+						'sticky'       => true,
+						'stickyOffset' => 16.5,
+					],
+					'children' => [],
+				],
 			],
 		];
 		$result   = Compiler::compile( $document );
@@ -101,6 +110,7 @@ final class CssCompilerTest extends TestCase {
 		$this->assertStringContainsString( 'grid-template-columns:1fr', $result->css );
 		$this->assertStringContainsString( 'max-width:var(--blx-container-wide)', $result->css );
 		$this->assertStringContainsString( 'position:sticky;top:0', $result->css );
+		$this->assertStringContainsString( 'position:sticky;top:16.5px', $result->css );
 	}
 
 	/** PHP and TypeScript emit the same mark CSS for the shared token set. */
