@@ -35964,7 +35964,7 @@
         ]
       },
       "archetype": "alert",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",

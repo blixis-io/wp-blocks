@@ -285,6 +285,7 @@ export function createEditorRegistry(): ElementRegistry {
     'progress',
     'spinner',
     'skeleton',
+    'alert',
   ];
   const aliases = [
     {
