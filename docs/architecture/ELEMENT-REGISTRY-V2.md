@@ -66,6 +66,7 @@ Type ids map by namespace (`heading` definition ↔ `blixis/heading` saved type)
 | `blixis/button` content-stream `values.text` | `button.label` | Legacy content `text` is read as the canonical label; the legacy inspector writes the established `label` key |
 | `button.target` | `button.target` | Only `_self` and `_blank`; `_blank` emits `noopener noreferrer` |
 | `container.maxWidthToken` | `container.maxWidthToken` | Bounded identifier only; never emitted as raw CSS |
+| `blixis/container.props.maxWidth` | `container.maxWidth` | Legacy width preset (`narrow`, `default`, `wide`, `full`) only; renderer clamps to a supported preset |
 | `columns.ratios` | `columns.ratios` | Numeric ratio list, validated as a list |
 | `columns.stackAt` | `columns.stackAt` | Breakpoint identifier |
 | `grid.columns` | `grid.columns` | Desktop/tablet/mobile count object |

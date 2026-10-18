@@ -129,7 +129,13 @@ final class ElementDefinitionRegistry {
 					'options' => [ '_self', '_blank' ],
 				],
 			],
-			'container'    => [ 'maxWidthToken' => [ 'type' => 'token' ] ],
+			'container'    => [
+				'maxWidth'      => [
+					'type'    => 'enum',
+					'options' => [ 'narrow', 'default', 'wide', 'full' ],
+				],
+				'maxWidthToken' => [ 'type' => 'token' ],
+			],
 			'image'        => [
 				'attachmentId' => [ 'type' => 'media-id' ],
 				'fit'          => [

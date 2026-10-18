@@ -37,4 +37,13 @@ final class DefinitionPropsValidatorTest extends TestCase {
 		$this->assertTrue( $validator->accepts( $legacy ) );
 		$this->assertFalse( $validator->accepts( $invalid ) );
 	}
+
+	/** Existing bounded container widths remain writable while arbitrary width values are rejected. */
+	public function test_accepts_only_known_legacy_container_widths(): void {
+		$validator = new DefinitionPropsValidator( ElementDefinitionRegistry::from_manifest_file( dirname( __DIR__ ) . '/data/element-definitions-v2.json' ) );
+		$legacy    = json_decode( '{"id":"legacy-container","type":"blixis/container","props":{"maxWidth":"default"},"children":[]}' );
+		$invalid   = json_decode( '{"id":"legacy-container","type":"blixis/container","props":{"maxWidth":"calc(100vw)"},"children":[]}' );
+		$this->assertTrue( $validator->accepts( $legacy ) );
+		$this->assertFalse( $validator->accepts( $invalid ) );
+	}
 }
