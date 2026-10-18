@@ -35,6 +35,15 @@ const styleLabels: Readonly<Record<string, string>> = {
   height: 'Height',
   'text-align': 'Text align',
   display: 'Display',
+  'aspect-ratio': 'Aspect ratio',
+  'flex-direction': 'Flex direction',
+  'flex-wrap': 'Flex wrap',
+  'justify-content': 'Justify content',
+  'align-items': 'Align items',
+  'grid-template-columns': 'Grid columns',
+  'overflow-x': 'Horizontal overflow',
+  'overflow-y': 'Vertical overflow',
+  position: 'Position',
   'border-radius': 'Border radius',
   'border-width': 'Border width',
   'border-style': 'Border style',
@@ -1459,6 +1468,15 @@ describe('Inspector controls', () => {
         height: '120',
         'text-align': 'right',
         display: 'inline-block',
+        'aspect-ratio': '16 / 9',
+        'flex-direction': 'column',
+        'flex-wrap': 'wrap',
+        'justify-content': 'space-between',
+        'align-items': 'center',
+        'grid-template-columns': 'repeat(2, minmax(0, 1fr))',
+        'overflow-x': 'auto',
+        'overflow-y': 'auto',
+        position: 'sticky',
         'border-radius': '18',
         'border-width': '2',
         'border-style': 'dashed',
@@ -1472,7 +1490,23 @@ describe('Inspector controls', () => {
       } else if (['font-size', 'line-height', 'letter-spacing', 'border-radius', 'border-width'].includes(property)) {
         fireEvent.change(screen.getByRole('spinbutton', { name: label }), { target: { value: next } });
       } else if (
-        ['color', 'background-color', 'border-color', 'text-transform', 'width', 'display'].includes(property)
+        [
+          'color',
+          'background-color',
+          'border-color',
+          'text-transform',
+          'width',
+          'display',
+          'aspect-ratio',
+          'flex-direction',
+          'flex-wrap',
+          'justify-content',
+          'align-items',
+          'grid-template-columns',
+          'overflow-x',
+          'overflow-y',
+          'position',
+        ].includes(property)
       ) {
         fireEvent.change(screen.getByRole('combobox', { name: label }), { target: { value: next } });
       } else if (property === 'height') {
@@ -1531,6 +1565,15 @@ describe('Inspector controls', () => {
     expect(screen.getByText(/Overridden at this breakpoint/)).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Reset Size to inherited' }));
     expect(store.getState().document?.root[0]?.style).toBeUndefined();
+  });
+
+  it('exposes compiler-validated responsive flex layout properties', async () => {
+    const { store } = await mount('blixis/flex', { tab: 'style' });
+    expect(screen.getByRole('combobox', { name: 'Flex direction' })).toBeTruthy();
+    fireEvent.change(screen.getByRole('combobox', { name: 'Flex direction' }), {
+      target: { value: 'column' },
+    });
+    expect(store.getState().document?.root[0]?.style?.[0]?.declarations['flex-direction']).toBe('column');
   });
 
   it.each(['blixis/section', 'blixis/container', 'blixis/heading', 'blixis/text', 'blixis/image', 'blixis/button'])(

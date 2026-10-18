@@ -369,6 +369,8 @@ describe('generated editor registry', () => {
       'row',
       'columns',
       'grid',
+      'flex',
+      'alert',
       'card',
       'avatar',
       'navigation',

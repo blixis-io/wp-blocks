@@ -184,6 +184,15 @@ export function StyleControl({
     width: ['auto', '100%', 'custom'],
     height: ['auto', 'custom'],
     display: ['block', 'inline', 'inline-block'],
+    'aspect-ratio': ['auto', '1 / 1', '4 / 3', '3 / 2', '16 / 9', '21 / 9', '9 / 16'],
+    'flex-direction': ['row', 'row-reverse', 'column', 'column-reverse'],
+    'flex-wrap': ['nowrap', 'wrap', 'wrap-reverse'],
+    'justify-content': ['flex-start', 'flex-end', 'center', 'space-between', 'space-around', 'space-evenly'],
+    'align-items': ['stretch', 'flex-start', 'flex-end', 'center', 'baseline'],
+    'grid-template-columns': ['repeat(2, minmax(0, 1fr))', 'repeat(3, minmax(0, 1fr))', 'repeat(4, minmax(0, 1fr))'],
+    'overflow-x': ['visible', 'hidden', 'clip', 'scroll', 'auto'],
+    'overflow-y': ['visible', 'hidden', 'clip', 'scroll', 'auto'],
+    position: ['static', 'relative', 'absolute', 'fixed', 'sticky'],
     'border-style': ['none', 'solid', 'dashed', 'dotted'],
     'box-shadow': ['none', 'var(--blx-shadow-card)'],
   };
@@ -192,6 +201,20 @@ export function StyleControl({
       return displayToken(choice);
     }
     if (field.id === 'text-align') return t(`inspector.choice.align.${choice}` as never);
+    if (
+      [
+        'aspect-ratio',
+        'flex-direction',
+        'flex-wrap',
+        'justify-content',
+        'align-items',
+        'grid-template-columns',
+        'overflow-x',
+        'overflow-y',
+        'position',
+      ].includes(field.id)
+    )
+      return choice;
     const key = `inspector.choice.${choice.replace(/[^a-z0-9]+/gi, '.').replace(/^\.|\.$/g, '')}`;
     return t(key as never);
   };
