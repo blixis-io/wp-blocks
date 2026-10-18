@@ -19706,7 +19706,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'steps',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -22068,7 +22068,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'simple',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -22302,7 +22302,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'progress',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -22520,7 +22520,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'simple',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -70687,7 +70687,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'navigation',
     icon: 'solar:list-check-minimalistic-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'steps steps navigation steps element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -70786,7 +70786,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:widget-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'skeleton skeleton ui-components skeleton element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -70797,7 +70797,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:chart-square-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'progress progress ui-components progress element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -70808,7 +70808,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:refresh-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'spinner spinner ui-components spinner element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },

@@ -208,7 +208,7 @@ final class ElementDefinitionRegistryTest extends TestCase {
 			)
 		);
 		$this->assertSame(
-			'<progress data-blx-id="progress-1" data-blx-type="blixis/progress" aria-label="Upload" value="100" max="100"></progress>',
+			'<div data-blx-id="progress-1" data-blx-type="blixis/progress"><progress aria-label="Upload" value="100" max="100"></progress><span>100%</span></div>',
 			$renderer->render(
 				new ElementNode(
 					'progress-1',
@@ -217,6 +217,7 @@ final class ElementDefinitionRegistryTest extends TestCase {
 						'value'     => 200,
 						'max'       => 100,
 						'ariaLabel' => 'Upload',
+						'showLabel' => true,
 					]
 				),
 				new RenderContext()

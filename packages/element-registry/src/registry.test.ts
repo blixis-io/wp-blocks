@@ -379,6 +379,10 @@ describe('generated editor registry', () => {
       'separator',
       'list',
       'link',
+      'steps',
+      'progress',
+      'spinner',
+      'skeleton',
     ])
       expect(registry.has(`blixis/${id}`)).toBe(true);
     expect(createCoreRegistry().list()).toHaveLength(6);

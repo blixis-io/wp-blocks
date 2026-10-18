@@ -18,6 +18,10 @@ describe('generated v2 element registry', () => {
     expect(isElementInsertableV2('blixis/flex')).toBe(false);
     expect(isElementInsertableV2('blixis/list')).toBe(true);
     expect(isElementInsertableV2('blixis/link')).toBe(true);
+    expect(isElementInsertableV2('blixis/steps')).toBe(true);
+    expect(isElementInsertableV2('blixis/progress')).toBe(true);
+    expect(isElementInsertableV2('blixis/spinner')).toBe(true);
+    expect(isElementInsertableV2('blixis/skeleton')).toBe(true);
   });
 
   it('validates declared props and rejects undeclared and editor-only values', () => {

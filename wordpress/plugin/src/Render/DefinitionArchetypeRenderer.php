@@ -273,12 +273,17 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 	 * @param string      $hooks Validated element hooks.
 	 */
 	private function render_progress( ElementNode $node, string $hooks ): string {
-		$value = $node->value( 'value', 0 );
-		$max   = $node->value( 'max', 100 );
-		$value = is_numeric( $value ) ? (float) $value : 0;
-		$max   = is_numeric( $max ) && (float) $max > 0 ? (float) $max : 100;
-		$value = max( 0, min( $max, $value ) );
-		$label = $node->value( 'ariaLabel' );
+		$value    = $node->value( 'value', 0 );
+		$max      = $node->value( 'max', 100 );
+		$value    = is_numeric( $value ) ? (float) $value : 0;
+		$max      = is_numeric( $max ) && (float) $max > 0 ? (float) $max : 100;
+		$value    = max( 0, min( $max, $value ) );
+		$label    = $node->value( 'ariaLabel' );
+		$progress = '<progress' . ( is_string( $label ) && '' !== trim( $label ) ? ' aria-label="' . Escape::attr( $label ) . '"' : '' ) . ' value="' . $value . '" max="' . $max . '"></progress>';
+		if ( true === $node->value( 'showLabel', false ) ) {
+			$percent = (int) round( 100 * $value / $max );
+			return '<div' . $hooks . '>' . $progress . '<span>' . $percent . '%</span></div>';
+		}
 		return '<progress' . $hooks . ( is_string( $label ) && '' !== trim( $label ) ? ' aria-label="' . Escape::attr( $label ) . '"' : '' ) . ' value="' . $value . '" max="' . $max . '"></progress>';
 	}
 
