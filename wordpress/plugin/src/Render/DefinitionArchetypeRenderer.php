@@ -63,16 +63,11 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 				$tag = $candidate;
 			}
 		}
-		if ( 'section' === $id ) {
-			$candidate = $node->value( 'semanticTag', $node->value( 'tag', 'section' ) );
-			if ( is_string( $candidate ) && in_array( $candidate, [ 'section','div','header','footer','main','aside','nav','article' ], true ) ) {
-				$tag = $candidate;
-			}
-		}
 		$hooks = Escape::hooks( $node );
-		if ( in_array( $id, [ 'div', 'flex', 'aspect-ratio', 'scroll-area', 'sticky-container', 'resizable-panels', 'split-layout', 'marquee-layout' ], true ) ) {
-			$tag    = $this->semantic_tag( $node->value( 'semanticTag', 'div' ), 'div' );
-			$hooks .= $this->layout_attributes( $node );
+		if ( 'container' === $archetype ) {
+			$fallback = 'section' === $id ? 'section' : 'div';
+			$tag      = $this->semantic_tag( $node->value( 'semanticTag', $node->value( 'tag', $fallback ) ), $fallback );
+			$hooks   .= $this->layout_attributes( $node );
 		}
 		if ( 'spacer' === $id ) {
 			return '<div' . $hooks . ' aria-hidden="true"></div>';
