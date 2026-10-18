@@ -13,7 +13,22 @@ use Blixis\Builder\Media\PlayableMediaPolicy;
 \defined( 'ABSPATH' ) || exit;
 
 /** The only renderer-side WordPress boundary. */
-final class WordPressMediaResolver implements AssetReferenceResolver, PlayableMediaResolver {
+final class WordPressMediaResolver implements AssetReferenceResolver, PlayableMediaResolver, TextTrackResolver {
+	/** Resolve an approved WebVTT caption attachment.
+	 *
+	 * @param int $attachment_id Attachment ID.
+	 * @return array{url:string}|null
+	 */
+	public function resolve_text_track( int $attachment_id ): ?array {
+		$post = \get_post( $attachment_id );
+		$mime = $post instanceof \WP_Post ? (string) \get_post_mime_type( $post ) : '';
+		$url  = $post instanceof \WP_Post ? \wp_get_attachment_url( $attachment_id ) : false;
+		if ( ! $post instanceof \WP_Post || 'attachment' !== $post->post_type || 'text/vtt' !== $mime || ! is_string( $url ) || ! \Blixis\Builder\Registry\SafeUrl::accepts( $url ) ) {
+			return null;
+		}
+		return [ 'url' => $url ];
+	}
+
 	/** Resolve an approved audio or video attachment without accepting author-supplied URLs.
 	 *
 	 * @param int    $attachment_id Attachment ID.

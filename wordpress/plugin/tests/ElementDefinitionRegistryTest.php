@@ -19,6 +19,7 @@ use Blixis\Builder\Render\MediaResolver;
 use Blixis\Builder\Render\PlayableMediaResolver;
 use Blixis\Builder\Render\WordPressMediaResolver;
 use Blixis\Builder\Render\RenderContext;
+use Blixis\Builder\Render\TextTrackResolver;
 use PHPUnit\Framework\TestCase;
 
 if ( ! \defined( 'ABSPATH' ) ) {
@@ -817,7 +818,15 @@ final class ElementDefinitionRegistryTest extends TestCase {
 	/** P3 video and audio render only attachment-backed, MIME-approved sources. */
 	public function test_video_and_audio_render_safe_native_media_elements(): void {
 		$registry = ElementDefinitionRegistry::from_manifest_file( \dirname( __DIR__ ) . '/data/element-definitions-v2.json' );
-		$media    = new class() implements AssetReferenceResolver, PlayableMediaResolver {
+		$media    = new class() implements AssetReferenceResolver, PlayableMediaResolver, TextTrackResolver {
+			/** Resolve a caption fixture.
+			 *
+			 * @param int $attachment_id Attachment ID.
+			 * @return array{url:string}|null
+			 */
+			public function resolve_text_track( int $attachment_id ): ?array {
+				return 12 === $attachment_id ? [ 'url' => 'https://example.test/captions.vtt' ] : null;
+			}
 			/** Resolve the poster fixture.
 			 *
 			 * @param int $attachment_id Attachment ID.
@@ -887,6 +896,34 @@ final class ElementDefinitionRegistryTest extends TestCase {
 			'<audio data-blx-id="audio-1" data-blx-type="blixis/audio" controls preload="metadata"><source src="https://example.test/audio.mp3" type="audio/mpeg"></audio>',
 			$renderer->render( new ElementNode( 'audio-1', 'blixis/audio', [ 'src' => 9 ] ), new RenderContext() )
 		);
+		$this->assertSame(
+			'<video data-blx-id="background-1" data-blx-type="blixis/video-background" autoplay loop muted playsinline preload="metadata" aria-hidden="true" tabindex="-1" poster="https://example.test/poster.jpg"><source src="https://example.test/clip.mp4" type="video/mp4"></video>',
+			$renderer->render(
+				new ElementNode(
+					'background-1',
+					'blixis/video-background',
+					[
+						'src'      => 7,
+						'poster'   => 8,
+						'autoplay' => true,
+						'loop'     => true,
+					]
+				),
+				new RenderContext()
+			)
+		);
+		$captioned = $renderer->render(
+			new ElementNode(
+				'video-captions',
+				'blixis/video',
+				[
+					'src'          => 7,
+					'captionTrack' => 'attachment:12',
+				]
+			),
+			new RenderContext()
+		);
+		$this->assertStringContainsString( '<track kind="captions" src="https://example.test/captions.vtt" srclang="en" label="Captions">', $captioned );
 		$this->assertSame(
 			'<div data-blx-id="video-2" data-blx-type="blixis/video" data-blx-missing-media></div>',
 			$renderer->render( new ElementNode( 'video-2', 'blixis/video', [ 'src' => 'https://evil.test/clip.mp4' ] ), new RenderContext() )
