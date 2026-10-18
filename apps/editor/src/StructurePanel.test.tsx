@@ -87,6 +87,7 @@ describe('left panel and element palette', () => {
       'Aspect Ratio',
       'Scroll Area',
       'Sticky Container',
+      'Split Layout',
       'Heading',
       'Text',
       'Image',
@@ -95,7 +96,7 @@ describe('left panel and element palette', () => {
       'Table Of Contents',
     ])
       expect(within(palette).getByRole('button', { name })).toBeTruthy();
-    expect(within(palette).getAllByRole('button')).toHaveLength(43);
+    expect(within(palette).getAllByRole('button')).toHaveLength(44);
   });
 
   it('remembers the selected left tab for the current session', async () => {
