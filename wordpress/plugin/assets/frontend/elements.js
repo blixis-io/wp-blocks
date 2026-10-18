@@ -1,3 +1,5 @@
+/* global document, window */
+
 (() => {
   const initResizablePanels = (root) => {
     if (root.dataset.blxResizableReady === 'true') return;
