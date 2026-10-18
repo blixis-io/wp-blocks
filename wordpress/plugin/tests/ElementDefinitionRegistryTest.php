@@ -150,6 +150,21 @@ final class ElementDefinitionRegistryTest extends TestCase {
 			'<span data-blx-id="counter-2" data-blx-type="blixis/counter">42</span>',
 			$renderer->render( new ElementNode( 'counter-2', 'blixis/counter', [ 'value' => INF ] ), new RenderContext() )
 		);
+		$progress_ring = $renderer->render(
+			new ElementNode(
+				'progress-ring-1',
+				'blixis/progress-ring',
+				[
+					'value'     => 150,
+					'max'       => 100,
+					'ariaLabel' => 'Upload',
+				]
+			),
+			new RenderContext()
+		);
+		$this->assertStringContainsString( 'role="progressbar" aria-label="Upload" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"', $progress_ring );
+		$this->assertStringContainsString( 'stroke-dasharray="100 100"', $progress_ring );
+		$this->assertStringContainsString( '<span>100%</span>', $progress_ring );
 		$this->assertSame(
 			'<hr data-blx-id="separator-1" data-blx-type="blixis/separator" aria-hidden="true">',
 			$renderer->render( new ElementNode( 'separator-1', 'blixis/separator', [] ), new RenderContext() )

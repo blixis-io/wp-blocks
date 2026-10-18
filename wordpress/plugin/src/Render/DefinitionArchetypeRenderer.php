@@ -143,6 +143,9 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		if ( 'alert' === $archetype ) {
 			return $this->render_alert( $node, $hooks, $context->children_html );
 		}
+		if ( 'progress' === $archetype && 'progress-ring' === $id ) {
+			return $this->render_progress_ring( $node, $hooks );
+		}
 		if ( 'progress' === $archetype ) {
 			return $this->render_progress( $node, $hooks );
 		}
@@ -309,6 +312,24 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 			return '<div' . $hooks . '>' . $progress . '<span>' . $percent . '%</span></div>';
 		}
 		return '<progress' . $hooks . ( is_string( $label ) && '' !== trim( $label ) ? ' aria-label="' . Escape::attr( $label ) . '"' : '' ) . ' value="' . $value . '" max="' . $max . '"></progress>';
+	}
+
+	/** Render a bounded, script-free progress ring.
+	 *
+	 * @param ElementNode $node Ring definition.
+	 * @param string      $hooks Validated element hooks.
+	 */
+	private function render_progress_ring( ElementNode $node, string $hooks ): string {
+		$value   = $node->value( 'value', 0 );
+		$max     = $node->value( 'max', 100 );
+		$value   = is_numeric( $value ) && is_finite( (float) $value ) ? (float) $value : 0;
+		$max     = is_numeric( $max ) && is_finite( (float) $max ) && (float) $max > 0 ? min( 1000000, (float) $max ) : 100;
+		$value   = max( 0, min( $max, $value ) );
+		$percent = round( 100 * $value / $max, 2 );
+		$label   = $node->value( 'ariaLabel' );
+		$label   = is_string( $label ) && '' !== trim( $label ) ? $label : $this->translate_label( 'Progress' );
+		$visible = true === $node->value( 'showLabel', true ) ? '<span>' . (int) round( $percent ) . '%</span>' : '';
+		return '<div' . $hooks . ' data-blx-progress-ring role="progressbar" aria-label="' . Escape::attr( $label ) . '" aria-valuemin="0" aria-valuemax="' . Escape::attr( sprintf( '%g', $max ) ) . '" aria-valuenow="' . Escape::attr( sprintf( '%g', $value ) ) . '"><svg aria-hidden="true" viewBox="0 0 48 48"><circle cx="24" cy="24" r="20" pathLength="100" fill="none" stroke="currentColor" opacity="0.2" stroke-width="4"></circle><circle cx="24" cy="24" r="20" pathLength="100" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="' . Escape::attr( sprintf( '%g', $percent ) ) . ' 100" transform="rotate(-90 24 24)"></circle></svg>' . $visible . '</div>';
 	}
 
 	/** Render disclosure sections with native keyboard and no-script behavior.
@@ -599,6 +620,7 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 			'Previous'  => __( 'Previous', 'blixis-builder' ),
 			'Next'      => __( 'Next', 'blixis-builder' ),
 			'Load more' => __( 'Load more', 'blixis-builder' ),
+			'Progress' => __( 'Progress', 'blixis-builder' ),
 			default     => $label,
 		};
 	}

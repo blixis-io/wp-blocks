@@ -17891,7 +17891,7 @@
         ]
       },
       "archetype": "progress",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",

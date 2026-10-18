@@ -10424,7 +10424,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'progress',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -70321,7 +70321,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'content',
     icon: 'solar:pie-chart-2-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'progress-ring progress ring content progress ring element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },

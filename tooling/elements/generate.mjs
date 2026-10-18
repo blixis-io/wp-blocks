@@ -48,6 +48,7 @@ const editorReady = new Set([
   'badge',
   'button-group',
   'counter',
+  'progress-ring',
   'image',
   'section',
   'text',

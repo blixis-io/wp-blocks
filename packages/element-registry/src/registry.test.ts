@@ -389,6 +389,7 @@ describe('generated editor registry', () => {
       'badge',
       'button-group',
       'counter',
+      'progress-ring',
       'progress',
       'spinner',
       'skeleton',
