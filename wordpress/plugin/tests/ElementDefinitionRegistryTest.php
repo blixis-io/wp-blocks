@@ -934,6 +934,51 @@ final class ElementDefinitionRegistryTest extends TestCase {
 		);
 	}
 
+	/** P3 embeds and PDF previews keep external content sandboxed and labelled. */
+	public function test_embeds_and_pdf_previews_are_sandboxed_and_have_fallback_links(): void {
+		$registry = ElementDefinitionRegistry::from_manifest_file( \dirname( __DIR__ ) . '/data/element-definitions-v2.json' );
+		$media    = new class() implements MediaResolver {
+			/** No media attachments are configured.
+			 *
+			 * @param int $attachment_id Attachment ID.
+			 */
+			public function resolve( int $attachment_id ): ?array {
+				unset( $attachment_id );
+				return null;
+			}
+		};
+		$renderer = new DefinitionArchetypeRenderer( $registry, $media );
+		$embed    = $renderer->render(
+			new ElementNode(
+				'embed-1',
+				'blixis/embed',
+				[
+					'url'   => 'https://video.example/watch',
+					'title' => 'Product demo',
+				]
+			),
+			new RenderContext()
+		);
+		$this->assertStringContainsString( 'sandbox="allow-scripts allow-presentation"', $embed );
+		$this->assertStringContainsString( 'title="Product demo" loading="lazy" referrerpolicy="no-referrer"', $embed );
+		$this->assertStringContainsString( 'href="https://video.example/watch" target="_blank" rel="noopener noreferrer"', $embed );
+		$pdf = $renderer->render(
+			new ElementNode(
+				'pdf-1',
+				'blixis/pdf-viewer',
+				[
+					'url'   => 'https://files.example/guide.pdf?download=0',
+					'title' => 'User guide',
+				]
+			),
+			new RenderContext()
+		);
+		$this->assertStringContainsString( '<iframe src="https://files.example/guide.pdf?download=0" title="User guide"', $pdf );
+		$this->assertStringContainsString( 'height="640"', $pdf );
+		$this->assertStringContainsString( '>User guide</a>', $pdf );
+		$this->assertSame( '<div data-blx-id="pdf-2" data-blx-type="blixis/pdf-viewer" data-blx-missing-media></div>', $renderer->render( new ElementNode( 'pdf-2', 'blixis/pdf-viewer', [ 'url' => 'https://files.example/guide.html' ] ), new RenderContext() ) );
+	}
+
 	/** P4 breadcrumbs and pagination expose safe, accessible page navigation. */
 	public function test_breadcrumbs_and_pagination_render_accessible_links(): void {
 		$registry = ElementDefinitionRegistry::from_manifest_file( \dirname( __DIR__ ) . '/data/element-definitions-v2.json' );
