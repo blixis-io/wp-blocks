@@ -303,4 +303,71 @@ final class ElementDefinitionRegistryTest extends TestCase {
 			)
 		);
 	}
+
+	/** P4 breadcrumbs and pagination expose safe, accessible page navigation. */
+	public function test_breadcrumbs_and_pagination_render_accessible_links(): void {
+		$registry = ElementDefinitionRegistry::from_manifest_file( \dirname( __DIR__ ) . '/data/element-definitions-v2.json' );
+		$media    = new class() implements MediaResolver {
+			/** Resolve media references for renderer test.
+			 *
+			 * @param int $attachment_id Attachment ID.
+			 */
+			public function resolve( int $attachment_id ): ?array {
+				return null;
+			}
+		};
+		$renderer = new DefinitionArchetypeRenderer( $registry, $media );
+		$this->assertSame(
+			'<nav data-blx-id="crumb-1" data-blx-type="blixis/breadcrumbs" aria-label="Breadcrumb"><ol><li><a href="/">Home</a></li><li><span aria-current="page">News &amp; events</span></li></ol></nav>',
+			$renderer->render(
+				new ElementNode(
+					'crumb-1',
+					'blixis/breadcrumbs',
+					[
+						'items' => [
+							[
+								'label' => 'Home',
+								'href'  => '/',
+							],
+							[ 'label' => 'News & events' ],
+						],
+					]
+				),
+				new RenderContext()
+			)
+		);
+		$this->assertSame(
+			'<nav data-blx-id="pages-1" data-blx-type="blixis/pagination" aria-label="Pagination"><ul><li><a rel="prev" href="/articles?page=1">Previous</a></li><li><a href="/articles?page=1">1</a></li><li><span aria-current="page">2</span></li><li><a href="/articles?page=3">3</a></li><li><a rel="next" href="/articles?page=3">Next</a></li></ul></nav>',
+			$renderer->render(
+				new ElementNode(
+					'pages-1',
+					'blixis/pagination',
+					[
+						'basePath'    => '/articles',
+						'total'       => 30,
+						'pageSize'    => 10,
+						'currentPage' => 2,
+					]
+				),
+				new RenderContext()
+			)
+		);
+		$this->assertSame(
+			'<nav data-blx-id="pages-2" data-blx-type="blixis/pagination" aria-label="Pagination"><ul><li><a rel="next" href="?page=2">Load more</a></li></ul></nav>',
+			$renderer->render(
+				new ElementNode(
+					'pages-2',
+					'blixis/pagination',
+					[
+						'mode'        => 'load-more',
+						'total'       => 20,
+						'pageSize'    => 10,
+						'currentPage' => 1,
+						'basePath'    => 'javascript:alert(1)',
+					]
+				),
+				new RenderContext()
+			)
+		);
+	}
 }

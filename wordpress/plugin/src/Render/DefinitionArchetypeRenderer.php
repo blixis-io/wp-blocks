@@ -42,7 +42,7 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 	 * @param string $archetype Archetype name.
 	 */
 	public function supports( string $archetype ): bool {
-		return in_array( $archetype, [ 'container','simple','text','richtext','heading','button','link','image','gallery','navigation','list','code','accordion','tabs','steps','alert','progress','dynamic','card','layout','section','page','site-header','site-footer','site-logo','row','columns','grid','stack' ], true ); }
+		return in_array( $archetype, [ 'container','simple','text','richtext','heading','button','link','image','gallery','navigation','pagination','list','code','accordion','tabs','steps','alert','progress','dynamic','card','layout','section','page','site-header','site-footer','site-logo','row','columns','grid','stack' ], true ); }
 	/** Render an element with escaped text and allowlisted tags/attributes.
 	 *
 	 * @param ElementNode   $node Element input.
@@ -114,7 +114,13 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 				return '<a' . $hooks . ' href="' . Escape::url( is_string( $href ) ? $href : '#' ) . '"' . $target_attr . '>' . $body . '</a>'; }
 			return '<' . $tag . $hooks . '>' . $body . '</' . $tag . '>';
 		}
-		if ( 'navigation' === $archetype && in_array( $id, [ 'navigation', 'navigation-menu', 'nav-menu', 'mobile-menu', 'breadcrumbs', 'table-of-contents', 'anchor-links', 'mega-menu', 'sidebar-navigation', 'scroll-spy', 'dropdown-menu', 'breadcrumb-ui' ], true ) && is_array( $node->value( 'items', null ) ) ) {
+		if ( 'navigation' === $archetype && in_array( $id, [ 'breadcrumbs', 'breadcrumb-ui' ], true ) && is_array( $node->value( 'items', null ) ) ) {
+			return $this->render_breadcrumbs( $node, $hooks );
+		}
+		if ( 'pagination' === $archetype && 'pagination' === $id ) {
+			return $this->render_pagination( $node, $hooks );
+		}
+		if ( 'navigation' === $archetype && in_array( $id, [ 'navigation', 'navigation-menu', 'nav-menu', 'mobile-menu', 'table-of-contents', 'anchor-links', 'mega-menu', 'sidebar-navigation', 'scroll-spy', 'dropdown-menu' ], true ) && is_array( $node->value( 'items', null ) ) ) {
 			$label = $node->value( 'ariaLabel' );
 			return '<nav' . $hooks . ( is_string( $label ) && '' !== trim( $label ) ? ' aria-label="' . Escape::attr( $label ) . '"' : '' ) . '><ul>' . $this->navigation_items( $node->value( 'items', [] ), 0 ) . '</ul></nav>';
 		}
@@ -464,6 +470,119 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 			$html .= '</li>';
 		}
 		return $html;
+	}
+
+	/** Render breadcrumb items with an explicit current-page marker.
+	 *
+	 * @param ElementNode $node Breadcrumb definition.
+	 * @param string      $hooks Validated element hooks.
+	 */
+	private function render_breadcrumbs( ElementNode $node, string $hooks ): string {
+		$items         = $node->value( 'items', [] );
+		$items         = is_array( $items ) ? array_slice( $items, 0, 100 ) : [];
+		$items         = array_values(
+			array_filter(
+				$items,
+				static function ( mixed $item ): bool {
+					if ( $item instanceof \stdClass ) {
+						$item = get_object_vars( $item );
+					}
+					return is_array( $item ) && is_string( $item['label'] ?? null );
+				}
+			)
+		);
+		$default_label = $this->translate_label( 'Breadcrumb' );
+		$label         = $node->value( 'ariaLabel', $default_label );
+		$html          = '<nav' . $hooks . ' aria-label="' . Escape::attr( is_string( $label ) && '' !== trim( $label ) ? $label : $default_label ) . '"><ol>';
+		$last          = count( $items ) - 1;
+		foreach ( $items as $index => $item ) {
+			if ( $item instanceof \stdClass ) {
+				$item = get_object_vars( $item );
+			}
+			if ( true === ( $item['current'] ?? false ) ) {
+				$last = $index;
+				break;
+			}
+		}
+		foreach ( $items as $index => $item ) {
+			if ( $item instanceof \stdClass ) {
+				$item = get_object_vars( $item );
+			}
+			if ( ! is_string( $item['label'] ?? null ) ) {
+				continue;
+			}
+			$current = $index === $last;
+			$html   .= '<li>';
+			if ( $current ) {
+				$html .= '<span aria-current="page">' . Escape::html( $item['label'] ) . '</span>';
+			} else {
+				$href  = is_string( $item['href'] ?? $item['link'] ?? null ) ? ( $item['href'] ?? $item['link'] ) : '#';
+				$html .= '<a href="' . Escape::url( $href ) . '">' . Escape::html( $item['label'] ) . '</a>';
+			}
+			$html .= '</li>';
+		}
+		return $html . '</ol></nav>';
+	}
+
+	/** Render bounded page links from static pagination properties.
+	 *
+	 * @param ElementNode $node Pagination definition.
+	 * @param string      $hooks Validated element hooks.
+	 */
+	private function render_pagination( ElementNode $node, string $hooks ): string {
+		$total         = $node->value( 'total', 1 );
+		$page_size     = $node->value( 'pageSize', 10 );
+		$current       = $node->value( 'currentPage', 1 );
+		$total         = is_numeric( $total ) ? max( 0, min( 1000000, (int) $total ) ) : 0;
+		$page_size     = is_numeric( $page_size ) ? max( 1, min( 1000, (int) $page_size ) ) : 10;
+		$page_count    = max( 1, min( 1000, (int) ceil( $total / $page_size ) ) );
+		$current       = is_numeric( $current ) ? max( 1, min( $page_count, (int) $current ) ) : 1;
+		$base          = $node->value( 'basePath', '' );
+		$base          = is_string( $base ) && SafeUrl::accepts( $base ) ? $base : '';
+		$default_label = $this->translate_label( 'Pagination' );
+		$label         = $node->value( 'ariaLabel', $default_label );
+		$mode          = $node->value( 'mode', 'numeric' );
+		$html          = '<nav' . $hooks . ' aria-label="' . Escape::attr( is_string( $label ) && '' !== trim( $label ) ? $label : $default_label ) . '"><ul>';
+		$make_link     = static function ( int $page ) use ( $base ): string {
+			$fragment = '';
+			if ( str_contains( $base, '#' ) ) {
+				[ $base, $fragment ] = explode( '#', $base, 2 );
+				$fragment            = '#' . $fragment;
+			}
+			$separator = str_contains( $base, '?' ) ? '&' : '?';
+			return Escape::url( $base . $separator . 'page=' . $page . $fragment );
+		};
+		if ( $current > 1 ) {
+			$html .= '<li><a rel="prev" href="' . $make_link( $current - 1 ) . '">' . Escape::html( $this->translate_label( 'Previous' ) ) . '</a></li>';
+		}
+		if ( 'previous-next' !== $mode && 'load-more' !== $mode ) {
+			for ( $page = 1; $page <= $page_count; ++$page ) {
+				$html .= '<li>' . ( $page === $current ? '<span aria-current="page">' . $page . '</span>' : '<a href="' . $make_link( $page ) . '">' . $page . '</a>' ) . '</li>';
+			}
+		}
+		if ( $current < $page_count ) {
+			$text  = $this->translate_label( 'load-more' === $mode ? 'Load more' : 'Next' );
+			$html .= '<li><a rel="next" href="' . $make_link( $current + 1 ) . '">' . Escape::html( $text ) . '</a></li>';
+		}
+		return $html . '</ul></nav>';
+	}
+
+	/** Translate built-in navigation labels when WordPress is available.
+	 *
+	 * @param string $label Default English label.
+	 */
+	private function translate_label( string $label ): string {
+		if ( ! function_exists( '__' ) ) {
+			return $label;
+		}
+		return match ( $label ) {
+			'Breadcrumb' => __( 'Breadcrumb', 'blixis-builder' ),
+			'Pagination' => __( 'Pagination', 'blixis-builder' ),
+			'Previous'  => __( 'Previous', 'blixis-builder' ),
+			'Next'      => __( 'Next', 'blixis-builder' ),
+			'Load more' => __( 'Load more', 'blixis-builder' ),
+			default     => $label,
+		};
 	}
 
 	/** Render an imported asset reference through the media resolver.
