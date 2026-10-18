@@ -42,7 +42,7 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 	 * @param string $archetype Archetype name.
 	 */
 	public function supports( string $archetype ): bool {
-		return in_array( $archetype, [ 'container','text','richtext','heading','button','link','image','navigation','list','card','layout','section','page','site-header','site-footer','site-logo','row','columns','grid','stack' ], true ); }
+		return in_array( $archetype, [ 'container','simple','text','richtext','heading','button','link','image','navigation','list','card','layout','section','page','site-header','site-footer','site-logo','row','columns','grid','stack' ], true ); }
 	/** Render an element with escaped text and allowlisted tags/attributes.
 	 *
 	 * @param ElementNode   $node Element input.
@@ -70,6 +70,16 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 			}
 		}
 		$hooks = Escape::hooks( $node );
+		if ( in_array( $id, [ 'div', 'flex', 'aspect-ratio', 'scroll-area', 'sticky-container', 'resizable-panels', 'split-layout', 'marquee-layout' ], true ) ) {
+			$tag    = $this->semantic_tag( $node->value( 'semanticTag', 'div' ), 'div' );
+			$hooks .= $this->layout_attributes( $node );
+		}
+		if ( 'spacer' === $id ) {
+			return '<div' . $hooks . ' aria-hidden="true"></div>';
+		}
+		if ( 'separator' === $id ) {
+			return '<hr' . $hooks . ' aria-hidden="true">';
+		}
 		if ( 'container' === $id ) {
 			$width = $node->value( 'maxWidthToken', $node->value( 'maxWidth', 'default' ) );
 			if ( ! is_string( $width ) || ! preg_match( '/^[a-z0-9-]{1,40}$/D', $width ) ) {
@@ -108,6 +118,35 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 			return '<div' . $hooks . ' data-blx-missing-media></div>';
 		}
 		return '<' . $tag . $hooks . '>' . $context->children_html . '</' . $tag . '>';
+	}
+
+	/** Resolve layout semantics with a fixed tag allowlist.
+	 *
+	 * @param mixed  $candidate Requested semantic tag.
+	 * @param string $fallback Fallback tag.
+	 */
+	private function semantic_tag( mixed $candidate, string $fallback ): string {
+		return is_string( $candidate ) && in_array( $candidate, [ 'div', 'section', 'main', 'header', 'footer', 'aside', 'article', 'nav' ], true ) ? $candidate : $fallback;
+	}
+
+	/** Emit only the bounded common attributes supported by layout definitions.
+	 *
+	 * @param ElementNode $node Layout element.
+	 */
+	private function layout_attributes( ElementNode $node ): string {
+		$attributes = '';
+		$id         = $node->value( 'htmlId' );
+		if ( is_string( $id ) && 1 === preg_match( '/^[A-Za-z][A-Za-z0-9_:\\-.]{0,63}$/D', $id ) ) {
+			$attributes .= ' id="' . Escape::attr( $id ) . '"';
+		}
+		$label = $node->value( 'ariaLabel' );
+		if ( is_string( $label ) && '' !== trim( $label ) ) {
+			$attributes .= ' aria-label="' . Escape::attr( $label ) . '"';
+		}
+		if ( true === $node->value( 'hidden', false ) ) {
+			$attributes .= ' hidden';
+		}
+		return $attributes;
 	}
 
 	/** Render bounded navigation entries with guarded links and nested children.

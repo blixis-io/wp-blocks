@@ -42,7 +42,7 @@ Archetypes are renderer families, not serialized element types. Catalog counts:
 | toggle | 3 | upload | 2 |
 | video | 2 | | |
 
-The list and counts are derived from `catalog.json`; the current catalogue has fewer than the 47 archetypes stated in the original request. No archetypes were invented to fill the count. The v2 palette status still needs to be promoted by the editor integration slice; PHP has definition-driven renderers for the template-critical subset.
+The list and counts are derived from `catalog.json`; the current catalogue has fewer than the 47 archetypes stated in the original request. No archetypes were invented to fill the count. P1 rendering accepts the `simple` archetype and honors the layout definitions' allowlisted semantic tag, bounded HTML id, escaped accessible label, and hidden state. A separator emits a native horizontal rule and a spacer remains non-semantic; complex layout behaviors remain planned until their behavior and editor controls are implemented. The v2 palette status still needs to be promoted by the editor integration slice; PHP has definition-driven renderers for the template-critical subset.
 
 ## Instance and compatibility contract
 
