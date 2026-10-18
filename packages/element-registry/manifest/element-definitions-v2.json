@@ -19778,7 +19778,7 @@
         ]
       },
       "archetype": "video",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -20176,7 +20176,7 @@
         ]
       },
       "archetype": "audio",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",

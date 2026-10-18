@@ -107,6 +107,28 @@ export function GeneratedControls({ element, editable }: { element: ElementNode;
                   </select>
                 </div>
               );
+            if (control === 'media-picker')
+              return (
+                <div className="blx-inspector-field" key={name}>
+                  <label htmlFor={id}>{label}</label>
+                  <input
+                    {...common}
+                    type="number"
+                    min={1}
+                    step={1}
+                    value={typeof value === 'string' && /^attachment:[1-9]\d{0,8}$/.test(value) ? value.slice(11) : ''}
+                    onChange={(event) => {
+                      const next = event.currentTarget.value;
+                      if (next === '') {
+                        commit(name, property, null);
+                        return;
+                      }
+                      if (/^[1-9]\d{0,8}$/.test(next)) commit(name, property, 'attachment:' + next);
+                    }}
+                  />
+                  <p className="blx-inspector-hint">{t('inspector.generated.attachmentIdHelp')}</p>
+                </div>
+              );
             if (
               control === 'repeater' ||
               control === 'list' ||

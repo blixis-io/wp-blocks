@@ -52,7 +52,8 @@ final class DefinitionPropsValidator {
 		$type  = $property['type'] ?? '';
 		$valid = match ( $type ) {
 			'string' => is_string( $value ) || ( $value instanceof \stdClass && \Blixis\Builder\Render\RichText::valid( $value ) ),
-			'url', 'token', 'asset-ref' => is_string( $value ),
+			'url', 'token' => is_string( $value ),
+			'asset-ref' => null === $value || ( is_string( $value ) && 1 === preg_match( '/^(?:(?:asset:)?[A-Za-z0-9_-]{1,128}|attachment:[1-9][0-9]{0,8})$/D', $value ) ),
 			'rich-text' => is_string( $value ) || ( $value instanceof \stdClass && \Blixis\Builder\Render\RichText::valid( $value ) ),
 			'enum' => is_string( $value ) && in_array( $value, $property['options'] ?? [], true ),
 			'boolean' => is_bool( $value ), 'number' => is_int( $value ) || is_float( $value ), 'integer' => is_int( $value ),

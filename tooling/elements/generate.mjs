@@ -51,6 +51,8 @@ const editorReady = new Set([
   'progress-ring',
   'highlight-text',
   'image',
+  'video',
+  'audio',
   'section',
   'text',
   'div',

@@ -11547,7 +11547,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'video',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -11801,7 +11801,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'audio',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -70365,7 +70365,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'media',
     icon: 'solar:videocamera-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'video video media video element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -70376,7 +70376,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'media',
     icon: 'solar:music-note-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'audio audio media audio element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },

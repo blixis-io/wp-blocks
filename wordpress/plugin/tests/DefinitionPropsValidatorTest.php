@@ -46,4 +46,13 @@ final class DefinitionPropsValidatorTest extends TestCase {
 		$this->assertTrue( $validator->accepts( $legacy ) );
 		$this->assertFalse( $validator->accepts( $invalid ) );
 	}
+
+	/** Media references accept nullable defaults and approved WordPress attachment IDs. */
+	public function test_accepts_media_manifest_refs_and_attachment_ids(): void {
+		$validator = new DefinitionPropsValidator( ElementDefinitionRegistry::from_manifest_file( dirname( __DIR__ ) . '/data/element-definitions-v2.json' ) );
+		$valid     = json_decode( '{"id":"video-1","type":"blixis/video","props":{"src":"attachment:42","poster":null},"children":[]}' );
+		$invalid   = json_decode( '{"id":"video-1","type":"blixis/video","props":{"src":"https://evil.test/video.mp4"},"children":[]}' );
+		$this->assertTrue( $validator->accepts( $valid ) );
+		$this->assertFalse( $validator->accepts( $invalid ) );
+	}
 }

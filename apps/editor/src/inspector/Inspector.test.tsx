@@ -919,6 +919,14 @@ describe('Inspector controls', () => {
     expect(screen.getByRole('combobox', { name: 'Button style' })).toBeTruthy();
   });
 
+  it('stores attachment references from generated media controls', async () => {
+    const { store } = await mount('blixis/video', { tab: 'content', reactive: false });
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'Media source attachment' }), {
+      target: { value: '42' },
+    });
+    expect(store.getState().document?.root[0]?.props['src']).toBe('attachment:42');
+  });
+
   it('renders media library guidance and translatable alternative text controls', async () => {
     const { store } = await mount('blixis/image');
     expect(screen.getByText(/Choose an image from the media library/)).toBeTruthy();

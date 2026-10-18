@@ -22,6 +22,8 @@ describe('generated v2 element registry', () => {
     expect(isElementInsertableV2('blixis/progress')).toBe(true);
     expect(isElementInsertableV2('blixis/spinner')).toBe(true);
     expect(isElementInsertableV2('blixis/skeleton')).toBe(true);
+    expect(isElementInsertableV2('blixis/video')).toBe(true);
+    expect(isElementInsertableV2('blixis/audio')).toBe(true);
   });
 
   it('validates declared props and rejects undeclared and editor-only values', () => {
@@ -40,6 +42,36 @@ describe('generated v2 element registry', () => {
         { id: 'heading-1', type: 'blixis/heading', props: { content: 'Hi', tag: 'h2' }, styles: {}, children: [] },
       ]),
     ).toEqual([]);
+    expect(
+      validateElementTreeV2([
+        { id: 'logo-1', type: 'blixis/site-logo', props: { assetRef: 'brand' }, styles: {}, children: [] },
+      ]),
+    ).toEqual([]);
+  });
+
+  it('accepts only manifest keys or attachment IDs for media references', () => {
+    expect(
+      validateElementTreeV2([
+        {
+          id: 'video-1',
+          type: 'blixis/video',
+          props: { src: 'attachment:42', poster: null },
+          styles: {},
+          children: [],
+        },
+      ]),
+    ).toEqual([]);
+    expect(
+      validateElementTreeV2([
+        {
+          id: 'video-2',
+          type: 'blixis/video',
+          props: { src: 'https://evil.test/video.mp4' },
+          styles: {},
+          children: [],
+        },
+      ]).map((issue) => issue.code),
+    ).toEqual(['invalid-property']);
   });
 
   it('defaults editor entitlement to available and allows a filter override', () => {
