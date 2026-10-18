@@ -118,6 +118,39 @@
     update();
   };
 
+  const initMap = (root) => {
+    const button = root.querySelector('[data-blx-map-load]');
+    if (!button || button.dataset.blxMapReady === 'true') return;
+    button.dataset.blxMapReady = 'true';
+    button.addEventListener('click', () => {
+      const raw = button.getAttribute('data-blx-map-src') || '';
+      let url;
+      try {
+        url = new window.URL(raw, window.location.href);
+      } catch {
+        return;
+      }
+      if (
+        url.protocol !== 'https:' ||
+        !['www.openstreetmap.org', 'maps.google.com'].includes(url.hostname) ||
+        !url.pathname.includes('embed') && !url.hostname.startsWith('maps.google.com')
+      )
+        return;
+      const frame = document.createElement('iframe');
+      frame.className = 'blx-map-frame';
+      frame.src = url.href;
+      frame.title = button.getAttribute('data-blx-map-title') || 'Map';
+      frame.loading = 'eager';
+      frame.referrerPolicy = 'no-referrer';
+      frame.setAttribute('sandbox', 'allow-scripts allow-same-origin');
+      frame.setAttribute('allowfullscreen', '');
+      frame.tabIndex = 0;
+      button.setAttribute('aria-expanded', 'true');
+      button.disabled = true;
+      root.insertBefore(frame, button.nextSibling);
+    });
+  };
+
   const initActionButton = (button) => {
     if (button.dataset.blxActionReady === 'true') return;
     button.dataset.blxActionReady = 'true';
@@ -238,6 +271,7 @@
     document.querySelectorAll('[data-blx-action]').forEach(initActionButton);
     document.querySelectorAll('[data-blx-lightbox-gallery]').forEach(initLightbox);
     document.querySelectorAll('[data-blx-image-comparison]').forEach(initImageComparison);
+    document.querySelectorAll('[data-blx-map]').forEach(initMap);
   };
   window.blxInitMarquee = initMarquee;
   window.blxInitResizablePanels = initResizablePanels;
@@ -246,6 +280,7 @@
   window.blxInitActionButton = initActionButton;
   window.blxInitLightbox = initLightbox;
   window.blxInitImageComparison = initImageComparison;
+  window.blxInitMap = initMap;
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
   else init();
 })();

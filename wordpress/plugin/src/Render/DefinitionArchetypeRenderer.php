@@ -44,7 +44,7 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 	 * @param string $archetype Archetype name.
 	 */
 	public function supports( string $archetype ): bool {
-		return in_array( $archetype, [ 'container','simple','text','richtext','heading','button','link','image','gallery','video','audio','embed','iframe','pdf-viewer','navigation','pagination','list','code','accordion','tabs','steps','alert','progress','counter','countdown','icon','dynamic','card','layout','section','page','site-header','site-footer','site-logo','row','columns','grid','stack' ], true ); }
+		return in_array( $archetype, [ 'container','simple','text','richtext','heading','button','link','image','gallery','video','audio','embed','iframe','pdf-viewer','map','navigation','pagination','list','code','accordion','tabs','steps','alert','progress','counter','countdown','icon','dynamic','card','layout','section','page','site-header','site-footer','site-logo','row','columns','grid','stack' ], true ); }
 	/** Render an element with escaped text and allowlisted tags/attributes.
 	 *
 	 * @param ElementNode   $node Element input.
@@ -234,6 +234,9 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		if ( in_array( $id, [ 'embed', 'iframe', 'pdf-viewer' ], true ) ) {
 			return $this->render_external_frame( $node, $hooks, $id );
 		}
+		if ( 'map' === $id ) {
+			return $this->render_map( $node, $hooks );
+		}
 		if ( 'gallery' === $archetype ) {
 			return $this->render_gallery( $node, $hooks );
 		}
@@ -399,6 +402,79 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		$height = 'pdf-viewer' === $kind ? 'height="640"' : '';
 		$iframe = '<iframe src="' . Escape::url( $url ) . '" title="' . Escape::attr( $title ) . '" loading="lazy" referrerpolicy="no-referrer" sandbox="allow-scripts allow-presentation" ' . $height . '></iframe>';
 		return '<figure' . $hooks . ' data-blx-external-frame>' . $iframe . '<figcaption><a href="' . Escape::url( $url ) . '" target="_blank" rel="noopener noreferrer">' . Escape::html( $title ) . '</a></figcaption></figure>';
+	}
+
+	/** Render a consent-aware map with a link-only fallback.
+	 *
+	 * @param ElementNode $node Element input.
+	 * @param string      $hooks Validated element hooks.
+	 */
+	private function render_map( ElementNode $node, string $hooks ): string {
+		$center = $node->value( 'center', [] );
+		$lat    = is_array( $center ) && is_numeric( $center['lat'] ?? null ) ? (float) $center['lat'] : 0.0;
+		$lng    = is_array( $center ) && is_numeric( $center['lng'] ?? null ) ? (float) $center['lng'] : 0.0;
+		if ( ! is_finite( $lat ) || $lat < -90 || $lat > 90 ) {
+			$lat = 0.0;
+		}
+		if ( ! is_finite( $lng ) || $lng < -180 || $lng > 180 ) {
+			$lng = 0.0;
+		}
+		$zoom           = $node->value( 'zoom', 12 );
+		$zoom           = is_numeric( $zoom ) ? max( 1, min( 19, (int) $zoom ) ) : 12;
+		$provider       = $node->value( 'provider', 'openstreetmap' );
+		$provider       = in_array( $provider, [ 'openstreetmap', 'google', 'mapbox' ], true ) ? $provider : 'openstreetmap';
+		$coords         = sprintf( '%.6F,%.6F', $lat, $lng );
+		$map_url        = 'openstreetmap' === $provider
+			? sprintf( 'https://www.openstreetmap.org/?mlat=%.6F&mlon=%.6F#map=%d/%.6F/%.6F', $lat, $lng, $zoom, $lat, $lng )
+			: ( 'google' === $provider ? 'https://maps.google.com/?q=' . rawurlencode( $coords ) . '&z=' . $zoom : 'https://www.mapbox.com/maps/?center=' . rawurlencode( $coords ) . '&zoom=' . $zoom );
+		$longitude_span = 360 / ( 2 ** $zoom );
+		$latitude_span  = 180 / ( 2 ** $zoom );
+		$bbox           = sprintf( '%.6F,%.6F,%.6F,%.6F', max( -180, $lng - $longitude_span / 2 ), max( -90, $lat - $latitude_span / 2 ), min( 180, $lng + $longitude_span / 2 ), min( 90, $lat + $latitude_span / 2 ) );
+		$embed_url      = 'openstreetmap' === $provider
+			? 'https://www.openstreetmap.org/export/embed.html?layer=mapnik&bbox=' . rawurlencode( $bbox ) . '&marker=' . rawurlencode( $coords )
+			: ( 'google' === $provider ? 'https://maps.google.com/maps?q=' . rawurlencode( $coords ) . '&z=' . $zoom . '&output=embed' : '' );
+		$title          = $node->value( 'ariaLabel', __( 'Map', 'blixis-builder' ) );
+		$title          = is_string( $title ) && '' !== trim( $title ) ? trim( $title ) : __( 'Map', 'blixis-builder' );
+		$button         = '<button type="button" data-blx-map-load aria-expanded="false" data-blx-map-src="' . Escape::attr( $embed_url ) . '" data-blx-map-title="' . Escape::attr( $title ) . '">' . Escape::html( __( 'Load map', 'blixis-builder' ) ) . '</button>';
+		$link           = '<a href="' . Escape::url( $map_url ) . '" target="_blank" rel="noopener noreferrer">' . Escape::html( __( 'Open map in a new tab', 'blixis-builder' ) ) . '</a>';
+		$locations      = $this->render_map_markers( $node->value( 'markers', [] ) );
+		if ( '' === $embed_url ) {
+			return '<figure' . $hooks . ' data-blx-map>' . $link . $locations . '</figure>';
+		}
+		if ( true === $node->value( 'consentRequired', true ) ) {
+			return '<figure' . $hooks . ' data-blx-map>' . $button . $link . $locations . '</figure>';
+		}
+		return '<figure' . $hooks . ' data-blx-map><iframe class="blx-map-frame" src="' . Escape::url( $embed_url ) . '" title="' . Escape::attr( $title ) . '" loading="lazy" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin" allowfullscreen></iframe>' . $link . $locations . '</figure>';
+	}
+
+	/** Render bounded, accessible location links for map markers.
+	 *
+	 * @param mixed $markers Marker data.
+	 */
+	private function render_map_markers( mixed $markers ): string {
+		if ( ! is_array( $markers ) || [] === $markers ) {
+			return '';
+		}
+		$items = [];
+		foreach ( array_slice( $markers, 0, 50 ) as $index => $marker ) {
+			if ( ! is_array( $marker ) || ! is_numeric( $marker['lat'] ?? null ) || ! is_numeric( $marker['lng'] ?? null ) ) {
+				continue;
+			}
+			$lat = (float) $marker['lat'];
+			$lng = (float) $marker['lng'];
+			if ( ! is_finite( $lat ) || $lat < -90 || $lat > 90 || ! is_finite( $lng ) || $lng < -180 || $lng > 180 ) {
+				continue;
+			}
+			/* translators: %d: marker number in the list. */
+			$label = $marker['label'] ?? sprintf( __( 'Location %d', 'blixis-builder' ), $index + 1 );
+			if ( ! is_string( $label ) || '' === trim( $label ) ) {
+				/* translators: %d: marker number in the list. */
+				$label = sprintf( __( 'Location %d', 'blixis-builder' ), $index + 1 );
+			}
+			$url     = sprintf( 'https://www.openstreetmap.org/?mlat=%.6F&mlon=%.6F#map=16/%.6F/%.6F', $lat, $lng, $lat, $lng );
+			$items[] = '<li><a href="' . Escape::url( $url ) . '" target="_blank" rel="noopener noreferrer">' . Escape::html( trim( $label ) ) . '</a></li>';
+		}
+		return [] === $items ? '' : '<ul aria-label="' . Escape::attr( __( 'Map locations', 'blixis-builder' ) ) . '">' . implode( '', $items ) . '</ul>';
 	}
 
 	/** Parse only positive media attachment IDs or explicit attachment references.

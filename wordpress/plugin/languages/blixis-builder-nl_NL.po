@@ -211,6 +211,24 @@ msgstr "Afbeeldingsvoorbeeld sluiten"
 msgid "Open image"
 msgstr "Afbeelding openen"
 
+msgid "Map"
+msgstr "Kaart"
+
+msgid "Load map"
+msgstr "Kaart laden"
+
+msgid "Open map in a new tab"
+msgstr "Kaart openen in een nieuw tabblad"
+
+msgid "Map locations"
+msgstr "Kaartlocaties"
+
+msgid "Location %d"
+msgstr "Locatie %d"
+
+msgid "Captions"
+msgstr "Ondertiteling"
+
 msgid "Before"
 msgstr "Voor"
 

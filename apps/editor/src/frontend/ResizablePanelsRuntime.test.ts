@@ -15,6 +15,7 @@ type InitMarquee = (root: HTMLElement) => void;
 type InitFrontendElement = (root: HTMLElement) => void;
 type InitLightbox = (root: HTMLElement) => void;
 type InitImageComparison = (root: HTMLElement) => void;
+type InitMap = (root: HTMLElement) => void;
 
 function makePanels(orientation = 'horizontal', minimum = 20) {
   const root = document.createElement('div');
@@ -45,6 +46,7 @@ afterEach(() => {
   delete (window as Window & { blxInitActionButton?: InitFrontendElement }).blxInitActionButton;
   delete (window as Window & { blxInitLightbox?: InitLightbox }).blxInitLightbox;
   delete (window as Window & { blxInitImageComparison?: InitImageComparison }).blxInitImageComparison;
+  delete (window as Window & { blxInitMap?: InitMap }).blxInitMap;
   if (originalDialogShowModal) Object.defineProperty(HTMLDialogElement.prototype, 'showModal', originalDialogShowModal);
   else delete (HTMLDialogElement.prototype as Partial<HTMLDialogElement>).showModal;
   if (originalDialogClose) Object.defineProperty(HTMLDialogElement.prototype, 'close', originalDialogClose);
@@ -257,5 +259,44 @@ describe('public image comparison enhancement', () => {
     input.value = '75';
     input.dispatchEvent(new Event('input', { bubbles: true }));
     expect(root.style.getPropertyValue('--blx-comparison-position')).toBe('75%');
+  });
+});
+
+describe('consent-aware map enhancement', () => {
+  it('loads an approved provider only after the visitor activates the button', () => {
+    const root = document.createElement('figure');
+    root.setAttribute('data-blx-map', '');
+    root.innerHTML =
+      '<button type="button" data-blx-map-load data-blx-map-src="https://www.openstreetmap.org/export/embed.html?layer=mapnik" data-blx-map-title="Office map">Load map</button><a href="https://www.openstreetmap.org/">Open map</a>';
+    document.body.append(root);
+    loadInitializer();
+    const initialize = (window as Window & { blxInitMap?: InitMap }).blxInitMap;
+    const button = root.querySelector<HTMLButtonElement>('[data-blx-map-load]');
+    if (!initialize || !button) throw new Error('map initializer missing');
+    initialize(root);
+    expect(root.querySelector('iframe')).toBeNull();
+    button.click();
+    const frame = root.querySelector<HTMLIFrameElement>('iframe');
+    expect(frame?.src).toBe('https://www.openstreetmap.org/export/embed.html?layer=mapnik');
+    expect(frame?.title).toBe('Office map');
+    expect(frame?.getAttribute('sandbox')).toBe('allow-scripts allow-same-origin');
+    expect(button.getAttribute('aria-expanded')).toBe('true');
+    expect(button.disabled).toBe(true);
+  });
+
+  it('refuses an unapproved frame host', () => {
+    const root = document.createElement('figure');
+    root.setAttribute('data-blx-map', '');
+    root.innerHTML =
+      '<button type="button" data-blx-map-load data-blx-map-src="https://evil.example/frame" data-blx-map-title="Map">Load map</button>';
+    document.body.append(root);
+    loadInitializer();
+    const initialize = (window as Window & { blxInitMap?: InitMap }).blxInitMap;
+    const button = root.querySelector<HTMLButtonElement>('[data-blx-map-load]');
+    if (!initialize || !button) throw new Error('map initializer missing');
+    initialize(root);
+    button.click();
+    expect(root.querySelector('iframe')).toBeNull();
+    expect(button.disabled).toBe(false);
   });
 });
