@@ -123,22 +123,35 @@ export function GeneratedControls({ element, editable }: { element: ElementNode;
               return (
                 <div className="blx-inspector-field" key={name}>
                   <label htmlFor={id}>{label}</label>
-                  <input
-                    {...common}
-                    type="number"
-                    min={1}
-                    step={1}
-                    value={typeof value === 'string' && /^attachment:[1-9]\d{0,8}$/.test(value) ? value.slice(11) : ''}
-                    onChange={(event) => {
-                      const next = event.currentTarget.value;
-                      if (next === '') {
-                        commit(name, property, null);
-                        return;
-                      }
-                      if (/^[1-9]\d{0,8}$/.test(next)) commit(name, property, 'attachment:' + next);
+                  <div className="blx-generated-media-picker">
+                    <code>{read(value) || t('inspector.generated.noMediaAsset')}</code>
+                    <button
+                      id={id}
+                      type="button"
+                      aria-label={`${label}: ${t(read(value) ? 'inspector.generated.changeMediaAsset' : 'inspector.generated.chooseMediaAsset')}`}
+                      disabled={!editable}
+                      onClick={() => setMediaPicker(name)}
+                    >
+                      {t(read(value) ? 'inspector.generated.changeMediaAsset' : 'inspector.generated.chooseMediaAsset')}
+                    </button>
+                    {read(value) && (
+                      <button type="button" disabled={!editable} onClick={() => commit(name, property, null)}>
+                        {t('inspector.generated.remove')}
+                      </button>
+                    )}
+                  </div>
+                  <MediaDialog
+                    open={mediaPicker === name}
+                    onOpenChange={(open) => {
+                      setMediaPicker(open ? name : null);
+                    }}
+                    client={mediaClient}
+                    canUpload={canUpload}
+                    onUse={(item) => {
+                      commit(name, property, `attachment:${String(item.id)}`);
+                      setMediaPicker(null);
                     }}
                   />
-                  <p className="blx-inspector-hint">{t('inspector.generated.attachmentIdHelp')}</p>
                 </div>
               );
             if (
