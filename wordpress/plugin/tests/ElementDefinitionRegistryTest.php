@@ -793,6 +793,25 @@ final class ElementDefinitionRegistryTest extends TestCase {
 				new RenderContext()
 			)
 		);
+		$comparison = $renderer->render(
+			new ElementNode(
+				'comparison-1',
+				'blixis/before-after',
+				[
+					'beforeAssetRef'     => 'photo',
+					'afterAssetRef'      => 'photo',
+					'beforeAlt'          => 'Original view',
+					'afterAlt'           => 'Renovated view',
+					'comparisonPosition' => 65,
+				]
+			),
+			new RenderContext()
+		);
+		$this->assertStringContainsString( 'data-blx-image-comparison data-blx-comparison-position="65"', $comparison );
+		$this->assertStringContainsString( 'data-blx-comparison-before src="https://example.test/photo.jpg"', $comparison );
+		$this->assertStringContainsString( 'data-blx-comparison-after src="https://example.test/photo.jpg"', $comparison );
+		$this->assertStringContainsString( 'value="65"', $comparison );
+		$this->assertTrue( PreviewSanitizer::accepts( $comparison ) );
 	}
 
 	/** P3 video and audio render only attachment-backed, MIME-approved sources. */

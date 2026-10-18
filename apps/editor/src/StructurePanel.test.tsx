@@ -95,6 +95,8 @@ describe('left panel and element palette', () => {
       'Icon Svg',
       'Icon Button',
       'Picture',
+      'Before After',
+      'Image Comparison',
       'Gallery',
       'Lightbox',
       'Code Block',
@@ -118,7 +120,7 @@ describe('left panel and element palette', () => {
       'Table Of Contents',
     ])
       expect(within(palette).getByRole('button', { name })).toBeTruthy();
-    expect(within(palette).getAllByRole('button')).toHaveLength(66);
+    expect(within(palette).getAllByRole('button')).toHaveLength(68);
   });
 
   it('remembers the selected left tab for the current session', async () => {

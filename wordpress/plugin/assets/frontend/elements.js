@@ -102,6 +102,22 @@
     });
   };
 
+  const initImageComparison = (root) => {
+    if (root.dataset.blxComparisonReady === 'true') return;
+    const input = root.querySelector('[data-blx-comparison-control]');
+    const before = root.querySelector('[data-blx-comparison-before]');
+    const after = root.querySelector('[data-blx-comparison-after]');
+    if (!input || !before || !after) return;
+    const update = () => {
+      const position = Math.max(0, Math.min(100, Number(input.value) || 0));
+      root.style.setProperty('--blx-comparison-position', `${position}%`);
+    };
+    input.addEventListener('input', update);
+    input.removeAttribute('hidden');
+    root.dataset.blxComparisonReady = 'true';
+    update();
+  };
+
   const initActionButton = (button) => {
     if (button.dataset.blxActionReady === 'true') return;
     button.dataset.blxActionReady = 'true';
@@ -221,6 +237,7 @@
     document.querySelectorAll('[data-blx-countdown]').forEach(initCountdown);
     document.querySelectorAll('[data-blx-action]').forEach(initActionButton);
     document.querySelectorAll('[data-blx-lightbox-gallery]').forEach(initLightbox);
+    document.querySelectorAll('[data-blx-image-comparison]').forEach(initImageComparison);
   };
   window.blxInitMarquee = initMarquee;
   window.blxInitResizablePanels = initResizablePanels;
@@ -228,6 +245,7 @@
   window.blxInitCountdown = initCountdown;
   window.blxInitActionButton = initActionButton;
   window.blxInitLightbox = initLightbox;
+  window.blxInitImageComparison = initImageComparison;
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
   else init();
 })();

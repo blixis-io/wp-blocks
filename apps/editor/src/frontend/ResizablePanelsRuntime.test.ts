@@ -14,6 +14,7 @@ type InitResizablePanels = (root: HTMLElement) => void;
 type InitMarquee = (root: HTMLElement) => void;
 type InitFrontendElement = (root: HTMLElement) => void;
 type InitLightbox = (root: HTMLElement) => void;
+type InitImageComparison = (root: HTMLElement) => void;
 
 function makePanels(orientation = 'horizontal', minimum = 20) {
   const root = document.createElement('div');
@@ -43,6 +44,7 @@ afterEach(() => {
   delete (window as Window & { blxInitCountdown?: InitFrontendElement }).blxInitCountdown;
   delete (window as Window & { blxInitActionButton?: InitFrontendElement }).blxInitActionButton;
   delete (window as Window & { blxInitLightbox?: InitLightbox }).blxInitLightbox;
+  delete (window as Window & { blxInitImageComparison?: InitImageComparison }).blxInitImageComparison;
   if (originalDialogShowModal) Object.defineProperty(HTMLDialogElement.prototype, 'showModal', originalDialogShowModal);
   else delete (HTMLDialogElement.prototype as Partial<HTMLDialogElement>).showModal;
   if (originalDialogClose) Object.defineProperty(HTMLDialogElement.prototype, 'close', originalDialogClose);
@@ -232,5 +234,28 @@ describe('public gallery lightbox enhancement', () => {
     close?.click();
     expect(root.querySelector('dialog')).toBeNull();
     expect(document.activeElement).toBe(trigger);
+  });
+});
+
+describe('public image comparison enhancement', () => {
+  it('progressively reveals and updates the range control', () => {
+    const root = document.createElement('figure');
+    root.setAttribute('data-blx-image-comparison', '');
+    root.innerHTML =
+      '<div data-blx-comparison-canvas><img data-blx-comparison-before alt="Before"><img data-blx-comparison-after alt="After"></div><label data-blx-comparison-label>Compare images<input type="range" min="0" max="100" value="35" data-blx-comparison-control hidden></label>';
+    document.body.append(root);
+    loadInitializer();
+    const initialize = (window as Window & { blxInitImageComparison?: InitImageComparison }).blxInitImageComparison;
+    const input = root.querySelector<HTMLInputElement>('[data-blx-comparison-control]');
+    if (!initialize || !input) throw new Error('image comparison control missing');
+    initialize(root);
+    initialize(root);
+
+    expect(root.dataset['blxComparisonReady']).toBe('true');
+    expect(input.hidden).toBe(false);
+    expect(root.style.getPropertyValue('--blx-comparison-position')).toBe('35%');
+    input.value = '75';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(root.style.getPropertyValue('--blx-comparison-position')).toBe('75%');
   });
 });
