@@ -700,13 +700,32 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 	 * @param string      $hooks Validated element hooks.
 	 */
 	private function render_accordion( ElementNode $node, string $hooks ): string {
-		$items      = $node->value( 'items', [] );
-		$items      = is_array( $items ) ? array_slice( $items, 0, 100 ) : [];
-		$open       = $node->value( 'defaultOpen', [] );
-		$open       = is_array( $open ) ? $open : [];
-		$label      = $node->value( 'ariaLabel' );
-		$attributes = is_string( $label ) && '' !== trim( $label ) ? ' aria-label="' . Escape::attr( $label ) . '"' : '';
-		$html       = '<div' . $hooks . $attributes . '>';
+		$items       = $node->value( 'items', [] );
+		$items       = is_array( $items ) ? array_slice( $items, 0, 100 ) : [];
+		$open        = $node->value( 'defaultOpen', [] );
+		$open        = is_array( $open ) ? $open : [];
+		$multiple    = true === $node->value( 'multiple', false );
+		$collapsible = true === $node->value( 'collapsible', true );
+		$label       = $node->value( 'ariaLabel' );
+		$attributes  = is_string( $label ) && '' !== trim( $label ) ? ' aria-label="' . Escape::attr( $label ) . '"' : '';
+		$attributes .= ' data-blx-accordion data-blx-accordion-multiple="' . ( $multiple ? 'true' : 'false' ) . '" data-blx-accordion-collapsible="' . ( $collapsible ? 'true' : 'false' ) . '"';
+		$group       = 'blx-accordion-' . substr( hash( 'sha256', $node->id ), 0, 12 );
+		$available   = [];
+		foreach ( $items as $candidate ) {
+			$candidate = $this->record( $candidate );
+			if ( is_string( $candidate['id'] ?? null ) ) {
+				$available[] = $candidate['id'];
+			}
+		}
+		$open = array_values( array_intersect( $open, $available ) );
+		if ( ! $multiple ) {
+			$open = array_slice( $open, 0, 1 );
+		}
+		if ( ! $collapsible && [] === $open && isset( $available[0] ) ) {
+			$open[] = $available[0];
+		}
+		$html   = '<div' . $hooks . $attributes . '>';
+		$opened = false;
 		foreach ( $items as $item ) {
 			$item = $this->record( $item );
 			if ( null === $item ) {
@@ -718,7 +737,9 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 			if ( ! is_string( $title ) || ! is_string( $content ) ) {
 				continue;
 			}
-			$html .= '<details' . ( is_string( $id ) && in_array( $id, $open, true ) ? ' open' : '' ) . '><summary>' . Escape::html( $title ) . '</summary><div>' . Escape::html( $content ) . '</div></details>';
+			$is_open = is_string( $id ) && in_array( $id, $open, true ) && ( $multiple || ! $opened );
+			$opened  = $opened || $is_open;
+			$html   .= '<details' . ( $multiple ? '' : ' name="' . Escape::attr( $group ) . '"' ) . ( $is_open ? ' open' : '' ) . '><summary>' . Escape::html( $title ) . '</summary><div>' . Escape::html( $content ) . '</div></details>';
 		}
 		return $html . '</div>';
 	}
@@ -732,8 +753,9 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		$items  = $node->value( 'items', [] );
 		$items  = is_array( $items ) ? array_slice( $items, 0, 100 ) : [];
 		$label  = $node->value( 'ariaLabel' );
-		$nav    = '<nav aria-label="' . Escape::attr( is_string( $label ) && '' !== trim( $label ) ? $label : 'Sections' ) . '"><ul>';
+		$nav    = '<nav aria-label="' . Escape::attr( is_string( $label ) && '' !== trim( $label ) ? $label : $this->translate_label( 'Sections' ) ) . '"><ul>';
 		$panels = '';
+		$active = $node->value( 'defaultValue', 'tab-1' );
 		foreach ( $items as $index => $item ) {
 			$item = $this->record( $item );
 			if ( null === $item ) {
@@ -745,10 +767,15 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 				continue;
 			}
 			$id      = 'blx-tab-' . substr( hash( 'sha256', $node->id . ':' . (string) $index ), 0, 12 );
-			$nav    .= '<li><a href="#' . $id . '">' . Escape::html( $title ) . '</a></li>';
-			$panels .= '<section id="' . $id . '"><h2>' . Escape::html( $title ) . '</h2><p>' . Escape::html( $content ) . '</p></section>';
+			$tab_id  = $id . '-tab';
+			$tab_key = is_string( $item['id'] ?? null ) ? $item['id'] : '';
+			$nav    .= '<li><a id="' . $tab_id . '" href="#' . $id . '" data-blx-tab-key="' . Escape::attr( $tab_key ) . '">' . Escape::html( $title ) . '</a></li>';
+			$panels .= '<section id="' . $id . '" aria-labelledby="' . $tab_id . '"><h2>' . Escape::html( $title ) . '</h2><p>' . Escape::html( $content ) . '</p></section>';
 		}
-		return '<div' . $hooks . '>' . $nav . '</ul></nav>' . $panels . '</div>';
+		$orientation = $node->value( 'orientation', 'horizontal' );
+		$orientation = in_array( $orientation, [ 'horizontal', 'vertical' ], true ) ? $orientation : 'horizontal';
+		$active      = is_string( $active ) ? $active : 'tab-1';
+		return '<div' . $hooks . ' data-blx-tabs data-blx-tabs-orientation="' . Escape::attr( $orientation ) . '" data-blx-tabs-default="' . Escape::attr( $active ) . '">' . $nav . '</ul></nav>' . $panels . '</div>';
 	}
 
 	/** Render a bounded ordered list with the current step announced accessibly.

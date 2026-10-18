@@ -31124,7 +31124,7 @@
         ]
       },
       "archetype": "tabs",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -31558,7 +31558,7 @@
         ]
       },
       "archetype": "accordion",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",

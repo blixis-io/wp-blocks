@@ -594,7 +594,7 @@ final class ElementDefinitionRegistryTest extends TestCase {
 			)
 		);
 		$this->assertSame(
-			'<div data-blx-id="accordion-1" data-blx-type="blixis/accordion"><details open><summary>Question &amp; answer</summary><div>&lt;script&gt;</div></details></div>',
+			'<div data-blx-id="accordion-1" data-blx-type="blixis/accordion" data-blx-accordion data-blx-accordion-multiple="false" data-blx-accordion-collapsible="true"><details name="blx-accordion-' . substr( hash( 'sha256', 'accordion-1' ), 0, 12 ) . '" open><summary>Question &amp; answer</summary><div>&lt;script&gt;</div></details></div>',
 			$renderer->render(
 				new ElementNode(
 					'accordion-1',
@@ -655,7 +655,7 @@ final class ElementDefinitionRegistryTest extends TestCase {
 		);
 		$tab_id = 'blx-tab-' . substr( hash( 'sha256', 'tabs-1:0' ), 0, 12 );
 		$this->assertSame(
-			'<div data-blx-id="tabs-1" data-blx-type="blixis/tabs"><nav aria-label="Sections"><ul><li><a href="#' . $tab_id . '">Intro</a></li></ul></nav><section id="' . $tab_id . '"><h2>Intro</h2><p>Body &amp; copy</p></section></div>',
+			'<div data-blx-id="tabs-1" data-blx-type="blixis/tabs" data-blx-tabs data-blx-tabs-orientation="horizontal" data-blx-tabs-default="tab-1"><nav aria-label="Sections"><ul><li><a id="' . $tab_id . '-tab" href="#' . $tab_id . '" data-blx-tab-key="intro">Intro</a></li></ul></nav><section id="' . $tab_id . '" aria-labelledby="' . $tab_id . '-tab"><h2>Intro</h2><p>Body &amp; copy</p></section></div>',
 			$renderer->render(
 				new ElementNode(
 					'tabs-1',

@@ -1,6 +1,99 @@
 /* global document, window */
 
 (() => {
+  const initAccordion = (root) => {
+    if (root.dataset.blxAccordionReady === 'true') return;
+    const items = Array.from(root.querySelectorAll('details'));
+    if (items.length === 0) return;
+    root.dataset.blxAccordionReady = 'true';
+    const multiple = root.getAttribute('data-blx-accordion-multiple') === 'true';
+    const collapsible = root.getAttribute('data-blx-accordion-collapsible') !== 'false';
+    let changing = false;
+    items.forEach((item) => {
+      item.addEventListener('toggle', () => {
+        if (changing) return;
+        if (!collapsible && !item.open) {
+          changing = true;
+          item.open = true;
+          changing = false;
+          return;
+        }
+        if (item.open && !multiple) {
+          changing = true;
+          items.forEach((other) => {
+            if (other !== item) other.open = false;
+          });
+          changing = false;
+        }
+      });
+    });
+  };
+
+  const initTabs = (root) => {
+    if (root.dataset.blxTabsReady === 'true') return;
+    const nav = root.querySelector('nav');
+    const links = Array.from(root.querySelectorAll('nav a[href^="#"]'));
+    const sections = Array.from(root.querySelectorAll('section[id]'));
+    const panels = links.map((link) => {
+      const id = link.getAttribute('href')?.slice(1);
+      return id ? sections.find((section) => section.id === id) || null : null;
+    });
+    if (!nav || links.length === 0 || panels.some((panel) => !panel || !root.contains(panel))) return;
+
+    root.dataset.blxTabsReady = 'true';
+    nav.setAttribute('role', 'tablist');
+    nav.querySelector('ul')?.setAttribute('role', 'presentation');
+    const orientation = root.getAttribute('data-blx-tabs-orientation') === 'vertical' ? 'vertical' : 'horizontal';
+    nav.setAttribute('aria-orientation', orientation);
+    links.forEach((link) => link.parentElement?.setAttribute('role', 'presentation'));
+    const defaultKey = root.getAttribute('data-blx-tabs-default');
+    let activeIndex = links.findIndex((link) => link.getAttribute('data-blx-tab-key') === defaultKey);
+    if (activeIndex < 0) activeIndex = 0;
+
+    const activate = (index, focus = false) => {
+      activeIndex = (index + links.length) % links.length;
+      links.forEach((link, current) => {
+        const selected = current === activeIndex;
+        link.setAttribute('role', 'tab');
+        const panel = panels[current];
+        if (panel) link.setAttribute('aria-controls', panel.id);
+        link.setAttribute('aria-selected', String(selected));
+        link.tabIndex = selected ? 0 : -1;
+        if (!panel) return;
+        panel.setAttribute('role', 'tabpanel');
+        panel.setAttribute('aria-labelledby', link.id);
+        panel.tabIndex = 0;
+        panel.hidden = !selected;
+      });
+      if (focus) links[activeIndex]?.focus();
+    };
+
+    links.forEach((link, index) => {
+      link.addEventListener('click', (event) => {
+        event.preventDefault();
+        activate(index);
+      });
+      link.addEventListener('keydown', (event) => {
+        const previous = orientation === 'vertical' ? 'ArrowUp' : 'ArrowLeft';
+        const next = orientation === 'vertical' ? 'ArrowDown' : 'ArrowRight';
+        if (event.key === previous) {
+          event.preventDefault();
+          activate(activeIndex - 1, true);
+        } else if (event.key === next) {
+          event.preventDefault();
+          activate(activeIndex + 1, true);
+        } else if (event.key === 'Home') {
+          event.preventDefault();
+          activate(0, true);
+        } else if (event.key === 'End') {
+          event.preventDefault();
+          activate(links.length - 1, true);
+        }
+      });
+    });
+    activate(activeIndex);
+  };
+
   const initCodeBlock = (root) => {
     const button = root.querySelector('[data-blx-code-copy]');
     const code = root.querySelector('code');
@@ -301,6 +394,8 @@
     document.querySelectorAll('[data-blx-image-comparison]').forEach(initImageComparison);
     document.querySelectorAll('[data-blx-map]').forEach(initMap);
     document.querySelectorAll('[data-blx-panorama]').forEach(initPanorama);
+    document.querySelectorAll('[data-blx-accordion]').forEach(initAccordion);
+    document.querySelectorAll('[data-blx-tabs]').forEach(initTabs);
   };
   window.blxInitMarquee = initMarquee;
   window.blxInitResizablePanels = initResizablePanels;
@@ -311,6 +406,8 @@
   window.blxInitImageComparison = initImageComparison;
   window.blxInitMap = initMap;
   window.blxInitPanorama = initPanorama;
+  window.blxInitAccordion = initAccordion;
+  window.blxInitTabs = initTabs;
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
   else init();
 })();
