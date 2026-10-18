@@ -90,6 +90,14 @@
       "localizable": true,
       "control": "text"
     },
+    "tooltip": {
+      "type": "string",
+      "default": "More information",
+      "description": "Text shown while the trigger is hovered or focused.",
+      "required": false,
+      "localizable": true,
+      "control": "textarea"
+    },
     "hidden": {
       "type": "boolean",
       "default": false,
@@ -155,6 +163,12 @@
     },
     "ariaLabel": {
       "control": "text",
+      "group": "Accessibility",
+      "localizable": true,
+      "supportsDynamicBinding": false
+    },
+    "tooltip": {
+      "control": "textarea",
       "group": "Accessibility",
       "localizable": true,
       "supportsDynamicBinding": false
@@ -427,6 +441,7 @@
       "cssClasses": [],
       "htmlId": "",
       "ariaLabel": "",
+      "tooltip": "More information",
       "hidden": false,
       "content": "Sample text",
       "tag": "p",

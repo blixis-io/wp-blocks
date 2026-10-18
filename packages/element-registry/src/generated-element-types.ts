@@ -6298,7 +6298,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'list',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -7489,6 +7489,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
         description: 'Full Iconify identifier (solar namespace).',
         required: false,
         control: 'icon-picker',
+        options: ['solar:star-linear', 'solar:check-circle-linear', 'solar:info-circle-linear'],
       },
       size: { type: 'number', default: 24, description: 'Numeric setting.', required: false, control: 'number' },
       decorative: {
@@ -7629,7 +7630,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'icon',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -7751,6 +7752,13 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
         required: false,
         control: 'link-picker',
       },
+      targetId: {
+        type: 'string',
+        default: '',
+        description: 'Target HTML id for scrolling, toggling, or opening a dialog.',
+        required: false,
+        control: 'text',
+      },
       variant: {
         type: 'enum',
         default: 'primary',
@@ -7792,6 +7800,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       action: { control: 'select', group: 'Content', localizable: false, supportsDynamicBinding: false },
       href: { control: 'link-picker', group: 'Content', localizable: false, supportsDynamicBinding: true },
       variant: { control: 'select', group: 'Content', localizable: false, supportsDynamicBinding: false },
+      targetId: { control: 'text', group: 'Content', localizable: false, supportsDynamicBinding: false },
       size: { control: 'select', group: 'Content', localizable: false, supportsDynamicBinding: false },
       disabled: { control: 'switch', group: 'Content', localizable: false, supportsDynamicBinding: false },
       iconBefore: { control: 'json-editor', group: 'Content', localizable: false, supportsDynamicBinding: false },
@@ -7925,6 +7934,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
         label: 'Button',
         action: 'link',
         href: '',
+        targetId: '',
         variant: 'primary',
         size: 'md',
         disabled: false,
@@ -7943,7 +7953,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'button',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -8211,7 +8221,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'code',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -8479,7 +8489,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'code',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -8966,7 +8976,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'countdown',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -9482,7 +9492,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'richtext',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -9769,7 +9779,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'richtext',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -10118,6 +10128,14 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
         localizable: true,
         control: 'text',
       },
+      tooltip: {
+        type: 'string',
+        default: 'More information',
+        description: 'Text shown while the trigger is hovered or focused.',
+        required: false,
+        localizable: true,
+        control: 'textarea',
+      },
       hidden: {
         type: 'boolean',
         default: false,
@@ -10155,6 +10173,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       cssClasses: { control: 'class-picker', group: 'Attributes', localizable: false, supportsDynamicBinding: false },
       htmlId: { control: 'text', group: 'Attributes', localizable: false, supportsDynamicBinding: false },
       ariaLabel: { control: 'text', group: 'Accessibility', localizable: true, supportsDynamicBinding: false },
+      tooltip: { control: 'textarea', group: 'Accessibility', localizable: true, supportsDynamicBinding: false },
       hidden: { control: 'switch', group: 'Content', localizable: false, supportsDynamicBinding: false },
       content: { control: 'textarea', group: 'Content', localizable: true, supportsDynamicBinding: true },
       tag: { control: 'select', group: 'Content', localizable: false, supportsDynamicBinding: false },
@@ -10270,7 +10289,16 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
     exampleInstance: {
       id: 'example-tooltip-text',
       type: 'tooltip-text',
-      props: { cssClasses: [], htmlId: '', ariaLabel: '', hidden: false, content: 'Sample text', tag: 'p', marks: [] },
+      props: {
+        cssClasses: [],
+        htmlId: '',
+        ariaLabel: '',
+        tooltip: 'More information',
+        hidden: false,
+        content: 'Sample text',
+        tag: 'p',
+        marks: [],
+      },
       styles: { base: {}, tablet: {}, mobile: {}, dark: {}, darkMobile: {} },
       children: [],
     },
@@ -10283,7 +10311,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'richtext',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -70238,7 +70266,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'content',
     icon: 'solar:list-check-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'icon-list icon list content icon list element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -70293,7 +70321,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'content',
     icon: 'solar:star-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'icon icon content icon element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -70304,7 +70332,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'content',
     icon: 'solar:add-circle-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'icon-button icon button content icon button element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -70315,7 +70343,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'content',
     icon: 'solar:code-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'code-block code block content code block element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -70326,7 +70354,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'content',
     icon: 'solar:code-square-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'syntax-highlighter syntax highlighter content syntax highlighter element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -70348,7 +70376,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'content',
     icon: 'solar:clock-circle-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'countdown countdown content countdown element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -70370,7 +70398,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'content',
     icon: 'solar:text-bold-circle-linear',
     tier: 'pro',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'animated-headline animated headline content animated headline element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -70381,7 +70409,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'content',
     icon: 'solar:palette-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'gradient-text gradient text content gradient text element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -70403,7 +70431,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'content',
     icon: 'solar:info-circle-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'tooltip-text tooltip text content tooltip text element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },

@@ -3,13 +3,14 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { runInNewContext } from 'node:vm';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const repositoryRoot = process.cwd().endsWith('/apps/editor') ? resolve(process.cwd(), '../..') : process.cwd();
 const runtime = readFileSync(resolve(repositoryRoot, 'wordpress/plugin/assets/frontend/elements.js'), 'utf8');
 
 type InitResizablePanels = (root: HTMLElement) => void;
 type InitMarquee = (root: HTMLElement) => void;
+type InitFrontendElement = (root: HTMLElement) => void;
 
 function makePanels(orientation = 'horizontal', minimum = 20) {
   const root = document.createElement('div');
@@ -35,6 +36,62 @@ afterEach(() => {
   document.body.replaceChildren();
   delete (window as Window & { blxInitResizablePanels?: InitResizablePanels }).blxInitResizablePanels;
   delete (window as Window & { blxInitMarquee?: InitMarquee }).blxInitMarquee;
+  delete (window as Window & { blxInitCodeBlock?: InitFrontendElement }).blxInitCodeBlock;
+  delete (window as Window & { blxInitCountdown?: InitFrontendElement }).blxInitCountdown;
+  delete (window as Window & { blxInitActionButton?: InitFrontendElement }).blxInitActionButton;
+});
+
+describe('public content element enhancement', () => {
+  it('copies code and reports the result through a live status', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(window.navigator, 'clipboard', { configurable: true, value: { writeText } });
+    const root = document.createElement('div');
+    root.innerHTML =
+      '<button data-blx-code-copy data-blx-copy-success="Copied." data-blx-copy-failed="Copy failed." hidden></button><code>const safe = 1;</code><span data-blx-code-status aria-live="polite"></span>';
+    document.body.append(root);
+    loadInitializer();
+    const initialize = (window as Window & { blxInitCodeBlock?: InitFrontendElement }).blxInitCodeBlock;
+    const button = root.querySelector<HTMLButtonElement>('[data-blx-code-copy]');
+    const status = root.querySelector<HTMLElement>('[data-blx-code-status]');
+    if (!initialize || !button || !status) throw new Error('code block controls missing');
+    initialize(root);
+    button.click();
+    await vi.waitFor(() => {
+      expect(status.textContent).toBe('Copied.');
+    });
+    expect(writeText).toHaveBeenCalledWith('const safe = 1;');
+  });
+
+  it('updates a completed countdown without starting visible motion', () => {
+    const root = document.createElement('time');
+    root.setAttribute('data-blx-countdown-target', '2000-01-01T00:00:00Z');
+    root.setAttribute('data-blx-countdown-format', 'days-hours-minutes-seconds');
+    root.setAttribute('data-blx-countdown-complete', 'Countdown complete');
+    loadInitializer();
+    const countdown = (window as Window & { blxInitCountdown?: InitFrontendElement }).blxInitCountdown;
+    if (!countdown) throw new Error('countdown initializer missing');
+    countdown(root);
+    expect(root.textContent).toBe('Countdown complete');
+    expect(root.dataset['blxCountdownReady']).toBe('true');
+  });
+
+  it('toggles a target and reports its expanded state', () => {
+    const target = document.createElement('div');
+    target.id = 'details';
+    target.hidden = true;
+    const button = document.createElement('button');
+    button.setAttribute('data-blx-action', 'toggle');
+    button.setAttribute('data-blx-action-target', 'details');
+    button.setAttribute('aria-expanded', 'false');
+    document.body.append(target, button);
+    loadInitializer();
+    const action = (window as Window & { blxInitActionButton?: InitFrontendElement }).blxInitActionButton;
+    if (!action) throw new Error('action initializer missing');
+    action(button);
+    button.click();
+    expect(target.hidden).toBe(false);
+    expect(button.getAttribute('aria-expanded')).toBe('true');
+  });
 });
 
 describe('public marquee enhancement', () => {

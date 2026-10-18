@@ -44,12 +44,15 @@ final class PreviewTest extends TestCase {
 		}
 		$this->assertTrue( PreviewSanitizer::accepts( '<div data-blx-id="a">Safe &amp; sound</div>' ) );
 		$this->assertTrue( PreviewSanitizer::accepts( '<p>data: onclick= &lt;script&gt;</p>' ) );
-		foreach ( [ '<a href=javascript&colon;alert(1)>', '<img src=x onerror=alert(1)>', '<div title=`bad`>', "<div a=\"x\0y\">", '<svg onload=x>' ] as $html ) {
+		foreach ( [ '<a href=javascript&colon;alert(1)>', '<img src=x onerror=alert(1)>', '<div title=`bad`>', "<div a=\"x\0y\">", '<svg onload=x>', '<svg><script>x</script></svg>', '<svg><foreignObject></foreignObject></svg>', '<svg><path d="M0 0" onload="x"/></svg>', '<div style="background-image:url(javascript:alert(1))">' ] as $html ) {
 			$this->assertFalse( PreviewSanitizer::accepts( $html ), $html );
 		}
 		foreach ( [ '<div title="data:x">', '<div title="onclick=x">', '<div title="style=x">', '<div title="&lt;script&gt;">' ] as $html ) {
 			$this->assertTrue( PreviewSanitizer::accepts( $html ), $html );
 		}
+		$this->assertTrue( PreviewSanitizer::accepts( '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" focusable="false" aria-hidden="true"><path d="M12 3 9 9 3 10"/></svg>' ) );
+		$this->assertTrue( PreviewSanitizer::accepts( '<span style="background-image:linear-gradient(90deg,#2563eb 0%,#ec4899 100%);-webkit-background-clip:text;background-clip:text;color:transparent">Safe</span>' ) );
+		$this->assertTrue( PreviewSanitizer::accepts( '<span style="--blx-headline-index:2">Safe</span>' ) );
 	}
 
 	/** Structural output never interpolates hostile attributes or props. */

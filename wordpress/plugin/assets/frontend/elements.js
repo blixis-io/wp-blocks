@@ -1,6 +1,91 @@
 /* global document, window */
 
 (() => {
+  const initCodeBlock = (root) => {
+    const button = root.querySelector('[data-blx-code-copy]');
+    const code = root.querySelector('code');
+    const status = root.querySelector('[data-blx-code-status]');
+    if (!button || !code || root.dataset.blxCodeReady === 'true') return;
+    root.dataset.blxCodeReady = 'true';
+    button.hidden = false;
+    button.addEventListener('click', async () => {
+      let copied = false;
+      try {
+        if (window.navigator.clipboard?.writeText) {
+          await window.navigator.clipboard.writeText(code.textContent || '');
+          copied = true;
+        } else {
+          const field = document.createElement('textarea');
+          field.value = code.textContent || '';
+          field.setAttribute('readonly', '');
+          field.style.position = 'fixed';
+          field.style.opacity = '0';
+          document.body.append(field);
+          field.select();
+          copied = document.execCommand('copy');
+          field.remove();
+        }
+      } catch {
+        copied = false;
+      }
+      if (status)
+        status.textContent = copied
+          ? button.getAttribute('data-blx-copy-success') || 'Copied.'
+          : button.getAttribute('data-blx-copy-failed') || 'Copy failed.';
+    });
+  };
+
+  const initCountdown = (root) => {
+    if (root.dataset.blxCountdownReady === 'true') return;
+    const target = Date.parse(root.getAttribute('data-blx-countdown-target') || '');
+    if (!Number.isFinite(target)) return;
+    root.dataset.blxCountdownReady = 'true';
+    const format = root.getAttribute('data-blx-countdown-format');
+    let timer = 0;
+    const update = () => {
+      const seconds = Math.max(0, Math.floor((target - Date.now()) / 1000));
+      const values = [
+        Math.floor(seconds / 86400),
+        Math.floor((seconds % 86400) / 3600),
+        Math.floor((seconds % 3600) / 60),
+        seconds % 60,
+      ];
+      const visible = format === 'days' ? values.slice(0, 1) : format === 'days-hours' ? values.slice(0, 2) : values;
+      root.textContent = visible.map((value) => String(value).padStart(2, '0')).join(':');
+      if (seconds === 0) {
+        root.textContent = root.getAttribute('data-blx-countdown-complete') || 'Countdown complete';
+        window.clearInterval(timer);
+      }
+    };
+    timer = window.setInterval(update, 1000);
+    update();
+  };
+
+  const initActionButton = (button) => {
+    if (button.dataset.blxActionReady === 'true') return;
+    button.dataset.blxActionReady = 'true';
+    button.addEventListener('click', () => {
+      const targetId = button.getAttribute('data-blx-action-target');
+      const target = targetId ? document.getElementById(targetId) : null;
+      const action = button.getAttribute('data-blx-action');
+      if (action === 'toggle' && target) {
+        target.hidden = !target.hidden;
+        button.setAttribute('aria-expanded', String(!target.hidden));
+      } else if (action === 'open-dialog' && target?.tagName === 'DIALOG') {
+        if (typeof target.showModal === 'function') target.showModal();
+        else target.setAttribute('open', '');
+      } else if (action === 'custom-event') {
+        const owner = button.closest('[data-blx-id]');
+        owner?.dispatchEvent(
+          new window.CustomEvent('blixis:element-action', {
+            bubbles: true,
+            detail: { elementId: owner.getAttribute('data-blx-id') },
+          }),
+        );
+      }
+    });
+  };
+
   const initMarquee = (root) => {
     if (root.dataset.blxMarqueeReady === 'true') return;
     const toggle = root.querySelector('[data-blx-marquee-toggle]');
@@ -91,9 +176,15 @@
   const init = () => {
     document.querySelectorAll('[data-blx-marquee]').forEach(initMarquee);
     document.querySelectorAll('[data-blx-resizable-panels]').forEach(initResizablePanels);
+    document.querySelectorAll('[data-blx-code-block]').forEach(initCodeBlock);
+    document.querySelectorAll('[data-blx-countdown]').forEach(initCountdown);
+    document.querySelectorAll('[data-blx-action]').forEach(initActionButton);
   };
   window.blxInitMarquee = initMarquee;
   window.blxInitResizablePanels = initResizablePanels;
+  window.blxInitCodeBlock = initCodeBlock;
+  window.blxInitCountdown = initCountdown;
+  window.blxInitActionButton = initActionButton;
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
   else init();
 })();

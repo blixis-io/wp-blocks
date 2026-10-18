@@ -1110,6 +1110,54 @@ async function smoke() {
                   props: { direction: 'right', duration: 45 },
                   children: [node('marquee-text', 'blixis/text')],
                 },
+                {
+                  id: 'syntax1',
+                  type: 'blixis/syntax-highlighter',
+                  props: { language: 'js', code: 'const safe = "<script>";' },
+                  children: [],
+                },
+                {
+                  id: 'countdown1',
+                  type: 'blixis/countdown',
+                  props: { targetISO: '2099-12-31T00:00:00Z' },
+                  children: [],
+                },
+                {
+                  id: 'tooltip1',
+                  type: 'blixis/tooltip-text',
+                  props: { content: 'Tip', tooltip: 'Additional information' },
+                  children: [],
+                },
+                {
+                  id: 'gradient1',
+                  type: 'blixis/gradient-text',
+                  props: { content: 'Color text' },
+                  children: [],
+                },
+                {
+                  id: 'headline1',
+                  type: 'blixis/animated-headline',
+                  props: { content: 'One two' },
+                  children: [],
+                },
+                {
+                  id: 'icon1',
+                  type: 'blixis/icon',
+                  props: { icon: 'solar:check-circle-linear', decorative: false, ariaLabel: 'Complete' },
+                  children: [],
+                },
+                {
+                  id: 'icon-list1',
+                  type: 'blixis/icon-list',
+                  props: { listStyle: 'check', items: [{ id: 'item1', text: 'Safe item' }] },
+                  children: [],
+                },
+                {
+                  id: 'icon-button1',
+                  type: 'blixis/icon-button',
+                  props: { action: 'custom-event', label: 'Run action' },
+                  children: [],
+                },
               ],
             },
             {
@@ -1184,6 +1232,17 @@ async function smoke() {
             (richBody.html ?? '').includes('data-blx-marquee-toggle') &&
             (richBody.html ?? '').includes('aria-label="Pause scrolling"'),
           'marquee preview renders its direction, speed, and accessible pause control',
+        );
+        check(
+          (richBody.html ?? '').includes('data-blx-code-token="keyword"') &&
+            (richBody.html ?? '').includes('data-blx-countdown') &&
+            (richBody.html ?? '').includes('aria-describedby="tooltip1-tooltip"') &&
+            (richBody.html ?? '').includes('data-blx-gradient-text') &&
+            (richBody.html ?? '').includes('data-blx-animated-headline') &&
+            (richBody.html ?? '').includes('role="img" aria-label="Complete"') &&
+            (richBody.html ?? '').includes('data-blx-icon-list') &&
+            (richBody.html ?? '').includes('data-blx-action="custom-event"'),
+          'P2 content elements render accessible server previews',
         );
         check(
           (richBody.html ?? '').includes('<nav data-blx-id="toc1"') &&
@@ -1311,6 +1370,16 @@ async function smoke() {
             html.includes('@media(prefers-reduced-motion:reduce)') &&
             html.includes('id="blixis-builder-elements-js"'),
           'published marquees include the pause control, reduced-motion styling, and enhancement runtime',
+        );
+        check(
+          html.includes('data-blx-code-block') &&
+            html.includes('data-blx-countdown') &&
+            html.includes('data-blx-tooltip-text') &&
+            html.includes('data-blx-gradient-text') &&
+            html.includes('data-blx-animated-headline') &&
+            html.includes('@keyframes blx-headline-in') &&
+            html.includes('data-blx-code-token="keyword"'),
+          'published P2 content uses accessible fallbacks and reduced-motion styles',
         );
         // A WordPress nonce is bound to the user's session token, so mint the nonces and the logged-in cookie in one session.
         const previewSession = JSON.parse(

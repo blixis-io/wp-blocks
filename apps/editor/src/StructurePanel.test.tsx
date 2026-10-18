@@ -90,6 +90,15 @@ describe('left panel and element palette', () => {
       'Split Layout',
       'Resizable Panels',
       'Marquee Layout',
+      'Icon List',
+      'Icon',
+      'Icon Button',
+      'Code Block',
+      'Syntax Highlighter',
+      'Countdown',
+      'Animated Headline',
+      'Gradient Text',
+      'Tooltip Text',
       'Post Title',
       'Post Content',
       'Post Excerpt',
@@ -105,7 +114,7 @@ describe('left panel and element palette', () => {
       'Table Of Contents',
     ])
       expect(within(palette).getByRole('button', { name })).toBeTruthy();
-    expect(within(palette).getAllByRole('button')).toHaveLength(53);
+    expect(within(palette).getAllByRole('button')).toHaveLength(62);
   });
 
   it('remembers the selected left tab for the current session', async () => {
