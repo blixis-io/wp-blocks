@@ -5,7 +5,8 @@ import { resolve } from 'node:path';
 import { runInNewContext } from 'node:vm';
 import { afterEach, describe, expect, it } from 'vitest';
 
-const runtime = readFileSync(resolve(process.cwd(), 'wordpress/plugin/assets/frontend/elements.js'), 'utf8');
+const repositoryRoot = process.cwd().endsWith('/apps/editor') ? resolve(process.cwd(), '../..') : process.cwd();
+const runtime = readFileSync(resolve(repositoryRoot, 'wordpress/plugin/assets/frontend/elements.js'), 'utf8');
 
 type InitResizablePanels = (root: HTMLElement) => void;
 
