@@ -3449,6 +3449,22 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
         required: false,
         control: 'switch',
       },
+      sticky: {
+        type: 'boolean',
+        default: true,
+        description: 'Keep the container at the top of its scrolling context.',
+        required: false,
+        control: 'switch',
+      },
+      stickyOffset: {
+        type: 'number',
+        default: 0,
+        minimum: 0,
+        maximum: 200,
+        description: 'Distance from the top edge in pixels.',
+        required: false,
+        control: 'number',
+      },
     },
     propertyControls: {
       elementId: { control: 'text', group: 'Attributes', localizable: false, supportsDynamicBinding: false },
@@ -3458,6 +3474,8 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       hidden: { control: 'switch', group: 'Content', localizable: false, supportsDynamicBinding: false },
       semanticTag: { control: 'select', group: 'Content', localizable: false, supportsDynamicBinding: false },
       innerContainer: { control: 'switch', group: 'Content', localizable: false, supportsDynamicBinding: false },
+      sticky: { control: 'switch', group: 'Content', localizable: false, supportsDynamicBinding: false },
+      stickyOffset: { control: 'number', group: 'Content', localizable: false, supportsDynamicBinding: false },
     },
     style: {
       allowed: {
@@ -3585,7 +3603,16 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
     exampleInstance: {
       id: 'example-sticky-container',
       type: 'sticky-container',
-      props: { cssClasses: [], htmlId: '', ariaLabel: '', hidden: false, semanticTag: 'div', innerContainer: false },
+      props: {
+        cssClasses: [],
+        htmlId: '',
+        ariaLabel: '',
+        hidden: false,
+        semanticTag: 'div',
+        innerContainer: false,
+        sticky: true,
+        stickyOffset: 0,
+      },
       styles: { base: {}, tablet: {}, mobile: {}, dark: {}, darkMobile: {} },
       children: [],
     },
@@ -3598,7 +3625,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'container',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -70038,7 +70065,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'layout',
     icon: 'solar:pin-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'sticky-container sticky container layout sticky container element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },

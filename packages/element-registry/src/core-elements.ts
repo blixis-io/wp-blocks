@@ -263,6 +263,7 @@ export function createEditorRegistry(): ElementRegistry {
     'flex',
     'aspect-ratio',
     'scroll-area',
+    'sticky-container',
     'columns',
     'grid',
     'card',

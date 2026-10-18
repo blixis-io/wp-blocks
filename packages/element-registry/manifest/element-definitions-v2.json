@@ -5811,6 +5811,22 @@
           "description": "Toggle behaviour.",
           "required": false,
           "control": "switch"
+        },
+        "sticky": {
+          "type": "boolean",
+          "default": true,
+          "description": "Keep the container at the top of its scrolling context.",
+          "required": false,
+          "control": "switch"
+        },
+        "stickyOffset": {
+          "type": "number",
+          "default": 0,
+          "minimum": 0,
+          "maximum": 200,
+          "description": "Distance from the top edge in pixels.",
+          "required": false,
+          "control": "number"
         }
       },
       "propertyControls": {
@@ -5852,6 +5868,18 @@
         },
         "innerContainer": {
           "control": "switch",
+          "group": "Content",
+          "localizable": false,
+          "supportsDynamicBinding": false
+        },
+        "sticky": {
+          "control": "switch",
+          "group": "Content",
+          "localizable": false,
+          "supportsDynamicBinding": false
+        },
+        "stickyOffset": {
+          "control": "number",
           "group": "Content",
           "localizable": false,
           "supportsDynamicBinding": false
@@ -6156,7 +6184,9 @@
           "ariaLabel": "",
           "hidden": false,
           "semanticTag": "div",
-          "innerContainer": false
+          "innerContainer": false,
+          "sticky": true,
+          "stickyOffset": 0
         },
         "styles": {
           "base": {},
@@ -6176,7 +6206,7 @@
         ]
       },
       "archetype": "container",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",

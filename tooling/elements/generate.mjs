@@ -34,6 +34,7 @@ const editorReady = new Set([
   'flex',
   'aspect-ratio',
   'scroll-area',
+  'sticky-container',
   'columns',
   'grid',
   'card',
