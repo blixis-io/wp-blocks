@@ -11135,7 +11135,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'image',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -70465,7 +70465,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'media',
     icon: 'solar:gallery-wide-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'picture picture media picture element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
