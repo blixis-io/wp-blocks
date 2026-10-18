@@ -40,9 +40,17 @@ final class ElementDefinitionRegistryTest extends TestCase {
 	public function test_static_wordpress_text_elements_render_safe_fallbacks(): void {
 		$registry = ElementDefinitionRegistry::from_manifest_file( \dirname( __DIR__ ) . '/data/element-definitions-v2.json' );
 		$media    = new class() implements AssetReferenceResolver {
+			/** Resolve no attachment in this text renderer test.
+			 *
+			 * @param int $attachment_id Attachment ID.
+			 */
 			public function resolve( int $attachment_id ): ?array {
 				return null;
 			}
+			/** Resolve no imported asset in this text renderer test.
+			 *
+			 * @param string $reference Asset reference.
+			 */
 			public function resolve_reference( string $reference ): ?array {
 				return null;
 			}
