@@ -253,6 +253,7 @@ export const nl_NL: Record<MessageKey, string> = {
   'inspector.prop.attachmentId': 'Media-bijlage-ID',
   'inspector.prop.src': 'Media-bron',
   'inspector.prop.poster': 'Posterafbeelding',
+  'inspector.prop.content': 'Inhoud',
   'inspector.prop.alt': 'Alternatieve tekst',
   'inspector.prop.decorative': 'Decoratieve afbeelding',
   'inspector.option.section': 'Sectie',

@@ -114,6 +114,12 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 				$value = implode( '', array_map( static fn ( mixed $part ): string => is_array( $part ) && is_string( $part['text'] ?? null ) ? $part['text'] : '', $value ) );
 			}
 			$body = is_string( $value ) ? Escape::html( $value ) : RichText::render_validated( $value, true, $context->token_ids );
+			if ( 'keyboard-shortcut' === $id ) {
+				return '<kbd' . $hooks . '>' . $body . '</kbd>';
+			}
+			if ( 'empty-state' === $id ) {
+				return '<div' . $hooks . '>' . $body . '</div>';
+			}
 			if ( 'highlight-text' === $id ) {
 				$body = '<mark>' . $body . '</mark>';
 			}

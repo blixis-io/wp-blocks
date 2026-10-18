@@ -32025,7 +32025,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'text',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -33426,7 +33426,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'text',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -71201,7 +71201,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:inbox-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'empty-state empty state ui-components empty state element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71256,7 +71256,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:keyboard-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'keyboard-shortcut keyboard shortcut ui-components keyboard shortcut element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },

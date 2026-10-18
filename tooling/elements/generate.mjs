@@ -53,6 +53,8 @@ const editorReady = new Set([
   'image',
   'video',
   'audio',
+  'empty-state',
+  'keyboard-shortcut',
   'section',
   'text',
   'div',

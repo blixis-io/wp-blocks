@@ -24,6 +24,8 @@ describe('generated v2 element registry', () => {
     expect(isElementInsertableV2('blixis/skeleton')).toBe(true);
     expect(isElementInsertableV2('blixis/video')).toBe(true);
     expect(isElementInsertableV2('blixis/audio')).toBe(true);
+    expect(isElementInsertableV2('blixis/empty-state')).toBe(true);
+    expect(isElementInsertableV2('blixis/keyboard-shortcut')).toBe(true);
   });
 
   it('validates declared props and rejects undeclared and editor-only values', () => {

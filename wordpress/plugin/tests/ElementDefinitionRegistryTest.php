@@ -93,6 +93,14 @@ final class ElementDefinitionRegistryTest extends TestCase {
 			$renderer->render( new ElementNode( 'paragraph-1', 'blixis/paragraph', [ 'content' => 'Paragraph' ] ), new RenderContext() )
 		);
 		$this->assertSame(
+			'<kbd data-blx-id="shortcut-1" data-blx-type="blixis/keyboard-shortcut">Ctrl + S &amp; Save</kbd>',
+			$renderer->render( new ElementNode( 'shortcut-1', 'blixis/keyboard-shortcut', [ 'content' => 'Ctrl + S & Save' ] ), new RenderContext() )
+		);
+		$this->assertSame(
+			'<div data-blx-id="empty-1" data-blx-type="blixis/empty-state">No results</div>',
+			$renderer->render( new ElementNode( 'empty-1', 'blixis/empty-state', [ 'content' => 'No results' ] ), new RenderContext() )
+		);
+		$this->assertSame(
 			'<strong data-blx-id="rich-text-1" data-blx-type="blixis/rich-text">Emphasis</strong>',
 			$renderer->render(
 				new ElementNode(

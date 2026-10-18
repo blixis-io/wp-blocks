@@ -247,6 +247,7 @@ export const en_US = {
   'inspector.prop.attachmentId': 'Media attachment ID',
   'inspector.prop.src': 'Media source attachment',
   'inspector.prop.poster': 'Poster image attachment',
+  'inspector.prop.content': 'Content',
   'inspector.prop.alt': 'Alternative text',
   'inspector.prop.decorative': 'Decorative image',
   'inspector.option.section': 'Section',
