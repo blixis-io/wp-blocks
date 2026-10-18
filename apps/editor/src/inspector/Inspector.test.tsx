@@ -9,6 +9,7 @@ import { I18nProvider } from '../i18n-react';
 import { el, makeDocument, makeLoadedStore } from '../test/state-helpers';
 import { axeViolations } from '../test/axe';
 import { Inspector } from './Inspector';
+import { GeneratedControls } from './GeneratedControls';
 import { STYLE_FIELDS } from './style-mapping';
 import { PROPERTIES } from '@blixis/wp-style-engine';
 
@@ -50,6 +51,13 @@ function ReactiveInspector({ tab, editable }: { tab: 'content' | 'style' | 'adva
     (state) => state.document?.root.find((node) => node.id === state.selectedId) ?? state.document?.root[0] ?? null,
   );
   return <Inspector element={element} tab={tab} editingEnabled={editable} />;
+}
+
+function ReactiveGeneratedControls({ editable }: { editable: boolean }) {
+  const element = useEditorStore(
+    (state) => state.document?.root.find((node) => node.id === state.selectedId) ?? state.document?.root[0] ?? null,
+  );
+  return element === null ? null : <GeneratedControls element={element} editable={editable} />;
 }
 
 async function mount(
@@ -937,6 +945,23 @@ describe('Inspector controls', () => {
     });
     expect(store.getState().document?.root[0]?.props['assetRef']).toBe('attachment:42');
     expect(store.getState().document?.translations['en_US']?.['target']?.values['alt']).toBe('Profile photo');
+  });
+
+  it('edits bounded asset-reference repeaters from generated definitions', async () => {
+    const target = el('target', 'blixis/avatar-group');
+    const { store } = await makeLoadedStore({ document: makeDocument({ root: [target] }) });
+    render(
+      <StoreProvider store={store}>
+        <I18nProvider editorLocale="en_US">
+          <ReactiveGeneratedControls editable />
+        </I18nProvider>
+      </StoreProvider>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Add image' }));
+    fireEvent.change(screen.getByRole('textbox', { name: 'Image 1 reference' }), {
+      target: { value: 'attachment:42' },
+    });
+    expect(store.getState().document?.root[0]?.props['assets']).toEqual(['attachment:42']);
   });
 
   it('edits localized step titles and descriptions with the generated repeater', async () => {

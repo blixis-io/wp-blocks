@@ -52,7 +52,7 @@ P4 adds renderer fallbacks for the catalog's navigation item structures, semanti
 
 P4 also exposes a localized title/description repeater for the existing step renderer and the static timeline element. Both use the same ordered-list output and mark the active step with aria-current.
 
-P5 adds static semantic output for alerts/live regions, native progress indicators with clamped values and optional percentage labels, decorative skeleton/spinner markers, empty-state content, keyboard shortcut text with native kbd markup, and attachment-backed avatar images with localized alt text. Progress, skeletons, spinners, empty states, keyboard shortcuts, and avatars are insertable with generated controls. Dismiss, toast timing, choice/input behavior, charts, and other interactive UI components remain planned until their editor and enhancement contracts exist.
+P5 adds static semantic output for alerts/live regions, native progress indicators with clamped values and optional percentage labels, decorative skeleton/spinner markers, empty-state content, keyboard shortcut text with native kbd markup, and attachment-backed avatar images with localized alt text. Progress, skeletons, spinners, empty states, keyboard shortcuts, and avatars are insertable with generated controls. Avatar groups render attachment-backed images; their lightbox behavior and insertable controls remain planned. Dismiss, toast timing, choice/input behavior, charts, and other interactive UI components remain planned until their editor and enhancement contracts exist.
 
 P7 resolves only a fixed set of current WordPress post/site values (title, plain-text content/excerpt, date, author, category names, and tagline), escapes the result, and uses the authored fallback when no WordPress value is available. Binding metadata is never evaluated as code. Query loops, user/meta-selected fields, filters, and provider embeds remain planned pending bounded query and permission contracts.
 
@@ -60,7 +60,7 @@ P6 form submission and file upload remain planned: the catalog does not define a
 
 ## Instance and compatibility contract
 
-An instance is `{ id, type, props, styles, children }`. IDs are stable. Definition properties supply validation type, enum/options, bounds, defaults, required status, `localizable`, `editorOnly`, and a control. Translatable data stays in locale content streams. `editorOnly` values are excluded from saved frontend props. Unknown types/properties round-trip for forward compatibility and render through the static safe fallback.
+An instance is `{ id, type, props, styles, children }`. IDs are stable. Definition properties supply validation type, enum/options, bounds, defaults, required status, `localizable`, `editorOnly`, and a control. Array validation recursively applies the declared item type in TypeScript and PHP, including attachment-backed `array<asset-ref>` values. Translatable data stays in locale content streams. `editorOnly` values are excluded from saved frontend props. Unknown types/properties round-trip for forward compatibility and render through the static safe fallback.
 
 Type ids map by namespace (`heading` definition ↔ `blixis/heading` saved type). `ElementDefinitionRegistry` resolves the template compatibility ids below without rewriting stored documents. `CoreDocumentRenderer` uses v1 renderers and content contracts for existing v1 element types, and definition metadata plus safe static renderers for the template types. These read aliases are not destructive migrations.
 

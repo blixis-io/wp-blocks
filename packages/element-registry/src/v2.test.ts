@@ -78,6 +78,31 @@ describe('generated v2 element registry', () => {
     ).toEqual(['invalid-property']);
   });
 
+  it('validates arrays using their declared item type', () => {
+    expect(
+      validateElementTreeV2([
+        {
+          id: 'avatar-group-1',
+          type: 'blixis/avatar-group',
+          props: { assets: ['attachment:42', 'asset:profile'] },
+          styles: {},
+          children: [],
+        },
+      ]),
+    ).toEqual([]);
+    expect(
+      validateElementTreeV2([
+        {
+          id: 'avatar-group-2',
+          type: 'blixis/avatar-group',
+          props: { assets: ['javascript:alert(1)'] },
+          styles: {},
+          children: [],
+        },
+      ]).map((issue) => issue.code),
+    ).toEqual(['invalid-property']);
+  });
+
   it('defaults editor entitlement to available and allows a filter override', () => {
     expect(editorElementEntitlementV2('heading')).toBe('available');
     expect(editorElementEntitlementV2('heading', () => 'restricted')).toBe('restricted');
