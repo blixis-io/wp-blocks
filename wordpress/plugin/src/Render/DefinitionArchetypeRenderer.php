@@ -136,6 +136,10 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 			if ( ! is_string( $width ) || ! preg_match( '/^[a-z0-9-]{1,40}$/D', $width ) ) {
 				$width = 'default';
 			} $hooks .= ' data-blx-max-width="' . Escape::attr( $width ) . '"'; }
+		if ( 'back-to-top' === $id ) {
+			$label = $node->value( 'label', $this->translate_label( 'Back to top' ) );
+			return '<a' . $hooks . ' href="#" data-blx-back-to-top>' . Escape::html( is_string( $label ) && '' !== trim( $label ) ? $label : $this->translate_label( 'Back to top' ) ) . '</a>';
+		}
 		if ( in_array( $id, [ 'text','heading','button','site-title','rich-text','paragraph' ], true ) || in_array( $archetype, [ 'text','richtext' ], true ) ) {
 			$value = $node->value( 'content', $node->value( 'text', $node->value( 'label', '' ) ) );
 			if ( is_array( $value ) && array_is_list( $value ) ) {
@@ -177,9 +181,25 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		if ( 'pagination' === $archetype && 'pagination' === $id ) {
 			return $this->render_pagination( $node, $hooks );
 		}
-		if ( 'navigation' === $archetype && in_array( $id, [ 'navigation', 'navigation-menu', 'nav-menu', 'mobile-menu', 'table-of-contents', 'anchor-links', 'mega-menu', 'sidebar-navigation', 'scroll-spy', 'dropdown-menu' ], true ) && is_array( $node->value( 'items', null ) ) ) {
-			$label = $node->value( 'ariaLabel' );
-			return '<nav' . $hooks . ( is_string( $label ) && '' !== trim( $label ) ? ' aria-label="' . Escape::attr( $label ) . '"' : '' ) . '><ul>' . $this->navigation_items( $node->value( 'items', [] ), 0 ) . '</ul></nav>';
+		if ( 'navigation' === $archetype && in_array( $id, [ 'navigation', 'navigation-menu', 'nav-menu', 'mobile-menu', 'table-of-contents', 'anchor-links', 'mega-menu', 'sidebar-navigation', 'scroll-spy', 'sticky-header', 'dropdown-menu' ], true ) && is_array( $node->value( 'items', null ) ) ) {
+			$default_label = match ( $id ) {
+				'mobile-menu' => $this->translate_label( 'Mobile navigation' ),
+				'sidebar-navigation' => $this->translate_label( 'Sidebar navigation' ),
+				default => $this->translate_label( 'Navigation' ),
+			};
+			$label = $node->value( 'ariaLabel', $default_label );
+			$label = is_string( $label ) && '' !== trim( $label ) ? $label : $default_label;
+			$list  = '<ul>' . $this->navigation_items( $node->value( 'items', [] ), 0 ) . '</ul>';
+			$nav   = '<nav aria-label="' . Escape::attr( $label ) . '">' . $list . '</nav>';
+			if ( 'mobile-menu' === $id ) {
+				return '<details' . $hooks . ' data-blx-mobile-menu><summary>' . Escape::html( $this->translate_label( 'Menu' ) ) . '</summary>' . $nav . '</details>';
+			}
+			if ( 'sticky-header' === $id ) {
+				$offset = $node->value( 'stickyOffset', 0 );
+				$offset = is_numeric( $offset ) && is_finite( (float) $offset ) ? max( 0, min( 256, (float) $offset ) ) : 0;
+				return '<header' . $hooks . ' data-blx-sticky-header style="--blx-sticky-offset:' . Escape::attr( sprintf( '%g', $offset ) ) . 'px">' . $nav . '</header>';
+			}
+			return '<nav' . $hooks . ' data-blx-navigation-orientation="' . Escape::attr( $node->value( 'orientation', 'horizontal' ) === 'vertical' ? 'vertical' : 'horizontal' ) . '"' . ( 'scroll-spy' === $id ? ' data-blx-scroll-spy' : '' ) . ' aria-label="' . Escape::attr( $label ) . '">' . $list . '</nav>';
 		}
 		if ( 'accordion' === $archetype ) {
 			return $this->render_accordion( $node, $hooks );
@@ -1267,12 +1287,18 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 			return $label;
 		}
 		return match ( $label ) {
+			'Back to top' => __( 'Back to top', 'blixis-builder' ),
 			'Breadcrumb' => __( 'Breadcrumb', 'blixis-builder' ),
+			'Menu' => __( 'Menu', 'blixis-builder' ),
+			'Mobile navigation' => __( 'Mobile navigation', 'blixis-builder' ),
+			'Navigation' => __( 'Navigation', 'blixis-builder' ),
 			'Pagination' => __( 'Pagination', 'blixis-builder' ),
 			'Previous'  => __( 'Previous', 'blixis-builder' ),
 			'Next'      => __( 'Next', 'blixis-builder' ),
 			'Load more' => __( 'Load more', 'blixis-builder' ),
 			'Progress' => __( 'Progress', 'blixis-builder' ),
+			'Sidebar navigation' => __( 'Sidebar navigation', 'blixis-builder' ),
+			'Sections' => __( 'Sections', 'blixis-builder' ),
 			default     => $label,
 		};
 	}

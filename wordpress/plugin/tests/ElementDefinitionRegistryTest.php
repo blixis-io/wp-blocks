@@ -403,7 +403,7 @@ final class ElementDefinitionRegistryTest extends TestCase {
 			)
 		);
 		$this->assertSame(
-			'<nav data-blx-id="toc-1" data-blx-type="blixis/table-of-contents" aria-label="On this page"><ul><li><a href="#getting-started">Getting started</a></li></ul></nav>',
+			'<nav data-blx-id="toc-1" data-blx-type="blixis/table-of-contents" data-blx-navigation-orientation="horizontal" aria-label="On this page"><ul><li><a href="#getting-started">Getting started</a></li></ul></nav>',
 			$renderer->render(
 				new ElementNode(
 					'toc-1',
@@ -1126,6 +1126,47 @@ final class ElementDefinitionRegistryTest extends TestCase {
 				),
 				new RenderContext()
 			)
+		);
+		$this->assertSame(
+			'<details data-blx-id="mobile-1" data-blx-type="blixis/mobile-menu" data-blx-mobile-menu><summary>Menu</summary><nav aria-label="Mobile navigation"><ul><li><a href="/">Home</a></li></ul></nav></details>',
+			$renderer->render(
+				new ElementNode(
+					'mobile-1',
+					'blixis/mobile-menu',
+					[
+						'items' => [
+							[
+								'label' => 'Home',
+								'href'  => '/',
+							],
+						],
+					]
+				),
+				new RenderContext()
+			)
+		);
+		$this->assertSame(
+			'<header data-blx-id="sticky-1" data-blx-type="blixis/sticky-header" data-blx-sticky-header style="--blx-sticky-offset:256px"><nav aria-label="Navigation"><ul><li><a href="/">Home</a></li></ul></nav></header>',
+			$renderer->render(
+				new ElementNode(
+					'sticky-1',
+					'blixis/sticky-header',
+					[
+						'items'        => [
+							[
+								'label' => 'Home',
+								'href'  => '/',
+							],
+						],
+						'stickyOffset' => 999,
+					]
+				),
+				new RenderContext()
+			)
+		);
+		$this->assertSame(
+			'<a data-blx-id="top-1" data-blx-type="blixis/back-to-top" href="#" data-blx-back-to-top>Back to top</a>',
+			$renderer->render( new ElementNode( 'top-1', 'blixis/back-to-top', [] ), new RenderContext() )
 		);
 	}
 }

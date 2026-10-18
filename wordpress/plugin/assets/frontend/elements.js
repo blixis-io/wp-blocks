@@ -272,6 +272,47 @@
     viewer.addEventListener('pointercancel', finish);
   };
 
+  const initScrollSpy = (root) => {
+    if (root.dataset.blxScrollSpyReady === 'true' || typeof window.IntersectionObserver !== 'function') return;
+    const links = Array.from(root.querySelectorAll('a[href]'));
+    const targets = links
+      .map((link) => {
+        let url;
+        try {
+          url = new window.URL(link.getAttribute('href') || '', window.location.href);
+        } catch {
+          return null;
+        }
+        if (url.origin !== window.location.origin || !url.hash) return null;
+        let id;
+        try {
+          id = decodeURIComponent(url.hash.slice(1));
+        } catch {
+          return null;
+        }
+        const target = document.getElementById(id);
+        return target ? { link, target } : null;
+      })
+      .filter((entry) => entry !== null);
+    if (targets.length === 0) return;
+
+    root.dataset.blxScrollSpyReady = 'true';
+    const visible = new Map();
+    const observer = new window.IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => visible.set(entry.target, entry.isIntersecting));
+        const current = targets
+          .filter(({ target }) => visible.get(target))
+          .map((entry) => ({ ...entry, top: entry.target.getBoundingClientRect().top }))
+          .sort((left, right) => Math.abs(left.top) - Math.abs(right.top))[0];
+        targets.forEach(({ link }) => link.removeAttribute('aria-current'));
+        current?.link.setAttribute('aria-current', 'location');
+      },
+      { rootMargin: '0px 0px -65% 0px', threshold: 0 },
+    );
+    targets.forEach(({ target }) => observer.observe(target));
+  };
+
   const initActionButton = (button) => {
     if (button.dataset.blxActionReady === 'true') return;
     button.dataset.blxActionReady = 'true';
@@ -396,6 +437,7 @@
     document.querySelectorAll('[data-blx-panorama]').forEach(initPanorama);
     document.querySelectorAll('[data-blx-accordion]').forEach(initAccordion);
     document.querySelectorAll('[data-blx-tabs]').forEach(initTabs);
+    document.querySelectorAll('[data-blx-scroll-spy]').forEach(initScrollSpy);
   };
   window.blxInitMarquee = initMarquee;
   window.blxInitResizablePanels = initResizablePanels;
@@ -408,6 +450,7 @@
   window.blxInitPanorama = initPanorama;
   window.blxInitAccordion = initAccordion;
   window.blxInitTabs = initTabs;
+  window.blxInitScrollSpy = initScrollSpy;
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
   else init();
 })();

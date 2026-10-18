@@ -14,7 +14,14 @@ namespace Blixis\Builder\Frontend;
 final class ContentElementsCss {
 	/** Return deterministic, scoped CSS. */
 	public static function css(): string {
-		return '[data-blx-code-line-numbers]{counter-reset:blx-code-line}'
+		return '[data-blx-sticky-header]{position:sticky;inset-block-start:var(--blx-sticky-offset,0px);z-index:20;background:Canvas;color:CanvasText}'
+			. '[data-blx-mobile-menu] > summary{cursor:pointer;padding:.55rem .8rem}'
+			. '[data-blx-mobile-menu] > summary:focus-visible{outline:2px solid currentColor;outline-offset:2px}'
+			. '[data-blx-mobile-menu] nav ul{display:flex;flex-direction:column;gap:.25rem;list-style:none;margin:0;padding:.5rem 0}'
+			. '[data-blx-mobile-menu] nav a{display:block;padding:.45rem .65rem;color:inherit}'
+			. '[data-blx-navigation-orientation="vertical"] ul{display:flex;flex-direction:column;gap:.25rem;list-style:none;margin:0;padding:0}'
+			. '[data-blx-navigation-orientation="horizontal"] ul{display:flex;flex-wrap:wrap;gap:.5rem 1rem;list-style:none;margin:0;padding:0}'
+			. '[data-blx-code-line-numbers]{counter-reset:blx-code-line}'
 			. '[data-blx-tabs] nav[role="tablist"] ul{display:flex;flex-wrap:wrap;gap:.25rem;list-style:none;margin:0;padding:0;border-block-end:1px solid currentColor}'
 			. '[data-blx-tabs][data-blx-tabs-orientation="vertical"] nav[role="tablist"] ul{flex-direction:column;align-items:stretch;border-block-end:0;border-inline-start:1px solid currentColor}'
 			. '[data-blx-tabs] [role="tab"]{display:block;padding:.55rem .8rem;border:0;border-block-end:.2rem solid transparent;background:transparent;color:inherit;font:inherit;text-decoration:none}'
@@ -49,6 +56,7 @@ final class ContentElementsCss {
 			. '[data-blx-image-comparison][data-blx-comparison-ready] [data-blx-comparison-canvas]{display:block;position:relative;overflow:hidden}'
 			. '[data-blx-image-comparison][data-blx-comparison-ready] [data-blx-comparison-after]{position:absolute;inset:0;clip-path:inset(0 calc(100% - var(--blx-comparison-position,50%)) 0 0)}'
 			. '[data-blx-comparison-label]{display:flex;align-items:center;gap:.75rem}[data-blx-comparison-label] input{flex:1;min-width:8rem}'
+			. '@media(min-width:48rem){[data-blx-mobile-menu]>summary{display:none}[data-blx-mobile-menu]>nav{display:block!important}[data-blx-mobile-menu]>nav>ul{flex-direction:row;flex-wrap:wrap}}'
 			. '@media(prefers-reduced-motion:reduce){[data-blx-animated-headline] [data-blx-headline-part]{animation:none}}';
 	}
 }
