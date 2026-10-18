@@ -1584,6 +1584,21 @@ describe('Inspector controls', () => {
     expect(store.getState().document?.root[0]?.style?.[0]?.declarations['aspect-ratio']).toBe('16 / 9');
   });
 
+  it('makes scroll areas keyboard reachable and exposes bounded scroll styles', async () => {
+    const { store } = await mount('blixis/scroll-area', { tab: 'style' });
+    fireEvent.change(screen.getByRole('combobox', { name: 'Vertical overflow' }), {
+      target: { value: 'auto' },
+    });
+    fireEvent.change(screen.getByRole('combobox', { name: 'Maximum height' }), {
+      target: { value: 'custom' },
+    });
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'Custom maximum height' }), {
+      target: { value: '320' },
+    });
+    expect(store.getState().document?.root[0]?.style?.[0]?.declarations['overflow-y']).toBe('auto');
+    expect(store.getState().document?.root[0]?.style?.[0]?.declarations['max-height']).toBe('320px');
+  });
+
   it.each(['blixis/section', 'blixis/container', 'blixis/heading', 'blixis/text', 'blixis/image', 'blixis/button'])(
     'renders all supported Style sections for %s and keeps disabled gradient placeholder',
     async (type) => {

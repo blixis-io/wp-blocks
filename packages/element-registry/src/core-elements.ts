@@ -262,6 +262,7 @@ export function createEditorRegistry(): ElementRegistry {
     'row',
     'flex',
     'aspect-ratio',
+    'scroll-area',
     'columns',
     'grid',
     'card',
@@ -461,6 +462,7 @@ export function createEditorRegistry(): ElementRegistry {
             'overflow-y',
             'position',
             'min-height',
+            'max-height',
           ].includes(property),
         ),
       allowedParents:

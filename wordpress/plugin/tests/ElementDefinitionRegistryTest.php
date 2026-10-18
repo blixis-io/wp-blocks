@@ -115,6 +115,13 @@ final class ElementDefinitionRegistryTest extends TestCase {
 			)
 		);
 		$this->assertSame(
+			'<div data-blx-id="scroll-1" data-blx-type="blixis/scroll-area" aria-label="More &amp; content" data-blx-scroll-area tabindex="0" role="region"><p>Scrollable</p></div>',
+			$renderer->render(
+				new ElementNode( 'scroll-1', 'blixis/scroll-area', [ 'ariaLabel' => 'More & content' ] ),
+				new RenderContext( '<p>Scrollable</p>' )
+			)
+		);
+		$this->assertSame(
 			'<blockquote data-blx-id="quote-1" data-blx-type="blixis/blockquote">Evidence &amp; context</blockquote>',
 			$renderer->render( new ElementNode( 'quote-1', 'blixis/blockquote', [ 'content' => 'Evidence & context' ] ), new RenderContext() )
 		);

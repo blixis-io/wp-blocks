@@ -289,6 +289,8 @@ export const en_US = {
   'inspector.style.height': 'Height',
   'inspector.style.customWidth': 'Custom width',
   'inspector.style.customHeight': 'Custom height',
+  'inspector.style.maxHeight': 'Maximum height',
+  'inspector.style.customMaxHeight': 'Custom maximum height',
   'inspector.style.display': 'Display',
   'inspector.style.aspectRatio': 'Aspect ratio',
   'inspector.style.flexDirection': 'Flex direction',

@@ -33,6 +33,7 @@ const editorReady = new Set([
   'row',
   'flex',
   'aspect-ratio',
+  'scroll-area',
   'columns',
   'grid',
   'card',

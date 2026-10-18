@@ -140,11 +140,11 @@ export function StyleControl({
     const translated = t(key as never);
     return translated === key ? humanizeTokenName(name, locale === 'nl_NL' ? 'nl_NL' : 'en_US') : translated;
   };
-  const isDimension = field.id === 'width' || field.id === 'height';
+  const isDimension = ['width', 'height', 'max-height'].includes(field.id);
   const dimensionUnit = typeof value === 'string' ? (/([a-z%]+)$/i.exec(value)?.[1] ?? 'px') : 'px';
   const dimensionRange = styleSliderRange(field.id, dimensionUnit) ?? { min: 0, max: 5000, step: 1 };
   const selectedCustomWidth =
-    customWidth || (isDimension && typeof value === 'string' && !['auto', '100%'].includes(value));
+    customWidth || (isDimension && typeof value === 'string' && !['auto', '100%', 'none'].includes(value));
   const nextViewport = viewport === 'desktop' ? 'tablet' : viewport === 'tablet' ? 'mobile' : 'desktop';
   const update = (next: string | null, coalesceWindowMs?: number) => {
     const declarations =
@@ -183,6 +183,7 @@ export function StyleControl({
     'text-align': ['left', 'center', 'right', 'justify'],
     width: ['auto', '100%', 'custom'],
     height: ['auto', 'custom'],
+    'max-height': ['none', 'custom'],
     display: ['block', 'inline', 'inline-block'],
     'aspect-ratio': ['auto', '1 / 1', '4 / 3', '3 / 2', '16 / 9', '21 / 9', '9 / 16'],
     'flex-direction': ['row', 'row-reverse', 'column', 'column-reverse'],
@@ -212,6 +213,7 @@ export function StyleControl({
         'overflow-x',
         'overflow-y',
         'position',
+        'max-height',
       ].includes(field.id)
     )
       return choice;
@@ -230,6 +232,7 @@ export function StyleControl({
     'border-width': ['px'],
   };
   const units = sliderUnits[field.id];
+  const dimensionUnits = field.id === 'max-height' ? ['px', 'rem', 'vh', 'dvh', '%'] : ['px', 'rem', 'em', '%', 'vw'];
   const rawNumber = typeof value === 'string' ? (tokenFontSizes[value] ?? Number.parseFloat(value)) : Number.NaN;
   const numberValue = Number.isFinite(rawNumber)
     ? rawNumber
@@ -338,10 +341,16 @@ export function StyleControl({
         {isDimension && selectedCustomWidth ? (
           <NumberWithUnit
             id={`${id}-custom`}
-            label={t(field.id === 'width' ? 'inspector.style.customWidth' : 'inspector.style.customHeight')}
+            label={t(
+              field.id === 'width'
+                ? 'inspector.style.customWidth'
+                : field.id === 'max-height'
+                  ? 'inspector.style.customMaxHeight'
+                  : 'inspector.style.customHeight',
+            )}
             value={typeof value === 'string' ? Number.parseFloat(value) || 0 : 0}
             unit={dimensionUnit}
-            units={['px', 'rem', 'em', '%', 'vw']}
+            units={dimensionUnits}
             min={dimensionRange.min}
             max={dimensionRange.max}
             step={dimensionRange.step}

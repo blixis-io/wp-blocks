@@ -5500,6 +5500,29 @@
               "dvh"
             ],
             "default": null
+          },
+          "maxHeight": {
+            "type": "css-length",
+            "units": [
+              "px",
+              "rem",
+              "vh",
+              "dvh",
+              "%",
+              "none"
+            ],
+            "default": null
+          },
+          "overflowY": {
+            "type": "enum",
+            "options": [
+              "visible",
+              "hidden",
+              "clip",
+              "scroll",
+              "auto"
+            ],
+            "default": null
           }
         },
         "defaultValues": {},
@@ -5664,7 +5687,7 @@
         ]
       },
       "archetype": "container",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
