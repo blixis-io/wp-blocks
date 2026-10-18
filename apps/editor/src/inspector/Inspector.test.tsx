@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createCoreRegistry } from '@blixis/wp-element-registry';
@@ -999,6 +999,19 @@ describe('Inspector controls', () => {
     fireEvent.click(await screen.findByRole('option', { name: /Gallery video/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Use video' }));
     expect(store.getState().document?.root[0]?.props['src']).toBe('attachment:43');
+  });
+
+  it('edits bounded, accessible image hotspot locations', async () => {
+    const { store } = await mount('blixis/image-hotspots', { tab: 'content' });
+    fireEvent.click(screen.getByRole('button', { name: 'Add hotspot' }));
+    await waitFor(() => {
+      expect(store.getState().document?.root[0]?.props['hotspots']).toEqual([{ label: '', x: 50, y: 50, href: '' }]);
+    });
+    fireEvent.change(screen.getByRole('textbox', { name: 'Hotspot 1 label' }), { target: { value: 'Window' } });
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'Horizontal position (%)' }), { target: { value: '35' } });
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'Vertical position (%)' }), { target: { value: '60' } });
+    const hotspots = store.getState().document?.root[0]?.props['hotspots'];
+    expect(hotspots).toEqual([{ label: 'Window', x: 35, y: 60, href: '' }]);
   });
 
   it('stores avatar attachment references and localizes alternative text', async () => {

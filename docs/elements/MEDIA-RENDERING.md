@@ -11,3 +11,5 @@ Maps default to `consentRequired: true`. In that mode the page renders a load bu
 ## Video backgrounds
 
 Video backgrounds resolve an approved WordPress video attachment and optional image poster. They render native video with inline playback, metadata preload, and decorative `aria-hidden` treatment when controls and an accessible label are absent. Autoplay forces muted playback. Captions render only when the selected attachment resolves as `text/vtt`; the track language follows the WordPress site locale.
+
+Image hotspots use an approved image attachment, bounded percentage coordinates and at most 32 markers. The frontend overlays numbered pins and prints each label in a keyboard-accessible list; unsafe destination URLs become plain labels. When a panorama renderer is unavailable, the definition keeps its validated image as the static fallback.

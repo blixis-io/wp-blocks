@@ -51,7 +51,7 @@ final class DefinitionPropsValidator {
 	private function value( array $property, mixed $value ): bool {
 		$type = $property['type'] ?? '';
 		if ( is_string( $type ) && str_starts_with( $type, 'array<' ) && str_ends_with( $type, '>' ) ) {
-			if ( ! is_array( $value ) || ! array_is_list( $value ) ) {
+			if ( ! is_array( $value ) || ! array_is_list( $value ) || ( isset( $property['maxItems'] ) && count( $value ) > (int) $property['maxItems'] ) ) {
 				return false;
 			}
 			$item_property         = $property;

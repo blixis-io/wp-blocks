@@ -65,6 +65,15 @@ final class DefinitionPropsValidatorTest extends TestCase {
 		$this->assertFalse( $validator->accepts( $invalid ) );
 	}
 
+	/** Hotspot lists are bounded by their generated property contract. */
+	public function test_enforces_definition_array_item_limits(): void {
+		$validator = new DefinitionPropsValidator( ElementDefinitionRegistry::from_manifest_file( dirname( __DIR__ ) . '/data/element-definitions-v2.json' ) );
+		$valid     = json_decode( '{"id":"hotspots-1","type":"blixis/image-hotspots","props":{"hotspots":[{"label":"One","x":20,"y":30}]},"children":[]}' );
+		$too_many  = json_decode( '{"id":"hotspots-1","type":"blixis/image-hotspots","props":{"hotspots":[' . implode( ',', array_fill( 0, 33, '{"label":"One","x":20,"y":30}' ) ) . ']},"children":[]}' );
+		$this->assertTrue( $validator->accepts( $valid ) );
+		$this->assertFalse( $validator->accepts( $too_many ) );
+	}
+
 	/** Icon references accept only the glyphs that the local SVG renderer can safely draw. */
 	public function test_validates_local_icon_references(): void {
 		$validator = new DefinitionPropsValidator( ElementDefinitionRegistry::from_manifest_file( dirname( __DIR__ ) . '/data/element-definitions-v2.json' ) );

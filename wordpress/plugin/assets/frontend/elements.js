@@ -133,7 +133,7 @@
       if (
         url.protocol !== 'https:' ||
         !['www.openstreetmap.org', 'maps.google.com'].includes(url.hostname) ||
-        !url.pathname.includes('embed') && !url.hostname.startsWith('maps.google.com')
+        (!url.pathname.includes('embed') && !url.hostname.startsWith('maps.google.com'))
       )
         return;
       const frame = document.createElement('iframe');

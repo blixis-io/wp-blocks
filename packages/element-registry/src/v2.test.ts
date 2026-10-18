@@ -126,6 +126,31 @@ describe('generated v2 element registry', () => {
     ).toEqual(['invalid-property']);
   });
 
+  it('enforces documented array item limits', () => {
+    expect(
+      validateElementTreeV2([
+        {
+          id: 'hotspots-1',
+          type: 'blixis/image-hotspots',
+          props: { hotspots: [{ label: 'Door', x: 50, y: 50 }] },
+          styles: {},
+          children: [],
+        },
+      ]),
+    ).toEqual([]);
+    expect(
+      validateElementTreeV2([
+        {
+          id: 'hotspots-2',
+          type: 'blixis/image-hotspots',
+          props: { hotspots: Array.from({ length: 33 }, () => ({ label: 'Door', x: 50, y: 50 })) },
+          styles: {},
+          children: [],
+        },
+      ]).map((issue) => issue.code),
+    ).toEqual(['invalid-property']);
+  });
+
   it('defaults editor entitlement to available and allows a filter override', () => {
     expect(editorElementEntitlementV2('heading')).toBe('available');
     expect(editorElementEntitlementV2('heading', () => 'restricted')).toBe('restricted');
