@@ -204,6 +204,21 @@ final class ElementDefinitionRegistryTest extends TestCase {
 		$this->assertStringContainsString( 'role="img" aria-label="Complete"', $icon );
 		$this->assertStringContainsString( '<circle cx="12" cy="12" r="9"/>', $icon );
 		$this->assertTrue( PreviewSanitizer::accepts( $icon ) );
+		$icon_svg = $renderer->render(
+			new ElementNode(
+				'icon-svg-1',
+				'blixis/icon-svg',
+				[
+					'icon'       => 'solar:info-circle-linear',
+					'size'       => 128,
+					'decorative' => true,
+				],
+			),
+			new RenderContext()
+		);
+		$this->assertStringContainsString( 'width="128" height="128"', $icon_svg );
+		$this->assertStringContainsString( '<path d="M12 11v5m0-8h.01"/>', $icon_svg );
+		$this->assertTrue( PreviewSanitizer::accepts( $icon_svg ) );
 		$list = $renderer->render(
 			new ElementNode(
 				'icon-list-1',

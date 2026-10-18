@@ -98,6 +98,16 @@ $layout  = static fn ( int $n, string $color ): string => wp_json_encode(
 				'props'    => (object) [ 'content' => 'Text content' ],
 				'children' => [],
 			],
+			[
+				'id'       => 'el-icon-svg',
+				'type'     => 'blixis/icon-svg',
+				'props'    => (object) [
+					'icon'       => 'solar:info-circle-linear',
+					'size'       => 48,
+					'decorative' => true,
+				],
+				'children' => [],
+			],
 		],
 	]
 );

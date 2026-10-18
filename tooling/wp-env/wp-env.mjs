@@ -1147,6 +1147,12 @@ async function smoke() {
                   children: [],
                 },
                 {
+                  id: 'icon-svg1',
+                  type: 'blixis/icon-svg',
+                  props: { icon: 'solar:info-circle-linear', size: 48, decorative: true },
+                  children: [],
+                },
+                {
                   id: 'icon-list1',
                   type: 'blixis/icon-list',
                   props: { listStyle: 'check', items: [{ id: 'item1', text: 'Safe item' }] },
@@ -1243,6 +1249,12 @@ async function smoke() {
             (richBody.html ?? '').includes('data-blx-icon-list') &&
             (richBody.html ?? '').includes('data-blx-action="custom-event"'),
           'P2 content elements render accessible server previews',
+        );
+        check(
+          (richBody.html ?? '').includes('data-blx-id="icon-svg1"') &&
+            (richBody.html ?? '').includes('data-blx-icon="solar:info-circle-linear"') &&
+            (richBody.html ?? '').includes('width="48" height="48"'),
+          'the media icon renders allowlisted local SVG geometry with its configured size',
         );
         check(
           (richBody.html ?? '').includes('<nav data-blx-id="toc1"') &&
@@ -1380,6 +1392,12 @@ async function smoke() {
             html.includes('@keyframes blx-headline-in') &&
             html.includes('data-blx-code-token="keyword"'),
           'published P2 content uses accessible fallbacks and reduced-motion styles',
+        );
+        check(
+          html.includes('data-blx-id="el-icon-svg"') &&
+            html.includes('data-blx-icon="solar:info-circle-linear"') &&
+            html.includes('width="48" height="48"'),
+          'published media icons render the local SVG fallback without frontend JavaScript',
         );
         // A WordPress nonce is bound to the user's session token, so mint the nonces and the logged-in cookie in one session.
         const previewSession = JSON.parse(

@@ -111,7 +111,7 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		if ( 'icon-list' === $id ) {
 			return $this->render_icon_list( $node, $hooks );
 		}
-		if ( 'icon' === $id ) {
+		if ( in_array( $id, [ 'icon', 'icon-svg' ], true ) ) {
 			return $this->render_icon( $node, $hooks );
 		}
 		if ( 'icon-button' === $id ) {
@@ -660,11 +660,13 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 	 */
 	private function render_icon( ElementNode $node, string $hooks ): string {
 		$icon       = $node->value( 'icon', 'solar:star-linear' );
-		$icon       = is_string( $icon ) && 1 === preg_match( '/^solar:[a-z0-9-]{1,64}$/D', $icon ) ? $icon : 'solar:star-linear';
+		$icon       = is_string( $icon ) && in_array( $icon, [ 'solar:star-linear', 'solar:check-circle-linear', 'solar:info-circle-linear' ], true ) ? $icon : 'solar:star-linear';
 		$decorative = true === $node->value( 'decorative', true );
 		$label      = $node->value( 'ariaLabel', '' );
 		$label      = is_string( $label ) ? trim( $label ) : '';
-		$svg        = $this->icon_svg( $icon );
+		$size       = $node->value( 'size', 24 );
+		$size       = is_numeric( $size ) ? max( 8, min( 128, (int) $size ) ) : 24;
+		$svg        = $this->icon_svg( $icon, $size );
 		return '<span' . $hooks . ( $decorative || '' === $label ? ' aria-hidden="true"' : ' role="img" aria-label="' . Escape::attr( $label ) . '"' ) . ' data-blx-icon="' . Escape::attr( $icon ) . '">' . $svg . '</span>';
 	}
 
@@ -781,15 +783,17 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 	/** Return a small inline symbol for known Solar icon references.
 	 *
 	 * @param string $icon Icon reference.
+	 * @param int    $size Icon size in CSS pixels.
 	 */
-	private function icon_svg( string $icon ): string {
+	private function icon_svg( string $icon, int $size = 24 ): string {
 		$paths = [
 			'solar:star-linear'         => '<path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3l-5.6 2.9 1.1-6.2L3 9.6l6.2-.9L12 3Z"/>',
 			'solar:check-circle-linear' => '<circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/>',
 			'solar:info-circle-linear'  => '<circle cx="12" cy="12" r="9"/><path d="M12 11v5m0-8h.01"/>',
 		];
 		$path  = $paths[ $icon ] ?? $paths['solar:star-linear'];
-		return '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" focusable="false" aria-hidden="true">' . $path . '</svg>';
+		$size  = max( 8, min( 128, $size ) );
+		return '<svg viewBox="0 0 24 24" width="' . $size . '" height="' . $size . '" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" focusable="false" aria-hidden="true">' . $path . '</svg>';
 	}
 
 	/** Render child panels with keyboard-operable native separators.

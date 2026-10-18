@@ -95,7 +95,7 @@ export function GeneratedControls({ element, editable }: { element: ElementNode;
                   />
                 </label>
               );
-            if (control === 'select')
+            if (control === 'select' || control === 'icon-picker')
               return (
                 <div className="blx-inspector-field" key={name}>
                   <label htmlFor={id}>{label}</label>
@@ -106,7 +106,12 @@ export function GeneratedControls({ element, editable }: { element: ElementNode;
                       commit(name, property, event.currentTarget.value);
                     }}
                   >
-                    {(Array.isArray(property['options']) ? property['options'] : []).map((option) => (
+                    {(Array.isArray(property['options'])
+                      ? property['options']
+                      : control === 'icon-picker'
+                        ? ['solar:star-linear', 'solar:check-circle-linear', 'solar:info-circle-linear']
+                        : []
+                    ).map((option) => (
                       <option key={String(option)} value={String(option)}>
                         {String(option)}
                       </option>

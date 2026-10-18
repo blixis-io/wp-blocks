@@ -138,8 +138,8 @@ final class PreviewSanitizer {
 	private static function accepts_svg_attribute( string $key, string $value ): bool {
 		$patterns = [
 			'viewbox'         => '/^0 0 24 24$/D',
-			'width'           => '/^(?:1em|[0-9]{1,2})$/D',
-			'height'          => '/^(?:1em|[0-9]{1,2})$/D',
+			'width'           => '/^(?:1em|[1-9][0-9]?|1[01][0-9]|12[0-8])$/D',
+			'height'          => '/^(?:1em|[1-9][0-9]?|1[01][0-9]|12[0-8])$/D',
 			'fill'            => '/^(?:none|currentColor)$/D',
 			'stroke'          => '/^(?:none|currentColor)$/D',
 			'stroke-width'    => '/^(?:[0-9](?:\.[0-9]{1,2})?)$/D',

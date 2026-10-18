@@ -106,6 +106,8 @@ The preview response adds a final markup boundary after rendering. It rejects ex
 
 Generated `array<asset-ref>` controls open the shared, permission-aware media library for each selection and save canonical `attachment:<id>` references. The inspector caps selections at the definition's `maxItems` (up to 32) and removes items without accepting arbitrary URLs or attachment identifiers.
 
+The `icon` and `icon-svg` definitions offer only the three Solar glyphs rendered from local path data. Their size setting is bounded to 8–128 pixels, and the server and preview boundary validate the emitted SVG tags and geometry attributes.
+
 ## Entitlement and status
 
 Tier is metadata. `blixis_builder_element_entitlement` and its editor-side equivalent default to `available`; neither controls saved-content rendering. Server-side restrictions on editing/additional actions are applied later. Planned elements are not insertable by default and appear in a dev-only planned group with `showPlannedElements`.

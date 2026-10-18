@@ -11240,6 +11240,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
         description: 'Full Iconify identifier (solar namespace).',
         required: false,
         control: 'icon-picker',
+        options: ['solar:star-linear', 'solar:check-circle-linear', 'solar:info-circle-linear'],
       },
       size: { type: 'number', default: 24, description: 'Numeric setting.', required: false, control: 'number' },
       decorative: {
@@ -11380,7 +11381,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'icon',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -70475,7 +70476,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'media',
     icon: 'solar:gallery-minimalistic-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'icon-svg icon svg media icon svg element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
