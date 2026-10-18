@@ -20757,7 +20757,7 @@
         ]
       },
       "archetype": "gallery",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -21153,7 +21153,7 @@
         ]
       },
       "archetype": "gallery",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",

@@ -201,3 +201,12 @@ msgstr "Aftellen voltooid"
 
 msgid "This action is not available yet."
 msgstr "Deze actie is nog niet beschikbaar."
+
+msgid "Image preview"
+msgstr "Afbeeldingsvoorbeeld"
+
+msgid "Close image preview"
+msgstr "Afbeeldingsvoorbeeld sluiten"
+
+msgid "Open image"
+msgstr "Afbeelding openen"

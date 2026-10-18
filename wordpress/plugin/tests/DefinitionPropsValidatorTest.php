@@ -64,4 +64,13 @@ final class DefinitionPropsValidatorTest extends TestCase {
 		$this->assertTrue( $validator->accepts( $valid ) );
 		$this->assertFalse( $validator->accepts( $invalid ) );
 	}
+
+	/** Icon references accept only the glyphs that the local SVG renderer can safely draw. */
+	public function test_validates_local_icon_references(): void {
+		$validator = new DefinitionPropsValidator( ElementDefinitionRegistry::from_manifest_file( dirname( __DIR__ ) . '/data/element-definitions-v2.json' ) );
+		$valid     = json_decode( '{"id":"icon-svg1","type":"blixis/icon-svg","props":{"icon":"solar:info-circle-linear","size":48},"children":[]}' );
+		$invalid   = json_decode( '{"id":"icon-svg1","type":"blixis/icon-svg","props":{"icon":"evil:script"},"children":[]}' );
+		$this->assertTrue( $validator->accepts( $valid ) );
+		$this->assertFalse( $validator->accepts( $invalid ) );
+	}
 }

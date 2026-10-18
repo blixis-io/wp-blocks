@@ -459,7 +459,7 @@
       "category": "media",
       "icon": "solar:gallery-linear",
       "tier": "plus",
-      "status": "planned",
+      "status": "ready",
       "keywords": "gallery gallery media gallery element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
     },
     {
@@ -469,7 +469,7 @@
       "category": "media",
       "icon": "solar:full-screen-linear",
       "tier": "plus",
-      "status": "planned",
+      "status": "ready",
       "keywords": "lightbox lightbox media lightbox element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
     },
     {

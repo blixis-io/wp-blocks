@@ -61,6 +61,47 @@
     update();
   };
 
+  const initLightbox = (root) => {
+    const triggers = Array.from(root.querySelectorAll('a[data-blx-lightbox-trigger]'));
+    if (root.dataset.blxLightboxReady === 'true' || triggers.length === 0) return;
+    root.dataset.blxLightboxReady = 'true';
+    triggers.forEach((trigger) => {
+      trigger.addEventListener('click', (event) => {
+        const url = trigger.getAttribute('href');
+        if (!url) return;
+        const dialog = document.createElement('dialog');
+        if (typeof dialog.showModal !== 'function') return;
+        event.preventDefault();
+        dialog.setAttribute('aria-label', root.getAttribute('data-blx-lightbox-label') || 'Image preview');
+        dialog.className = 'blx-lightbox-dialog';
+        const close = document.createElement('button');
+        close.type = 'button';
+        close.className = 'blx-lightbox-close';
+        close.setAttribute('aria-label', root.getAttribute('data-blx-lightbox-close') || 'Close image preview');
+        close.textContent = '×';
+        close.addEventListener('click', () => dialog.close());
+        const image = document.createElement('img');
+        image.src = url;
+        image.alt = trigger.querySelector('img')?.alt || '';
+        dialog.append(close, image);
+        dialog.addEventListener('click', (closeEvent) => {
+          if (closeEvent.target === dialog) dialog.close();
+        });
+        dialog.addEventListener(
+          'close',
+          () => {
+            dialog.remove();
+            trigger.focus();
+          },
+          { once: true },
+        );
+        root.append(dialog);
+        dialog.showModal();
+        close.focus();
+      });
+    });
+  };
+
   const initActionButton = (button) => {
     if (button.dataset.blxActionReady === 'true') return;
     button.dataset.blxActionReady = 'true';
@@ -179,12 +220,14 @@
     document.querySelectorAll('[data-blx-code-block]').forEach(initCodeBlock);
     document.querySelectorAll('[data-blx-countdown]').forEach(initCountdown);
     document.querySelectorAll('[data-blx-action]').forEach(initActionButton);
+    document.querySelectorAll('[data-blx-lightbox-gallery]').forEach(initLightbox);
   };
   window.blxInitMarquee = initMarquee;
   window.blxInitResizablePanels = initResizablePanels;
   window.blxInitCodeBlock = initCodeBlock;
   window.blxInitCountdown = initCountdown;
   window.blxInitActionButton = initActionButton;
+  window.blxInitLightbox = initLightbox;
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
   else init();
 })();
