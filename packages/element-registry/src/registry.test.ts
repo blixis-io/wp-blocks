@@ -370,6 +370,7 @@ describe('generated editor registry', () => {
       'columns',
       'grid',
       'card',
+      'avatar',
       'navigation',
       'site-header',
       'site-footer',

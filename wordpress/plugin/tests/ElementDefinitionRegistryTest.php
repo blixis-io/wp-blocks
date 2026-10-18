@@ -32,6 +32,7 @@ final class ElementDefinitionRegistryTest extends TestCase {
 		$this->assertSame( 'heading', $registry->get( 'blixis/heading' )['id'] ?? null );
 		$this->assertSame( 'ready', $registry->get( 'heading' )['status'] ?? null );
 		$this->assertSame( 'ready', $registry->get( 'grid' )['status'] ?? null );
+		$this->assertSame( 'ready', $registry->get( 'avatar' )['status'] ?? null );
 	}
 
 	/** Entitlements remain available by default while the filter is not installed. */
@@ -43,17 +44,45 @@ final class ElementDefinitionRegistryTest extends TestCase {
 	/** Definition renderers produce safe output for layout and content archetypes. */
 	public function test_definition_archetypes_render_safe_layout_and_content(): void {
 		$registry = ElementDefinitionRegistry::from_manifest_file( \dirname( __DIR__ ) . '/data/element-definitions-v2.json' );
-		$media    = new class() implements MediaResolver {
+		$media    = new class() implements AssetReferenceResolver {
 			/** Resolve media references for renderer test.
 			 *
 			 * @param int $attachment_id Attachment ID.
 			 */
 			public function resolve( int $attachment_id ): ?array {
+				return 42 === $attachment_id ? [
+					'url'    => 'https://example.test/avatar.png',
+					'width'  => 64,
+					'height' => 64,
+					'alt'    => 'Profile',
+				] : null;
+			}
+			/** Resolve an imported asset for renderer tests.
+			 *
+			 * @param string $reference Asset reference.
+			 */
+			public function resolve_reference( string $reference ): ?array {
 				return null;
 			}
 		};
 		$renderer = new DefinitionArchetypeRenderer( $registry, $media );
 		$this->assertTrue( $renderer->supports( 'simple' ) );
+		$this->assertSame(
+			'<img data-blx-id="avatar-1" data-blx-type="blixis/avatar" src="https://example.test/avatar.png" width="64" height="64" alt="A &amp; B" loading="eager" fetchpriority="high" decoding="async">',
+			$renderer->render(
+				new ElementNode(
+					'avatar-1',
+					'blixis/avatar',
+					[
+						'assetRef'      => 'attachment:42',
+						'alt'           => 'A & B',
+						'loading'       => 'eager',
+						'fetchPriority' => 'high',
+					]
+				),
+				new RenderContext()
+			)
+		);
 		$this->assertSame(
 			'<main data-blx-id="layout-1" data-blx-type="blixis/div" id="content-area" aria-label="Main &amp; content" hidden><p>Child</p></main>',
 			$renderer->render(

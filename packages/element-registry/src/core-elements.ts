@@ -263,6 +263,7 @@ export function createEditorRegistry(): ElementRegistry {
     'columns',
     'grid',
     'card',
+    'avatar',
     'site-logo',
     'div',
     'spacer',

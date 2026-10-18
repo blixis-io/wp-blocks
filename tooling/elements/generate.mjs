@@ -34,6 +34,7 @@ const editorReady = new Set([
   'columns',
   'grid',
   'card',
+  'avatar',
   'navigation',
   'site-header',
   'site-footer',
