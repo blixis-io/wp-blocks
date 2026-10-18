@@ -4898,7 +4898,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'richtext',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -5155,7 +5155,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'richtext',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -5412,7 +5412,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'richtext',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -5677,7 +5677,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'richtext',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -70090,7 +70090,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'content',
     icon: 'solar:text-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'paragraph paragraph content paragraph element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -70101,7 +70101,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'content',
     icon: 'solar:text-italic-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'rich-text rich text content rich text element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -70112,7 +70112,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'content',
     icon: 'solar:text-field-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'eyebrow eyebrow content eyebrow element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -70123,7 +70123,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'content',
     icon: 'solar:chat-round-quote-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'blockquote blockquote content blockquote element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },

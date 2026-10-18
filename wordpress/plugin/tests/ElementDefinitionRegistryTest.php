@@ -88,6 +88,38 @@ final class ElementDefinitionRegistryTest extends TestCase {
 			)
 		);
 		$this->assertSame(
+			'<p data-blx-id="paragraph-1" data-blx-type="blixis/paragraph">Paragraph</p>',
+			$renderer->render( new ElementNode( 'paragraph-1', 'blixis/paragraph', [ 'content' => 'Paragraph' ] ), new RenderContext() )
+		);
+		$this->assertSame(
+			'<strong data-blx-id="rich-text-1" data-blx-type="blixis/rich-text">Emphasis</strong>',
+			$renderer->render(
+				new ElementNode(
+					'rich-text-1',
+					'blixis/rich-text',
+					[
+						'content' => 'Emphasis',
+						'tag'     => 'strong',
+					]
+				),
+				new RenderContext()
+			)
+		);
+		$this->assertSame(
+			'<span data-blx-id="eyebrow-1" data-blx-type="blixis/eyebrow">Category</span>',
+			$renderer->render(
+				new ElementNode(
+					'eyebrow-1',
+					'blixis/eyebrow',
+					[
+						'content' => 'Category',
+						'tag'     => 'span',
+					]
+				),
+				new RenderContext()
+			)
+		);
+		$this->assertSame(
 			'<hr data-blx-id="separator-1" data-blx-type="blixis/separator" aria-hidden="true">',
 			$renderer->render( new ElementNode( 'separator-1', 'blixis/separator', [] ), new RenderContext() )
 		);

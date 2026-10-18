@@ -8512,7 +8512,7 @@
         ]
       },
       "archetype": "richtext",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -8967,7 +8967,7 @@
         ]
       },
       "archetype": "richtext",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -9422,7 +9422,7 @@
         ]
       },
       "archetype": "richtext",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -9878,7 +9878,7 @@
         ]
       },
       "archetype": "richtext",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
