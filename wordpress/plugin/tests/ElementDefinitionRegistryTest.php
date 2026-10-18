@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace Blixis\Builder\Tests;
 
 use Blixis\Builder\Autoloader;
+use Blixis\Builder\Frontend\MarqueeCss;
 use Blixis\Builder\Registry\ElementDefinitionRegistry;
 use Blixis\Builder\Render\AssetReferenceResolver;
 use Blixis\Builder\Render\DefinitionArchetypeRenderer;
@@ -110,6 +111,46 @@ final class ElementDefinitionRegistryTest extends TestCase {
 		$this->assertStringContainsString( '<p>Second panel</p>', $html );
 		$this->assertStringContainsString( 'role="separator" aria-label="Resize panel" aria-orientation="vertical"', $html );
 		$this->assertStringContainsString( 'aria-valuemin="20" aria-valuemax="80" aria-valuenow="50" tabindex="0"', $html );
+	}
+
+	/** Marquees expose a pause control and keep duplicate content inert and ID-free. */
+	public function test_marquee_render_is_accessible_and_avoids_duplicate_ids(): void {
+		$registry = ElementDefinitionRegistry::from_manifest_file( \dirname( __DIR__ ) . '/data/element-definitions-v2.json' );
+		$media    = new class() implements AssetReferenceResolver {
+			/** Resolve no attachment for layout renderer tests.
+			 *
+			 * @param int $attachment_id Attachment ID.
+			 */
+			public function resolve( int $attachment_id ): ?array {
+				return null;
+			}
+			/** Resolve no imported asset for layout renderer tests.
+			 *
+			 * @param string $reference Asset reference.
+			 */
+			public function resolve_reference( string $reference ): ?array {
+				return null;
+			}
+		};
+		$renderer = new DefinitionArchetypeRenderer( $registry, $media );
+		$html     = $renderer->render(
+			new ElementNode(
+				'marquee-1',
+				'blixis/marquee-layout',
+				[
+					'direction' => 'right',
+					'duration'  => 45,
+				]
+			),
+			new RenderContext( '<p id="inside">Moving content</p>' )
+		);
+		$this->assertStringContainsString( 'data-blx-marquee="right" data-blx-marquee-duration="45"', $html );
+		$this->assertStringContainsString( 'aria-label="Pause scrolling" aria-pressed="false">Pause scrolling</button>', $html );
+		$this->assertStringContainsString( '<div data-blx-marquee-group aria-hidden="true" inert><p>Moving content</p></div>', $html );
+		$this->assertSame( 1, substr_count( $html, 'id="inside"' ) );
+		$css = MarqueeCss::css();
+		$this->assertStringContainsString( '@media(prefers-reduced-motion:reduce)', $css );
+		$this->assertStringContainsString( '@keyframes blx-marquee-left', $css );
 	}
 
 	/** Entitlements remain available by default while the filter is not installed. */

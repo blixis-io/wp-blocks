@@ -1,6 +1,30 @@
 /* global document, window */
 
 (() => {
+  const initMarquee = (root) => {
+    if (root.dataset.blxMarqueeReady === 'true') return;
+    const toggle = root.querySelector('[data-blx-marquee-toggle]');
+    const track = root.querySelector('[data-blx-marquee-track]');
+    if (!toggle || !track) return;
+    const duration = Math.max(10, Math.min(120, Number(root.getAttribute('data-blx-marquee-duration')) || 30));
+    root.style.setProperty('--blx-marquee-duration', `${duration}s`);
+    root.dataset.blxMarqueeReady = 'true';
+    toggle.addEventListener('click', () => {
+      const paused = toggle.getAttribute('aria-pressed') !== 'true';
+      toggle.setAttribute('aria-pressed', String(paused));
+      if (paused) {
+        root.setAttribute('data-blx-marquee-paused', '');
+        toggle.setAttribute('aria-label', toggle.getAttribute('data-blx-resume-label') || 'Resume scrolling');
+        toggle.textContent = toggle.getAttribute('data-blx-resume-label') || 'Resume scrolling';
+      } else {
+        root.removeAttribute('data-blx-marquee-paused');
+        const pauseLabel = toggle.getAttribute('data-blx-pause-label') || 'Pause scrolling';
+        toggle.setAttribute('aria-label', pauseLabel);
+        toggle.textContent = pauseLabel;
+      }
+    });
+  };
+
   const initResizablePanels = (root) => {
     if (root.dataset.blxResizableReady === 'true') return;
     const panels = Array.from(root.children).filter((child) => child.hasAttribute('data-blx-resizable-panel'));
@@ -65,8 +89,10 @@
   };
 
   const init = () => {
+    document.querySelectorAll('[data-blx-marquee]').forEach(initMarquee);
     document.querySelectorAll('[data-blx-resizable-panels]').forEach(initResizablePanels);
   };
+  window.blxInitMarquee = initMarquee;
   window.blxInitResizablePanels = initResizablePanels;
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
   else init();
