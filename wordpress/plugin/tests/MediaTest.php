@@ -11,6 +11,7 @@ namespace Blixis\Builder\Tests;
 
 use Blixis\Builder\Autoloader;
 use Blixis\Builder\Media\MediaPolicy;
+use Blixis\Builder\Media\PlayableMediaPolicy;
 use Blixis\Builder\Registry\ElementRegistry;
 use Blixis\Builder\Render\CoreDocumentRenderer;
 use Blixis\Builder\Render\MediaResolver;
@@ -90,6 +91,18 @@ final class MediaTest extends TestCase {
 		}
 		foreach ( [ 'image/svg+xml', 'image/svg', 'text/html', 'application/pdf', 'IMAGE/PNG', 'image/png; charset=x', '', 'image/*' ] as $mime ) {
 			$this->assertFalse( MediaPolicy::allows_mime( $mime ), $mime );
+		}
+	}
+
+	/** Native audio/video is restricted to explicit MIME types and matching media kinds. */
+	public function test_playable_media_mime_allow_list(): void {
+		$this->assertTrue( PlayableMediaPolicy::allows( 'video', 'video/mp4' ) );
+		$this->assertTrue( PlayableMediaPolicy::allows( 'audio', 'audio/mpeg' ) );
+		$this->assertFalse( PlayableMediaPolicy::allows( 'video', 'audio/mpeg' ) );
+		$this->assertFalse( PlayableMediaPolicy::allows( 'audio', 'video/mp4' ) );
+		foreach ( [ 'text/html', 'application/pdf', 'image/svg+xml', 'video/quicktime', 'audio/x-ms-wma', '' ] as $mime ) {
+			$this->assertFalse( PlayableMediaPolicy::allows( 'video', $mime ), $mime );
+			$this->assertFalse( PlayableMediaPolicy::allows( 'audio', $mime ), $mime );
 		}
 	}
 

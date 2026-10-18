@@ -8,11 +8,31 @@ declare(strict_types=1);
 namespace Blixis\Builder\Render;
 
 use Blixis\Builder\Media\MediaPolicy;
+use Blixis\Builder\Media\PlayableMediaPolicy;
 
 \defined( 'ABSPATH' ) || exit;
 
 /** The only renderer-side WordPress boundary. */
-final class WordPressMediaResolver implements AssetReferenceResolver {
+final class WordPressMediaResolver implements AssetReferenceResolver, PlayableMediaResolver {
+	/** Resolve an approved audio or video attachment without accepting author-supplied URLs.
+	 *
+	 * @param int    $attachment_id Attachment ID.
+	 * @param string $kind          Either audio or video.
+	 * @return array{url:string,mime:string}|null
+	 */
+	public function resolve_playable( int $attachment_id, string $kind ): ?array {
+		$post = \get_post( $attachment_id );
+		$mime = $post instanceof \WP_Post ? (string) \get_post_mime_type( $post ) : '';
+		$url  = $post instanceof \WP_Post ? \wp_get_attachment_url( $attachment_id ) : false;
+		if ( ! $post instanceof \WP_Post || 'attachment' !== $post->post_type || ! PlayableMediaPolicy::allows( $kind, $mime ) || ! is_string( $url ) || ! \Blixis\Builder\Registry\SafeUrl::accepts( $url ) ) {
+			return null;
+		}
+		return [
+			'url'  => $url,
+			'mime' => $mime,
+		];
+	}
+
 	/**
 	 * Apply the documented contract.
 	 *

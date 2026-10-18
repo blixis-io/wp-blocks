@@ -44,7 +44,7 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 	 * @param string $archetype Archetype name.
 	 */
 	public function supports( string $archetype ): bool {
-		return in_array( $archetype, [ 'container','simple','text','richtext','heading','button','link','image','gallery','navigation','pagination','list','code','accordion','tabs','steps','alert','progress','counter','dynamic','card','layout','section','page','site-header','site-footer','site-logo','row','columns','grid','stack' ], true ); }
+		return in_array( $archetype, [ 'container','simple','text','richtext','heading','button','link','image','gallery','video','audio','navigation','pagination','list','code','accordion','tabs','steps','alert','progress','counter','dynamic','card','layout','section','page','site-header','site-footer','site-logo','row','columns','grid','stack' ], true ); }
 	/** Render an element with escaped text and allowlisted tags/attributes.
 	 *
 	 * @param ElementNode   $node Element input.
@@ -187,6 +187,9 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		if ( 'gallery' === $archetype ) {
 			return $this->render_gallery( $node, $hooks );
 		}
+		if ( in_array( $archetype, [ 'video', 'audio' ], true ) ) {
+			return $this->render_playable_media( $node, $hooks, $archetype );
+		}
 		if ( 'image' === $archetype && in_array( $id, [ 'image', 'picture', 'avatar', 'featured-image', 'product-image', 'before-after', 'image-comparison', 'image-hotspots', 'panorama-360', 'blur-up-image' ], true ) ) {
 			$image = $this->asset_image( $node );
 			if ( '' !== $image ) {
@@ -203,6 +206,61 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 			return '<div' . $hooks . ' data-blx-missing-media></div>';
 		}
 		return '<' . $tag . $hooks . '>' . $context->children_html . '</' . $tag . '>';
+	}
+
+	/** Render only attachment-backed video or audio with a validated MIME type.
+	 *
+	 * @param ElementNode $node Element input.
+	 * @param string      $hooks Validated element hooks.
+	 * @param string      $kind Either video or audio.
+	 */
+	private function render_playable_media( ElementNode $node, string $hooks, string $kind ): string {
+		if ( ! $this->media instanceof PlayableMediaResolver ) {
+			return '<div' . $hooks . ' data-blx-missing-media></div>';
+		}
+		$attachment_id = $this->attachment_id( $node->value( 'src', $node->value( 'attachmentId' ) ) );
+		if ( null === $attachment_id ) {
+			return '<div' . $hooks . ' data-blx-missing-media></div>';
+		}
+		$source = $this->media->resolve_playable( $attachment_id, $kind );
+		if ( ! is_array( $source ) || ! is_string( $source['url'] ?? null ) || ! SafeUrl::accepts( $source['url'] ) || ! is_string( $source['mime'] ?? null ) || ! \Blixis\Builder\Media\PlayableMediaPolicy::allows( $kind, $source['mime'] ) ) {
+			return '<div' . $hooks . ' data-blx-missing-media></div>';
+		}
+		$controls = true === $node->value( 'controls', true );
+		$autoplay = true === $node->value( 'autoplay', false );
+		$loop     = true === $node->value( 'loop', false );
+		$muted    = $autoplay || true === $node->value( 'muted', false );
+		$preload  = $node->value( 'preload', 'metadata' );
+		$preload  = in_array( $preload, [ 'none', 'metadata', 'auto' ], true ) ? $preload : 'metadata';
+		$label    = $node->value( 'ariaLabel', '' );
+		$attrs    = ( $controls ? ' controls' : '' )
+			. ( $autoplay ? ' autoplay' : '' )
+			. ( $loop ? ' loop' : '' )
+			. ( $muted ? ' muted' : '' )
+			. ' preload="' . $preload . '"'
+			. ( is_string( $label ) && '' !== trim( $label ) ? ' aria-label="' . Escape::attr( $label ) . '"' : '' );
+		if ( 'video' === $kind ) {
+			$poster_id = $this->attachment_id( $node->value( 'poster' ) );
+			$poster    = null === $poster_id ? null : $this->media->resolve( $poster_id );
+			if ( is_array( $poster ) && is_string( $poster['url'] ?? null ) && SafeUrl::accepts( $poster['url'] ) ) {
+				$attrs .= ' poster="' . Escape::url( $poster['url'] ) . '"';
+			}
+		}
+		return '<' . $kind . $hooks . $attrs . '><source src="' . Escape::url( $source['url'] ) . '" type="' . Escape::attr( $source['mime'] ) . '"></' . $kind . '>';
+	}
+
+	/** Parse only positive media attachment IDs or explicit attachment references.
+	 *
+	 * @param mixed $value Saved media reference.
+	 */
+	private function attachment_id( mixed $value ): ?int {
+		if ( is_int( $value ) && $value > 0 ) {
+			return $value;
+		}
+		if ( is_string( $value ) && 1 === preg_match( '/^(?:attachment:|media:)?([1-9][0-9]{0,8})$/D', $value, $matches ) ) {
+			return (int) $matches[1];
+		}
+		return null;
 	}
 
 	/** Render a static gallery from approved image asset references.

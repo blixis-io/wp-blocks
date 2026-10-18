@@ -13,6 +13,7 @@ use Blixis\Builder\Render\AssetReferenceResolver;
 use Blixis\Builder\Render\DefinitionArchetypeRenderer;
 use Blixis\Builder\Render\ElementNode;
 use Blixis\Builder\Render\MediaResolver;
+use Blixis\Builder\Render\PlayableMediaResolver;
 use Blixis\Builder\Render\RenderContext;
 use PHPUnit\Framework\TestCase;
 
@@ -401,6 +402,89 @@ final class ElementDefinitionRegistryTest extends TestCase {
 				),
 				new RenderContext()
 			)
+		);
+	}
+
+	/** P3 video and audio render only attachment-backed, MIME-approved sources. */
+	public function test_video_and_audio_render_safe_native_media_elements(): void {
+		$registry = ElementDefinitionRegistry::from_manifest_file( \dirname( __DIR__ ) . '/data/element-definitions-v2.json' );
+		$media    = new class() implements AssetReferenceResolver, PlayableMediaResolver {
+			/** Resolve the poster fixture.
+			 *
+			 * @param int $attachment_id Attachment ID.
+			 */
+			public function resolve( int $attachment_id ): ?array {
+				return 8 === $attachment_id
+					? [
+						'url'    => 'https://example.test/poster.jpg',
+						'width'  => 640,
+						'height' => 360,
+						'alt'    => 'Poster',
+					]
+					: null;
+			}
+			/** No gallery references are configured.
+			 *
+			 * @param string $reference Asset reference.
+			 */
+			public function resolve_reference( string $reference ): ?array {
+				unset( $reference );
+				return null;
+			}
+			/** Resolve the video and audio fixtures.
+			 *
+			 * @param int    $attachment_id Attachment ID.
+			 * @param string $kind Media kind.
+			 */
+			public function resolve_playable( int $attachment_id, string $kind ): ?array {
+				if ( 'video' === $kind && 7 === $attachment_id ) {
+					return [
+						'url'  => 'https://example.test/clip.mp4',
+						'mime' => 'video/mp4',
+					];
+				}
+				if ( 'audio' === $kind && 9 === $attachment_id ) {
+					return [
+						'url'  => 'https://example.test/audio.mp3',
+						'mime' => 'audio/mpeg',
+					];
+				}
+				if ( 'video' === $kind && 10 === $attachment_id ) {
+					return [
+						'url'  => 'https://example.test/unsafe.mov',
+						'mime' => 'video/quicktime',
+					];
+				}
+				return null;
+			}
+		};
+		$renderer = new DefinitionArchetypeRenderer( $registry, $media );
+		$this->assertSame(
+			'<video data-blx-id="video-1" data-blx-type="blixis/video" controls autoplay muted preload="metadata" poster="https://example.test/poster.jpg"><source src="https://example.test/clip.mp4" type="video/mp4"></video>',
+			$renderer->render(
+				new ElementNode(
+					'video-1',
+					'blixis/video',
+					[
+						'src'      => 'media:7',
+						'poster'   => 'attachment:8',
+						'autoplay' => true,
+					]
+				),
+				new RenderContext()
+			)
+		);
+		$this->assertSame(
+			'<audio data-blx-id="audio-1" data-blx-type="blixis/audio" controls preload="metadata"><source src="https://example.test/audio.mp3" type="audio/mpeg"></audio>',
+			$renderer->render( new ElementNode( 'audio-1', 'blixis/audio', [ 'src' => 9 ] ), new RenderContext() )
+		);
+		$this->assertSame(
+			'<div data-blx-id="video-2" data-blx-type="blixis/video" data-blx-missing-media></div>',
+			$renderer->render( new ElementNode( 'video-2', 'blixis/video', [ 'src' => 'https://evil.test/clip.mp4' ] ), new RenderContext() )
+		);
+		$this->assertSame(
+			'<div data-blx-id="video-3" data-blx-type="blixis/video" data-blx-missing-media></div>',
+			$renderer->render( new ElementNode( 'video-3', 'blixis/video', [ 'src' => 10 ] ), new RenderContext() )
 		);
 	}
 
