@@ -12,6 +12,9 @@ import { Inspector } from './Inspector';
 import { GeneratedControls } from './GeneratedControls';
 import { STYLE_FIELDS } from './style-mapping';
 import { PROPERTIES } from '@blixis/wp-style-engine';
+import type { MediaClient, MediaItem } from '../api/types';
+import { MediaProvider } from '../media/MediaContext';
+import { makeBootstrap } from '../test/fixtures';
 
 const registry = createCoreRegistry();
 const styleSchemaCases = registry.list().flatMap((definition) =>
@@ -961,17 +964,33 @@ describe('Inspector controls', () => {
   it('edits bounded asset-reference repeaters from generated definitions', async () => {
     const target = el('target', 'blixis/avatar-group');
     const { store } = await makeLoadedStore({ document: makeDocument({ root: [target] }) });
+    const image: MediaItem = {
+      id: 42,
+      url: `${location.origin}/gallery.png`,
+      thumbUrl: `${location.origin}/gallery-thumb.png`,
+      alt: 'Gallery image',
+      title: 'Gallery image',
+      width: 640,
+      height: 480,
+      mime: 'image/png',
+    };
+    const client: MediaClient = {
+      get: () => Promise.resolve({ ok: true, value: image }),
+      list: () => Promise.resolve({ ok: true, value: { items: [image], total: 1, totalPages: 1 } }),
+      upload: () => Promise.resolve({ ok: true, value: image }),
+    };
     render(
       <StoreProvider store={store}>
         <I18nProvider editorLocale="en_US">
-          <ReactiveGeneratedControls editable />
+          <MediaProvider bootstrap={makeBootstrap()} client={client}>
+            <ReactiveGeneratedControls editable />
+          </MediaProvider>
         </I18nProvider>
       </StoreProvider>,
     );
     fireEvent.click(screen.getByRole('button', { name: 'Add image' }));
-    fireEvent.change(screen.getByRole('textbox', { name: 'Image 1 reference' }), {
-      target: { value: 'attachment:42' },
-    });
+    fireEvent.click(await screen.findByRole('option', { name: /Gallery image/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Use image' }));
     expect(store.getState().document?.root[0]?.props['assets']).toEqual(['attachment:42']);
   });
 

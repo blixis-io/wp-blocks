@@ -104,6 +104,8 @@ PHP dispatches to an `ArchetypeRenderer` by definition archetype and falls back 
 
 The preview response adds a final markup boundary after rendering. It rejects executable elements, event handlers, unsafe URLs, and arbitrary inline CSS. Inline SVG is limited to the icon renderer's `svg`, `path`, and `circle` geometry with allowlisted attributes; inline styles are limited to the generated gradient declarations and bounded headline index. This keeps the same accessible icon and visual fallbacks available in the editor canvas.
 
+Generated `array<asset-ref>` controls open the shared, permission-aware media library for each selection and save canonical `attachment:<id>` references. The inspector caps selections at the definition's `maxItems` (up to 32) and removes items without accepting arbitrary URLs or attachment identifiers.
+
 ## Entitlement and status
 
 Tier is metadata. `blixis_builder_element_entitlement` and its editor-side equivalent default to `available`; neither controls saved-content rendering. Server-side restrictions on editing/additional actions are applied later. Planned elements are not insertable by default and appear in a dev-only planned group with `showPlannedElements`.

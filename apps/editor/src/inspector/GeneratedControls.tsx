@@ -1,9 +1,11 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { getElementDefinitionV2, isSafeUrl, type GeneratedElementDefinition } from '@blixis/wp-element-registry';
 import type { ElementNode, Json } from '@blixis/wp-core';
 import { useEditorStore, useEditorStoreApi } from '../state';
 import { useI18n } from '../i18n-react';
 import { InspectorSection } from './InspectorSection';
+import { MediaDialog } from '../media/MediaDialog';
+import { useMediaServices } from '../media/MediaContext';
 
 type Property = Record<string, unknown>;
 const read = (value: unknown): string => (typeof value === 'string' || typeof value === 'number' ? String(value) : '');
@@ -11,6 +13,8 @@ const read = (value: unknown): string => (typeof value === 'string' || typeof va
 /** Inspector controls are driven by properties[].control and use the document's locale streams. */
 export function GeneratedControls({ element, editable }: { element: ElementNode; editable: boolean }) {
   const { t } = useI18n();
+  const { client: mediaClient, canUpload } = useMediaServices();
+  const [mediaPicker, setMediaPicker] = useState<string | null>(null);
   const store = useEditorStoreApi();
   const locale = useEditorStore((state) => state.contentLocale);
   const localizedValues = useEditorStore((state) => state.document?.translations[locale]?.[element.id]?.values);
@@ -140,34 +144,14 @@ export function GeneratedControls({ element, editable }: { element: ElementNode;
             ) {
               const rows: unknown[] = Array.isArray(value) ? value : [];
               if (control === 'media-repeater' && property['type'] === 'array<asset-ref>') {
+                const maxItems = typeof property['maxItems'] === 'number' ? Math.min(32, property['maxItems']) : 32;
                 return (
                   <fieldset className="blx-inspector-field" key={name}>
                     <legend>{label}</legend>
                     {rows.map((reference, index) => (
                       <div key={`${name}-${String(index)}`} className="blx-generated-repeater-row">
-                        <label>
-                          {t('inspector.generated.mediaAsset', { index: index + 1 })}
-                          <input
-                            type="text"
-                            value={read(reference)}
-                            placeholder="attachment:42"
-                            disabled={!editable}
-                            onChange={(event) => {
-                              const nextReference = event.currentTarget.value.trim();
-                              if (nextReference === '') {
-                                commit(name, property, rows.filter((_, rowIndex) => rowIndex !== index) as Json);
-                                return;
-                              }
-                              if (!/^(?:(?:asset:)?[a-zA-Z0-9_-]{1,128}|attachment:[1-9]\d{0,8})$/.test(nextReference))
-                                return;
-                              commit(
-                                name,
-                                property,
-                                rows.map((old, rowIndex) => (rowIndex === index ? nextReference : old)) as Json,
-                              );
-                            }}
-                          />
-                        </label>
+                        <span>{t('inspector.generated.mediaAsset', { index: index + 1 })}</span>
+                        <code>{read(reference)}</code>
                         <button
                           type="button"
                           disabled={!editable}
@@ -181,14 +165,25 @@ export function GeneratedControls({ element, editable }: { element: ElementNode;
                     ))}
                     <button
                       type="button"
-                      disabled={!editable}
+                      disabled={!editable || rows.length >= maxItems}
                       onClick={() => {
-                        commit(name, property, [...(rows as Json[]), null]);
+                        setMediaPicker(name);
                       }}
                     >
                       {t('inspector.generated.addMediaAsset')}
                     </button>
-                    <p className="blx-inspector-hint">{t('inspector.generated.attachmentIdHelp')}</p>
+                    <MediaDialog
+                      open={mediaPicker === name}
+                      onOpenChange={(open) => setMediaPicker(open ? name : null)}
+                      client={mediaClient}
+                      canUpload={canUpload}
+                      onUse={(item) => {
+                        if (rows.length < maxItems) {
+                          commit(name, property, [...(rows as Json[]), `attachment:${item.id}`]);
+                        }
+                        setMediaPicker(null);
+                      }}
+                    />
                   </fieldset>
                 );
               }
