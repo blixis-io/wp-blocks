@@ -15,6 +15,7 @@ describe('generated v2 element registry', () => {
     expect(isElementInsertableV2('blixis/grid')).toBe(true);
     expect(isElementInsertableV2('blixis/flex')).toBe(true);
     expect(isElementInsertableV2('blixis/aspect-ratio')).toBe(true);
+    expect(isElementInsertableV2('blixis/scroll-area')).toBe(true);
     expect(isElementInsertableV2('blixis/div')).toBe(true);
     expect(isElementInsertableV2('blixis/div', true)).toBe(true);
     expect(isElementInsertableV2('blixis/list')).toBe(true);

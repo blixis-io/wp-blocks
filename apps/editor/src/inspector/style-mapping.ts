@@ -11,6 +11,7 @@ export const STYLE_FIELDS = [
   { id: 'padding', key: 'inspector.style.padding', kind: 'spacing' },
   { id: 'width', key: 'inspector.style.width', kind: 'select' },
   { id: 'height', key: 'inspector.style.height', kind: 'select' },
+  { id: 'max-height', key: 'inspector.style.maxHeight', kind: 'select' },
   { id: 'text-align', key: 'inspector.style.textAlign', kind: 'select' },
   { id: 'display', key: 'inspector.style.display', kind: 'select' },
   { id: 'aspect-ratio', key: 'inspector.style.aspectRatio', kind: 'select' },

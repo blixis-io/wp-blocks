@@ -308,6 +308,7 @@ export function Inspector({
             layout: [
               'width',
               'height',
+              'max-height',
               'text-align',
               'display',
               'aspect-ratio',

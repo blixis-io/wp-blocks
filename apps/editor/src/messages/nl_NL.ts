@@ -295,6 +295,8 @@ export const nl_NL: Record<MessageKey, string> = {
   'inspector.style.height': 'Hoogte',
   'inspector.style.customWidth': 'Aangepaste breedte',
   'inspector.style.customHeight': 'Aangepaste hoogte',
+  'inspector.style.maxHeight': 'Maximale hoogte',
+  'inspector.style.customMaxHeight': 'Aangepaste maximale hoogte',
   'inspector.style.display': 'Weergave',
   'inspector.style.aspectRatio': 'Beeldverhouding',
   'inspector.style.flexDirection': 'Flexrichting',

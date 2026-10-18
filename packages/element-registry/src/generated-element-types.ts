@@ -3239,6 +3239,8 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
         alignItems: { type: 'enum', options: ['start', 'end', 'center', 'stretch', 'baseline'], default: null },
         gridTemplateColumns: { type: 'css-grid-template', default: null },
         minHeight: { type: 'css-length', units: ['px', 'rem', 'vh', 'dvh'], default: null },
+        maxHeight: { type: 'css-length', units: ['px', 'rem', 'vh', 'dvh', '%', 'none'], default: null },
+        overflowY: { type: 'enum', options: ['visible', 'hidden', 'clip', 'scroll', 'auto'], default: null },
       },
       defaultValues: {},
       responsive: {
@@ -3333,7 +3335,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'container',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -70025,7 +70027,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'layout',
     icon: 'solar:square-arrow-down-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'scroll-area scroll area layout scroll area element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },

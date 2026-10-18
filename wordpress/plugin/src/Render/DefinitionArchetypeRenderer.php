@@ -79,6 +79,10 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		if ( 'spacer' === $id ) {
 			return '<div' . $hooks . ' aria-hidden="true"></div>';
 		}
+		if ( 'scroll-area' === $id ) {
+			$label = $node->value( 'ariaLabel' );
+			return '<' . $tag . $hooks . ' data-blx-scroll-area tabindex="0"' . ( is_string( $label ) && '' !== trim( $label ) ? ' role="region"' : '' ) . '>' . $context->children_html . '</' . $tag . '>';
+		}
 		if ( 'separator' === $id ) {
 			return '<hr' . $hooks . ' aria-hidden="true">';
 		}
