@@ -44,7 +44,7 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 	 * @param string $archetype Archetype name.
 	 */
 	public function supports( string $archetype ): bool {
-		return in_array( $archetype, [ 'container','simple','text','richtext','heading','button','link','image','gallery','navigation','pagination','list','code','accordion','tabs','steps','alert','progress','dynamic','card','layout','section','page','site-header','site-footer','site-logo','row','columns','grid','stack' ], true ); }
+		return in_array( $archetype, [ 'container','simple','text','richtext','heading','button','link','image','gallery','navigation','pagination','list','code','accordion','tabs','steps','alert','progress','counter','dynamic','card','layout','section','page','site-header','site-footer','site-logo','row','columns','grid','stack' ], true ); }
 	/** Render an element with escaped text and allowlisted tags/attributes.
 	 *
 	 * @param ElementNode   $node Element input.
@@ -145,6 +145,17 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		}
 		if ( 'progress' === $archetype ) {
 			return $this->render_progress( $node, $hooks );
+		}
+		if ( 'counter' === $archetype && 'counter' === $id ) {
+			$value = $node->value( 'value', 42 );
+			if ( ( ! is_int( $value ) && ! is_float( $value ) ) || ! is_finite( (float) $value ) ) {
+				$value = 42;
+			}
+			$text   = is_int( $value ) ? (string) $value : sprintf( '%g', $value );
+			$prefix = $node->value( 'prefix', '' );
+			$suffix = $node->value( 'suffix', '' );
+			$label  = $node->value( 'ariaLabel' );
+			return '<span' . $hooks . ( is_string( $label ) && '' !== trim( $label ) ? ' aria-label="' . Escape::attr( $label ) . '"' : '' ) . '>' . Escape::html( is_string( $prefix ) ? $prefix : '' ) . Escape::html( $text ) . Escape::html( is_string( $suffix ) ? $suffix : '' ) . '</span>';
 		}
 		if ( 'dynamic' === $archetype ) {
 			return $this->render_dynamic( $node, $hooks );

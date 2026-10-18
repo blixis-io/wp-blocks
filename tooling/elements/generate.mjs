@@ -47,6 +47,7 @@ const editorReady = new Set([
   'blockquote',
   'badge',
   'button-group',
+  'counter',
   'image',
   'section',
   'text',

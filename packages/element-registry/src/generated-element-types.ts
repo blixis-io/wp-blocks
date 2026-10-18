@@ -9114,7 +9114,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'counter',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -70266,7 +70266,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'content',
     icon: 'solar:graph-up-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'counter counter content counter element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },

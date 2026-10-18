@@ -275,6 +275,7 @@ export function createEditorRegistry(): ElementRegistry {
     'blockquote',
     'badge',
     'button-group',
+    'counter',
     'steps',
     'breadcrumbs',
     'pagination',
