@@ -1092,6 +1092,12 @@ async function smoke() {
                   props: { sticky: true, stickyOffset: 16 },
                   children: [node('sticky-child', 'blixis/text')],
                 },
+                {
+                  id: 'split1',
+                  type: 'blixis/split-layout',
+                  props: {},
+                  children: [node('split-a', 'blixis/text'), node('split-b', 'blixis/text')],
+                },
               ],
             },
             {
@@ -1134,6 +1140,12 @@ async function smoke() {
           (richBody.html ?? '').includes('data-blx-id="sticky1"') &&
             (richBody.html ?? '').includes('data-blx-id="sticky-child"'),
           'a sticky container renders its child content through the real WordPress preview',
+        );
+        check(
+          (richBody.html ?? '').includes('data-blx-id="split1"') &&
+            (richBody.html ?? '').includes('data-blx-id="split-a"') &&
+            (richBody.html ?? '').includes('data-blx-id="split-b"'),
+          'a split layout renders both panes through the real WordPress preview',
         );
         check(
           (richBody.html ?? '').includes('<nav data-blx-id="toc1"') &&

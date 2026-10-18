@@ -4151,7 +4151,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'container',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -70087,7 +70087,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'layout',
     icon: 'solar:widget-3-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'split-layout split layout layout split layout element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },

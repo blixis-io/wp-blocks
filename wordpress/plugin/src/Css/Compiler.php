@@ -332,6 +332,15 @@ final class Compiler {
 		$type  = \is_string( $node['type'] ?? null ) ? \preg_replace( '~^blixis/~', '', $node['type'] ) : '';
 		if ( \in_array( $type, [ 'grid', 'columns' ], true ) ) {
 			$add( null, [ 'display' => 'grid' ] );
+		} elseif ( 'split-layout' === $type ) {
+			$add(
+				null,
+				[
+					'display'               => 'grid',
+					'grid-template-columns' => 'minmax(0, 1fr) minmax(0, 1fr)',
+				]
+			);
+			$add( 'mobile', [ 'grid-template-columns' => 'minmax(0, 1fr)' ] );
 		} elseif ( 'stack' === $type ) {
 			$add(
 				null,
