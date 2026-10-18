@@ -104,7 +104,7 @@ PHP dispatches to an `ArchetypeRenderer` by definition archetype and falls back 
 
 The preview response adds a final markup boundary after rendering. It rejects executable elements, event handlers, unsafe URLs, and arbitrary inline CSS. Inline SVG is limited to the icon renderer's `svg`, `path`, and `circle` geometry with allowlisted attributes; inline styles are limited to the generated gradient declarations and bounded headline index. This keeps the same accessible icon and visual fallbacks available in the editor canvas.
 
-Generated `array<asset-ref>` controls open the shared, permission-aware media library for each selection and save canonical `attachment:<id>` references. The inspector caps selections at the definition's `maxItems` (up to 32) and removes items without accepting arbitrary URLs or attachment identifiers.
+Generated `asset-ref` and `array<asset-ref>` controls open the shared, permission-aware media library and save canonical `attachment:<id>` references. The inspector caps repeaters at the definition's `maxItems` (up to 32) and removes selections without accepting arbitrary URLs or typed attachment identifiers.
 
 The `icon` and `icon-svg` definitions offer only the three Solar glyphs rendered from local path data. Their size setting is bounded to 8–128 pixels, and the server and preview boundary validate the emitted SVG tags and geometry attributes.
 

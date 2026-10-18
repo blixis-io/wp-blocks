@@ -58,6 +58,17 @@ beforeEach(() => {
   sessionStorage.clear();
 });
 
+const mediaFixture: MediaItem = {
+  id: 42,
+  url: `${location.origin}/gallery.png`,
+  thumbUrl: `${location.origin}/gallery-thumb.png`,
+  alt: 'Gallery image',
+  title: 'Gallery image',
+  width: 640,
+  height: 480,
+  mime: 'image/png',
+};
+
 function ReactiveInspector({ tab, editable }: { tab: 'content' | 'style' | 'advanced'; editable: boolean }) {
   const element = useEditorStore(
     (state) => state.document?.root.find((node) => node.id === state.selectedId) ?? state.document?.root[0] ?? null,
@@ -125,34 +136,43 @@ async function mount(
   const view = render(
     <StoreProvider store={store}>
       <I18nProvider editorLocale={options.editorLocale ?? 'en_US'}>
-        <div className="blx-editor" data-editor-theme={options.chromeTheme ?? 'light'}>
-          {options.reactive === false ? (
-            <Inspector
-              element={node}
-              tab={options.tab ?? 'content'}
-              editingEnabled={options.editable ?? true}
-              editTarget={
-                options.selectedText || options.formatSession ? { id: 'target', prop: 'text', status: 'ready' } : null
-              }
-              editSelection={
-                options.selectedText || options.formatSession
-                  ? {
-                      id: 'target',
-                      empty: !options.selectedText,
-                      text: options.selectedText?.text ?? '',
-                      marks: options.selectedText?.marks ?? {},
-                    }
-                  : null
-              }
-              {...(options.sendEditCommand ? { sendEditCommand: options.sendEditCommand } : {})}
-              {...(options.startEdit ? { startEdit: options.startEdit } : {})}
-              {...(options.setEditText ? { setEditText: options.setEditText } : {})}
-              {...(options.endEdit ? { endEdit: options.endEdit } : {})}
-            />
-          ) : (
-            <ReactiveInspector tab={options.tab ?? 'content'} editable={options.editable ?? true} />
-          )}
-        </div>
+        <MediaProvider
+          bootstrap={makeBootstrap()}
+          client={{
+            get: () => Promise.resolve({ ok: true, value: mediaFixture }),
+            list: () => Promise.resolve({ ok: true, value: { items: [mediaFixture], total: 1, totalPages: 1 } }),
+            upload: () => Promise.resolve({ ok: true, value: mediaFixture }),
+          }}
+        >
+          <div className="blx-editor" data-editor-theme={options.chromeTheme ?? 'light'}>
+            {options.reactive === false ? (
+              <Inspector
+                element={node}
+                tab={options.tab ?? 'content'}
+                editingEnabled={options.editable ?? true}
+                editTarget={
+                  options.selectedText || options.formatSession ? { id: 'target', prop: 'text', status: 'ready' } : null
+                }
+                editSelection={
+                  options.selectedText || options.formatSession
+                    ? {
+                        id: 'target',
+                        empty: !options.selectedText,
+                        text: options.selectedText?.text ?? '',
+                        marks: options.selectedText?.marks ?? {},
+                      }
+                    : null
+                }
+                {...(options.sendEditCommand ? { sendEditCommand: options.sendEditCommand } : {})}
+                {...(options.startEdit ? { startEdit: options.startEdit } : {})}
+                {...(options.setEditText ? { setEditText: options.setEditText } : {})}
+                {...(options.endEdit ? { endEdit: options.endEdit } : {})}
+              />
+            ) : (
+              <ReactiveInspector tab={options.tab ?? 'content'} editable={options.editable ?? true} />
+            )}
+          </div>
+        </MediaProvider>
       </I18nProvider>
     </StoreProvider>,
   );
@@ -953,19 +973,17 @@ describe('Inspector controls', () => {
 
   it('stores attachment references from generated media controls', async () => {
     const { store } = await mount('blixis/video', { tab: 'content', reactive: false });
-    fireEvent.change(screen.getByRole('spinbutton', { name: 'Media source attachment' }), {
-      target: { value: '42' },
-    });
+    fireEvent.click(screen.getByRole('button', { name: 'Media source attachment: Choose image' }));
+    fireEvent.click(await screen.findByRole('option', { name: /Gallery image/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Use image' }));
     expect(store.getState().document?.root[0]?.props['src']).toBe('attachment:42');
   });
 
   it('stores avatar attachment references and localizes alternative text', async () => {
     const { store } = await mount('blixis/avatar', { tab: 'content', reactive: false });
-    const attachmentIdInput = document.querySelector<HTMLInputElement>('input[type="number"]');
-    if (!attachmentIdInput) throw new Error('Avatar attachment id input is missing');
-    fireEvent.change(attachmentIdInput, {
-      target: { value: '42' },
-    });
+    fireEvent.click(screen.getByRole('button', { name: 'Media asset: Choose image' }));
+    fireEvent.click(await screen.findByRole('option', { name: /Gallery image/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Use image' }));
     fireEvent.change(screen.getByRole('textbox', { name: 'Alternative text' }), {
       target: { value: 'Profile photo' },
     });
