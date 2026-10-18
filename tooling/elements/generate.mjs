@@ -49,6 +49,7 @@ const editorReady = new Set([
   'button-group',
   'counter',
   'progress-ring',
+  'highlight-text',
   'image',
   'section',
   'text',

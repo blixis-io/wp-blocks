@@ -9933,7 +9933,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'richtext',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -70299,7 +70299,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'content',
     icon: 'solar:text-selection-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'highlight-text highlight text content highlight text element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },

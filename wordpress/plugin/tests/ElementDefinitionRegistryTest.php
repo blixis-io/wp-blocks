@@ -120,6 +120,10 @@ final class ElementDefinitionRegistryTest extends TestCase {
 			)
 		);
 		$this->assertSame(
+			'<p data-blx-id="highlight-1" data-blx-type="blixis/highlight-text"><mark>Important &amp; timely</mark></p>',
+			$renderer->render( new ElementNode( 'highlight-1', 'blixis/highlight-text', [ 'content' => 'Important & timely' ] ), new RenderContext() )
+		);
+		$this->assertSame(
 			'<span data-blx-id="badge-1" data-blx-type="blixis/badge">New</span>',
 			$renderer->render( new ElementNode( 'badge-1', 'blixis/badge', [ 'content' => 'New' ] ), new RenderContext() )
 		);
