@@ -278,6 +278,7 @@ export function createEditorRegistry(): ElementRegistry {
     'icon',
     'icon-svg',
     'icon-button',
+    'picture',
     'gallery',
     'lightbox',
     'code-block',

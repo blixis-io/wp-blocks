@@ -49,6 +49,7 @@ const editorReady = new Set([
   'icon',
   'icon-svg',
   'icon-button',
+  'picture',
   'gallery',
   'lightbox',
   'code-block',
