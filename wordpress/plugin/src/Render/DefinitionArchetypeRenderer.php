@@ -44,7 +44,7 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 	 * @param string $archetype Archetype name.
 	 */
 	public function supports( string $archetype ): bool {
-		return in_array( $archetype, [ 'container','simple','text','richtext','heading','button','link','image','gallery','video','audio','navigation','pagination','list','code','accordion','tabs','steps','alert','progress','counter','countdown','icon','dynamic','card','layout','section','page','site-header','site-footer','site-logo','row','columns','grid','stack' ], true ); }
+		return in_array( $archetype, [ 'container','simple','text','richtext','heading','button','link','image','gallery','video','audio','embed','iframe','pdf-viewer','navigation','pagination','list','code','accordion','tabs','steps','alert','progress','counter','countdown','icon','dynamic','card','layout','section','page','site-header','site-footer','site-logo','row','columns','grid','stack' ], true ); }
 	/** Render an element with escaped text and allowlisted tags/attributes.
 	 *
 	 * @param ElementNode   $node Element input.
@@ -231,6 +231,9 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 			$href = $node->value( 'link', '/' );
 			return '<a' . $hooks . ' href="' . Escape::url( is_string( $href ) ? $href : '/' ) . '" aria-label="Site logo">' . $this->asset_image( $node ) . '</a>';
 		}
+		if ( in_array( $id, [ 'embed', 'iframe', 'pdf-viewer' ], true ) ) {
+			return $this->render_external_frame( $node, $hooks, $id );
+		}
 		if ( 'gallery' === $archetype ) {
 			return $this->render_gallery( $node, $hooks );
 		}
@@ -377,6 +380,25 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		$attrs     = ( $controls ? ' controls' : '' ) . ( $autoplay ? ' autoplay' : '' ) . ( $loop ? ' loop' : '' ) . ( $muted ? ' muted' : '' ) . ' playsinline preload="' . $preload . '"';
 		$attrs    .= ( '' !== $label ? ' aria-label="' . Escape::attr( $label ) . '"' : ( $controls ? '' : ' aria-hidden="true" tabindex="-1"' ) );
 		return '<video' . $hooks . $attrs . $poster . '><source src="' . Escape::url( $source['url'] ) . '" type="' . Escape::attr( $source['mime'] ) . '"></video>';
+	}
+
+	/** Render a sandboxed external frame with a direct-link fallback.
+	 *
+	 * @param ElementNode $node Element input.
+	 * @param string      $hooks Validated element hooks.
+	 * @param string      $kind Element identifier.
+	 */
+	private function render_external_frame( ElementNode $node, string $hooks, string $kind ): string {
+		$url   = $node->value( 'url', '' );
+		$title = $node->value( 'title', __( 'Embedded content', 'blixis-builder' ) );
+		$url   = is_string( $url ) && SafeUrl::accepts( $url ) ? $url : '';
+		$title = is_string( $title ) && '' !== trim( $title ) ? trim( $title ) : __( 'Embedded content', 'blixis-builder' );
+		if ( '' === $url || ( 'pdf-viewer' === $kind && 1 !== preg_match( '/\\.pdf(?:$|[?#])/i', $url ) ) ) {
+			return '<div' . $hooks . ' data-blx-missing-media></div>';
+		}
+		$height = 'pdf-viewer' === $kind ? 'height="640"' : '';
+		$iframe = '<iframe src="' . Escape::url( $url ) . '" title="' . Escape::attr( $title ) . '" loading="lazy" referrerpolicy="no-referrer" sandbox="allow-scripts allow-presentation" ' . $height . '></iframe>';
+		return '<figure' . $hooks . ' data-blx-external-frame>' . $iframe . '<figcaption><a href="' . Escape::url( $url ) . '" target="_blank" rel="noopener noreferrer">' . Escape::html( $title ) . '</a></figcaption></figure>';
 	}
 
 	/** Parse only positive media attachment IDs or explicit attachment references.
