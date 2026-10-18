@@ -192,6 +192,40 @@ final class ElementDefinitionRegistryTest extends TestCase {
 				new RenderContext()
 			)
 		);
+		$this->assertSame(
+			'<div data-blx-id="alert-1" data-blx-type="blixis/alert" role="alert"><strong>Warning</strong><p>Check &amp; retry</p></div>',
+			$renderer->render(
+				new ElementNode(
+					'alert-1',
+					'blixis/alert',
+					[
+						'title'       => 'Warning',
+						'description' => 'Check & retry',
+						'variant'     => 'error',
+					]
+				),
+				new RenderContext()
+			)
+		);
+		$this->assertSame(
+			'<progress data-blx-id="progress-1" data-blx-type="blixis/progress" aria-label="Upload" value="100" max="100"></progress>',
+			$renderer->render(
+				new ElementNode(
+					'progress-1',
+					'blixis/progress',
+					[
+						'value'     => 200,
+						'max'       => 100,
+						'ariaLabel' => 'Upload',
+					]
+				),
+				new RenderContext()
+			)
+		);
+		$this->assertSame(
+			'<span data-blx-id="spinner-1" data-blx-type="blixis/spinner" role="status" aria-label="Loading"><span aria-hidden="true" data-blx-spinner></span></span>',
+			$renderer->render( new ElementNode( 'spinner-1', 'blixis/spinner', [ 'ariaLabel' => 'Loading' ] ), new RenderContext() )
+		);
 	}
 
 	/** P3 images and galleries resolve only approved image references and escape captions. */

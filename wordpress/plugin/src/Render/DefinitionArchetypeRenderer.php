@@ -42,7 +42,7 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 	 * @param string $archetype Archetype name.
 	 */
 	public function supports( string $archetype ): bool {
-		return in_array( $archetype, [ 'container','simple','text','richtext','heading','button','link','image','gallery','navigation','list','code','accordion','tabs','steps','card','layout','section','page','site-header','site-footer','site-logo','row','columns','grid','stack' ], true ); }
+		return in_array( $archetype, [ 'container','simple','text','richtext','heading','button','link','image','gallery','navigation','list','code','accordion','tabs','steps','alert','progress','card','layout','section','page','site-header','site-footer','site-logo','row','columns','grid','stack' ], true ); }
 	/** Render an element with escaped text and allowlisted tags/attributes.
 	 *
 	 * @param ElementNode   $node Element input.
@@ -127,6 +127,25 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		if ( 'steps' === $archetype ) {
 			return $this->render_steps( $node, $hooks );
 		}
+		if ( 'alert' === $archetype ) {
+			return $this->render_alert( $node, $hooks, $context->children_html );
+		}
+		if ( 'progress' === $archetype ) {
+			return $this->render_progress( $node, $hooks );
+		}
+		if ( in_array( $id, [ 'skeleton', 'spinner' ], true ) ) {
+			return 'spinner' === $id
+				? '<span' . $hooks . ' role="status"' . ( is_string( $node->value( 'ariaLabel' ) ) ? ' aria-label="' . Escape::attr( $node->value( 'ariaLabel' ) ) . '"' : '' ) . '><span aria-hidden="true" data-blx-spinner></span></span>'
+				: '<span' . $hooks . ' aria-hidden="true" data-blx-skeleton></span>';
+		}
+		if ( 'card' === $archetype && ( is_string( $node->value( 'title' ) ) || is_string( $node->value( 'description' ) ) ) ) {
+			$title       = $node->value( 'title', '' );
+			$description = $node->value( 'description', '' );
+			$href        = $node->value( 'href' );
+			$heading     = is_string( $title ) && '' !== $title ? '<h2>' . ( is_string( $href ) && '' !== $href ? '<a href="' . Escape::url( $href ) . '">' . Escape::html( $title ) . '</a>' : Escape::html( $title ) ) . '</h2>' : '';
+			$body        = is_string( $description ) && '' !== $description ? '<p>' . Escape::html( $description ) . '</p>' : '';
+			return '<article' . $hooks . '>' . $heading . $body . $context->children_html . '</article>';
+		}
 
 		if ( 'site-logo' === $id ) {
 			$href = $node->value( 'link', '/' );
@@ -185,6 +204,42 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 			}
 		}
 		return $html . '</ul></div>';
+	}
+
+	/** Render a static alert with semantic live-region behavior.
+	 *
+	 * @param ElementNode $node Alert definition.
+	 * @param string      $hooks Validated element hooks.
+	 * @param string      $children Rendered child content.
+	 */
+	private function render_alert( ElementNode $node, string $hooks, string $children ): string {
+		$title       = $node->value( 'title', '' );
+		$description = $node->value( 'description', '' );
+		$variant     = $node->value( 'variant', 'info' );
+		$role        = in_array( $variant, [ 'error', 'danger', 'destructive' ], true ) ? 'alert' : 'status';
+		$html        = '<div' . $hooks . ' role="' . $role . '">';
+		if ( is_string( $title ) && '' !== $title ) {
+			$html .= '<strong>' . Escape::html( $title ) . '</strong>';
+		}
+		if ( is_string( $description ) && '' !== $description ) {
+			$html .= '<p>' . Escape::html( $description ) . '</p>';
+		}
+		return $html . $children . '</div>';
+	}
+
+	/** Render a native progress indicator with bounded numeric values.
+	 *
+	 * @param ElementNode $node Progress definition.
+	 * @param string      $hooks Validated element hooks.
+	 */
+	private function render_progress( ElementNode $node, string $hooks ): string {
+		$value = $node->value( 'value', 0 );
+		$max   = $node->value( 'max', 100 );
+		$value = is_numeric( $value ) ? (float) $value : 0;
+		$max   = is_numeric( $max ) && (float) $max > 0 ? (float) $max : 100;
+		$value = max( 0, min( $max, $value ) );
+		$label = $node->value( 'ariaLabel' );
+		return '<progress' . $hooks . ( is_string( $label ) && '' !== trim( $label ) ? ' aria-label="' . Escape::attr( $label ) . '"' : '' ) . ' value="' . $value . '" max="' . $max . '"></progress>';
 	}
 
 	/** Render disclosure sections with native keyboard and no-script behavior.
