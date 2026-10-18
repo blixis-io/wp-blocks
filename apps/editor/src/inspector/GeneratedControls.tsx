@@ -163,9 +163,7 @@ export function GeneratedControls({ element, editable }: { element: ElementNode;
                               commit(
                                 name,
                                 property,
-                                rows.map((old, rowIndex) =>
-                                  rowIndex === index ? nextReference : old,
-                                ) as Json,
+                                rows.map((old, rowIndex) => (rowIndex === index ? nextReference : old)) as Json,
                               );
                             }}
                           />
