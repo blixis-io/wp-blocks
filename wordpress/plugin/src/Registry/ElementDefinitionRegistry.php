@@ -101,6 +101,9 @@ final class ElementDefinitionRegistry {
 		$definition = $this->get( $id );
 		$property   = is_array( $definition['properties'] ?? null ) ? ( $definition['properties'][ $name ] ?? null ) : null;
 		if ( is_array( $property ) ) {
+			if ( 'button' === $id && 'variant' === $name && 'enum' === ( $property['type'] ?? null ) ) {
+				$property['options'] = array_values( array_unique( [ ...( $property['options'] ?? [] ), 'solid' ] ) );
+			}
 			return $property;
 		}
 		// Compatibility fields absent from the catalog are deliberately narrow and typed.

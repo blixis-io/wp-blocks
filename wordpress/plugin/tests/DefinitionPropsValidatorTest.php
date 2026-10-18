@@ -32,7 +32,7 @@ final class DefinitionPropsValidatorTest extends TestCase {
 	/** Existing core image and section props remain writable after their generated definitions are enabled. */
 	public function test_accepts_legacy_media_and_section_props(): void {
 		$validator = new DefinitionPropsValidator( ElementDefinitionRegistry::from_manifest_file( dirname( __DIR__ ) . '/data/element-definitions-v2.json' ) );
-		$legacy    = json_decode( '{"id":"legacy-page","type":"blixis/section","props":{"tag":"main"},"children":[{"id":"legacy-heading","type":"blixis/heading","props":{"level":1},"children":[]},{"id":"legacy-image","type":"blixis/image","props":{"attachmentId":30,"alt":"Example"},"children":[]}]}' );
+		$legacy    = json_decode( '{"id":"legacy-page","type":"blixis/section","props":{"tag":"main"},"children":[{"id":"legacy-heading","type":"blixis/heading","props":{"level":1},"children":[]},{"id":"legacy-button","type":"blixis/button","props":{"variant":"solid"},"children":[]},{"id":"legacy-image","type":"blixis/image","props":{"attachmentId":30,"alt":"Example"},"children":[]}]}' );
 		$invalid   = json_decode( '{"id":"legacy-page","type":"blixis/section","props":{"tag":"script"},"children":[]}' );
 		$this->assertTrue( $validator->accepts( $legacy ) );
 		$this->assertFalse( $validator->accepts( $invalid ) );
