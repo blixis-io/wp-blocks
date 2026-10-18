@@ -26,6 +26,11 @@ describe('generated v2 element registry', () => {
     expect(isElementInsertableV2('blixis/skeleton')).toBe(true);
     expect(isElementInsertableV2('blixis/video')).toBe(true);
     expect(isElementInsertableV2('blixis/audio')).toBe(true);
+    expect(isElementInsertableV2('blixis/video-background')).toBe(true);
+    expect(isElementInsertableV2('blixis/map')).toBe(true);
+    expect(isElementInsertableV2('blixis/embed')).toBe(true);
+    expect(isElementInsertableV2('blixis/iframe')).toBe(true);
+    expect(isElementInsertableV2('blixis/pdf-viewer')).toBe(true);
     expect(isElementInsertableV2('blixis/empty-state')).toBe(true);
     expect(isElementInsertableV2('blixis/keyboard-shortcut')).toBe(true);
     expect(isElementInsertableV2('blixis/timeline')).toBe(true);

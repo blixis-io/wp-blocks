@@ -13427,7 +13427,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'video',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -14635,7 +14635,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'map',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -14906,7 +14906,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'embed',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -15177,7 +15177,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'embed',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -15448,7 +15448,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'embed',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -70674,7 +70674,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'media',
     icon: 'solar:videocamera-record-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'video-background video background media video background element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -70718,7 +70718,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'media',
     icon: 'solar:map-point-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'map map media map element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -70729,7 +70729,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'media',
     icon: 'solar:code-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'embed embed media embed element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -70740,7 +70740,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'media',
     icon: 'solar:window-frame-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'iframe iframe media iframe element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -70751,7 +70751,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'media',
     icon: 'solar:document-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'pdf-viewer pdf viewer media pdf viewer element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
