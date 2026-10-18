@@ -281,6 +281,26 @@ final class ElementDefinitionRegistryTest extends TestCase {
 				new RenderContext()
 			)
 		);
+		$this->assertSame(
+			'<ol data-blx-id="timeline-1" data-blx-type="blixis/timeline"><li><span>Plan</span></li><li aria-current="step"><span>Build</span><p>Ship safely</p></li></ol>',
+			$renderer->render(
+				new ElementNode(
+					'timeline-1',
+					'blixis/timeline',
+					[
+						'steps'      => [
+							[ 'title' => 'Plan' ],
+							[
+								'title'       => 'Build',
+								'description' => 'Ship safely',
+							],
+						],
+						'activeStep' => 1,
+					]
+				),
+				new RenderContext()
+			)
+		);
 		$tab_id = 'blx-tab-' . substr( hash( 'sha256', 'tabs-1:0' ), 0, 12 );
 		$this->assertSame(
 			'<div data-blx-id="tabs-1" data-blx-type="blixis/tabs"><nav aria-label="Sections"><ul><li><a href="#' . $tab_id . '">Intro</a></li></ul></nav><section id="' . $tab_id . '"><h2>Intro</h2><p>Body &amp; copy</p></section></div>',

@@ -31571,7 +31571,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'steps',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -71179,7 +71179,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:history-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'timeline timeline ui-components timeline element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },

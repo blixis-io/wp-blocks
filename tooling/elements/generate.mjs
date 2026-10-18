@@ -55,6 +55,7 @@ const editorReady = new Set([
   'audio',
   'empty-state',
   'keyboard-shortcut',
+  'timeline',
   'section',
   'text',
   'div',

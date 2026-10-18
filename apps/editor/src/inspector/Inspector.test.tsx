@@ -927,6 +927,19 @@ describe('Inspector controls', () => {
     expect(store.getState().document?.root[0]?.props['src']).toBe('attachment:42');
   });
 
+  it('edits localized step titles and descriptions with the generated repeater', async () => {
+    const { store } = await mount('blixis/steps', { tab: 'content', reactive: false });
+    fireEvent.change(screen.getByRole('textbox', { name: 'Step 1 title' }), {
+      target: { value: 'Research' },
+    });
+    fireEvent.change(screen.getByRole('textbox', { name: 'Step 1 description' }), {
+      target: { value: 'Gather the requirements' },
+    });
+    expect(store.getState().document?.translations['en_US']?.['target']?.values['steps']).toEqual([
+      { id: 'step-1', title: 'Research', description: 'Gather the requirements' },
+    ]);
+  });
+
   it('renders media library guidance and translatable alternative text controls', async () => {
     const { store } = await mount('blixis/image');
     expect(screen.getByText(/Choose an image from the media library/)).toBeTruthy();
