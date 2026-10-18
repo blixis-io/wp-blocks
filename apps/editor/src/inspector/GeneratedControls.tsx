@@ -6,7 +6,6 @@ import { useI18n } from '../i18n-react';
 import { InspectorSection } from './InspectorSection';
 import { MediaDialog } from '../media/MediaDialog';
 import { useMediaServices } from '../media/MediaContext';
-import type { MediaKind } from '../api/types';
 
 type Property = Record<string, unknown>;
 const read = (value: unknown): string => (typeof value === 'string' || typeof value === 'number' ? String(value) : '');
@@ -200,11 +199,11 @@ export function GeneratedControls({ element, editable }: { element: ElementNode;
                     client={mediaClient}
                     canUpload={canUpload}
                     mediaKind={
-                      (property['mediaKind'] === 'video' ||
+                      property['mediaKind'] === 'video' ||
                       property['mediaKind'] === 'audio' ||
                       property['mediaKind'] === 'caption'
                         ? property['mediaKind']
-                        : 'image') as MediaKind
+                        : 'image'
                     }
                     onUse={(item) => {
                       commit(name, property, `attachment:${String(item.id)}`);
