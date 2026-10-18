@@ -1,8 +1,8 @@
-import { createCoreRegistry } from '@blixis/wp-element-registry';
+import { createEditorRegistry } from '@blixis/wp-element-registry';
 import type { MessageKey } from './messages/en_US';
 
 /** Read-only lookup of element titles; constant data, independent of the editor state. */
-const registry = createCoreRegistry();
+const registry = createEditorRegistry();
 const LABEL_KEYS: Readonly<Record<string, MessageKey>> = {
   'blixis/section': 'element.section',
   'blixis/container': 'element.container',

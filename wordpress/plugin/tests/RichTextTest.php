@@ -22,6 +22,13 @@ require_once \dirname( __DIR__ ) . '/src/Autoloader.php';
 /** Pure PHP rich text contract tests; no WordPress boot is required. */
 final class RichTextTest extends TestCase {
 	/** Checks escaped text and fixed semantic markup. */
+	/** Invalid style identifiers never become markup classes. */
+	public function test_style_mark_class_values_are_bounded_and_token_checked(): void {
+		$value = \json_decode( '{"v":1,"inline":[{"t":"text","s":"x","m":[{"style":{"weight":"x\\" onmouseover=alert(1)"}}]}]}' );
+		$this->assertStringNotContainsString( 'onmouseover', RichText::render( $value ) );
+	}
+
+	/** Checks escaped text and fixed semantic markup. */
 	public function test_safe_rendering_and_fixed_markup(): void {
 		$value = \json_decode( '{"v":1,"inline":[{"t":"text","s":"<script>&","m":["strong",{"link":{"href":"https://example.test","newTab":true}},{"style":{"color":"color-primary","weight":"bold"}}]},{"t":"br"}]}' );
 		$this->assertInstanceOf( \stdClass::class, $value );

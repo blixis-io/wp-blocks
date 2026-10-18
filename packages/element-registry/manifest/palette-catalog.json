@@ -1,0 +1,2546 @@
+{
+  "schemaVersion": "2.0.0",
+  "categories": [
+    "advanced-motion",
+    "commerce",
+    "content",
+    "forms",
+    "layout",
+    "media",
+    "navigation",
+    "ui-components",
+    "wordpress"
+  ],
+  "elements": [
+    {
+      "id": "blixis/section",
+      "definitionId": "section",
+      "title": "Section",
+      "category": "layout",
+      "icon": "solar:layers-linear",
+      "tier": "free",
+      "status": "ready",
+      "keywords": "section section layout section element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/container",
+      "definitionId": "container",
+      "title": "Container",
+      "category": "layout",
+      "icon": "solar:widget-2-linear",
+      "tier": "free",
+      "status": "ready",
+      "keywords": "container container layout container element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/div",
+      "definitionId": "div",
+      "title": "Div",
+      "category": "layout",
+      "icon": "solar:widget-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "div div layout div element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/flex",
+      "definitionId": "flex",
+      "title": "Flex",
+      "category": "layout",
+      "icon": "solar:posts-carousel-horizontal-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "flex flex layout flex element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/grid",
+      "definitionId": "grid",
+      "title": "Grid",
+      "category": "layout",
+      "icon": "solar:widget-4-linear",
+      "tier": "free",
+      "status": "ready",
+      "keywords": "grid grid layout grid element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/columns",
+      "definitionId": "columns",
+      "title": "Columns",
+      "category": "layout",
+      "icon": "solar:widget-3-linear",
+      "tier": "free",
+      "status": "ready",
+      "keywords": "columns columns layout columns element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/stack",
+      "definitionId": "stack",
+      "title": "Stack",
+      "category": "layout",
+      "icon": "solar:layers-minimalistic-linear",
+      "tier": "free",
+      "status": "ready",
+      "keywords": "stack stack layout stack element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/row",
+      "definitionId": "row",
+      "title": "Row",
+      "category": "layout",
+      "icon": "solar:menu-dots-linear",
+      "tier": "free",
+      "status": "ready",
+      "keywords": "row row layout row element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/spacer",
+      "definitionId": "spacer",
+      "title": "Spacer",
+      "category": "layout",
+      "icon": "solar:minus-circle-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "spacer spacer layout spacer element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/separator",
+      "definitionId": "separator",
+      "title": "Separator",
+      "category": "layout",
+      "icon": "solar:minus-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "separator separator layout separator element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/aspect-ratio",
+      "definitionId": "aspect-ratio",
+      "title": "Aspect Ratio",
+      "category": "layout",
+      "icon": "solar:maximize-square-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "aspect-ratio aspect ratio layout aspect ratio element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/scroll-area",
+      "definitionId": "scroll-area",
+      "title": "Scroll Area",
+      "category": "layout",
+      "icon": "solar:square-arrow-down-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "scroll-area scroll area layout scroll area element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/sticky-container",
+      "definitionId": "sticky-container",
+      "title": "Sticky Container",
+      "category": "layout",
+      "icon": "solar:pin-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "sticky-container sticky container layout sticky container element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/resizable-panels",
+      "definitionId": "resizable-panels",
+      "title": "Resizable Panels",
+      "category": "layout",
+      "icon": "solar:slider-horizontal-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "resizable-panels resizable panels layout resizable panels element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/split-layout",
+      "definitionId": "split-layout",
+      "title": "Split Layout",
+      "category": "layout",
+      "icon": "solar:widget-3-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "split-layout split layout layout split layout element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/marquee-layout",
+      "definitionId": "marquee-layout",
+      "title": "Marquee Layout",
+      "category": "layout",
+      "icon": "solar:repeat-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "marquee-layout marquee layout layout marquee layout element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/heading",
+      "definitionId": "heading",
+      "title": "Heading",
+      "category": "content",
+      "icon": "solar:text-bold-linear",
+      "tier": "free",
+      "status": "ready",
+      "keywords": "heading heading content heading element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/paragraph",
+      "definitionId": "paragraph",
+      "title": "Paragraph",
+      "category": "content",
+      "icon": "solar:text-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "paragraph paragraph content paragraph element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/rich-text",
+      "definitionId": "rich-text",
+      "title": "Rich Text",
+      "category": "content",
+      "icon": "solar:text-italic-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "rich-text rich text content rich text element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/eyebrow",
+      "definitionId": "eyebrow",
+      "title": "Eyebrow",
+      "category": "content",
+      "icon": "solar:text-field-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "eyebrow eyebrow content eyebrow element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/blockquote",
+      "definitionId": "blockquote",
+      "title": "Blockquote",
+      "category": "content",
+      "icon": "solar:chat-round-quote-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "blockquote blockquote content blockquote element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/list",
+      "definitionId": "list",
+      "title": "List",
+      "category": "content",
+      "icon": "solar:list-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "list list content list element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/icon-list",
+      "definitionId": "icon-list",
+      "title": "Icon List",
+      "category": "content",
+      "icon": "solar:list-check-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "icon-list icon list content icon list element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/link",
+      "definitionId": "link",
+      "title": "Link",
+      "category": "content",
+      "icon": "solar:link-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "link link content link element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/button",
+      "definitionId": "button",
+      "title": "Button",
+      "category": "content",
+      "icon": "solar:plain-linear",
+      "tier": "free",
+      "status": "ready",
+      "keywords": "button button content button element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/button-group",
+      "definitionId": "button-group",
+      "title": "Button Group",
+      "category": "content",
+      "icon": "solar:widget-2-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "button-group button group content button group element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/badge",
+      "definitionId": "badge",
+      "title": "Badge",
+      "category": "content",
+      "icon": "solar:tag-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "badge badge content badge element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/icon",
+      "definitionId": "icon",
+      "title": "Icon",
+      "category": "content",
+      "icon": "solar:star-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "icon icon content icon element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/icon-button",
+      "definitionId": "icon-button",
+      "title": "Icon Button",
+      "category": "content",
+      "icon": "solar:add-circle-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "icon-button icon button content icon button element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/code-block",
+      "definitionId": "code-block",
+      "title": "Code Block",
+      "category": "content",
+      "icon": "solar:code-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "code-block code block content code block element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/syntax-highlighter",
+      "definitionId": "syntax-highlighter",
+      "title": "Syntax Highlighter",
+      "category": "content",
+      "icon": "solar:code-square-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "syntax-highlighter syntax highlighter content syntax highlighter element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/table-of-contents",
+      "definitionId": "table-of-contents",
+      "title": "Table Of Contents",
+      "category": "content",
+      "icon": "solar:list-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "table-of-contents table of contents content table of contents element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/countdown",
+      "definitionId": "countdown",
+      "title": "Countdown",
+      "category": "content",
+      "icon": "solar:clock-circle-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "countdown countdown content countdown element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/counter",
+      "definitionId": "counter",
+      "title": "Counter",
+      "category": "content",
+      "icon": "solar:graph-up-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "counter counter content counter element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/animated-headline",
+      "definitionId": "animated-headline",
+      "title": "Animated Headline",
+      "category": "content",
+      "icon": "solar:text-bold-circle-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "animated-headline animated headline content animated headline element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/gradient-text",
+      "definitionId": "gradient-text",
+      "title": "Gradient Text",
+      "category": "content",
+      "icon": "solar:palette-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "gradient-text gradient text content gradient text element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/highlight-text",
+      "definitionId": "highlight-text",
+      "title": "Highlight Text",
+      "category": "content",
+      "icon": "solar:text-selection-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "highlight-text highlight text content highlight text element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/tooltip-text",
+      "definitionId": "tooltip-text",
+      "title": "Tooltip Text",
+      "category": "content",
+      "icon": "solar:info-circle-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "tooltip-text tooltip text content tooltip text element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/progress-ring",
+      "definitionId": "progress-ring",
+      "title": "Progress Ring",
+      "category": "content",
+      "icon": "solar:pie-chart-2-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "progress-ring progress ring content progress ring element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/image",
+      "definitionId": "image",
+      "title": "Image",
+      "category": "media",
+      "icon": "solar:gallery-linear",
+      "tier": "free",
+      "status": "ready",
+      "keywords": "image image media image element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/picture",
+      "definitionId": "picture",
+      "title": "Picture",
+      "category": "media",
+      "icon": "solar:gallery-wide-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "picture picture media picture element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/icon-svg",
+      "definitionId": "icon-svg",
+      "title": "Icon Svg",
+      "category": "media",
+      "icon": "solar:gallery-minimalistic-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "icon-svg icon svg media icon svg element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/video",
+      "definitionId": "video",
+      "title": "Video",
+      "category": "media",
+      "icon": "solar:videocamera-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "video video media video element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/audio",
+      "definitionId": "audio",
+      "title": "Audio",
+      "category": "media",
+      "icon": "solar:music-note-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "audio audio media audio element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/gallery",
+      "definitionId": "gallery",
+      "title": "Gallery",
+      "category": "media",
+      "icon": "solar:gallery-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "gallery gallery media gallery element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/lightbox",
+      "definitionId": "lightbox",
+      "title": "Lightbox",
+      "category": "media",
+      "icon": "solar:full-screen-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "lightbox lightbox media lightbox element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/before-after",
+      "definitionId": "before-after",
+      "title": "Before After",
+      "category": "media",
+      "icon": "solar:slider-vertical-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "before-after before after media before after element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/image-comparison",
+      "definitionId": "image-comparison",
+      "title": "Image Comparison",
+      "category": "media",
+      "icon": "solar:layers-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "image-comparison image comparison media image comparison element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/video-background",
+      "definitionId": "video-background",
+      "title": "Video Background",
+      "category": "media",
+      "icon": "solar:videocamera-record-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "video-background video background media video background element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/lottie",
+      "definitionId": "lottie",
+      "title": "Lottie",
+      "category": "media",
+      "icon": "solar:magic-stick-3-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "lottie lottie media lottie element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/svg-animation",
+      "definitionId": "svg-animation",
+      "title": "Svg Animation",
+      "category": "media",
+      "icon": "solar:magic-stick-3-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "svg-animation svg animation media svg animation element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/three-d-scene",
+      "definitionId": "three-d-scene",
+      "title": "Three D Scene",
+      "category": "media",
+      "icon": "solar:box-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "three-d-scene three d scene media three d scene element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/map",
+      "definitionId": "map",
+      "title": "Map",
+      "category": "media",
+      "icon": "solar:map-point-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "map map media map element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/embed",
+      "definitionId": "embed",
+      "title": "Embed",
+      "category": "media",
+      "icon": "solar:code-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "embed embed media embed element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/iframe",
+      "definitionId": "iframe",
+      "title": "Iframe",
+      "category": "media",
+      "icon": "solar:window-frame-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "iframe iframe media iframe element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/pdf-viewer",
+      "definitionId": "pdf-viewer",
+      "title": "Pdf Viewer",
+      "category": "media",
+      "icon": "solar:document-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "pdf-viewer pdf viewer media pdf viewer element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/image-hotspots",
+      "definitionId": "image-hotspots",
+      "title": "Image Hotspots",
+      "category": "media",
+      "icon": "solar:target-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "image-hotspots image hotspots media image hotspots element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/panorama-360",
+      "definitionId": "panorama-360",
+      "title": "Panorama 360",
+      "category": "media",
+      "icon": "solar:compass-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "panorama-360 panorama 360 media panorama 360 element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/site-logo",
+      "definitionId": "site-logo",
+      "title": "Site Logo",
+      "category": "navigation",
+      "icon": "solar:home-linear",
+      "tier": "free",
+      "status": "ready",
+      "keywords": "site-logo site logo navigation site logo element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/site-title",
+      "definitionId": "site-title",
+      "title": "Site Title",
+      "category": "navigation",
+      "icon": "solar:text-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "site-title site title navigation site title element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/nav-menu",
+      "definitionId": "nav-menu",
+      "title": "Nav Menu",
+      "category": "navigation",
+      "icon": "solar:hamburger-menu-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "nav-menu nav menu navigation nav menu element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/mobile-menu",
+      "definitionId": "mobile-menu",
+      "title": "Mobile Menu",
+      "category": "navigation",
+      "icon": "solar:hamburger-menu-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "mobile-menu mobile menu navigation mobile menu element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/breadcrumbs",
+      "definitionId": "breadcrumbs",
+      "title": "Breadcrumbs",
+      "category": "navigation",
+      "icon": "solar:route-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "breadcrumbs breadcrumbs navigation breadcrumbs element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/pagination",
+      "definitionId": "pagination",
+      "title": "Pagination",
+      "category": "navigation",
+      "icon": "solar:arrow-right-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "pagination pagination navigation pagination element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/anchor-links",
+      "definitionId": "anchor-links",
+      "title": "Anchor Links",
+      "category": "navigation",
+      "icon": "solar:link-circle-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "anchor-links anchor links navigation anchor links element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/back-to-top",
+      "definitionId": "back-to-top",
+      "title": "Back To Top",
+      "category": "navigation",
+      "icon": "solar:arrow-up-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "back-to-top back to top navigation back to top element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/tabs",
+      "definitionId": "tabs",
+      "title": "Tabs",
+      "category": "navigation",
+      "icon": "solar:layers-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "tabs tabs navigation tabs element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/accordion",
+      "definitionId": "accordion",
+      "title": "Accordion",
+      "category": "navigation",
+      "icon": "solar:list-down-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "accordion accordion navigation accordion element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/collapsible",
+      "definitionId": "collapsible",
+      "title": "Collapsible",
+      "category": "navigation",
+      "icon": "solar:list-arrow-down-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "collapsible collapsible navigation collapsible element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/navigation-menu",
+      "definitionId": "navigation-menu",
+      "title": "Navigation Menu",
+      "category": "navigation",
+      "icon": "solar:menu-dots-square-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "navigation-menu navigation menu navigation navigation menu element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/mega-menu",
+      "definitionId": "mega-menu",
+      "title": "Mega Menu",
+      "category": "navigation",
+      "icon": "solar:menu-dots-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "mega-menu mega menu navigation mega menu element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/sidebar-navigation",
+      "definitionId": "sidebar-navigation",
+      "title": "Sidebar Navigation",
+      "category": "navigation",
+      "icon": "solar:sidebar-minimalistic-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "sidebar-navigation sidebar navigation navigation sidebar navigation element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/steps",
+      "definitionId": "steps",
+      "title": "Steps",
+      "category": "navigation",
+      "icon": "solar:list-check-minimalistic-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "steps steps navigation steps element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/wizard-steps",
+      "definitionId": "wizard-steps",
+      "title": "Wizard Steps",
+      "category": "navigation",
+      "icon": "solar:list-check-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "wizard-steps wizard steps navigation wizard steps element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/scroll-spy",
+      "definitionId": "scroll-spy",
+      "title": "Scroll Spy",
+      "category": "navigation",
+      "icon": "solar:eye-scan-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "scroll-spy scroll spy navigation scroll spy element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/sticky-header",
+      "definitionId": "sticky-header",
+      "title": "Sticky Header",
+      "category": "navigation",
+      "icon": "solar:pin-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "sticky-header sticky header navigation sticky header element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/offcanvas",
+      "definitionId": "offcanvas",
+      "title": "Offcanvas",
+      "category": "navigation",
+      "icon": "solar:sidebar-minimalistic-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "offcanvas offcanvas navigation offcanvas element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/card",
+      "definitionId": "card",
+      "title": "Card",
+      "category": "ui-components",
+      "icon": "solar:card-linear",
+      "tier": "free",
+      "status": "ready",
+      "keywords": "card card ui-components card element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/alert",
+      "definitionId": "alert",
+      "title": "Alert",
+      "category": "ui-components",
+      "icon": "solar:danger-circle-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "alert alert ui-components alert element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/avatar",
+      "definitionId": "avatar",
+      "title": "Avatar",
+      "category": "ui-components",
+      "icon": "solar:user-circle-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "avatar avatar ui-components avatar element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/avatar-group",
+      "definitionId": "avatar-group",
+      "title": "Avatar Group",
+      "category": "ui-components",
+      "icon": "solar:users-group-rounded-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "avatar-group avatar group ui-components avatar group element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/skeleton",
+      "definitionId": "skeleton",
+      "title": "Skeleton",
+      "category": "ui-components",
+      "icon": "solar:widget-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "skeleton skeleton ui-components skeleton element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/progress",
+      "definitionId": "progress",
+      "title": "Progress",
+      "category": "ui-components",
+      "icon": "solar:chart-square-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "progress progress ui-components progress element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/spinner",
+      "definitionId": "spinner",
+      "title": "Spinner",
+      "category": "ui-components",
+      "icon": "solar:refresh-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "spinner spinner ui-components spinner element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/switch",
+      "definitionId": "switch",
+      "title": "Switch",
+      "category": "ui-components",
+      "icon": "solar:settings-minimalistic-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "switch switch ui-components switch element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/checkbox",
+      "definitionId": "checkbox",
+      "title": "Checkbox",
+      "category": "ui-components",
+      "icon": "solar:check-square-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "checkbox checkbox ui-components checkbox element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/radio-group",
+      "definitionId": "radio-group",
+      "title": "Radio Group",
+      "category": "ui-components",
+      "icon": "solar:check-circle-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "radio-group radio group ui-components radio group element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/select",
+      "definitionId": "select",
+      "title": "Select",
+      "category": "ui-components",
+      "icon": "solar:alt-arrow-down-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "select select ui-components select element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/combobox",
+      "definitionId": "combobox",
+      "title": "Combobox",
+      "category": "ui-components",
+      "icon": "solar:list-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "combobox combobox ui-components combobox element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/toggle",
+      "definitionId": "toggle",
+      "title": "Toggle",
+      "category": "ui-components",
+      "icon": "solar:settings-minimalistic-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "toggle toggle ui-components toggle element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/toggle-group",
+      "definitionId": "toggle-group",
+      "title": "Toggle Group",
+      "category": "ui-components",
+      "icon": "solar:widget-2-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "toggle-group toggle group ui-components toggle group element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/slider",
+      "definitionId": "slider",
+      "title": "Slider",
+      "category": "ui-components",
+      "icon": "solar:slider-horizontal-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "slider slider ui-components slider element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/range-slider",
+      "definitionId": "range-slider",
+      "title": "Range Slider",
+      "category": "ui-components",
+      "icon": "solar:slider-horizontal-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "range-slider range slider ui-components range slider element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/input",
+      "definitionId": "input",
+      "title": "Input",
+      "category": "ui-components",
+      "icon": "solar:text-field-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "input input ui-components input element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/textarea",
+      "definitionId": "textarea",
+      "title": "Textarea",
+      "category": "ui-components",
+      "icon": "solar:text-square-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "textarea textarea ui-components textarea element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/label",
+      "definitionId": "label",
+      "title": "Label",
+      "category": "ui-components",
+      "icon": "solar:tag-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "label label ui-components label element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/calendar",
+      "definitionId": "calendar",
+      "title": "Calendar",
+      "category": "ui-components",
+      "icon": "solar:calendar-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "calendar calendar ui-components calendar element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/date-picker",
+      "definitionId": "date-picker",
+      "title": "Date Picker",
+      "category": "ui-components",
+      "icon": "solar:calendar-mark-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "date-picker date picker ui-components date picker element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/date-range-picker",
+      "definitionId": "date-range-picker",
+      "title": "Date Range Picker",
+      "category": "ui-components",
+      "icon": "solar:calendar-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "date-range-picker date range picker ui-components date range picker element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/popover",
+      "definitionId": "popover",
+      "title": "Popover",
+      "category": "ui-components",
+      "icon": "solar:chat-round-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "popover popover ui-components popover element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/tooltip",
+      "definitionId": "tooltip",
+      "title": "Tooltip",
+      "category": "ui-components",
+      "icon": "solar:question-circle-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "tooltip tooltip ui-components tooltip element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/hover-card",
+      "definitionId": "hover-card",
+      "title": "Hover Card",
+      "category": "ui-components",
+      "icon": "solar:card-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "hover-card hover card ui-components hover card element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/dialog",
+      "definitionId": "dialog",
+      "title": "Dialog",
+      "category": "ui-components",
+      "icon": "solar:window-frame-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "dialog dialog ui-components dialog element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/alert-dialog",
+      "definitionId": "alert-dialog",
+      "title": "Alert Dialog",
+      "category": "ui-components",
+      "icon": "solar:danger-circle-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "alert-dialog alert dialog ui-components alert dialog element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/drawer",
+      "definitionId": "drawer",
+      "title": "Drawer",
+      "category": "ui-components",
+      "icon": "solar:sidebar-minimalistic-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "drawer drawer ui-components drawer element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/sheet",
+      "definitionId": "sheet",
+      "title": "Sheet",
+      "category": "ui-components",
+      "icon": "solar:sidebar-minimalistic-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "sheet sheet ui-components sheet element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/dropdown-menu",
+      "definitionId": "dropdown-menu",
+      "title": "Dropdown Menu",
+      "category": "ui-components",
+      "icon": "solar:menu-dots-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "dropdown-menu dropdown menu ui-components dropdown menu element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/context-menu",
+      "definitionId": "context-menu",
+      "title": "Context Menu",
+      "category": "ui-components",
+      "icon": "solar:menu-dots-circle-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "context-menu context menu ui-components context menu element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/command-palette",
+      "definitionId": "command-palette",
+      "title": "Command Palette",
+      "category": "ui-components",
+      "icon": "solar:command-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "command-palette command palette ui-components command palette element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/carousel",
+      "definitionId": "carousel",
+      "title": "Carousel",
+      "category": "ui-components",
+      "icon": "solar:gallery-wide-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "carousel carousel ui-components carousel element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/toast",
+      "definitionId": "toast",
+      "title": "Toast",
+      "category": "ui-components",
+      "icon": "solar:bell-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "toast toast ui-components toast element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/notification-center",
+      "definitionId": "notification-center",
+      "title": "Notification Center",
+      "category": "ui-components",
+      "icon": "solar:bell-bing-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "notification-center notification center ui-components notification center element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/data-table",
+      "definitionId": "data-table",
+      "title": "Data Table",
+      "category": "ui-components",
+      "icon": "solar:table-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "data-table data table ui-components data table element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/sortable-table",
+      "definitionId": "sortable-table",
+      "title": "Sortable Table",
+      "category": "ui-components",
+      "icon": "solar:sort-vertical-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "sortable-table sortable table ui-components sortable table element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/chart",
+      "definitionId": "chart",
+      "title": "Chart",
+      "category": "ui-components",
+      "icon": "solar:chart-2-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "chart chart ui-components chart element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/stat-card",
+      "definitionId": "stat-card",
+      "title": "Stat Card",
+      "category": "ui-components",
+      "icon": "solar:chart-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "stat-card stat card ui-components stat card element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/timeline",
+      "definitionId": "timeline",
+      "title": "Timeline",
+      "category": "ui-components",
+      "icon": "solar:history-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "timeline timeline ui-components timeline element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/rating",
+      "definitionId": "rating",
+      "title": "Rating",
+      "category": "ui-components",
+      "icon": "solar:star-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "rating rating ui-components rating element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/empty-state",
+      "definitionId": "empty-state",
+      "title": "Empty State",
+      "category": "ui-components",
+      "icon": "solar:inbox-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "empty-state empty state ui-components empty state element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/copy-button",
+      "definitionId": "copy-button",
+      "title": "Copy Button",
+      "category": "ui-components",
+      "icon": "solar:copy-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "copy-button copy button ui-components copy button element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/loading-button",
+      "definitionId": "loading-button",
+      "title": "Loading Button",
+      "category": "ui-components",
+      "icon": "solar:refresh-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "loading-button loading button ui-components loading button element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/segmented-control",
+      "definitionId": "segmented-control",
+      "title": "Segmented Control",
+      "category": "ui-components",
+      "icon": "solar:widget-2-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "segmented-control segmented control ui-components segmented control element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/breadcrumb-ui",
+      "definitionId": "breadcrumb-ui",
+      "title": "Breadcrumb Ui",
+      "category": "ui-components",
+      "icon": "solar:route-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "breadcrumb-ui breadcrumb ui ui-components breadcrumb ui element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/keyboard-shortcut",
+      "definitionId": "keyboard-shortcut",
+      "title": "Keyboard Shortcut",
+      "category": "ui-components",
+      "icon": "solar:keyboard-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "keyboard-shortcut keyboard shortcut ui-components keyboard shortcut element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/scroll-indicator",
+      "definitionId": "scroll-indicator",
+      "title": "Scroll Indicator",
+      "category": "ui-components",
+      "icon": "solar:arrow-down-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "scroll-indicator scroll indicator ui-components scroll indicator element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/form",
+      "definitionId": "form",
+      "title": "Form",
+      "category": "forms",
+      "icon": "solar:clipboard-text-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "form form forms form element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/text-field",
+      "definitionId": "text-field",
+      "title": "Text Field",
+      "category": "forms",
+      "icon": "solar:text-field-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "text-field text field forms text field element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/email-field",
+      "definitionId": "email-field",
+      "title": "Email Field",
+      "category": "forms",
+      "icon": "solar:letter-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "email-field email field forms email field element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/password-field",
+      "definitionId": "password-field",
+      "title": "Password Field",
+      "category": "forms",
+      "icon": "solar:lock-password-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "password-field password field forms password field element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/phone-field",
+      "definitionId": "phone-field",
+      "title": "Phone Field",
+      "category": "forms",
+      "icon": "solar:phone-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "phone-field phone field forms phone field element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/number-field",
+      "definitionId": "number-field",
+      "title": "Number Field",
+      "category": "forms",
+      "icon": "solar:hashtag-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "number-field number field forms number field element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/url-field",
+      "definitionId": "url-field",
+      "title": "Url Field",
+      "category": "forms",
+      "icon": "solar:link-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "url-field url field forms url field element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/search-field",
+      "definitionId": "search-field",
+      "title": "Search Field",
+      "category": "forms",
+      "icon": "solar:magnifer-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "search-field search field forms search field element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/file-upload",
+      "definitionId": "file-upload",
+      "title": "File Upload",
+      "category": "forms",
+      "icon": "solar:upload-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "file-upload file upload forms file upload element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/dropzone-upload",
+      "definitionId": "dropzone-upload",
+      "title": "Dropzone Upload",
+      "category": "forms",
+      "icon": "solar:upload-track-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "dropzone-upload dropzone upload forms dropzone upload element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/otp-input",
+      "definitionId": "otp-input",
+      "title": "Otp Input",
+      "category": "forms",
+      "icon": "solar:shield-keyhole-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "otp-input otp input forms otp input element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/tag-input",
+      "definitionId": "tag-input",
+      "title": "Tag Input",
+      "category": "forms",
+      "icon": "solar:tag-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "tag-input tag input forms tag input element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/multi-select",
+      "definitionId": "multi-select",
+      "title": "Multi Select",
+      "category": "forms",
+      "icon": "solar:list-check-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "multi-select multi select forms multi select element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/signature-field",
+      "definitionId": "signature-field",
+      "title": "Signature Field",
+      "category": "forms",
+      "icon": "solar:pen-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "signature-field signature field forms signature field element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/repeater-field",
+      "definitionId": "repeater-field",
+      "title": "Repeater Field",
+      "category": "forms",
+      "icon": "solar:copy-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "repeater-field repeater field forms repeater field element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/hidden-field",
+      "definitionId": "hidden-field",
+      "title": "Hidden Field",
+      "category": "forms",
+      "icon": "solar:eye-closed-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "hidden-field hidden field forms hidden field element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/captcha",
+      "definitionId": "captcha",
+      "title": "Captcha",
+      "category": "forms",
+      "icon": "solar:shield-check-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "captcha captcha forms captcha element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/submit-button",
+      "definitionId": "submit-button",
+      "title": "Submit Button",
+      "category": "forms",
+      "icon": "solar:plain-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "submit-button submit button forms submit button element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/form-success",
+      "definitionId": "form-success",
+      "title": "Form Success",
+      "category": "forms",
+      "icon": "solar:check-circle-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "form-success form success forms form success element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/form-error",
+      "definitionId": "form-error",
+      "title": "Form Error",
+      "category": "forms",
+      "icon": "solar:danger-circle-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "form-error form error forms form error element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/conditional-fields",
+      "definitionId": "conditional-fields",
+      "title": "Conditional Fields",
+      "category": "forms",
+      "icon": "solar:filter-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "conditional-fields conditional fields forms conditional fields element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/multi-step-form",
+      "definitionId": "multi-step-form",
+      "title": "Multi Step Form",
+      "category": "forms",
+      "icon": "solar:list-check-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "multi-step-form multi step form forms multi step form element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/newsletter-signup",
+      "definitionId": "newsletter-signup",
+      "title": "Newsletter Signup",
+      "category": "forms",
+      "icon": "solar:letter-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "newsletter-signup newsletter signup forms newsletter signup element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/contact-form",
+      "definitionId": "contact-form",
+      "title": "Contact Form",
+      "category": "forms",
+      "icon": "solar:letter-opened-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "contact-form contact form forms contact form element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/post-title",
+      "definitionId": "post-title",
+      "title": "Post Title",
+      "category": "wordpress",
+      "icon": "solar:document-text-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "post-title post title wordpress post title element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/post-content",
+      "definitionId": "post-content",
+      "title": "Post Content",
+      "category": "wordpress",
+      "icon": "solar:document-text-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "post-content post content wordpress post content element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/post-excerpt",
+      "definitionId": "post-excerpt",
+      "title": "Post Excerpt",
+      "category": "wordpress",
+      "icon": "solar:text-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "post-excerpt post excerpt wordpress post excerpt element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/featured-image",
+      "definitionId": "featured-image",
+      "title": "Featured Image",
+      "category": "wordpress",
+      "icon": "solar:gallery-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "featured-image featured image wordpress featured image element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/post-date",
+      "definitionId": "post-date",
+      "title": "Post Date",
+      "category": "wordpress",
+      "icon": "solar:calendar-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "post-date post date wordpress post date element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/post-author",
+      "definitionId": "post-author",
+      "title": "Post Author",
+      "category": "wordpress",
+      "icon": "solar:user-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "post-author post author wordpress post author element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/post-terms",
+      "definitionId": "post-terms",
+      "title": "Post Terms",
+      "category": "wordpress",
+      "icon": "solar:tag-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "post-terms post terms wordpress post terms element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/post-meta",
+      "definitionId": "post-meta",
+      "title": "Post Meta",
+      "category": "wordpress",
+      "icon": "solar:database-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "post-meta post meta wordpress post meta element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/site-tagline",
+      "definitionId": "site-tagline",
+      "title": "Site Tagline",
+      "category": "wordpress",
+      "icon": "solar:text-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "site-tagline site tagline wordpress site tagline element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/site-search",
+      "definitionId": "site-search",
+      "title": "Site Search",
+      "category": "wordpress",
+      "icon": "solar:magnifer-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "site-search site search wordpress site search element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/comments-list",
+      "definitionId": "comments-list",
+      "title": "Comments List",
+      "category": "wordpress",
+      "icon": "solar:chat-line-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "comments-list comments list wordpress comments list element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/comment-form",
+      "definitionId": "comment-form",
+      "title": "Comment Form",
+      "category": "wordpress",
+      "icon": "solar:chat-line-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "comment-form comment form wordpress comment form element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/query-loop",
+      "definitionId": "query-loop",
+      "title": "Query Loop",
+      "category": "wordpress",
+      "icon": "solar:repeat-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "query-loop query loop wordpress query loop element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/loop-item",
+      "definitionId": "loop-item",
+      "title": "Loop Item",
+      "category": "wordpress",
+      "icon": "solar:widget-2-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "loop-item loop item wordpress loop item element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/query-pagination",
+      "definitionId": "query-pagination",
+      "title": "Query Pagination",
+      "category": "wordpress",
+      "icon": "solar:arrow-right-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "query-pagination query pagination wordpress query pagination element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/acf-field",
+      "definitionId": "acf-field",
+      "title": "Acf Field",
+      "category": "wordpress",
+      "icon": "solar:database-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "acf-field acf field wordpress acf field element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/meta-box-field",
+      "definitionId": "meta-box-field",
+      "title": "Meta Box Field",
+      "category": "wordpress",
+      "icon": "solar:database-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "meta-box-field meta box field wordpress meta box field element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/custom-field",
+      "definitionId": "custom-field",
+      "title": "Custom Field",
+      "category": "wordpress",
+      "icon": "solar:database-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "custom-field custom field wordpress custom field element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/user-profile",
+      "definitionId": "user-profile",
+      "title": "User Profile",
+      "category": "wordpress",
+      "icon": "solar:user-rounded-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "user-profile user profile wordpress user profile element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/taxonomy-filter",
+      "definitionId": "taxonomy-filter",
+      "title": "Taxonomy Filter",
+      "category": "wordpress",
+      "icon": "solar:filter-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "taxonomy-filter taxonomy filter wordpress taxonomy filter element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/post-filter",
+      "definitionId": "post-filter",
+      "title": "Post Filter",
+      "category": "wordpress",
+      "icon": "solar:filter-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "post-filter post filter wordpress post filter element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/ajax-load-more",
+      "definitionId": "ajax-load-more",
+      "title": "Ajax Load More",
+      "category": "wordpress",
+      "icon": "solar:refresh-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "ajax-load-more ajax load more wordpress ajax load more element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/related-posts",
+      "definitionId": "related-posts",
+      "title": "Related Posts",
+      "category": "wordpress",
+      "icon": "solar:link-circle-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "related-posts related posts wordpress related posts element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/author-box",
+      "definitionId": "author-box",
+      "title": "Author Box",
+      "category": "wordpress",
+      "icon": "solar:user-id-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "author-box author box wordpress author box element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/table-of-posts",
+      "definitionId": "table-of-posts",
+      "title": "Table Of Posts",
+      "category": "wordpress",
+      "icon": "solar:table-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "table-of-posts table of posts wordpress table of posts element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/wp-shortcode",
+      "definitionId": "wp-shortcode",
+      "title": "Wp Shortcode",
+      "category": "wordpress",
+      "icon": "solar:code-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "wp-shortcode wp shortcode wordpress wp shortcode element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/wp-block-embed",
+      "definitionId": "wp-block-embed",
+      "title": "Wp Block Embed",
+      "category": "wordpress",
+      "icon": "solar:widget-2-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "wp-block-embed wp block embed wordpress wp block embed element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/template-part",
+      "definitionId": "template-part",
+      "title": "Template Part",
+      "category": "wordpress",
+      "icon": "solar:layers-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "template-part template part wordpress template part element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/dynamic-tag",
+      "definitionId": "dynamic-tag",
+      "title": "Dynamic Tag",
+      "category": "wordpress",
+      "icon": "solar:tag-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "dynamic-tag dynamic tag wordpress dynamic tag element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/dynamic-condition",
+      "definitionId": "dynamic-condition",
+      "title": "Dynamic Condition",
+      "category": "wordpress",
+      "icon": "solar:filter-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "dynamic-condition dynamic condition wordpress dynamic condition element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/product-card",
+      "definitionId": "product-card",
+      "title": "Product Card",
+      "category": "commerce",
+      "icon": "solar:bag-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "product-card product card commerce product card element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/product-grid",
+      "definitionId": "product-grid",
+      "title": "Product Grid",
+      "category": "commerce",
+      "icon": "solar:widget-4-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "product-grid product grid commerce product grid element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/product-title",
+      "definitionId": "product-title",
+      "title": "Product Title",
+      "category": "commerce",
+      "icon": "solar:text-bold-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "product-title product title commerce product title element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/product-image",
+      "definitionId": "product-image",
+      "title": "Product Image",
+      "category": "commerce",
+      "icon": "solar:gallery-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "product-image product image commerce product image element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/product-gallery",
+      "definitionId": "product-gallery",
+      "title": "Product Gallery",
+      "category": "commerce",
+      "icon": "solar:gallery-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "product-gallery product gallery commerce product gallery element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/product-price",
+      "definitionId": "product-price",
+      "title": "Product Price",
+      "category": "commerce",
+      "icon": "solar:dollar-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "product-price product price commerce product price element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/product-rating",
+      "definitionId": "product-rating",
+      "title": "Product Rating",
+      "category": "commerce",
+      "icon": "solar:star-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "product-rating product rating commerce product rating element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/add-to-cart",
+      "definitionId": "add-to-cart",
+      "title": "Add To Cart",
+      "category": "commerce",
+      "icon": "solar:cart-plus-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "add-to-cart add to cart commerce add to cart element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/product-variants",
+      "definitionId": "product-variants",
+      "title": "Product Variants",
+      "category": "commerce",
+      "icon": "solar:settings-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "product-variants product variants commerce product variants element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/product-stock",
+      "definitionId": "product-stock",
+      "title": "Product Stock",
+      "category": "commerce",
+      "icon": "solar:box-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "product-stock product stock commerce product stock element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/product-description",
+      "definitionId": "product-description",
+      "title": "Product Description",
+      "category": "commerce",
+      "icon": "solar:text-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "product-description product description commerce product description element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/product-tabs",
+      "definitionId": "product-tabs",
+      "title": "Product Tabs",
+      "category": "commerce",
+      "icon": "solar:layers-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "product-tabs product tabs commerce product tabs element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/cart-icon",
+      "definitionId": "cart-icon",
+      "title": "Cart Icon",
+      "category": "commerce",
+      "icon": "solar:cart-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "cart-icon cart icon commerce cart icon element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/mini-cart",
+      "definitionId": "mini-cart",
+      "title": "Mini Cart",
+      "category": "commerce",
+      "icon": "solar:cart-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "mini-cart mini cart commerce mini cart element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/cart-table",
+      "definitionId": "cart-table",
+      "title": "Cart Table",
+      "category": "commerce",
+      "icon": "solar:cart-large-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "cart-table cart table commerce cart table element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/checkout-form",
+      "definitionId": "checkout-form",
+      "title": "Checkout Form",
+      "category": "commerce",
+      "icon": "solar:card-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "checkout-form checkout form commerce checkout form element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/checkout-summary",
+      "definitionId": "checkout-summary",
+      "title": "Checkout Summary",
+      "category": "commerce",
+      "icon": "solar:bill-list-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "checkout-summary checkout summary commerce checkout summary element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/coupon-field",
+      "definitionId": "coupon-field",
+      "title": "Coupon Field",
+      "category": "commerce",
+      "icon": "solar:ticket-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "coupon-field coupon field commerce coupon field element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/account-menu",
+      "definitionId": "account-menu",
+      "title": "Account Menu",
+      "category": "commerce",
+      "icon": "solar:user-circle-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "account-menu account menu commerce account menu element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/product-search",
+      "definitionId": "product-search",
+      "title": "Product Search",
+      "category": "commerce",
+      "icon": "solar:magnifer-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "product-search product search commerce product search element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/product-filters",
+      "definitionId": "product-filters",
+      "title": "Product Filters",
+      "category": "commerce",
+      "icon": "solar:filter-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "product-filters product filters commerce product filters element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/product-categories",
+      "definitionId": "product-categories",
+      "title": "Product Categories",
+      "category": "commerce",
+      "icon": "solar:widget-2-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "product-categories product categories commerce product categories element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/wishlist-button",
+      "definitionId": "wishlist-button",
+      "title": "Wishlist Button",
+      "category": "commerce",
+      "icon": "solar:heart-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "wishlist-button wishlist button commerce wishlist button element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/upsells",
+      "definitionId": "upsells",
+      "title": "Upsells",
+      "category": "commerce",
+      "icon": "solar:arrow-up-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "upsells upsells commerce upsells element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/cross-sells",
+      "definitionId": "cross-sells",
+      "title": "Cross Sells",
+      "category": "commerce",
+      "icon": "solar:link-circle-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "cross-sells cross sells commerce cross sells element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/order-summary",
+      "definitionId": "order-summary",
+      "title": "Order Summary",
+      "category": "commerce",
+      "icon": "solar:bill-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "order-summary order summary commerce order summary element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/entrance-animation",
+      "definitionId": "entrance-animation",
+      "title": "Entrance Animation",
+      "category": "advanced-motion",
+      "icon": "solar:magic-stick-3-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "entrance-animation entrance animation advanced-motion entrance animation element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/scroll-reveal",
+      "definitionId": "scroll-reveal",
+      "title": "Scroll Reveal",
+      "category": "advanced-motion",
+      "icon": "solar:eye-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "scroll-reveal scroll reveal advanced-motion scroll reveal element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/scroll-parallax",
+      "definitionId": "scroll-parallax",
+      "title": "Scroll Parallax",
+      "category": "advanced-motion",
+      "icon": "solar:layers-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "scroll-parallax scroll parallax advanced-motion scroll parallax element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/mouse-parallax",
+      "definitionId": "mouse-parallax",
+      "title": "Mouse Parallax",
+      "category": "advanced-motion",
+      "icon": "solar:cursor-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "mouse-parallax mouse parallax advanced-motion mouse parallax element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/scroll-progress",
+      "definitionId": "scroll-progress",
+      "title": "Scroll Progress",
+      "category": "advanced-motion",
+      "icon": "solar:chart-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "scroll-progress scroll progress advanced-motion scroll progress element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/scroll-timeline",
+      "definitionId": "scroll-timeline",
+      "title": "Scroll Timeline",
+      "category": "advanced-motion",
+      "icon": "solar:clock-circle-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "scroll-timeline scroll timeline advanced-motion scroll timeline element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/stagger-container",
+      "definitionId": "stagger-container",
+      "title": "Stagger Container",
+      "category": "advanced-motion",
+      "icon": "solar:sort-by-time-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "stagger-container stagger container advanced-motion stagger container element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/split-text",
+      "definitionId": "split-text",
+      "title": "Split Text",
+      "category": "advanced-motion",
+      "icon": "solar:text-bold-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "split-text split text advanced-motion split text element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/typewriter",
+      "definitionId": "typewriter",
+      "title": "Typewriter",
+      "category": "advanced-motion",
+      "icon": "solar:text-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "typewriter typewriter advanced-motion typewriter element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/number-ticker",
+      "definitionId": "number-ticker",
+      "title": "Number Ticker",
+      "category": "advanced-motion",
+      "icon": "solar:calculator-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "number-ticker number ticker advanced-motion number ticker element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/text-reveal",
+      "definitionId": "text-reveal",
+      "title": "Text Reveal",
+      "category": "advanced-motion",
+      "icon": "solar:text-bold-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "text-reveal text reveal advanced-motion text reveal element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/logo-marquee",
+      "definitionId": "logo-marquee",
+      "title": "Logo Marquee",
+      "category": "advanced-motion",
+      "icon": "solar:repeat-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "logo-marquee logo marquee advanced-motion logo marquee element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/magnetic-button",
+      "definitionId": "magnetic-button",
+      "title": "Magnetic Button",
+      "category": "advanced-motion",
+      "icon": "solar:cursor-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "magnetic-button magnetic button advanced-motion magnetic button element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/ripple-button",
+      "definitionId": "ripple-button",
+      "title": "Ripple Button",
+      "category": "advanced-motion",
+      "icon": "solar:waterdrop-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "ripple-button ripple button advanced-motion ripple button element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/hover-tilt",
+      "definitionId": "hover-tilt",
+      "title": "Hover Tilt",
+      "category": "advanced-motion",
+      "icon": "solar:refresh-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "hover-tilt hover tilt advanced-motion hover tilt element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/flip-card",
+      "definitionId": "flip-card",
+      "title": "Flip Card",
+      "category": "advanced-motion",
+      "icon": "solar:card-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "flip-card flip card advanced-motion flip card element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/animated-gradient",
+      "definitionId": "animated-gradient",
+      "title": "Animated Gradient",
+      "category": "advanced-motion",
+      "icon": "solar:palette-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "animated-gradient animated gradient advanced-motion animated gradient element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/sticky-scroll-story",
+      "definitionId": "sticky-scroll-story",
+      "title": "Sticky Scroll Story",
+      "category": "advanced-motion",
+      "icon": "solar:book-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "sticky-scroll-story sticky scroll story advanced-motion sticky scroll story element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/horizontal-scroll",
+      "definitionId": "horizontal-scroll",
+      "title": "Horizontal Scroll",
+      "category": "advanced-motion",
+      "icon": "solar:arrow-right-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "horizontal-scroll horizontal scroll advanced-motion horizontal scroll element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/scroll-snap-carousel",
+      "definitionId": "scroll-snap-carousel",
+      "title": "Scroll Snap Carousel",
+      "category": "advanced-motion",
+      "icon": "solar:gallery-wide-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "scroll-snap-carousel scroll snap carousel advanced-motion scroll snap carousel element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/cursor-follower",
+      "definitionId": "cursor-follower",
+      "title": "Cursor Follower",
+      "category": "advanced-motion",
+      "icon": "solar:cursor-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "cursor-follower cursor follower advanced-motion cursor follower element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/interactive-particles",
+      "definitionId": "interactive-particles",
+      "title": "Interactive Particles",
+      "category": "advanced-motion",
+      "icon": "solar:stars-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "interactive-particles interactive particles advanced-motion interactive particles element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/spotlight-card",
+      "definitionId": "spotlight-card",
+      "title": "Spotlight Card",
+      "category": "advanced-motion",
+      "icon": "solar:flashlight-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "spotlight-card spotlight card advanced-motion spotlight card element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/reorder-list",
+      "definitionId": "reorder-list",
+      "title": "Reorder List",
+      "category": "advanced-motion",
+      "icon": "solar:sort-vertical-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "reorder-list reorder list advanced-motion reorder list element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/swipe-deck",
+      "definitionId": "swipe-deck",
+      "title": "Swipe Deck",
+      "category": "advanced-motion",
+      "icon": "solar:hand-shake-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "swipe-deck swipe deck advanced-motion swipe deck element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/long-press-action",
+      "definitionId": "long-press-action",
+      "title": "Long Press Action",
+      "category": "advanced-motion",
+      "icon": "solar:hand-shake-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "long-press-action long press action advanced-motion long press action element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/hold-to-confirm",
+      "definitionId": "hold-to-confirm",
+      "title": "Hold To Confirm",
+      "category": "advanced-motion",
+      "icon": "solar:shield-check-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "hold-to-confirm hold to confirm advanced-motion hold to confirm element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/like-burst",
+      "definitionId": "like-burst",
+      "title": "Like Burst",
+      "category": "advanced-motion",
+      "icon": "solar:heart-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "like-burst like burst advanced-motion like burst element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/icon-morph",
+      "definitionId": "icon-morph",
+      "title": "Icon Morph",
+      "category": "advanced-motion",
+      "icon": "solar:magic-stick-3-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "icon-morph icon morph advanced-motion icon morph element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/loading-skeleton-swap",
+      "definitionId": "loading-skeleton-swap",
+      "title": "Loading Skeleton Swap",
+      "category": "advanced-motion",
+      "icon": "solar:refresh-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "loading-skeleton-swap loading skeleton swap advanced-motion loading skeleton swap element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/streaming-text",
+      "definitionId": "streaming-text",
+      "title": "Streaming Text",
+      "category": "advanced-motion",
+      "icon": "solar:text-linear",
+      "tier": "pro",
+      "status": "planned",
+      "keywords": "streaming-text streaming text advanced-motion streaming text element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/live-activity",
+      "definitionId": "live-activity",
+      "title": "Live Activity",
+      "category": "advanced-motion",
+      "icon": "solar:pulse-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "live-activity live activity advanced-motion live activity element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/presence-avatars",
+      "definitionId": "presence-avatars",
+      "title": "Presence Avatars",
+      "category": "advanced-motion",
+      "icon": "solar:users-group-rounded-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "presence-avatars presence avatars advanced-motion presence avatars element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/typing-indicator",
+      "definitionId": "typing-indicator",
+      "title": "Typing Indicator",
+      "category": "advanced-motion",
+      "icon": "solar:chat-round-dots-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "typing-indicator typing indicator advanced-motion typing indicator element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/new-items-pill",
+      "definitionId": "new-items-pill",
+      "title": "New Items Pill",
+      "category": "advanced-motion",
+      "icon": "solar:add-circle-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "new-items-pill new items pill advanced-motion new items pill element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/expanding-search",
+      "definitionId": "expanding-search",
+      "title": "Expanding Search",
+      "category": "advanced-motion",
+      "icon": "solar:magnifer-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "expanding-search expanding search advanced-motion expanding search element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/inline-validation",
+      "definitionId": "inline-validation",
+      "title": "Inline Validation",
+      "category": "advanced-motion",
+      "icon": "solar:shield-check-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "inline-validation inline validation advanced-motion inline validation element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/floating-label",
+      "definitionId": "floating-label",
+      "title": "Floating Label",
+      "category": "advanced-motion",
+      "icon": "solar:text-field-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "floating-label floating label advanced-motion floating label element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/password-strength",
+      "definitionId": "password-strength",
+      "title": "Password Strength",
+      "category": "advanced-motion",
+      "icon": "solar:lock-password-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "password-strength password strength advanced-motion password strength element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/value-flash",
+      "definitionId": "value-flash",
+      "title": "Value Flash",
+      "category": "advanced-motion",
+      "icon": "solar:graph-up-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "value-flash value flash advanced-motion value flash element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/poll-results",
+      "definitionId": "poll-results",
+      "title": "Poll Results",
+      "category": "advanced-motion",
+      "icon": "solar:chart-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "poll-results poll results advanced-motion poll results element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/filter-grid",
+      "definitionId": "filter-grid",
+      "title": "Filter Grid",
+      "category": "advanced-motion",
+      "icon": "solar:filter-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "filter-grid filter grid advanced-motion filter grid element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/show-more",
+      "definitionId": "show-more",
+      "title": "Show More",
+      "category": "advanced-motion",
+      "icon": "solar:alt-arrow-down-linear",
+      "tier": "free",
+      "status": "planned",
+      "keywords": "show-more show more advanced-motion show more element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/blur-up-image",
+      "definitionId": "blur-up-image",
+      "title": "Blur Up Image",
+      "category": "advanced-motion",
+      "icon": "solar:gallery-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "blur-up-image blur up image advanced-motion blur up image element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/reading-progress",
+      "definitionId": "reading-progress",
+      "title": "Reading Progress",
+      "category": "advanced-motion",
+      "icon": "solar:chart-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "reading-progress reading progress advanced-motion reading progress element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/hide-on-scroll",
+      "definitionId": "hide-on-scroll",
+      "title": "Hide On Scroll",
+      "category": "advanced-motion",
+      "icon": "solar:eye-closed-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "hide-on-scroll hide on scroll advanced-motion hide on scroll element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/lightbox-gesture",
+      "definitionId": "lightbox-gesture",
+      "title": "Lightbox Gesture",
+      "category": "advanced-motion",
+      "icon": "solar:full-screen-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "lightbox-gesture lightbox gesture advanced-motion lightbox gesture element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    },
+    {
+      "id": "blixis/slider-detents",
+      "definitionId": "slider-detents",
+      "title": "Slider Detents",
+      "category": "advanced-motion",
+      "icon": "solar:slider-horizontal-linear",
+      "tier": "plus",
+      "status": "planned",
+      "keywords": "slider-detents slider detents advanced-motion slider detents element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+    }
+  ]
+}

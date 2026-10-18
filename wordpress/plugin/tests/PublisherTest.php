@@ -19,6 +19,10 @@ use Blixis\Builder\Storage\Envelope;
 use Blixis\Builder\Storage\MetaKeys;
 use Blixis\Builder\Storage\SnapshotStore;
 use Blixis\Builder\Storage\StreamStore;
+use Blixis\Builder\Preview\PreviewDocument;
+use Blixis\Builder\Render\CoreDocumentRenderer;
+use Blixis\Builder\Render\MediaResolver;
+use Blixis\Builder\Templates\Importer;
 use PHPUnit\Framework\TestCase;
 
 if ( ! \defined( 'ABSPATH' ) ) {
@@ -55,6 +59,155 @@ final class PublisherTest extends TestCase {
 		$this->database  = new FakeDatabase();
 		$this->streams   = new StreamStore( $this->database );
 		$this->publisher = new Publisher( $this->database, $this->streams, new SnapshotStore( $this->database, $this->streams ), ElementRegistry::from_manifest_file( \dirname( __DIR__ ) . '/data/core-elements.json' ) );
+	}
+
+	/** Business pack v2 element types survive the same snapshot publication and read path as imported pages. */
+	public function test_business_pack_layout_round_trips_through_publisher_and_published_reader(): void {
+		$pack = \json_decode( (string) \file_get_contents( \dirname( __DIR__ ) . '/templates/packs/business/template.json' ) );
+		$this->assertInstanceOf( \stdClass::class, $pack );
+		$root   = $pack->documents[0]->root;
+		$layout = [
+			'schemaVersion'  => 1,
+			'documentId'     => 'business-home',
+			'layoutRevision' => 1,
+			'root'           => [ $root ],
+		];
+		$this->assertTrue( $this->streams->write( 5, MetaKeys::LAYOUT, (string) \json_encode( $layout, JSON_THROW_ON_ERROR ), 0 )->success );
+		$this->assertTrue( $this->streams->write( 5, MetaKeys::content( 'en_US' ), '{"schemaVersion":1,"contentRevision":1,"entries":{}}', 0 )->success );
+		$result = $this->publisher->publish( 5, new PublishOptions( 0, true, 'en_US' ) );
+		$this->assertNull( $result->code, $result->code ?? '' );
+		$published = ( new PublishedReader( $this->database ) )->read( 5, 'en_US' );
+		$this->assertNotNull( $published );
+		$this->assertTrue( PreviewDocument::accepts( $published->document ) );
+		$this->assertSame( 'page', $published->document->root[0]->type );
+	}
+
+	/** Imported bundled-pack copy survives the exact stream, publication, read and render path. */
+	public function test_imported_template_localizable_content_renders_for_all_critical_packs(): void {
+		$definitions = \Blixis\Builder\Registry\ElementDefinitionRegistry::from_manifest_file( \dirname( __DIR__ ) . '/data/element-definitions-v2.json' );
+		$registry    = ElementRegistry::from_manifest_file( \dirname( __DIR__ ) . '/data/core-elements.json' );
+		$media       = new class() implements MediaResolver {
+			/** Resolve a stored media id.
+			 *
+			 * @param int $attachment_id Attachment identifier.
+			 */
+			public function resolve( int $attachment_id ): ?array {
+				return null; }
+		};
+		$renderer    = new CoreDocumentRenderer( $registry, $media );
+		foreach ( [ 'business', 'creative-agency', 'modern-homes', 'online-store' ] as $index => $pack_id ) {
+			$pack = json_decode( (string) file_get_contents( __DIR__ . '/../templates/packs/' . $pack_id . '/template.json' ), true ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Bundled pack fixture.
+			$this->assertIsArray( $pack );
+			$root    = $pack['documents'][0]['root'];
+			$notes   = [];
+			$streams = Importer::document_streams( $root, $definitions, 'en_US', $notes, $pack['designTokens']['colors']['light'] );
+			$entries = get_object_vars( $streams['content']['entries'] );
+			$this->assertArrayHasKey( 'hero-title', $entries, $pack_id );
+			$this->assertArrayHasKey( 'content', get_object_vars( $entries['hero-title']['values'] ), $pack_id );
+			$this->assertArrayHasKey( 'items', get_object_vars( $entries['primary-nav']['values'] ), $pack_id . ' localized navigation labels' );
+			$post_id = 100 + $index;
+			$this->assertArrayNotHasKey( 'content', $streams['layout']['root'][0]['props'], $pack_id . ' layout excludes localized content' );
+			$this->assertTrue( $this->streams->write( $post_id, MetaKeys::LAYOUT, (string) json_encode( $streams['layout'] ), 0 )->success, $pack_id );
+			$this->assertTrue( $this->streams->write( $post_id, MetaKeys::content( 'en_US' ), (string) json_encode( $streams['content'] ), 0 )->success, $pack_id );
+			$result = $this->publisher->publish( $post_id, new PublishOptions( 0, true, 'en_US' ) );
+			$this->assertNull( $result->code, $pack_id . ': ' . ( $result->code ?? '' ) );
+			$published = ( new PublishedReader( $this->database ) )->read( $post_id, 'en_US' );
+			$this->assertNotNull( $published, $pack_id );
+			$html        = $renderer->render( $published->document, 'en_US', 'light', [], 'source', [ 'primary' ] );
+			$title       = $this->template_plain_text( $pack['documents'][0]['root'], 'hero-title' );
+			$description = $this->template_plain_text( $pack['documents'][0]['root'], 'hero-description' );
+			$this->assertNotSame( '', $title, $pack_id );
+			$this->assertNotSame( '', $description, $pack_id );
+			$this->assertStringContainsString( $title, html_entity_decode( strip_tags( preg_replace( '/<span[^>]*>|<\\/span>/', '', $html ) ?? $html ) ), $pack_id . ' hero title' );
+			$this->assertStringContainsString( $description, html_entity_decode( strip_tags( $html ) ), $pack_id . ' hero description' );
+			if ( 'online-store' === $pack_id ) {
+				$this->assertStringContainsString( 'data-blx-unsupported', $html, 'deferred commerce renderer uses the safe fallback' );
+				$this->assertStringContainsString( 'data-blx-type="woocommerce-cart-link"', $html );
+				$this->assertStringContainsString( 'data-blx-type="woocommerce-product-grid"', $html );
+				$this->assertStringContainsString( 'data-blx-id="cart"', $html );
+				$this->assertStringContainsString( 'data-blx-id="product-query"', $html );
+				continue;
+			}
+			$this->assertStringContainsString( 'Home', html_entity_decode( strip_tags( $html ) ), $pack_id . ' navigation label' );
+			if ( str_contains( (string) file_get_contents( __DIR__ . '/../templates/packs/' . $pack_id . '/template.json' ), 'token-color' ) ) { // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Bundled pack fixture.
+				$this->assertStringContainsString( 'class="blx-mc-primary"', $html, $pack_id . ' token color' );
+			}
+		}
+	}
+
+	/** Business pack source and Dutch localization publish and render under their enabled WordPress locales. */
+	public function test_business_template_language_codes_render_in_enabled_site_locales(): void {
+		$pack = json_decode( (string) file_get_contents( __DIR__ . '/../templates/packs/business/template.json' ), true ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Bundled fixture.
+		$this->assertSame( 'en', $pack['template']['defaultLocale'] );
+		$this->assertSame( [ 'en', 'nl' ], $pack['template']['supportedLocales'] );
+		$notes = [];
+		$map   = Importer::map_template_locales( 'en', [ 'en', 'nl' ], [ 'en_US', 'nl_NL' ], 'en_US', $notes );
+		$this->assertSame(
+			[
+				'en' => 'en_US',
+				'nl' => 'nl_NL',
+			],
+			$map
+		);
+		$definitions = \Blixis\Builder\Registry\ElementDefinitionRegistry::from_manifest_file( __DIR__ . '/../data/element-definitions-v2.json' );
+		$registry    = ElementRegistry::from_manifest_file( __DIR__ . '/../data/core-elements.json' );
+		$media       = new class() implements MediaResolver {
+			/** Resolve a stored media ID.
+			 *
+			 * @param int $attachment_id Attachment identifier.
+			 */
+			public function resolve( int $attachment_id ): ?array {
+				return null;
+			}
+		};
+		$renderer    = new CoreDocumentRenderer( $registry, $media );
+		$root        = $pack['documents'][0]['root'];
+		$streams     = Importer::document_streams( $root, $definitions, $map['en'], $notes, $pack['designTokens']['colors']['light'] );
+		$types       = [];
+		$walk        = static function ( array $node ) use ( &$walk, &$types ): void {
+			$types[ $node['id'] ] = $node['type'];
+			foreach ( $node['children'] ?? [] as $child ) {
+				$walk( $child );
+			} };
+		$walk( $pack['documents'][0]['root'] );
+		$streams['nl_NL'] = Importer::localization_stream( $pack['localizations']['nl'], $types, $definitions, $map['nl'], $pack['designTokens']['colors']['light'], $notes );
+		$this->assertTrue( $this->streams->write( 290, MetaKeys::LAYOUT, (string) json_encode( $streams['layout'] ), 0 )->success );
+		foreach ( [ 'en_US', 'nl_NL' ] as $locale ) {
+			$this->assertTrue( MetaKeys::is_valid_key( MetaKeys::content( $locale ) ) );
+			$content_stream = 'en_US' === $locale ? $streams['content'] : $streams['nl_NL'];
+			$this->assertTrue( $this->streams->write( 290, MetaKeys::content( $locale ), (string) json_encode( $content_stream ), 0 )->success );
+			$result = $this->publisher->publish( 290, new PublishOptions( 'en_US' === $locale ? 0 : 1, true, $locale ) );
+			$this->assertNull( $result->code, $result->code ?? '' );
+			$published = ( new PublishedReader( $this->database ) )->read( 290, $locale );
+			$this->assertNotNull( $published );
+			$html = $renderer->render( $published->document, $locale, 'light', [], 'source', [ 'primary' ] );
+			$this->assertStringContainsString( 'class="blx-mc-primary"', $html );
+			$rendered_text = html_entity_decode( strip_tags( preg_replace( '/<span[^>]*>|<\\/span>/', '', $html ) ?? $html ) );
+			if ( 'en_US' === $locale ) {
+				$this->assertStringContainsString( 'Building what comes next', $rendered_text );
+				$this->assertStringContainsString( 'Practical strategy, thoughtful technology, and measurable outcomes for growing organizations.', $rendered_text );
+			} else {
+				$this->assertStringContainsString( 'Samen bouwen aan morgen', $rendered_text );
+			}
+		}
+	}
+
+	/** Find a plain-text element value in a template tree.
+	 *
+	 * @param array<string,mixed> $node Element node.
+	 * @param string              $id Element identifier.
+	 */
+	private function template_plain_text( array $node, string $id ): string {
+		if ( ( $node['id'] ?? null ) === $id ) {
+			return implode( '', array_map( static fn ( array $part ): string => is_string( $part['text'] ?? null ) ? $part['text'] : '', $node['props']['content'] ?? [] ) );
+		}
+		foreach ( $node['children'] ?? [] as $child ) {
+			$text = $this->template_plain_text( $child, $id );
+			if ( '' !== $text ) {
+				return $text;
+			}
+		}
+		return '';
 	}
 
 	/**
@@ -142,6 +295,72 @@ final class PublisherTest extends TestCase {
 	private function live( string $locale ): string {
 		$published = ( new PublishedReader( $this->database ) )->read( 5, $locale );
 		return null === $published ? 'none' : (string) \json_encode( [ $published->document, $published->locale, $published->layout_revision, $published->content_revision ] );
+	}
+
+	/** The locale smoke fixture shape publishes and renders legacy text values for each locale. */
+	public function test_legacy_smoke_content_renders_after_publish_for_each_locale(): void {
+		$layout = json_decode( '{"schemaVersion":1,"documentId":"locale-smoke","layoutRevision":1,"root":[{"id":"hed-1","type":"blixis/heading","props":{"level":2},"children":[]},{"id":"hed-2","type":"blixis/heading","props":{"level":2},"children":[]}]}' );
+		$this->assertInstanceOf( \stdClass::class, $layout );
+		$this->assertTrue( $this->streams->write( 5, MetaKeys::LAYOUT, json_encode( $layout, JSON_THROW_ON_ERROR ), 0 )->success );
+		$rich = json_decode( '{"v":1,"inline":[{"t":"text","s":"English rich"}]}' );
+		foreach ( [
+			'en_US' => [
+				'hed-1' => 'English hello',
+				'hed-2' => $rich,
+			],
+			'nl_NL' => [ 'hed-1' => 'Nederlandse hallo' ],
+			'ar'    => [ 'hed-1' => 'مرحبا' ],
+		] as $locale => $texts ) {
+			$entries = [];
+			foreach ( $texts as $id => $text ) {
+				$entries[ $id ] = [
+					'status' => 'translated',
+					'values' => [ 'text' => $text ],
+				];
+			}
+			$body = json_encode(
+				json_decode(
+					json_encode(
+						[
+							'schemaVersion'   => 1,
+							'contentRevision' => 1,
+							'entries'         => (object) $entries,
+						],
+						JSON_THROW_ON_ERROR
+					),
+					false,
+					512,
+					JSON_THROW_ON_ERROR
+				),
+				JSON_THROW_ON_ERROR
+			);
+			$this->assertTrue( $this->streams->write( 5, MetaKeys::content( $locale ), $body, 0 )->success, $locale );
+		}
+		$this->assertNull( $this->publisher->publish( 5, new PublishOptions( 0, true, 'en_US' ) )->code );
+		$this->assertNull( $this->publisher->publish( 5, new PublishOptions( 1, false, 'nl_NL' ) )->code );
+		$this->assertNull( $this->publisher->publish( 5, new PublishOptions( 2, false, 'ar' ) )->code );
+		$media    = new class() implements MediaResolver {
+			/** Resolve media ids for this fixture.
+			 *
+			 * @param int $attachment_id Attachment id.
+			 */
+			public function resolve( int $attachment_id ): ?array {
+				return null;
+			}
+		};
+		$renderer = new CoreDocumentRenderer( ElementRegistry::from_manifest_file( dirname( __DIR__ ) . '/data/core-elements.json' ), $media );
+		foreach ( [
+			'en_US' => [ 'English hello', 'English rich' ],
+			'nl_NL' => [ 'Nederlandse hallo' ],
+			'ar'    => [ 'مرحبا' ],
+		] as $locale => $expected ) {
+			$published = ( new PublishedReader( $this->database ) )->read( 5, $locale );
+			$this->assertNotNull( $published, $locale );
+			$html = $renderer->render( $published->document, $locale, 'light' );
+			foreach ( $expected as $text ) {
+				$this->assertStringContainsString( $text, $html, $locale );
+			}
+		}
 	}
 
 	/** A first publication of layout and English content makes the page live; nothing is live before. */

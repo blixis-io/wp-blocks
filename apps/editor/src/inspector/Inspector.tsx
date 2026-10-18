@@ -15,6 +15,8 @@ import { InspectorSection } from './InspectorSection';
 import { PROPERTIES } from '@blixis/wp-style-engine';
 import { BoxModelControl } from './controls/box-model-control';
 import { PageSettingsPanel } from './PageSettingsPanel';
+import { GeneratedControls } from './GeneratedControls';
+import { getElementDefinitionV2 } from '@blixis/wp-element-registry';
 import { richToPlain, type RichText } from '@blixis/wp-core';
 import type { MediaItem } from '../api/types';
 
@@ -183,7 +185,13 @@ function PropField({
     <select
       id={fieldId}
       aria-label={label}
-      value={typeof value === 'number' ? String(value) : String(definition.default ?? 2)}
+      value={
+        typeof value === 'number'
+          ? String(value)
+          : typeof definition.default === 'number'
+            ? String(definition.default)
+            : '2'
+      }
       disabled={!editable}
       onChange={(event) => {
         dispatch(Number(event.target.value));
@@ -259,6 +267,10 @@ export function Inspector({
     element ? s.document?.translations[locale]?.[element.id]?.values['alt'] : undefined,
   );
   const definition = useMemo(() => (element === null ? undefined : registry.get(element.type)), [element, registry]);
+  const generatedDefinition = useMemo(
+    () => (element === null ? undefined : getElementDefinitionV2(element.type)),
+    [element],
+  );
   const editable = editingEnabled && definition !== undefined;
   if (element === null && tab === 'content') return <PageSettingsPanel editingEnabled={editingEnabled} />;
   if (element === null || definition === undefined)
@@ -273,6 +285,16 @@ export function Inspector({
         {t('inspector.comingSoon')}
       </p>
     );
+  const legacyCoreTypes = new Set([
+    'blixis/section',
+    'blixis/container',
+    'blixis/heading',
+    'blixis/text',
+    'blixis/image',
+    'blixis/button',
+  ]);
+  if (tab === 'content' && generatedDefinition?.status === 'ready' && !legacyCoreTypes.has(element.type))
+    return <GeneratedControls element={element} editable={editable} />;
   if (tab === 'style')
     return (
       <div className="blx-inspector-sections">
@@ -418,6 +440,7 @@ export function Inspector({
           />
         </InspectorSection>
       ) : null}
+      {generatedDefinition?.status === 'ready' ? <GeneratedControls element={element} editable={editable} /> : null}
     </div>
   ) : (
     <p className="blx-empty">

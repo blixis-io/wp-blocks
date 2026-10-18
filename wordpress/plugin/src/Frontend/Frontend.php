@@ -166,7 +166,12 @@ final class Frontend {
 				}
 			}
 			$renderer = new PageRenderer( new CoreDocumentRenderer( ElementRegistry::from_manifest_file( \Blixis\Builder\DIR . '/data/core-elements.json' ), new WordPressMediaResolver() ) );
-			$page     = $renderer->render( $published, $fallback, $token_ids, $tokens );
+			try {
+				$page = $renderer->render( $published, $fallback, $token_ids, $tokens );
+			} catch ( \Throwable ) {
+				\error_log( 'Blixis public document rendering failed; falling back to post content.' ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Content-free fatal-render fallback diagnostic.
+				return null;
+			}
 			if ( null === $page ) {
 				return null;
 			}

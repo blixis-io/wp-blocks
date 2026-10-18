@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace Blixis\Builder\Render;
 
 use Blixis\Builder\Registry\ElementRegistry;
+use Blixis\Builder\Registry\ElementDefinitionRegistry;
 
 \defined( 'ABSPATH' ) || exit;
 
@@ -25,6 +26,16 @@ final class CoreDocumentRenderer {
 	 * @var ContentResolver
 	 */
 	private readonly ContentResolver $content;
+	/** Definition-driven renderer dispatch.
+	 *
+	 * @var ArchetypeRendererRegistry
+	 */
+	private readonly ArchetypeRendererRegistry $archetypes;
+	/** Generated element definitions.
+	 *
+	 * @var ElementDefinitionRegistry
+	 */
+	private readonly ElementDefinitionRegistry $definitions;
 
 	/**
 	 * Apply the documented contract.
@@ -33,7 +44,10 @@ final class CoreDocumentRenderer {
 	 * @param MediaResolver   $media Media.
 	 */
 	public function __construct( private readonly ElementRegistry $registry, MediaResolver $media ) {
-		$this->content   = new ContentResolver( $registry );
+		$this->content     = new ContentResolver( $registry );
+		$this->definitions = ElementDefinitionRegistry::from_manifest_file( dirname( __DIR__, 2 ) . '/data/element-definitions-v2.json' );
+		$this->archetypes  = new ArchetypeRendererRegistry( $this->definitions, new StaticFallbackRenderer() );
+		$this->archetypes->register( new DefinitionArchetypeRenderer( $this->definitions, $media ) );
 		$this->renderers = [
 			'blixis/heading'   => new HeadingRenderer(),
 			'blixis/section'   => new SectionRenderer(),
@@ -86,14 +100,103 @@ final class CoreDocumentRenderer {
 			foreach ( $children as $_ ) {
 				$child_html = \array_pop( $output ) . $child_html;
 			}
-			$renderer = $this->renderers[ $node->type ] ?? null;
-			if ( null === $renderer || null === $this->registry->get( $node->type ) || 1 !== \preg_match( '/^[a-z0-9][a-z0-9_-]{2,63}$/D', $node->id ) ) {
+			$renderer = $this->renderers[ $node->type ] ?? $this->archetypes->resolve( $node->type );
+			if ( ( null === $this->definitions->get( $node->type ) && null === $this->registry->get( $node->type ) ) || 1 !== \preg_match( '/^[a-z0-9][a-z0-9_-]{2,63}$/D', $node->id ) ) {
 				$output[] = '<div data-blx-invalid>' . $child_html . '</div>';
 				continue;
 			}
-			$values   = $this->content->values( $node, $document, $locale, $fallback );
+			$values = isset( $this->renderers[ $node->type ] ) ? $this->content->values( $node, $document, $locale, $fallback ) : $this->definition_values( $node, $document, $locale, $fallback );
+			if ( isset( $values['content'] ) && ! isset( $values['text'] ) ) {
+				$values['text'] = $values['content']; }
 			$output[] = $renderer->render( new ElementNode( $node->id, $node->type, $values, \is_array( $class_names[ $node->id ] ?? null ) ? $class_names[ $node->id ] : [] ), new RenderContext( $child_html, $token_ids ) );
 		}
 		return \implode( '', $output );
+	}
+
+	/** Select definition properties and locale streams without depending on the legacy registry shape.
+	 *
+	 * @param \stdClass $node Element node.
+	 * @param \stdClass $document Document.
+	 * @param string    $locale Requested content locale.
+	 * @param string    $fallback Missing-translation policy.
+	 * @return array<string,mixed> Selected properties.
+	 */
+	private function definition_values( \stdClass $node, \stdClass $document, string $locale, string $fallback ): array {
+		$definition = $this->definitions->get( (string) $node->type );
+		$values     = [];
+		if ( ! is_array( $definition['properties'] ?? null ) ) {
+			return $this->content->values( $node, $document, $locale, $fallback );
+		}
+		foreach ( $definition['properties'] as $name => $property ) {
+			if ( ! is_string( $name ) || ! is_array( $property ) ) {
+				continue;
+			}
+			$source_name     = $this->definitions->canonical_property( (string) $node->type, (string) $name );
+			$candidate_names = array_unique( [ $name, $source_name, ...$this->definitions->legacy_aliases( (string) $node->type, (string) $name ) ] );
+			$value           = $property['default'] ?? null;
+			if ( $node->props instanceof \stdClass ) {
+				foreach ( $candidate_names as $candidate_name ) {
+					if ( property_exists( $node->props, $candidate_name ) ) {
+						$value = $node->props->$candidate_name;
+						break;
+					}
+				}
+			}
+			if ( true === ( $property['localizable'] ?? false ) ) {
+				$locales = 'blank' === $fallback ? [ $locale ] : array_unique( [ $locale, (string) ( $document->{'defaultLocale'} ?? '' ) ] );
+				foreach ( $locales as $stream_locale ) {
+					$entry = $document->translations->$stream_locale->{$node->id}->values ?? null;
+					if ( $entry instanceof \stdClass ) {
+						foreach ( $candidate_names as $candidate_name ) {
+							if ( property_exists( $entry, $candidate_name ) ) {
+								$value = $entry->$candidate_name;
+								break 2;
+							}
+						}
+					}
+				}
+			}
+			if ( $this->definition_value_valid( $property, $value ) ) {
+				$values[ $name ] = $value;
+			} elseif ( array_key_exists( 'default', $property ) && $this->definition_value_valid( $property, $property['default'] ) ) {
+				$values[ $name ] = $property['default'];
+			}
+		}
+		// Narrow compatibility properties remain layout data, including heading semantics such as `tag`.
+		if ( $node->props instanceof \stdClass ) {
+			foreach ( \get_object_vars( $node->props ) as $name => $value ) {
+				$compatibility = $this->definitions->property( (string) $node->type, (string) $name );
+				if ( ! isset( $values[ $name ] ) && is_array( $compatibility ) && ! $this->definitions->localizable( (string) $node->type, (string) $name ) && $this->definition_value_valid( $compatibility, $value ) ) {
+					$values[ $name ] = $value;
+				}
+			}
+		}
+		return $values;
+	}
+
+	/** Validate a property candidate against the v2 definition type.
+	 *
+	 * @param array<string,mixed> $property Definition property.
+	 * @param mixed               $value Candidate value.
+	 */
+	private function definition_value_valid( array $property, mixed $value ): bool {
+		$type  = $property['type'] ?? '';
+		$valid = match ( $type ) {
+			'string' => is_string( $value ) || ( $value instanceof \stdClass && RichText::valid( $value ) ),
+			'url' => is_string( $value ) && \Blixis\Builder\Registry\SafeUrl::accepts( $value ),
+			'token', 'asset-ref' => is_string( $value ),
+			'rich-text' => is_string( $value ) || ( $value instanceof \stdClass && RichText::valid( $value ) ),
+			'enum' => is_string( $value ) && in_array( $value, $property['options'] ?? [], true ),
+			'boolean' => is_bool( $value ), 'number' => is_int( $value ) || is_float( $value ),
+			'integer' => is_int( $value ),
+			'array<string>' => is_array( $value ) && array_is_list( $value ) && count( array_filter( $value, 'is_string' ) ) === count( $value ),
+			'array<number>' => is_array( $value ) && array_is_list( $value ) && count( array_filter( $value, 'is_numeric' ) ) === count( $value ),
+			'array<object>' => is_array( $value ),
+			'object' => $value instanceof \stdClass || ( is_array( $value ) && ! array_is_list( $value ) ),
+			default => false,
+		};
+		if ( ! $valid ) {
+			return false; }
+		return ! is_numeric( $value ) || ( ( ! isset( $property['min'] ) || $value >= $property['min'] ) && ( ! isset( $property['max'] ) || $value <= $property['max'] ) );
 	}
 }

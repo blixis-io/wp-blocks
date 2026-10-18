@@ -10,6 +10,8 @@ declare(strict_types=1);
 namespace Blixis\Builder\Storage;
 
 use Blixis\Builder\Registry\ElementRegistry;
+use Blixis\Builder\Registry\ElementDefinitionRegistry;
+use Blixis\Builder\Registry\SafeUrl;
 
 \defined( 'ABSPATH' ) || exit;
 
@@ -28,13 +30,31 @@ final class ContentValidator implements DocumentValidator {
 	 * @var ElementRegistry
 	 */
 	private readonly ElementRegistry $registry;
+	/** Generated definition registry used for v2 localized inline text.
+	 *
+	 * @var ElementDefinitionRegistry
+	 */
+	private readonly ElementDefinitionRegistry $definitions;
+	/** Cached property ids admitted as definition-driven inline text.
+	 *
+	 * @var array<string,true>
+	 */
+	private array $definition_text_properties = [];
 
 	/** Use the registry to restrict rich values to declared inline text properties.
 	 *
 	 * @param ?ElementRegistry $registry Element property registry.
 	 */
 	public function __construct( ?ElementRegistry $registry = null ) {
-		$this->registry = $registry ?? ElementRegistry::from_manifest_file( \dirname( __DIR__, 2 ) . '/data/core-elements.json' );
+		$this->registry    = $registry ?? ElementRegistry::from_manifest_file( \dirname( __DIR__, 2 ) . '/data/core-elements.json' );
+		$this->definitions = ElementDefinitionRegistry::from_manifest_file( \dirname( __DIR__, 2 ) . '/data/element-definitions-v2.json' );
+		foreach ( $this->definitions->all() as $definition ) {
+			foreach ( $definition['properties'] as $name => $property ) {
+				if ( 'alt' !== $name && is_array( $property ) && true === ( $property['localizable'] ?? false ) && ( 'rich-text' === ( $property['type'] ?? null ) || 'textarea' === ( $property['control'] ?? null ) ) ) {
+					$this->definition_text_properties[ (string) $name ] = true;
+				}
+			}
+		}
 	}
 
 	/**
@@ -106,8 +126,43 @@ final class ContentValidator implements DocumentValidator {
 			return false;
 		}
 		foreach ( $values as $name => $item ) {
-			$scalar = \is_int( $item ) || \is_bool( $item ) || null === $item || ( \is_string( $item ) && \strlen( $item ) <= self::MAX_STRING ) || ( $item instanceof \stdClass && $this->registry->is_inline_text_property( (string) $name ) && \Blixis\Builder\Render\RichText::valid( $item ) );
+			$rich_property = $this->registry->is_inline_text_property( (string) $name );
+			$rich_property = $rich_property || isset( $this->definition_text_properties[ (string) $name ] );
+			$scalar        = \is_int( $item ) || \is_bool( $item ) || null === $item || ( \is_string( $item ) && \strlen( $item ) <= self::MAX_STRING ) || ( $item instanceof \stdClass && $rich_property && \Blixis\Builder\Render\RichText::valid( $item ) ) || ( 'items' === $name && $this->valid_navigation_items( $item ) );
 			if ( 1 !== \preg_match( '/^[a-z][A-Za-z0-9]{0,63}$/D', (string) $name ) || ! $scalar ) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/** Validate the bounded navigation value allowed in localized content.
+	 *
+	 * @param mixed $items Candidate navigation list.
+	 */
+	private function valid_navigation_items( mixed $items ): bool {
+		$count = 0;
+		return $this->navigation_items_ok( $items, 0, $count );
+	}
+
+	/** Validate one nested navigation list without exceeding depth or total item bounds.
+	 *
+	 * @param mixed $items Candidate list.
+	 * @param int   $depth Current depth.
+	 * @param int   $count Total visited items, updated by reference.
+	 */
+	private function navigation_items_ok( mixed $items, int $depth, int &$count ): bool {
+		if ( ! \is_array( $items ) || ! \array_is_list( $items ) || $depth > 8 || \count( $items ) > 100 ) {
+			return false;
+		}
+		foreach ( $items as $item ) {
+			if ( $item instanceof \stdClass ) {
+				$item = \get_object_vars( $item );
+			}
+			if ( ! \is_array( $item ) || ++$count > 100 || [] !== \array_diff( \array_keys( $item ), [ 'label', 'href', 'current', 'children' ] ) || ! \is_string( $item['label'] ?? null ) || \strlen( $item['label'] ) > 300 || 1 !== \preg_match( '//u', $item['label'] ) || 1 === \preg_match( '/[\x00-\x1F\x7F-\x9F<>]/u', $item['label'] ) || ( isset( $item['href'] ) && ( ! \is_string( $item['href'] ) || ! SafeUrl::accepts( $item['href'] ) ) ) || ( isset( $item['current'] ) && ! \is_bool( $item['current'] ) ) ) {
+				return false;
+			}
+			if ( isset( $item['children'] ) && ! $this->navigation_items_ok( $item['children'], $depth + 1, $count ) ) {
 				return false;
 			}
 		}

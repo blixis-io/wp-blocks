@@ -12,6 +12,7 @@ namespace Blixis\Builder\Tests;
 use Blixis\Builder\Autoloader;
 use Blixis\Builder\Preview\PreviewSanitizer;
 use Blixis\Builder\Registry\ElementRegistry;
+use Blixis\Builder\Render\AssetReferenceResolver;
 use Blixis\Builder\Render\CoreDocumentRenderer;
 use Blixis\Builder\Render\MediaResolver;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -52,6 +53,117 @@ final class HostileRenderTest extends TestCase {
 		$html     = $renderer->render( $document, 'en_US', 'light' );
 		$this->assertStringContainsString( '&lt;img src=x onerror=alert(1)&gt;', $html );
 		$this->assertStringNotContainsString( '<img', $html );
+	}
+	/** New template alias renderers keep untrusted content, tags, URLs and repeater labels inert. */
+	public function test_v2_template_renderer_escapes_hostile_props_and_uses_tag_allowlists(): void {
+		$media    = new class() implements MediaResolver {
+			/** No media in the hostile-content fixture.
+			 *
+			 * @param int $id Attachment id.
+			 */
+			/** Resolve an attachment fixture.
+			 *
+			 * @param int $id Attachment id.
+			 */
+			public function resolve( int $id ): ?array {
+				return null; }
+		};
+		$renderer = new CoreDocumentRenderer( ElementRegistry::from_manifest_file( \dirname( __DIR__ ) . '/data/core-elements.json' ), $media );
+		$document = (object) [
+			'root' => [
+				(object) [
+					'id'       => 'head-1',
+					'type'     => 'heading',
+					'props'    => (object) [
+						'tag'     => 'script',
+						'content' => '<img src=x onerror=alert(1)>',
+					],
+					'children' => [],
+				],
+				(object) [
+					'id'       => 'nav-1',
+					'type'     => 'navigation',
+					'props'    => (object) [
+						'items' => \json_decode( '[{\"label\":\"<script>x</script>\",\"link\":\"javascript:alert(1)\",\"children\":[{\"label\":\"Child\",\"href\":\"/child\",\"current\":true}]}]' ),
+					],
+					'children' => [],
+				],
+			],
+		];
+		$document = \json_decode( (string) \wp_json_encode( $document ) );
+		$html     = $renderer->render( $document, 'en_US', 'light' );
+		$this->assertStringNotContainsString( '<script>', $html );
+		$this->assertStringNotContainsString( '<img', $html );
+		$this->assertStringContainsString( '&lt;img', $html );
+		$this->assertStringContainsString( 'href="/"', $html );
+		$this->assertStringContainsString( 'Home', $html );
+	}
+	/** Wrong typed v2 properties fall back to defaults and unknown props are discarded. */
+	public function test_v2_wrong_typed_properties_cannot_reach_archetype_renderer(): void {
+		$media    = new class() implements MediaResolver {
+			/** Resolve an attachment fixture.
+			 *
+			 * @param int $id Attachment id.
+			 */
+			public function resolve( int $id ): ?array {
+				return null; }
+		};
+		$renderer = new CoreDocumentRenderer( ElementRegistry::from_manifest_file( \dirname( __DIR__ ) . '/data/core-elements.json' ), $media );
+		$document = \json_decode( '{"root":[{"id":"head-1","type":"heading","props":{"content":5,"ariaLabel":{"bad":true},"unknown":"injected"},"children":[]}]}' );
+		$html     = $renderer->render( $document, 'en_US', 'light' );
+		$this->assertStringContainsString( 'Sample text', $html );
+		$this->assertStringNotContainsString( 'injected', $html );
+	}
+
+	/** Asset refs go through the media resolver and never become raw URLs. */
+	public function test_template_asset_reference_is_resolved_and_url_guarded(): void {
+		$media    = new class() implements AssetReferenceResolver {
+			/** No attachment id lookup is used in this fixture.
+			 *
+			 * @param int $id Attachment id.
+			 */
+			/** Resolve an attachment fixture.
+			 *
+			 * @param int $id Attachment id.
+			 */
+			public function resolve( int $id ): ?array {
+				return null; }
+			/** Return fixture media for a stable pack asset key.
+			 *
+			 * @param string $reference Asset reference.
+			 */
+			public function resolve_reference( string $reference ): ?array {
+				if ( '' === $reference ) {
+					return null;
+				}
+				return [
+					'url'    => 'https://media.example.test/logo.png',
+					'width'  => 20,
+					'height' => 10,
+					'alt'    => '<logo>',
+				];
+			}
+		};
+		$renderer = new CoreDocumentRenderer( ElementRegistry::from_manifest_file( \dirname( __DIR__ ) . '/data/core-elements.json' ), $media );
+		$document = (object) [
+			'root' => [
+				(object) [
+					'id'       => 'logo-1',
+					'type'     => 'site-logo',
+					'props'    => (object) [
+						'assetRef' => 'brand',
+						'link'     => 'javascript:alert(2)',
+					],
+					'children' => [],
+				],
+			],
+		];
+		$document = \json_decode( (string) \wp_json_encode( $document ) );
+		$html     = $renderer->render( $document, 'en_US', 'light' );
+		$this->assertStringContainsString( 'href="/"', $html );
+		$this->assertStringContainsString( 'src="https://media.example.test/logo.png"', $html );
+		$this->assertStringContainsString( 'alt="&lt;logo&gt;"', $html );
+		$this->assertStringNotContainsString( 'javascript:', $html );
 	}
 
 	/**

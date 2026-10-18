@@ -1,0 +1,482 @@
+{
+  "$schema": "../../schemas/element-definition.schema.json",
+  "definitionVersion": "1.0.0",
+  "id": "video-background",
+  "namespace": "blixis",
+  "title": "Video Background",
+  "category": "media",
+  "description": "Video Background element for Blixis WordPress visual builder. The record defines editor options and rendering contracts, not implementation code.",
+  "icon": {
+    "provider": "iconify",
+    "set": "solar",
+    "name": "videocamera-record-linear",
+    "id": "solar:videocamera-record-linear",
+    "validateAgainstInstalledSet": true
+  },
+  "subscription": {
+    "minimumTier": "plus",
+    "availableIn": [
+      "plus",
+      "pro"
+    ],
+    "upgradeFeature": "video-background",
+    "requiresServerEntitlement": true,
+    "onDowngrade": "preserve-rendering-disable-premium-editing"
+  },
+  "origin": {
+    "shadcnUiInspired": false,
+    "interiorDevInspired": false,
+    "referenceUrls": [],
+    "note": "Conceptual inspiration only; no third-party source code bundled."
+  },
+  "rendering": {
+    "strategy": "php-server-rendered",
+    "rendererKey": "blixis/video-background",
+    "semanticTag": "video",
+    "clientHydration": "on-interaction",
+    "assetPolicy": "manifest-references-only",
+    "unsafeHtml": "never",
+    "fallbackRenderer": "safe-static"
+  },
+  "structure": {
+    "acceptsChildren": false,
+    "allowedChildren": "none",
+    "minChildren": 0,
+    "maxChildren": null,
+    "allowedParentTypes": [
+      "section",
+      "container",
+      "div",
+      "flex",
+      "grid",
+      "columns",
+      "stack",
+      "row",
+      "card",
+      "tabs",
+      "accordion",
+      "loop-item",
+      "form",
+      "template-part"
+    ]
+  },
+  "properties": {
+    "elementId": {
+      "type": "string",
+      "default": "",
+      "description": "Unique stable instance ID, created by the builder.",
+      "required": true,
+      "editorOnly": true
+    },
+    "cssClasses": {
+      "type": "array<string>",
+      "default": [],
+      "description": "Additional validated class names.",
+      "required": false,
+      "control": "class-picker"
+    },
+    "htmlId": {
+      "type": "string",
+      "default": "",
+      "description": "Optional sanitized HTML id.",
+      "required": false,
+      "control": "text"
+    },
+    "ariaLabel": {
+      "type": "string",
+      "default": "",
+      "description": "Accessible name when native visible text is insufficient.",
+      "required": false,
+      "localizable": true,
+      "control": "text"
+    },
+    "hidden": {
+      "type": "boolean",
+      "default": false,
+      "description": "Hide the element. Prefer responsive visibility where relevant.",
+      "required": false,
+      "control": "switch"
+    },
+    "src": {
+      "type": "asset-ref",
+      "default": null,
+      "description": "Reference to an asset manifest entry or WordPress attachment.",
+      "required": false,
+      "control": "media-picker"
+    },
+    "poster": {
+      "type": "asset-ref",
+      "default": null,
+      "description": "Reference to an asset manifest entry or WordPress attachment.",
+      "required": false,
+      "control": "media-picker"
+    },
+    "controls": {
+      "type": "boolean",
+      "default": true,
+      "description": "Toggle behaviour.",
+      "required": false,
+      "control": "switch"
+    },
+    "muted": {
+      "type": "boolean",
+      "default": true,
+      "description": "Toggle behaviour.",
+      "required": false,
+      "control": "switch"
+    },
+    "autoplay": {
+      "type": "boolean",
+      "default": false,
+      "description": "Toggle behaviour.",
+      "required": false,
+      "control": "switch"
+    },
+    "loop": {
+      "type": "boolean",
+      "default": false,
+      "description": "Toggle behaviour.",
+      "required": false,
+      "control": "switch"
+    },
+    "preload": {
+      "type": "enum",
+      "default": "metadata",
+      "description": "Choose a supported option.",
+      "required": false,
+      "options": [
+        "none",
+        "metadata",
+        "auto"
+      ],
+      "control": "select"
+    },
+    "captionTrack": {
+      "type": "asset-ref",
+      "default": null,
+      "description": "Reference to an asset manifest entry or WordPress attachment.",
+      "required": false,
+      "control": "media-picker"
+    }
+  },
+  "propertyControls": {
+    "elementId": {
+      "control": "text",
+      "group": "Attributes",
+      "localizable": false,
+      "supportsDynamicBinding": false
+    },
+    "cssClasses": {
+      "control": "class-picker",
+      "group": "Attributes",
+      "localizable": false,
+      "supportsDynamicBinding": false
+    },
+    "htmlId": {
+      "control": "text",
+      "group": "Attributes",
+      "localizable": false,
+      "supportsDynamicBinding": false
+    },
+    "ariaLabel": {
+      "control": "text",
+      "group": "Accessibility",
+      "localizable": true,
+      "supportsDynamicBinding": false
+    },
+    "hidden": {
+      "control": "switch",
+      "group": "Content",
+      "localizable": false,
+      "supportsDynamicBinding": false
+    },
+    "src": {
+      "control": "media-picker",
+      "group": "Content",
+      "localizable": false,
+      "supportsDynamicBinding": true
+    },
+    "poster": {
+      "control": "media-picker",
+      "group": "Content",
+      "localizable": false,
+      "supportsDynamicBinding": false
+    },
+    "controls": {
+      "control": "switch",
+      "group": "Content",
+      "localizable": false,
+      "supportsDynamicBinding": false
+    },
+    "muted": {
+      "control": "switch",
+      "group": "Content",
+      "localizable": false,
+      "supportsDynamicBinding": false
+    },
+    "autoplay": {
+      "control": "switch",
+      "group": "Content",
+      "localizable": false,
+      "supportsDynamicBinding": false
+    },
+    "loop": {
+      "control": "switch",
+      "group": "Content",
+      "localizable": false,
+      "supportsDynamicBinding": false
+    },
+    "preload": {
+      "control": "select",
+      "group": "Content",
+      "localizable": false,
+      "supportsDynamicBinding": false
+    },
+    "captionTrack": {
+      "control": "media-picker",
+      "group": "Content",
+      "localizable": false,
+      "supportsDynamicBinding": false
+    }
+  },
+  "style": {
+    "allowed": {
+      "width": {
+        "type": "css-length",
+        "units": [
+          "px",
+          "%",
+          "rem",
+          "em",
+          "vw",
+          "svw",
+          "auto",
+          "min-content",
+          "max-content",
+          "fit-content",
+          "clamp"
+        ],
+        "default": null
+      },
+      "height": {
+        "type": "css-length",
+        "units": [
+          "px",
+          "%",
+          "rem",
+          "vh",
+          "dvh",
+          "auto"
+        ],
+        "default": null
+      },
+      "aspectRatio": {
+        "type": "ratio",
+        "default": null
+      },
+      "objectFit": {
+        "type": "enum",
+        "options": [
+          "cover",
+          "contain",
+          "fill",
+          "none",
+          "scale-down"
+        ],
+        "default": null
+      },
+      "borderRadius": {
+        "type": "box-corners",
+        "corners": [
+          "topLeft",
+          "topRight",
+          "bottomRight",
+          "bottomLeft"
+        ],
+        "units": [
+          "px",
+          "%",
+          "rem"
+        ],
+        "linkable": true,
+        "default": null
+      }
+    },
+    "defaultValues": {},
+    "responsive": {
+      "enabled": true,
+      "breakpoints": [
+        "base",
+        "tablet",
+        "mobile"
+      ],
+      "inheritance": "base -> breakpoint override"
+    },
+    "appearance": {
+      "enabled": true,
+      "modes": [
+        "light",
+        "dark"
+      ],
+      "defaultMode": "light",
+      "combinedOverrides": true,
+      "precedence": [
+        "base",
+        "breakpoint",
+        "appearance",
+        "appearance+breakpoint"
+      ]
+    },
+    "states": [
+      "default",
+      "hover",
+      "focus-visible"
+    ],
+    "customCss": {
+      "enabled": true,
+      "scoped": true,
+      "sanitized": true
+    }
+  },
+  "motion": {
+    "allowed": true,
+    "presets": [
+      "none",
+      "fade-in",
+      "slide-in-left",
+      "slide-in-right",
+      "slide-in-up",
+      "scale-in"
+    ],
+    "triggers": [
+      "page-load",
+      "viewport-enter",
+      "hover",
+      "click",
+      "scroll-progress"
+    ],
+    "engine": "engine-neutral",
+    "reducedMotionPolicy": "respect-prefers-reduced-motion",
+    "premiumTimelineRequires": "pro",
+    "gsap": "optional-adapter-subject-to-license-review"
+  },
+  "bindings": {
+    "supported": false,
+    "sources": [
+      "static",
+      "wordpress-post",
+      "wordpress-site",
+      "wordpress-user",
+      "wp-meta",
+      "query-result",
+      "woocommerce"
+    ],
+    "requiredTierForExternalDynamicSources": "plus"
+  },
+  "localization": {
+    "enabled": true,
+    "translatableProperties": [
+      "ariaLabel"
+    ],
+    "sourceLocale": "en",
+    "fallbackPolicy": "source-locale",
+    "stableElementIds": true
+  },
+  "accessibility": {
+    "keyboardAccessible": true,
+    "requirements": [
+      "semantic HTML",
+      "accessible name where applicable",
+      "focus visibility",
+      "reduced-motion fallback",
+      "RTL-safe layout",
+      "WCAG 2.2 AA target"
+    ],
+    "userSuppliedContentEscaped": true
+  },
+  "interactions": {
+    "events": [
+      "play",
+      "pause",
+      "ended"
+    ],
+    "actions": [
+      "none",
+      "navigate",
+      "submit",
+      "toggle",
+      "open-overlay",
+      "scroll-to",
+      "emit-allowlisted-event"
+    ],
+    "noArbitraryJavaScript": true
+  },
+  "dependencies": {
+    "wordpressPlugins": [],
+    "npmPackages": [],
+    "optionalServices": []
+  },
+  "security": {
+    "escapeText": true,
+    "sanitizeAttributes": true,
+    "validateUrls": true,
+    "capabilityCheckOnSave": true,
+    "doNotExecuteTemplateCode": true
+  },
+  "testing": {
+    "unit": [
+      "schema-validation",
+      "default-props",
+      "style-resolution",
+      "locale-fallback",
+      "serialization-roundtrip"
+    ],
+    "integration": [
+      "php-renderer",
+      "rest-permissions",
+      "asset-resolution"
+    ],
+    "e2e": [
+      "insert-and-select",
+      "edit-props",
+      "responsive-preview",
+      "light-dark-preview",
+      "save-reload",
+      "keyboard-navigation"
+    ]
+  },
+  "exampleInstance": {
+    "id": "example-video-background",
+    "type": "video-background",
+    "props": {
+      "cssClasses": [],
+      "htmlId": "",
+      "ariaLabel": "",
+      "hidden": false,
+      "src": null,
+      "poster": null,
+      "controls": true,
+      "muted": true,
+      "autoplay": false,
+      "loop": false,
+      "preload": "metadata",
+      "captionTrack": null
+    },
+    "styles": {
+      "base": {},
+      "tablet": {},
+      "mobile": {},
+      "dark": {},
+      "darkMobile": {}
+    },
+    "children": []
+  },
+  "implementation": {
+    "status": "proposed",
+    "priority": "post-MVP",
+    "notes": [
+      "Do not infer that a UI-component preview requires shipping React on the public site.",
+      "Any client-side behavior must use isolated, progressively enhanced assets."
+    ]
+  }
+}

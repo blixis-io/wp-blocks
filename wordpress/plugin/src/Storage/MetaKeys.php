@@ -24,7 +24,7 @@ final class MetaKeys {
 	 * @param string $locale Value.
 	 */
 	public static function is_valid_locale( string $locale ): bool {
-		return \strlen( $locale ) <= 20 && 1 === \preg_match( '/^[a-z]{2,3}(?:_[A-Za-z0-9]{2,8})*$/D', $locale );
+		return 'ar' === $locale || ( \strlen( $locale ) <= 20 && 1 === \preg_match( '/^[a-z]{2,3}_[A-Za-z0-9]{2,8}(?:_[A-Za-z0-9]{2,8})*$/D', $locale ) );
 	}
 
 	/**

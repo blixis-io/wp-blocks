@@ -38,9 +38,22 @@ final class TemplateControllerTest extends TestCase {
 		$GLOBALS['blixis_template_allowed'] = true;
 		$this->assertTrue( TemplateController::permission() );
 		TemplateController::register();
-		$this->assertCount( 3, $GLOBALS['blixis_template_routes'] );
+		$this->assertCount( 4, $GLOBALS['blixis_template_routes'] );
 		$this->assertTrue( TemplateController::has_empty_body( '' ) );
 		$this->assertFalse( TemplateController::has_empty_body( '{}' ) );
+	}
+
+	#[RunInSeparateProcess]
+	#[PreserveGlobalState( false )]
+	/** Import JSON rejects unknown keys, non-booleans, malformed and oversized bodies. */
+	public function test_import_body_is_strict(): void {
+		// phpcs:ignore Squiz.PHP.Eval.Discouraged -- Isolated WP_Error declaration.
+		eval( 'namespace { class WP_Error { public function __construct(public $code, public $message, public $data = []) {} } }' );
+		$this->assertSame( [], TemplateController::parse_import_body( '' ) );
+		$this->assertSame( [ 'createPages' => true ], TemplateController::parse_import_body( '{"createPages":true}' ) );
+		foreach ( [ '{', '[]', '{"createPages":"true"}', '{"publish":true}', str_repeat( ' ', 4097 ) ] as $hostile ) {
+			$this->assertInstanceOf( \WP_Error::class, TemplateController::parse_import_body( $hostile ), $hostile );
+		}
 	}
 
 	#[RunInSeparateProcess]

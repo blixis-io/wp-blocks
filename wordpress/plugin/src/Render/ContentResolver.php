@@ -8,17 +8,25 @@ declare(strict_types=1);
 namespace Blixis\Builder\Render;
 
 use Blixis\Builder\Registry\ElementRegistry;
+use Blixis\Builder\Registry\ElementDefinitionRegistry;
 
 \defined( 'ABSPATH' ) || exit;
 
 /** Selects only values admitted by their manifest property definition. */
 final class ContentResolver {
+	/** Definition-driven property aliases for v2 documents.
+	 *
+	 * @var ElementDefinitionRegistry
+	 */
+	private readonly ElementDefinitionRegistry $definitions;
 	/**
 	 * Apply the documented contract.
 	 *
 	 * @param ElementRegistry $registry Registry.
 	 */
-	public function __construct( private readonly ElementRegistry $registry ) {}
+	public function __construct( private readonly ElementRegistry $registry ) {
+		$this->definitions = ElementDefinitionRegistry::from_manifest_file( \dirname( __DIR__, 2 ) . '/data/element-definitions-v2.json' );
+	}
 
 	/**
 	 * Apply the documented contract.
@@ -36,18 +44,30 @@ final class ContentResolver {
 		}
 		$out = [];
 		foreach ( $definition['props'] as $name => $prop ) {
-			$candidates = [];
+			$definition_name = $this->definitions->canonical_property( (string) ( $node->type ?? '' ), (string) $name );
+			$candidate_names = \array_unique( [ $name, $definition_name, ...$this->definitions->legacy_aliases( (string) ( $node->type ?? '' ), $definition_name ) ] );
+			$candidates      = [];
 			if ( 'invariant' === $prop['classification'] ) {
-				if ( ( $node->props ?? null ) instanceof \stdClass && \property_exists( $node->props, $name ) ) {
-					$candidates[] = $node->props->$name;
+				if ( ( $node->props ?? null ) instanceof \stdClass ) {
+					foreach ( $candidate_names as $candidate_name ) {
+						if ( \property_exists( $node->props, $candidate_name ) ) {
+							$candidates[] = $node->props->$candidate_name;
+							break;
+						}
+					}
 				}
 			} else {
 				// Fallback policy `source` (default) falls back to the default locale's text; `blank` shows nothing for a missing translation.
 				foreach ( 'blank' === $fallback ? [ $locale ] : \array_unique( [ $locale, (string) ( $document->{'defaultLocale'} ?? '' ) ] ) as $stream_locale ) {
 					$stream = ( $document->translations ?? null ) instanceof \stdClass ? ( $document->translations->$stream_locale ?? null ) : null;
 					$entry  = $stream instanceof \stdClass ? ( $stream->{$node->id} ?? null ) : null;
-					if ( $entry instanceof \stdClass && ( $entry->values ?? null ) instanceof \stdClass && \property_exists( $entry->values, $name ) ) {
-						$candidates[] = $entry->values->$name;
+					if ( $entry instanceof \stdClass && ( $entry->values ?? null ) instanceof \stdClass ) {
+						foreach ( $candidate_names as $candidate_name ) {
+							if ( \property_exists( $entry->values, $candidate_name ) && ( $candidate_name === $name || $this->definitions->localizable( (string) ( $node->type ?? '' ), $definition_name ) ) ) {
+								$candidates[] = $entry->values->$candidate_name;
+								break;
+							}
+						}
 					}
 				}
 			}

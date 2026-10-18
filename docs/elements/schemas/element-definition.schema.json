@@ -1,0 +1,211 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.blixis.io/elements/definition-v1.schema.json",
+  "title": "Blixis Element Definition v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "definitionVersion",
+    "id",
+    "namespace",
+    "title",
+    "category",
+    "icon",
+    "subscription",
+    "rendering",
+    "structure",
+    "properties",
+    "propertyControls",
+    "style",
+    "motion",
+    "bindings",
+    "localization",
+    "accessibility",
+    "interactions",
+    "dependencies",
+    "security",
+    "testing",
+    "exampleInstance",
+    "implementation",
+    "origin",
+    "description"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "definitionVersion": {
+      "const": "1.0.0"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "namespace": {
+      "const": "blixis"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "description": {
+      "type": "string",
+      "minLength": 5
+    },
+    "category": {
+      "type": "string"
+    },
+    "icon": {
+      "type": "object",
+      "required": [
+        "provider",
+        "set",
+        "name",
+        "id"
+      ],
+      "properties": {
+        "provider": {
+          "const": "iconify"
+        },
+        "set": {
+          "const": "solar"
+        },
+        "name": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^solar:"
+        }
+      }
+    },
+    "subscription": {
+      "type": "object",
+      "required": [
+        "minimumTier",
+        "availableIn",
+        "requiresServerEntitlement"
+      ],
+      "properties": {
+        "minimumTier": {
+          "enum": [
+            "free",
+            "plus",
+            "pro"
+          ]
+        },
+        "availableIn": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "free",
+              "plus",
+              "pro"
+            ]
+          },
+          "minItems": 1
+        },
+        "requiresServerEntitlement": {
+          "type": "boolean"
+        }
+      }
+    },
+    "origin": {
+      "type": "object"
+    },
+    "rendering": {
+      "type": "object",
+      "required": [
+        "strategy",
+        "rendererKey",
+        "semanticTag"
+      ]
+    },
+    "structure": {
+      "type": "object",
+      "required": [
+        "acceptsChildren",
+        "allowedChildren",
+        "minChildren"
+      ]
+    },
+    "properties": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "type",
+          "default",
+          "description"
+        ],
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "default": {},
+          "required": {
+            "type": "boolean"
+          },
+          "options": {
+            "type": "array"
+          },
+          "localizable": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "propertyControls": {
+      "type": "object"
+    },
+    "style": {
+      "type": "object",
+      "required": [
+        "allowed",
+        "responsive",
+        "appearance",
+        "states"
+      ]
+    },
+    "motion": {
+      "type": "object"
+    },
+    "bindings": {
+      "type": "object"
+    },
+    "localization": {
+      "type": "object"
+    },
+    "accessibility": {
+      "type": "object"
+    },
+    "interactions": {
+      "type": "object"
+    },
+    "dependencies": {
+      "type": "object"
+    },
+    "security": {
+      "type": "object"
+    },
+    "testing": {
+      "type": "object"
+    },
+    "exampleInstance": {
+      "type": "object",
+      "required": [
+        "id",
+        "type",
+        "props",
+        "styles",
+        "children"
+      ]
+    },
+    "implementation": {
+      "type": "object"
+    }
+  }
+}

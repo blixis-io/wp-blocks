@@ -43,6 +43,7 @@ final class SetupAdmin {
 		foreach ( [ 'start', 'dismiss', 'wizard', 'rollback' ] as $action ) {
 			add_action( 'admin_post_blixis_setup_' . $action, [ self::class, $action ] );
 		}
+		add_action( 'admin_post_blixis_import_template', [ self::class, 'import_template' ] );
 	}
 
 	/**
@@ -192,6 +193,10 @@ final class SetupAdmin {
 					?>
 					<input type="hidden" name="template_id" value="<?php echo esc_attr( $preset ); ?>"><?php wp_nonce_field( 'template_font_install', 'template_font_nonce' ); ?><?php endif; ?>
 				<?php
+				if ( 5 === $step && SetupTemplates::find( $preset ) ) :
+					?>
+					<input type="hidden" name="template_id" value="<?php echo esc_attr( $preset ); ?>"><?php endif; ?>
+				<?php
 				if ( 2 === $step ) :
 					echo '<div class="blx-theme-layout"><div class="blx-theme-controls">';
 				elseif ( 3 === $step ) :
@@ -223,7 +228,10 @@ final class SetupAdmin {
 						<button class="button" type="submit" name="direction" value="cancel"><span aria-hidden="true">←</span> <?php echo esc_html__( 'Skip Setup', 'blixis' ); ?></button><span class="blx-skip-hint"><?php echo esc_html__( 'You can access the setup wizard anytime from the Blixis menu.', 'blixis' ); ?></span><?php endif; ?>
 				<?php
 				if ( $step < 6 ) :
-					?>
+					if ( 5 === $step && ! empty( SetupTemplates::find( $preset )['importable'] ) ) :
+						?>
+					<button class="button button-primary" type="submit" name="action" value="blixis_import_template"><?php echo esc_html__( 'Import selected content', 'blixis' ); ?></button>
+					<?php endif; ?>
 					<button class="button button-primary blx-continue" type="submit" name="direction" value="next"><?php echo esc_html__( 'Continue', 'blixis' ); ?> <span aria-hidden="true">→</span></button>
 					<?php
 				elseif ( ! $just_applied ) :
@@ -553,8 +561,35 @@ final class SetupAdmin {
 	 */
 	private static function import_summary( ?array $template ): void {
 		$documents = is_array( $template['documents'] ?? null ) ? $template['documents'] : [];
-		$blocked   = count( $documents );
-		printf( '<aside class="blx-import-summary"><h2>%s</h2><p>%s</p></aside>', esc_html__( 'Import summary', 'blixis' ), esc_html( sprintf( /* translators: %d: number of template documents. */ _n( '%d page can’t be imported yet because required elements are unavailable.', '%d pages can’t be imported yet because required elements are unavailable.', $blocked, 'blixis' ), $blocked ) ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped text.
+		if ( ! $template || empty( $template['importable'] ) ) {
+			$reasons = is_array( $template['importabilityReasons'] ?? null ) ? $template['importabilityReasons'] : [];
+			echo '<aside class="blx-import-summary"><h2>' . esc_html__( 'Import summary', 'blixis' ) . '</h2><p>' . esc_html__( 'This template can’t be imported yet.', 'blixis' ) . '</p>';
+			if ( $reasons ) {
+				echo '<ul>';
+				foreach ( $reasons as $reason ) {
+					printf( '<li>%s</li>', esc_html( wp_strip_all_tags( $reason ) ) );
+				} echo '</ul>'; }
+			echo '</aside>';
+			return;
+		}
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only fixed success marker.
+		if ( isset( $_GET['imported'] ) && '1' === sanitize_key( wp_unslash( $_GET['imported'] ) ) ) {
+			echo '<p class="notice notice-success">' . esc_html__( 'Template pages were imported as drafts.', 'blixis' ) . '</p>';
+		}
+		$declared = is_array( $template['importOptions'] ?? null ) ? $template['importOptions'] : [];
+		echo '<fieldset class="blx-import-summary"><legend>' . esc_html__( 'Import template content', 'blixis' ) . '</legend><p>' . esc_html__( 'Pages are created as drafts. Review them before publishing.', 'blixis' ) . '</p>';
+		foreach ( [
+			'createPages'       => __( 'Import the template pages as drafts', 'blixis' ),
+			'setHomePage'       => __( 'Set the first imported page as the homepage', 'blixis' ),
+			'createNavigation'  => __( 'Create the template navigation menu', 'blixis' ),
+			'overwriteExisting' => __( 'Replace pages imported previously from this template', 'blixis' ),
+		] as $key => $label ) {
+			if ( empty( $declared[ $key ] ) ) {
+				continue;
+			}
+			printf( '<input type="hidden" name="importOptions[%1$s]" value="0"><label><input type="checkbox" name="importOptions[%1$s]" value="1" %2$s> %3$s</label><br>', esc_attr( $key ), checked( ! empty( $declared[ $key ] ), true, false ), esc_html( $label ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped attributes.
+		}
+		echo '</fieldset>';
 	}
 
 	/** Return a concise family label for common CSS stacks.
@@ -620,7 +655,7 @@ final class SetupAdmin {
 		$preview       = is_string( $template['previewUrl'] ?? null ) ? $template['previewUrl'] : '';
 		$templates_url = apply_filters( 'blixis_builder_templates_admin_url', '' );
 		$documents     = is_array( $template['documents'] ?? null ) ? $template['documents'] : [];
-		$content_state = $documents ? __( 'Demo content import unavailable: required elements are not registered', 'blixis' ) : __( 'This starter design does not include importable demo content.', 'blixis' );
+		$content_state = ! $documents ? __( 'This starter design does not include importable demo content.', 'blixis' ) : ( ! empty( $template['importable'] ) ? __( 'Demo pages are available to import as drafts.', 'blixis' ) : __( 'Demo content import unavailable: required elements are not registered', 'blixis' ) );
 		?>
 		<div class="blx-finish-layout"><section class="blx-finish-main">
 			<?php
@@ -832,6 +867,50 @@ final class SetupAdmin {
 		check_admin_referer( self::NONCE_ACTION, 'blixis_setup_nonce_rollback' );
 		$result = DesignSystemStore::rollback();
 		wp_safe_redirect( admin_url( 'admin.php?page=blixis-setup' . ( $result['ok'] ? '&restored=1' : '&error=not-saved' ) ) );
+		exit;
+	}
+
+	/** Import the selected template from the nonce-protected content step. */
+	public static function import_template(): void {
+		self::require_post();
+		check_admin_referer( 'blixis_setup_step_5', 'blixis_setup_nonce_wizard' );
+		if ( ! isset( $_POST['step'] ) || '5' !== sanitize_text_field( wp_unslash( $_POST['step'] ) ) ) {
+			wp_die( esc_html__( 'Invalid step.', 'blixis' ), '', [ 'response' => 400 ] ); // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Checked immediately above.
+		}
+		if ( SetupState::resume_step( get_current_user_id() ) < 5 ) {
+			wp_die( esc_html__( 'Step is unavailable.', 'blixis' ), '', [ 'response' => 403 ] );
+		}
+		$submitted = isset( $_POST['importOptions'] ) && is_array( $_POST['importOptions'] ) ? wp_unslash( $_POST['importOptions'] ) : []; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Checked above.
+		$allowed   = [ 'createPages', 'setHomePage', 'createNavigation', 'overwriteExisting' ];
+		if ( array_diff( array_keys( $submitted ), $allowed ) ) {
+			wp_die( esc_html__( 'Invalid import option.', 'blixis' ), '', [ 'response' => 400 ] );
+		}
+		$options = [];
+		foreach ( $allowed as $key ) {
+			if ( isset( $submitted[ $key ] ) ) {
+				if ( ! in_array( $submitted[ $key ], [ '0', '1' ], true ) ) {
+					wp_die( esc_html__( 'Invalid import option.', 'blixis' ), '', [ 'response' => 400 ] );
+				} $options[ $key ] = '1' === $submitted[ $key ]; }
+		}
+		$id     = isset( $_POST['template_id'] ) ? sanitize_key( wp_unslash( $_POST['template_id'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Checked above.
+		$result = apply_filters( 'blixis_builder_setup_import', null, $id, $options );
+		if ( is_wp_error( $result ) ) {
+			wp_die( esc_html__( 'Template import failed. No content was published.', 'blixis' ), '', [ 'response' => 400 ] );
+		}
+		if ( null === $result ) {
+			wp_die( esc_html__( 'Template importing is unavailable.', 'blixis' ), '', [ 'response' => 503 ] );
+		}
+		wp_safe_redirect(
+			add_query_arg(
+				[
+					'page'     => 'blixis-setup',
+					'step'     => 5,
+					'imported' => '1',
+					'template' => $id,
+				],
+				admin_url( 'admin.php' )
+			)
+		);
 		exit;
 	}
 

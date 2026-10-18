@@ -1,5 +1,6 @@
 import type { ElementDefinition } from './definition.ts';
 import { ElementRegistry } from './registry.ts';
+import { ELEMENT_DEFINITIONS_V2 } from './v2.ts';
 
 const everything = ['@layout', '@content', '@media', '@interactive'];
 const inContainers = ['blixis/section', 'blixis/container'];
@@ -249,6 +250,180 @@ export function createCoreRegistry(): ElementRegistry {
   for (const def of CORE_ELEMENTS) {
     const result = registry.register(def, 'core');
     if (!result.ok) throw new Error(`core element ${def.type} is invalid: ${result.errors.join('; ')}`);
+  }
+  return registry;
+}
+
+/** Editor registry extends the six stable core contracts with the generated phase 0 template palette entries. */
+export function createEditorRegistry(): ElementRegistry {
+  const registry = createCoreRegistry();
+  const editorReady = ['stack', 'row', 'columns', 'grid', 'card', 'site-logo'];
+  const aliases = [
+    {
+      id: 'page',
+      sourceId: 'section',
+      category: 'layout',
+      parents: ['#root'],
+      children: ['@layout', '@content', '@media', '@interactive'],
+    },
+    {
+      id: 'site-header',
+      sourceId: 'sticky-header',
+      category: 'layout',
+      parents: ['blixis/page'],
+      children: ['@layout', '@content', '@media', '@interactive'],
+    },
+    {
+      id: 'site-footer',
+      sourceId: 'section',
+      category: 'layout',
+      parents: ['blixis/page'],
+      children: ['@layout', '@content', '@media', '@interactive'],
+    },
+    {
+      id: 'navigation',
+      sourceId: 'nav-menu',
+      category: 'interactive',
+      parents: ['blixis/page', 'blixis/site-header', 'blixis/site-footer', '@layout'],
+      children: '',
+    },
+  ];
+  const sources = [
+    ...ELEMENT_DEFINITIONS_V2.filter((definition) => editorReady.includes(definition.id)),
+    ...aliases.map((alias) => {
+      const original = ELEMENT_DEFINITIONS_V2.find((definition) => definition.id === alias.sourceId);
+      if (!original) throw new Error(`missing generated alias source ${alias.sourceId}`);
+      return {
+        ...original,
+        id: alias.id,
+        title: alias.id
+          .split('-')
+          .map((word) => `${word.charAt(0).toUpperCase()}${word.slice(1)}`)
+          .join(' '),
+        category: alias.category,
+        structure: {
+          ...(original['structure'] as Record<string, unknown>),
+          allowedParentTypes: alias.parents,
+          allowedChildren: alias.children,
+        },
+      };
+    }),
+  ];
+  for (const source of sources) {
+    const raw = source as Record<string, unknown>;
+    const structure = raw['structure'] as Record<string, unknown>;
+    const definitions = raw['properties'] as Record<string, Record<string, unknown>>;
+    const props: ElementDefinition['props'] = {};
+    for (const [id, property] of Object.entries(definitions)) {
+      if (property['editorOnly'] === true) continue;
+      const type = String(property['type']);
+      const classification = property['localizable'] === true ? 'translatable' : 'invariant';
+      const base = {
+        classification,
+        label: typeof property['label'] === 'string' ? property['label'] : id,
+        ...(property['required'] === true ? { required: true } : {}),
+      } as const;
+      if (type === 'string' || type === 'text' || type === 'richtext')
+        props[id] = {
+          ...base,
+          kind: type === 'richtext' ? 'text' : 'string',
+          ...(type === 'richtext'
+            ? { inline: true, marks: ['strong', 'em', 'u', 's', 'code', 'link', 'style'] as const }
+            : {}),
+          maxLength: Number(property['maxLength'] ?? 5000),
+          ...(typeof property['default'] === 'string' ? { default: property['default'] } : {}),
+        } as ElementDefinition['props'][string];
+      else if (type === 'boolean')
+        props[id] = {
+          ...base,
+          kind: 'boolean',
+          ...(typeof property['default'] === 'boolean' ? { default: property['default'] } : {}),
+        };
+      else if (type === 'integer' || type === 'number')
+        props[id] = {
+          ...base,
+          kind: 'integer',
+          min: Number(property['minimum'] ?? 0),
+          max: Number(property['maximum'] ?? 10000),
+          ...(typeof property['default'] === 'number' ? { default: Math.trunc(property['default']) } : {}),
+        };
+      else if (type === 'enum') {
+        const values = Array.isArray(property['options'])
+          ? property['options'].filter((value): value is string => typeof value === 'string')
+          : [];
+        if (values.length)
+          props[id] = {
+            ...base,
+            kind: 'enum',
+            values,
+            ...(typeof property['default'] === 'string' ? { default: property['default'] } : {}),
+          };
+      } else if (type === 'url')
+        props[id] = {
+          ...base,
+          kind: 'url',
+          ...(typeof property['default'] === 'string' ? { default: property['default'] } : {}),
+        };
+      else if (type === 'asset-ref' || type === 'iconify-ref')
+        props[id] = {
+          ...base,
+          kind: 'string',
+          maxLength: 128,
+          ...(typeof property['default'] === 'string' ? { default: property['default'] } : {}),
+        };
+      else if (type.startsWith('array<'))
+        props[id] = {
+          ...base,
+          kind: 'json',
+          ...(property['default'] !== undefined ? { default: property['default'] } : {}),
+        };
+    }
+    const children = structure['allowedChildren'];
+    const parents = structure['allowedParentTypes'];
+    const def: ElementDefinition = {
+      type: `blixis/${source.id}`,
+      version: 1,
+      title: String(raw['title']),
+      category:
+        raw['category'] === 'content'
+          ? 'content'
+          : raw['category'] === 'media'
+            ? 'media'
+            : raw['category'] === 'interactive'
+              ? 'interactive'
+              : 'layout',
+      tier: 'free',
+      requiresApi: 1,
+      props,
+      styleProperties: [],
+      allowedParents:
+        source.id === 'page'
+          ? ['#root']
+          : source.id === 'site-header' || source.id === 'site-footer'
+            ? ['blixis/page']
+            : Array.isArray(parents)
+              ? [
+                  ...parents.map((value) =>
+                    String(value).startsWith('#') ||
+                    String(value).startsWith('@') ||
+                    String(value).startsWith('blixis/')
+                      ? String(value)
+                      : `blixis/${String(value)}`,
+                  ),
+                  'blixis/site-header',
+                  'blixis/site-footer',
+                  'blixis/page',
+                ]
+              : ['#root'],
+      allowedChildren:
+        children === 'any'
+          ? ['@layout', '@content', '@media', '@interactive']
+          : Array.isArray(children)
+            ? children.filter((value): value is string => typeof value === 'string')
+            : [],
+    };
+    const result = registry.register(def, 'core');
+    if (!result.ok) throw new Error(`generated editor definition ${def.type} is invalid: ${result.errors.join('; ')}`);
   }
   return registry;
 }

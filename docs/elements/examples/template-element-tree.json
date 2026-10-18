@@ -1,0 +1,80 @@
+{
+  "schemaVersion": "1.0.0",
+  "example": "Blixis template element tree fragment",
+  "note": "This instance mirrors the template files: nested element tree under template pages; registry definitions are separate.",
+  "elements": [
+    {
+      "id": "section-hero",
+      "type": "section",
+      "props": {
+        "semanticTag": "section"
+      },
+      "styles": {
+        "base": {
+          "padding": {
+            "top": "80px",
+            "right": "24px",
+            "bottom": "80px",
+            "left": "24px"
+          }
+        },
+        "dark": {
+          "backgroundColor": "var(--blixis-surface-dark)"
+        }
+      },
+      "children": [
+        {
+          "id": "heading-hero",
+          "type": "heading",
+          "props": {
+            "content": "Build beautiful websites",
+            "tag": "h1",
+            "marks": [
+              {
+                "id": "segment-highlight",
+                "range": [
+                  6,
+                  15
+                ],
+                "styleRef": "accent-text"
+              }
+            ]
+          },
+          "localeContent": {
+            "nl": {
+              "content": "Bouw prachtige websites"
+            }
+          },
+          "styles": {
+            "base": {
+              "fontSize": "clamp(2rem, 5vw, 5rem)",
+              "color": "var(--blixis-text)"
+            },
+            "dark": {
+              "color": "var(--blixis-text-dark)"
+            },
+            "mobile": {
+              "fontSize": "2rem"
+            }
+          },
+          "children": []
+        },
+        {
+          "id": "hero-button",
+          "type": "button",
+          "props": {
+            "label": "Get started",
+            "action": "link",
+            "href": "/contact"
+          },
+          "styles": {
+            "base": {
+              "backgroundColor": "var(--blixis-primary)"
+            }
+          },
+          "children": []
+        }
+      ]
+    }
+  ]
+}

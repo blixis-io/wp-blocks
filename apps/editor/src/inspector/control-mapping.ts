@@ -10,6 +10,8 @@ export function controlFamilyFor(definition: PropDefinition): ControlFamily {
     case 'text':
     case 'url':
       return 'text';
+    case 'json':
+      return 'text';
     case 'integer':
       return 'number';
     case 'enum':

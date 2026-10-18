@@ -15,11 +15,11 @@ require_once __DIR__ . '/InvalidationState.php';
 
 /** Capture action invocation.
  *
- * @param string              $hook Hook name.
- * @param array<string,mixed> $event Audit payload.
+ * @param string $hook Hook name.
+ * @param mixed  ...$event Event arguments.
  */
-function do_action( string $hook, array $event ): void {
-	BlixisAuditHookState::$events[] = [ $hook, $event ];
+function do_action( string $hook, mixed ...$event ): void {
+	BlixisAuditHookState::$events[] = [ $hook, \count( $event ) === 1 ? $event[0] : $event ];
 }
 
 /** Media route authentication state. */

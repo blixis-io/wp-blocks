@@ -22,6 +22,11 @@ use Blixis\Builder\Storage\MetaKeys;
  * reach visitors. Any missing or invalid piece makes the post "not published by the builder" (null), never a partial page.
  */
 final class PublishedReader {
+	/** Last content-free failure slug.
+	 *
+	 * @var ?string
+	 */
+	private ?string $last_failure_reason = null;
 	/**
 	 * Create a reader.
 	 *
@@ -40,12 +45,13 @@ final class PublishedReader {
 	 * @return ?PublishedDocument
 	 */
 	public function read( int $post_id, string $locale ): ?PublishedDocument {
+		$this->last_failure_reason = null;
 		if ( $post_id < 1 || ! MetaKeys::is_valid_locale( $locale ) ) {
-			return null;
+			return $this->failed( $post_id, 'invalid_request' );
 		}
 		$pointer = $this->envelope( $post_id, MetaKeys::PUBLISHED );
 		if ( null === $pointer || ! \is_int( $pointer->{'publishedLayoutRevision'} ?? null ) || $pointer->{'publishedLayoutRevision'} < 1 ) {
-			return null;
+			return $this->failed( $post_id, 'invalid_pointer' );
 		}
 		$selected        = $this->select_locale( $pointer, $locale );
 		$layout_revision = $pointer->{'publishedLayoutRevision'};
@@ -55,7 +61,7 @@ final class PublishedReader {
 		}
 		$layout = $this->envelope( $post_id, MetaKeys::snap_layout( $layout_revision ) );
 		if ( null === $layout || ! PreviewDocument::accepts( $layout ) ) {
-			return null;
+			return $this->failed( $post_id, null === $layout ? 'layout_snapshot_missing' : 'layout_invalid' );
 		}
 		if ( null === $selected ) {
 			return new PublishedDocument( $layout, $locale, $layout_revision, 0 );
@@ -68,7 +74,7 @@ final class PublishedReader {
 		$content = $this->envelope( $post_id, MetaKeys::snap_content( $selected_locale, $content_revision ) );
 		// Locale identity: a content snapshot that names another locale is corrupt and never rendered.
 		if ( null === $content || ( \property_exists( $content, 'locale' ) && $content->locale !== $selected_locale ) ) {
-			return null;
+			return $this->failed( $post_id, null === $content ? 'content_snapshot_missing' : 'content_locale_mismatch' );
 		}
 		$streams          = [ $selected_locale => $content ];
 		$default_locale   = $pointer->{'defaultLocale'} ?? null;
@@ -88,6 +94,28 @@ final class PublishedReader {
 			$merged->{'defaultLocale'} = $default_locale;
 		}
 		return new PublishedDocument( $merged, $selected_locale, $layout_revision, $content_revision, $default_revision );
+	}
+
+	/** Return the last content-free read failure slug for diagnostics. */
+	public function last_failure_reason(): ?string {
+		return $this->last_failure_reason;
+	}
+
+	/** Record and expose a content-free published-read failure.
+	 *
+	 * @param int    $post_id Post ID.
+	 * @param string $reason Failure slug.
+	 */
+	private function failed( int $post_id, string $reason ): null {
+		$this->last_failure_reason = $reason;
+		if ( \function_exists( 'do_action' ) ) {
+			\do_action( 'blixis_builder_published_read_failed', $post_id, $reason );
+		}
+		if ( \defined( 'WP_DEBUG' ) && WP_DEBUG && ! isset( $GLOBALS['blixis_builder_published_read_failures'][ $post_id ] ) ) {
+			$GLOBALS['blixis_builder_published_read_failures'][ $post_id ] = true;
+			\error_log( 'Blixis published read failed (' . $reason . ') for post ' . $post_id ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Content-free diagnostic, once per request.
+		}
+		return null;
 	}
 
 	/**

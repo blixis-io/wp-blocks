@@ -51,6 +51,57 @@ final class CssCompilerTest extends TestCase {
 			$this->assertSame( $result->css, Compiler::compile( $input['document'], $input['classes'] ?? [], $input['tokens'] ?? [], $input['breakpoints'] ?? null )->css );
 		}
 	}
+	/** Template layout props are lowered into the regular allowlisted responsive CSS compiler path. */
+	public function test_template_layout_props_compile_to_responsive_css(): void {
+		$document = [
+			'documentId' => 'layout-test',
+			'root'       => [
+				[
+					'id'       => 'grid-one',
+					'type'     => 'grid',
+					'props'    => [
+						'columns'  => [
+							'desktop' => 3,
+							'tablet'  => 2,
+							'mobile'  => 1,
+						],
+						'gapToken' => 'space-lg',
+					],
+					'children' => [],
+				],
+				[
+					'id'       => 'columns-one',
+					'type'     => 'columns',
+					'props'    => [
+						'ratios'  => [ 1, 2 ],
+						'stackAt' => 'mobile',
+					],
+					'children' => [],
+				],
+				[
+					'id'       => 'container-one',
+					'type'     => 'container',
+					'props'    => [ 'maxWidthToken' => 'container-wide' ],
+					'children' => [],
+				],
+				[
+					'id'       => 'header-one',
+					'type'     => 'site-header',
+					'props'    => [ 'sticky' => true ],
+					'children' => [],
+				],
+			],
+		];
+		$result   = Compiler::compile( $document );
+		$this->assertSame( [], $result->issues );
+		$this->assertStringContainsString( 'gap:var(--blx-space-lg)', $result->css );
+		$this->assertStringContainsString( 'grid-template-columns:repeat(3, minmax(0, 1fr))', $result->css );
+		$this->assertStringContainsString( 'grid-template-columns:repeat(2, minmax(0, 1fr))', $result->css );
+		$this->assertStringContainsString( 'grid-template-columns:1fr 2fr', $result->css );
+		$this->assertStringContainsString( 'grid-template-columns:1fr', $result->css );
+		$this->assertStringContainsString( 'max-width:var(--blx-container-wide)', $result->css );
+		$this->assertStringContainsString( 'position:sticky;top:0', $result->css );
+	}
 
 	/** PHP and TypeScript emit the same mark CSS for the shared token set. */
 	public function test_shared_rich_text_mark_css(): void {

@@ -86,7 +86,8 @@ final class Compiler {
 		while ( [] !== $stack ) {
 			[ $node, $path ] = array_pop( $stack );
 			$attached        = [];
-			$own             = self::usable( $node['style'] ?? [], $path, 'style', $rank, $issues );
+			$style_rules     = \array_values( \array_merge( \is_array( $node['style'] ?? null ) ? $node['style'] : [], self::template_layout_rules( $node, $path, $issues ) ) );
+			$own             = self::usable( $style_rules, $path, 'style', $rank, $issues );
 			$digest          = [] !== $own ? ( \is_string( $doc['documentId'] ?? null ) ? self::digest( $doc['documentId'] . ':' . $node['id'], $hash ) : null ) : '';
 			if ( null === $digest ) {
 				$issues[] = self::issue( 'invalid-identifier', $path, 'document and element ids must be ASCII' );
@@ -301,6 +302,125 @@ final class Compiler {
 			];
 		}
 		return $out;
+	}
+
+	/** Translate template layout props into normal validated CSS compiler rules.
+	 *
+	 * @param array<string,mixed>                                 $node Element data.
+	 * @param string                                              $path JSON path.
+	 * @param list<array{code:string,path:string,message:string}> $issues Issues.
+	 * @return list<array<string,mixed>> Synthetic CSS rules.
+	 */
+	private static function template_layout_rules( array $node, string $path, array &$issues ): array {
+		$props = \is_array( $node['props'] ?? null ) ? $node['props'] : [];
+		$rules = [];
+		$add   = static function ( ?string $breakpoint, array $declarations ) use ( &$rules ): void {
+			if ( [] === $declarations ) {
+				return;
+			}
+			foreach ( $rules as &$rule ) {
+				if ( ( $rule['breakpoint'] ?? null ) === $breakpoint ) {
+					$rule['declarations'] = \array_merge( $rule['declarations'], $declarations );
+					return; }
+			}
+			unset( $rule );
+			$rules[] = [
+				'breakpoint'   => $breakpoint,
+				'declarations' => $declarations,
+			];
+		};
+		$type  = \is_string( $node['type'] ?? null ) ? \preg_replace( '~^blixis/~', '', $node['type'] ) : '';
+		if ( \in_array( $type, [ 'grid', 'columns' ], true ) ) {
+			$add( null, [ 'display' => 'grid' ] );
+		} elseif ( 'stack' === $type ) {
+			$add(
+				null,
+				[
+					'display'        => 'flex',
+					'flex-direction' => 'column',
+				]
+			);
+		} elseif ( 'row' === $type ) {
+			$add(
+				null,
+				[
+					'display'        => 'flex',
+					'flex-direction' => 'row',
+				]
+			);
+		}
+		$gap = $props['gapToken'] ?? null;
+		if ( \is_string( $gap ) && 1 === \preg_match( '/^[a-z0-9]+(?:-[a-z0-9]+)*$/D', $gap ) ) {
+			$add( null, [ 'gap' => 'var(--blx-' . $gap . ')' ] );
+		} elseif ( null !== $gap ) {
+			$issues[] = self::issue( 'invalid-layout-prop', $path . '.props.gapToken', 'gapToken must be a token identifier' );
+		}
+		$max_width = $props['maxWidthToken'] ?? null;
+		if ( \is_string( $max_width ) && 1 === \preg_match( '/^[a-z0-9]+(?:-[a-z0-9]+)*$/D', $max_width ) ) {
+			$add(
+				null,
+				[
+					'width'        => '100%',
+					'max-width'    => 'var(--blx-' . $max_width . ')',
+					'margin-left'  => 'auto',
+					'margin-right' => 'auto',
+				]
+			);
+		} elseif ( null !== $max_width ) {
+			$issues[] = self::issue( 'invalid-layout-prop', $path . '.props.maxWidthToken', 'maxWidthToken must be a token identifier' );
+		}
+		$fit = $props['fit'] ?? null;
+		if ( \in_array( $type, [ 'image', 'site-logo' ], true ) && \is_string( $fit ) && \in_array( $fit, [ 'cover', 'contain' ], true ) ) {
+			$add( null, [ 'object-fit' => $fit ] );
+		}
+		if ( 'site-header' === $type && true === ( $props['sticky'] ?? false ) ) {
+			$add(
+				null,
+				[
+					'position' => 'sticky',
+					'top'      => '0',
+				]
+			);
+		}
+		$columns = $props['columns'] ?? null;
+		if ( \is_array( $columns ) && ! \array_is_list( $columns ) ) {
+			foreach ( [
+				'desktop' => null,
+				'tablet'  => 'tablet',
+				'mobile'  => 'mobile',
+			] as $key => $breakpoint ) {
+				$count = $columns[ $key ] ?? null;
+				if ( \is_int( $count ) && $count >= 1 && $count <= 12 ) {
+					$add( $breakpoint, [ 'grid-template-columns' => 'repeat(' . $count . ', minmax(0, 1fr))' ] );
+				} elseif ( null !== $count ) {
+					$issues[] = self::issue( 'invalid-layout-prop', $path . '.props.columns.' . $key, 'column count must be an integer from 1 to 12' );
+				}
+			}
+		} elseif ( null !== $columns ) {
+			$issues[] = self::issue( 'invalid-layout-prop', $path . '.props.columns', 'columns must be a desktop/tablet/mobile object' );
+		}
+		$ratios = $props['ratios'] ?? null;
+		if ( \is_array( $ratios ) && \array_is_list( $ratios ) && [] !== $ratios && \count( $ratios ) <= 12 ) {
+			$parts = [];
+			foreach ( $ratios as $ratio ) {
+				if ( ( ! \is_int( $ratio ) && ! \is_float( $ratio ) ) || $ratio <= 0 || $ratio > 12 ) {
+					$parts = [];
+					break; }
+				$parts[] = (string) $ratio . 'fr';
+			}
+			if ( [] !== $parts ) {
+				$add( null, [ 'grid-template-columns' => \implode( ' ', $parts ) ] );
+			} else {
+				$issues[] = self::issue( 'invalid-layout-prop', $path . '.props.ratios', 'ratios must be positive numbers no greater than 12' );
+			}
+		}
+		$stack_at = $props['stackAt'] ?? null;
+		if ( \is_string( $stack_at ) && \in_array( $stack_at, [ 'tablet', 'mobile' ], true ) ) {
+			$add( $stack_at, [ 'grid-template-columns' => '1fr' ] );
+		} elseif ( null !== $stack_at ) {
+			$issues[] = self::issue( 'invalid-layout-prop', $path . '.props.stackAt', 'stackAt must be tablet or mobile' );
+		}
+		return $rules;
 	}
 
 	/**

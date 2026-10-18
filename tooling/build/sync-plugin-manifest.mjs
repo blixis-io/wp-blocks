@@ -5,6 +5,10 @@ import path from 'node:path';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 for (const [sourcePath, targetPath] of [
   ['packages/element-registry/manifest/core-elements.json', 'wordpress/plugin/data/core-elements.json'],
+  [
+    'packages/element-registry/manifest/element-definitions-v2.json',
+    'wordpress/plugin/data/element-definitions-v2.json',
+  ],
   ['packages/style-engine/manifest/css-properties.json', 'wordpress/plugin/data/css-properties.json'],
 ]) {
   const expected = await readFile(path.join(root, sourcePath), 'utf8');

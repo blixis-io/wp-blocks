@@ -35,6 +35,14 @@ final class Plugin {
 	/** Register hooks for a supported runtime. */
 	public static function register(): void {
 		add_filter( 'blixis_builder_setup_templates', [ self::class, 'setup_templates' ] );
+		add_filter(
+			'blixis_builder_setup_import',
+			static function ( $previous, string $id, array $options ) {
+				return ( new \Blixis\Builder\Templates\Importer() )->import( $id, $options );
+			},
+			10,
+			3
+		);
 		add_filter( 'blixis_builder_templates_admin_url', static fn() => admin_url( 'admin.php?page=blixis-templates' ) );
 		add_action( 'admin_post_blixis_install_template_fonts', [ TemplateController::class, 'admin_install' ] );
 		\add_filter( 'blixis_builder_admin_menu_slug', static fn() => AdminMenu::SLUG );
@@ -67,6 +75,7 @@ final class Plugin {
 			$data                         = $card->data;
 			$data['designTokens']         = \Blixis\Builder\Templates\Library::instance()->tokens( $data['id'] );
 			$data['importabilityReasons'] = [];
+			$data['importOptions']        = json_decode( (string) file_get_contents( $card->directory . '/template.json' ), true )['importOptions'] ?? []; // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Read the already validated local pack file.
 			$data['documents']            = [];
 			$documents                    = json_decode( (string) file_get_contents( $card->directory . '/template.json' ), true )['documents'] ?? []; // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Read the already validated local pack file.
 			foreach ( $documents as $document ) {

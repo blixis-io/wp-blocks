@@ -538,6 +538,42 @@ msgstr "Tussenruimte, hoekafronding en containerbreedtes gebruiken de waarden di
 msgid "Import summary"
 msgstr "Importoverzicht"
 
+msgid "This template can’t be imported yet."
+msgstr "Deze template kan nog niet worden geïmporteerd."
+
+msgid "Template pages were imported as drafts."
+msgstr "De templatepagina’s zijn als concept geïmporteerd."
+
+msgid "Import template content"
+msgstr "Template-inhoud importeren"
+
+msgid "Pages are created as drafts. Review them before publishing."
+msgstr "Pagina’s worden als concept aangemaakt. Controleer ze voordat je publiceert."
+
+msgid "Import the template pages as drafts"
+msgstr "Templatepagina’s als concept importeren"
+
+msgid "Set the first imported page as the homepage"
+msgstr "De eerste geïmporteerde pagina als homepage instellen"
+
+msgid "Create the template navigation menu"
+msgstr "Het navigatiemenu van de template aanmaken"
+
+msgid "Replace pages imported previously from this template"
+msgstr "Eerder geïmporteerde pagina’s van deze template vervangen"
+
+msgid "Import selected content"
+msgstr "Geselecteerde inhoud importeren"
+
+msgid "Invalid import option."
+msgstr "Ongeldige importoptie."
+
+msgid "Template importing is unavailable."
+msgstr "Template-import is niet beschikbaar."
+
+msgid "Template import failed. No content was published."
+msgstr "De template-import is mislukt. Er is geen inhoud gepubliceerd."
+
 msgid "%d page can’t be imported yet because required elements are unavailable."
 msgid_plural "%d pages can’t be imported yet because required elements are unavailable."
 msgstr[0] "%d pagina kan nog niet worden geïmporteerd omdat vereiste elementen ontbreken."
@@ -632,6 +668,12 @@ msgstr "Website-uiterlijk gekozen"
 
 msgid "Demo content import unavailable: required elements are not registered"
 msgstr "Demo-inhoud importeren is niet beschikbaar: vereiste elementen zijn niet geregistreerd"
+
+msgid "Demo pages are available to import as drafts."
+msgstr "Demopaginas kunnen als concept worden geïmporteerd."
+
+msgid "Demo content is unavailable until its required elements are registered."
+msgstr "Demoinhoud is niet beschikbaar totdat de vereiste elementen zijn geregistreerd."
 
 msgid "This starter design does not include importable demo content."
 msgstr "Dit startontwerp bevat geen importeerbare demoinhoud."

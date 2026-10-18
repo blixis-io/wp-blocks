@@ -102,6 +102,7 @@ final class Library {
 							],
 							'fonts'       => $fonts,
 							'importable'  => (bool) ( $data['documents'][0]['importable'] ?? true ),
+							'reasons'     => self::reasons( $data['documents'][0]['importabilityReasons'] ?? [] ),
 						],
 						$dir,
 						$url_base
@@ -209,5 +210,24 @@ final class Library {
 				return rtrim( $uploads['baseurl'], '/' ) . '/' . str_replace( DIRECTORY_SEPARATOR, '/', ltrim( substr( $real, strlen( $base ) ), DIRECTORY_SEPARATOR ) ); }
 		}
 		return null;
+	}
+
+	/**
+	 * Bounded, plain-text importability reasons for the admin catalogue.
+	 *
+	 * @param mixed $reasons Validated reasons from the pack.
+	 * @return list<string>
+	 */
+	private static function reasons( mixed $reasons ): array {
+		if ( ! \is_array( $reasons ) ) {
+			return [];
+		}
+		$out = [];
+		foreach ( \array_slice( $reasons, 0, 100 ) as $reason ) {
+			if ( \is_string( $reason ) ) {
+				$out[] = \mb_substr( \trim( (string) \preg_replace( '/<[^>]*>/', '', $reason ) ), 0, 200 );
+			}
+		}
+		return $out;
 	}
 }

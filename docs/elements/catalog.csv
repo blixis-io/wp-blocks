@@ -1,0 +1,254 @@
+id,name,category,minimumTier,icon,file,archetype
+section,Section,layout,free,solar:layers-linear,elements/layout/section.json,container
+container,Container,layout,free,solar:widget-2-linear,elements/layout/container.json,container
+div,Div,layout,free,solar:widget-linear,elements/layout/div.json,container
+flex,Flex,layout,free,solar:posts-carousel-horizontal-linear,elements/layout/flex.json,container
+grid,Grid,layout,free,solar:widget-4-linear,elements/layout/grid.json,container
+columns,Columns,layout,free,solar:widget-3-linear,elements/layout/columns.json,container
+stack,Stack,layout,free,solar:layers-minimalistic-linear,elements/layout/stack.json,container
+row,Row,layout,free,solar:menu-dots-linear,elements/layout/row.json,container
+spacer,Spacer,layout,free,solar:minus-circle-linear,elements/layout/spacer.json,simple
+separator,Separator,layout,free,solar:minus-linear,elements/layout/separator.json,simple
+aspect-ratio,Aspect Ratio,layout,free,solar:maximize-square-linear,elements/layout/aspect-ratio.json,container
+scroll-area,Scroll Area,layout,free,solar:square-arrow-down-linear,elements/layout/scroll-area.json,container
+sticky-container,Sticky Container,layout,plus,solar:pin-linear,elements/layout/sticky-container.json,container
+resizable-panels,Resizable Panels,layout,plus,solar:slider-horizontal-linear,elements/layout/resizable-panels.json,container
+split-layout,Split Layout,layout,plus,solar:widget-3-linear,elements/layout/split-layout.json,container
+marquee-layout,Marquee Layout,layout,pro,solar:repeat-linear,elements/layout/marquee-layout.json,container
+heading,Heading,content,free,solar:text-bold-linear,elements/content/heading.json,richtext
+paragraph,Paragraph,content,free,solar:text-linear,elements/content/paragraph.json,richtext
+rich-text,Rich Text,content,free,solar:text-italic-linear,elements/content/rich-text.json,richtext
+eyebrow,Eyebrow,content,free,solar:text-field-linear,elements/content/eyebrow.json,richtext
+blockquote,Blockquote,content,free,solar:chat-round-quote-linear,elements/content/blockquote.json,richtext
+list,List,content,free,solar:list-linear,elements/content/list.json,list
+icon-list,Icon List,content,free,solar:list-check-linear,elements/content/icon-list.json,list
+link,Link,content,free,solar:link-linear,elements/content/link.json,link
+button,Button,content,free,solar:plain-linear,elements/content/button.json,button
+button-group,Button Group,content,free,solar:widget-2-linear,elements/content/button-group.json,container
+badge,Badge,content,free,solar:tag-linear,elements/content/badge.json,text
+icon,Icon,content,free,solar:star-linear,elements/content/icon.json,icon
+icon-button,Icon Button,content,free,solar:add-circle-linear,elements/content/icon-button.json,button
+code-block,Code Block,content,plus,solar:code-linear,elements/content/code-block.json,code
+syntax-highlighter,Syntax Highlighter,content,plus,solar:code-square-linear,elements/content/syntax-highlighter.json,code
+table-of-contents,Table Of Contents,content,plus,solar:list-linear,elements/content/table-of-contents.json,navigation
+countdown,Countdown,content,plus,solar:clock-circle-linear,elements/content/countdown.json,countdown
+counter,Counter,content,plus,solar:graph-up-linear,elements/content/counter.json,counter
+animated-headline,Animated Headline,content,pro,solar:text-bold-circle-linear,elements/content/animated-headline.json,richtext
+gradient-text,Gradient Text,content,plus,solar:palette-linear,elements/content/gradient-text.json,richtext
+highlight-text,Highlight Text,content,free,solar:text-selection-linear,elements/content/highlight-text.json,richtext
+tooltip-text,Tooltip Text,content,plus,solar:info-circle-linear,elements/content/tooltip-text.json,richtext
+progress-ring,Progress Ring,content,plus,solar:pie-chart-2-linear,elements/content/progress-ring.json,progress
+image,Image,media,free,solar:gallery-linear,elements/media/image.json,image
+picture,Picture,media,free,solar:gallery-wide-linear,elements/media/picture.json,image
+icon-svg,Icon Svg,media,free,solar:gallery-minimalistic-linear,elements/media/icon-svg.json,icon
+video,Video,media,free,solar:videocamera-linear,elements/media/video.json,video
+audio,Audio,media,free,solar:music-note-linear,elements/media/audio.json,audio
+gallery,Gallery,media,plus,solar:gallery-linear,elements/media/gallery.json,gallery
+lightbox,Lightbox,media,plus,solar:full-screen-linear,elements/media/lightbox.json,gallery
+before-after,Before After,media,plus,solar:slider-vertical-linear,elements/media/before-after.json,image
+image-comparison,Image Comparison,media,plus,solar:layers-linear,elements/media/image-comparison.json,image
+video-background,Video Background,media,plus,solar:videocamera-record-linear,elements/media/video-background.json,video
+lottie,Lottie,media,pro,solar:magic-stick-3-linear,elements/media/lottie.json,lottie
+svg-animation,Svg Animation,media,pro,solar:magic-stick-3-linear,elements/media/svg-animation.json,animation
+three-d-scene,Three D Scene,media,pro,solar:box-linear,elements/media/three-d-scene.json,animation
+map,Map,media,plus,solar:map-point-linear,elements/media/map.json,map
+embed,Embed,media,free,solar:code-linear,elements/media/embed.json,embed
+iframe,Iframe,media,free,solar:window-frame-linear,elements/media/iframe.json,embed
+pdf-viewer,Pdf Viewer,media,plus,solar:document-linear,elements/media/pdf-viewer.json,embed
+image-hotspots,Image Hotspots,media,pro,solar:target-linear,elements/media/image-hotspots.json,image
+panorama-360,Panorama 360,media,pro,solar:compass-linear,elements/media/panorama-360.json,image
+site-logo,Site Logo,navigation,free,solar:home-linear,elements/navigation/site-logo.json,image
+site-title,Site Title,navigation,free,solar:text-linear,elements/navigation/site-title.json,text
+nav-menu,Nav Menu,navigation,free,solar:hamburger-menu-linear,elements/navigation/nav-menu.json,navigation
+mobile-menu,Mobile Menu,navigation,plus,solar:hamburger-menu-linear,elements/navigation/mobile-menu.json,navigation
+breadcrumbs,Breadcrumbs,navigation,free,solar:route-linear,elements/navigation/breadcrumbs.json,navigation
+pagination,Pagination,navigation,free,solar:arrow-right-linear,elements/navigation/pagination.json,pagination
+anchor-links,Anchor Links,navigation,free,solar:link-circle-linear,elements/navigation/anchor-links.json,navigation
+back-to-top,Back To Top,navigation,free,solar:arrow-up-linear,elements/navigation/back-to-top.json,button
+tabs,Tabs,navigation,free,solar:layers-linear,elements/navigation/tabs.json,tabs
+accordion,Accordion,navigation,free,solar:list-down-linear,elements/navigation/accordion.json,accordion
+collapsible,Collapsible,navigation,free,solar:list-arrow-down-linear,elements/navigation/collapsible.json,accordion
+navigation-menu,Navigation Menu,navigation,plus,solar:menu-dots-square-linear,elements/navigation/navigation-menu.json,navigation
+mega-menu,Mega Menu,navigation,pro,solar:menu-dots-linear,elements/navigation/mega-menu.json,navigation
+sidebar-navigation,Sidebar Navigation,navigation,plus,solar:sidebar-minimalistic-linear,elements/navigation/sidebar-navigation.json,navigation
+steps,Steps,navigation,plus,solar:list-check-minimalistic-linear,elements/navigation/steps.json,steps
+wizard-steps,Wizard Steps,navigation,plus,solar:list-check-linear,elements/navigation/wizard-steps.json,steps
+scroll-spy,Scroll Spy,navigation,pro,solar:eye-scan-linear,elements/navigation/scroll-spy.json,navigation
+sticky-header,Sticky Header,navigation,plus,solar:pin-linear,elements/navigation/sticky-header.json,navigation
+offcanvas,Offcanvas,navigation,plus,solar:sidebar-minimalistic-linear,elements/navigation/offcanvas.json,overlay
+card,Card,ui-components,free,solar:card-linear,elements/ui-components/card.json,card
+alert,Alert,ui-components,free,solar:danger-circle-linear,elements/ui-components/alert.json,alert
+avatar,Avatar,ui-components,free,solar:user-circle-linear,elements/ui-components/avatar.json,image
+avatar-group,Avatar Group,ui-components,plus,solar:users-group-rounded-linear,elements/ui-components/avatar-group.json,gallery
+skeleton,Skeleton,ui-components,free,solar:widget-linear,elements/ui-components/skeleton.json,simple
+progress,Progress,ui-components,free,solar:chart-square-linear,elements/ui-components/progress.json,progress
+spinner,Spinner,ui-components,free,solar:refresh-linear,elements/ui-components/spinner.json,simple
+switch,Switch,ui-components,free,solar:settings-minimalistic-linear,elements/ui-components/switch.json,toggle
+checkbox,Checkbox,ui-components,free,solar:check-square-linear,elements/ui-components/checkbox.json,toggle
+radio-group,Radio Group,ui-components,free,solar:check-circle-linear,elements/ui-components/radio-group.json,choice
+select,Select,ui-components,free,solar:alt-arrow-down-linear,elements/ui-components/select.json,choice
+combobox,Combobox,ui-components,plus,solar:list-linear,elements/ui-components/combobox.json,choice
+toggle,Toggle,ui-components,free,solar:settings-minimalistic-linear,elements/ui-components/toggle.json,toggle
+toggle-group,Toggle Group,ui-components,plus,solar:widget-2-linear,elements/ui-components/toggle-group.json,choice
+slider,Slider,ui-components,free,solar:slider-horizontal-linear,elements/ui-components/slider.json,range
+range-slider,Range Slider,ui-components,plus,solar:slider-horizontal-linear,elements/ui-components/range-slider.json,range
+input,Input,ui-components,free,solar:text-field-linear,elements/ui-components/input.json,input
+textarea,Textarea,ui-components,free,solar:text-square-linear,elements/ui-components/textarea.json,input
+label,Label,ui-components,free,solar:tag-linear,elements/ui-components/label.json,text
+calendar,Calendar,ui-components,plus,solar:calendar-linear,elements/ui-components/calendar.json,calendar
+date-picker,Date Picker,ui-components,plus,solar:calendar-mark-linear,elements/ui-components/date-picker.json,calendar
+date-range-picker,Date Range Picker,ui-components,pro,solar:calendar-linear,elements/ui-components/date-range-picker.json,calendar
+popover,Popover,ui-components,plus,solar:chat-round-linear,elements/ui-components/popover.json,overlay
+tooltip,Tooltip,ui-components,free,solar:question-circle-linear,elements/ui-components/tooltip.json,overlay
+hover-card,Hover Card,ui-components,plus,solar:card-linear,elements/ui-components/hover-card.json,overlay
+dialog,Dialog,ui-components,plus,solar:window-frame-linear,elements/ui-components/dialog.json,overlay
+alert-dialog,Alert Dialog,ui-components,plus,solar:danger-circle-linear,elements/ui-components/alert-dialog.json,overlay
+drawer,Drawer,ui-components,plus,solar:sidebar-minimalistic-linear,elements/ui-components/drawer.json,overlay
+sheet,Sheet,ui-components,plus,solar:sidebar-minimalistic-linear,elements/ui-components/sheet.json,overlay
+dropdown-menu,Dropdown Menu,ui-components,free,solar:menu-dots-linear,elements/ui-components/dropdown-menu.json,navigation
+context-menu,Context Menu,ui-components,plus,solar:menu-dots-circle-linear,elements/ui-components/context-menu.json,navigation
+command-palette,Command Palette,ui-components,pro,solar:command-linear,elements/ui-components/command-palette.json,command
+carousel,Carousel,ui-components,free,solar:gallery-wide-linear,elements/ui-components/carousel.json,carousel
+toast,Toast,ui-components,free,solar:bell-linear,elements/ui-components/toast.json,alert
+notification-center,Notification Center,ui-components,plus,solar:bell-bing-linear,elements/ui-components/notification-center.json,alert
+data-table,Data Table,ui-components,plus,solar:table-linear,elements/ui-components/data-table.json,datatable
+sortable-table,Sortable Table,ui-components,plus,solar:sort-vertical-linear,elements/ui-components/sortable-table.json,datatable
+chart,Chart,ui-components,plus,solar:chart-2-linear,elements/ui-components/chart.json,chart
+stat-card,Stat Card,ui-components,free,solar:chart-linear,elements/ui-components/stat-card.json,counter
+timeline,Timeline,ui-components,plus,solar:history-linear,elements/ui-components/timeline.json,steps
+rating,Rating,ui-components,free,solar:star-linear,elements/ui-components/rating.json,rating
+empty-state,Empty State,ui-components,free,solar:inbox-linear,elements/ui-components/empty-state.json,text
+copy-button,Copy Button,ui-components,free,solar:copy-linear,elements/ui-components/copy-button.json,button
+loading-button,Loading Button,ui-components,free,solar:refresh-linear,elements/ui-components/loading-button.json,button
+segmented-control,Segmented Control,ui-components,free,solar:widget-2-linear,elements/ui-components/segmented-control.json,choice
+breadcrumb-ui,Breadcrumb Ui,ui-components,free,solar:route-linear,elements/ui-components/breadcrumb-ui.json,navigation
+keyboard-shortcut,Keyboard Shortcut,ui-components,free,solar:keyboard-linear,elements/ui-components/keyboard-shortcut.json,text
+scroll-indicator,Scroll Indicator,ui-components,plus,solar:arrow-down-linear,elements/ui-components/scroll-indicator.json,progress
+form,Form,forms,free,solar:clipboard-text-linear,elements/forms/form.json,form
+text-field,Text Field,forms,free,solar:text-field-linear,elements/forms/text-field.json,input
+email-field,Email Field,forms,free,solar:letter-linear,elements/forms/email-field.json,input
+password-field,Password Field,forms,free,solar:lock-password-linear,elements/forms/password-field.json,input
+phone-field,Phone Field,forms,plus,solar:phone-linear,elements/forms/phone-field.json,input
+number-field,Number Field,forms,free,solar:hashtag-linear,elements/forms/number-field.json,input
+url-field,Url Field,forms,free,solar:link-linear,elements/forms/url-field.json,input
+search-field,Search Field,forms,free,solar:magnifer-linear,elements/forms/search-field.json,input
+file-upload,File Upload,forms,plus,solar:upload-linear,elements/forms/file-upload.json,upload
+dropzone-upload,Dropzone Upload,forms,plus,solar:upload-track-linear,elements/forms/dropzone-upload.json,upload
+otp-input,Otp Input,forms,plus,solar:shield-keyhole-linear,elements/forms/otp-input.json,input
+tag-input,Tag Input,forms,plus,solar:tag-linear,elements/forms/tag-input.json,input
+multi-select,Multi Select,forms,plus,solar:list-check-linear,elements/forms/multi-select.json,choice
+signature-field,Signature Field,forms,pro,solar:pen-linear,elements/forms/signature-field.json,input
+repeater-field,Repeater Field,forms,plus,solar:copy-linear,elements/forms/repeater-field.json,form
+hidden-field,Hidden Field,forms,free,solar:eye-closed-linear,elements/forms/hidden-field.json,input
+captcha,Captcha,forms,plus,solar:shield-check-linear,elements/forms/captcha.json,form
+submit-button,Submit Button,forms,free,solar:plain-linear,elements/forms/submit-button.json,button
+form-success,Form Success,forms,free,solar:check-circle-linear,elements/forms/form-success.json,alert
+form-error,Form Error,forms,free,solar:danger-circle-linear,elements/forms/form-error.json,alert
+conditional-fields,Conditional Fields,forms,plus,solar:filter-linear,elements/forms/conditional-fields.json,form
+multi-step-form,Multi Step Form,forms,pro,solar:list-check-linear,elements/forms/multi-step-form.json,steps
+newsletter-signup,Newsletter Signup,forms,free,solar:letter-linear,elements/forms/newsletter-signup.json,form
+contact-form,Contact Form,forms,free,solar:letter-opened-linear,elements/forms/contact-form.json,form
+post-title,Post Title,wordpress,free,solar:document-text-linear,elements/wordpress/post-title.json,dynamic
+post-content,Post Content,wordpress,free,solar:document-text-linear,elements/wordpress/post-content.json,dynamic
+post-excerpt,Post Excerpt,wordpress,free,solar:text-linear,elements/wordpress/post-excerpt.json,dynamic
+featured-image,Featured Image,wordpress,free,solar:gallery-linear,elements/wordpress/featured-image.json,image
+post-date,Post Date,wordpress,free,solar:calendar-linear,elements/wordpress/post-date.json,dynamic
+post-author,Post Author,wordpress,free,solar:user-linear,elements/wordpress/post-author.json,dynamic
+post-terms,Post Terms,wordpress,free,solar:tag-linear,elements/wordpress/post-terms.json,dynamic
+post-meta,Post Meta,wordpress,plus,solar:database-linear,elements/wordpress/post-meta.json,dynamic
+site-tagline,Site Tagline,wordpress,free,solar:text-linear,elements/wordpress/site-tagline.json,dynamic
+site-search,Site Search,wordpress,free,solar:magnifer-linear,elements/wordpress/site-search.json,form
+comments-list,Comments List,wordpress,plus,solar:chat-line-linear,elements/wordpress/comments-list.json,dynamic
+comment-form,Comment Form,wordpress,plus,solar:chat-line-linear,elements/wordpress/comment-form.json,form
+query-loop,Query Loop,wordpress,plus,solar:repeat-linear,elements/wordpress/query-loop.json,loop
+loop-item,Loop Item,wordpress,plus,solar:widget-2-linear,elements/wordpress/loop-item.json,container
+query-pagination,Query Pagination,wordpress,plus,solar:arrow-right-linear,elements/wordpress/query-pagination.json,pagination
+acf-field,Acf Field,wordpress,plus,solar:database-linear,elements/wordpress/acf-field.json,dynamic
+meta-box-field,Meta Box Field,wordpress,plus,solar:database-linear,elements/wordpress/meta-box-field.json,dynamic
+custom-field,Custom Field,wordpress,plus,solar:database-linear,elements/wordpress/custom-field.json,dynamic
+user-profile,User Profile,wordpress,plus,solar:user-rounded-linear,elements/wordpress/user-profile.json,dynamic
+taxonomy-filter,Taxonomy Filter,wordpress,plus,solar:filter-linear,elements/wordpress/taxonomy-filter.json,filter
+post-filter,Post Filter,wordpress,plus,solar:filter-linear,elements/wordpress/post-filter.json,filter
+ajax-load-more,Ajax Load More,wordpress,plus,solar:refresh-linear,elements/wordpress/ajax-load-more.json,button
+related-posts,Related Posts,wordpress,plus,solar:link-circle-linear,elements/wordpress/related-posts.json,loop
+author-box,Author Box,wordpress,plus,solar:user-id-linear,elements/wordpress/author-box.json,card
+table-of-posts,Table Of Posts,wordpress,plus,solar:table-linear,elements/wordpress/table-of-posts.json,datatable
+wp-shortcode,Wp Shortcode,wordpress,plus,solar:code-linear,elements/wordpress/wp-shortcode.json,embed
+wp-block-embed,Wp Block Embed,wordpress,plus,solar:widget-2-linear,elements/wordpress/wp-block-embed.json,embed
+template-part,Template Part,wordpress,plus,solar:layers-linear,elements/wordpress/template-part.json,dynamic
+dynamic-tag,Dynamic Tag,wordpress,plus,solar:tag-linear,elements/wordpress/dynamic-tag.json,dynamic
+dynamic-condition,Dynamic Condition,wordpress,pro,solar:filter-linear,elements/wordpress/dynamic-condition.json,dynamic
+product-card,Product Card,commerce,pro,solar:bag-linear,elements/commerce/product-card.json,product
+product-grid,Product Grid,commerce,pro,solar:widget-4-linear,elements/commerce/product-grid.json,loop
+product-title,Product Title,commerce,pro,solar:text-bold-linear,elements/commerce/product-title.json,dynamic
+product-image,Product Image,commerce,pro,solar:gallery-linear,elements/commerce/product-image.json,image
+product-gallery,Product Gallery,commerce,pro,solar:gallery-linear,elements/commerce/product-gallery.json,gallery
+product-price,Product Price,commerce,pro,solar:dollar-linear,elements/commerce/product-price.json,dynamic
+product-rating,Product Rating,commerce,pro,solar:star-linear,elements/commerce/product-rating.json,rating
+add-to-cart,Add To Cart,commerce,pro,solar:cart-plus-linear,elements/commerce/add-to-cart.json,button
+product-variants,Product Variants,commerce,pro,solar:settings-linear,elements/commerce/product-variants.json,choice
+product-stock,Product Stock,commerce,pro,solar:box-linear,elements/commerce/product-stock.json,dynamic
+product-description,Product Description,commerce,pro,solar:text-linear,elements/commerce/product-description.json,dynamic
+product-tabs,Product Tabs,commerce,pro,solar:layers-linear,elements/commerce/product-tabs.json,tabs
+cart-icon,Cart Icon,commerce,pro,solar:cart-linear,elements/commerce/cart-icon.json,icon
+mini-cart,Mini Cart,commerce,pro,solar:cart-linear,elements/commerce/mini-cart.json,overlay
+cart-table,Cart Table,commerce,pro,solar:cart-large-linear,elements/commerce/cart-table.json,datatable
+checkout-form,Checkout Form,commerce,pro,solar:card-linear,elements/commerce/checkout-form.json,form
+checkout-summary,Checkout Summary,commerce,pro,solar:bill-list-linear,elements/commerce/checkout-summary.json,card
+coupon-field,Coupon Field,commerce,pro,solar:ticket-linear,elements/commerce/coupon-field.json,input
+account-menu,Account Menu,commerce,pro,solar:user-circle-linear,elements/commerce/account-menu.json,navigation
+product-search,Product Search,commerce,pro,solar:magnifer-linear,elements/commerce/product-search.json,form
+product-filters,Product Filters,commerce,pro,solar:filter-linear,elements/commerce/product-filters.json,filter
+product-categories,Product Categories,commerce,pro,solar:widget-2-linear,elements/commerce/product-categories.json,navigation
+wishlist-button,Wishlist Button,commerce,pro,solar:heart-linear,elements/commerce/wishlist-button.json,button
+upsells,Upsells,commerce,pro,solar:arrow-up-linear,elements/commerce/upsells.json,loop
+cross-sells,Cross Sells,commerce,pro,solar:link-circle-linear,elements/commerce/cross-sells.json,loop
+order-summary,Order Summary,commerce,pro,solar:bill-linear,elements/commerce/order-summary.json,card
+entrance-animation,Entrance Animation,advanced-motion,pro,solar:magic-stick-3-linear,elements/advanced-motion/entrance-animation.json,animation
+scroll-reveal,Scroll Reveal,advanced-motion,pro,solar:eye-linear,elements/advanced-motion/scroll-reveal.json,animation
+scroll-parallax,Scroll Parallax,advanced-motion,pro,solar:layers-linear,elements/advanced-motion/scroll-parallax.json,parallax
+mouse-parallax,Mouse Parallax,advanced-motion,pro,solar:cursor-linear,elements/advanced-motion/mouse-parallax.json,parallax
+scroll-progress,Scroll Progress,advanced-motion,pro,solar:chart-linear,elements/advanced-motion/scroll-progress.json,progress
+scroll-timeline,Scroll Timeline,advanced-motion,pro,solar:clock-circle-linear,elements/advanced-motion/scroll-timeline.json,animation
+stagger-container,Stagger Container,advanced-motion,pro,solar:sort-by-time-linear,elements/advanced-motion/stagger-container.json,animation
+split-text,Split Text,advanced-motion,pro,solar:text-bold-linear,elements/advanced-motion/split-text.json,animation
+typewriter,Typewriter,advanced-motion,pro,solar:text-linear,elements/advanced-motion/typewriter.json,animation
+number-ticker,Number Ticker,advanced-motion,plus,solar:calculator-linear,elements/advanced-motion/number-ticker.json,counter
+text-reveal,Text Reveal,advanced-motion,plus,solar:text-bold-linear,elements/advanced-motion/text-reveal.json,animation
+logo-marquee,Logo Marquee,advanced-motion,plus,solar:repeat-linear,elements/advanced-motion/logo-marquee.json,carousel
+magnetic-button,Magnetic Button,advanced-motion,pro,solar:cursor-linear,elements/advanced-motion/magnetic-button.json,button
+ripple-button,Ripple Button,advanced-motion,plus,solar:waterdrop-linear,elements/advanced-motion/ripple-button.json,button
+hover-tilt,Hover Tilt,advanced-motion,pro,solar:refresh-linear,elements/advanced-motion/hover-tilt.json,animation
+flip-card,Flip Card,advanced-motion,plus,solar:card-linear,elements/advanced-motion/flip-card.json,card
+animated-gradient,Animated Gradient,advanced-motion,plus,solar:palette-linear,elements/advanced-motion/animated-gradient.json,animation
+sticky-scroll-story,Sticky Scroll Story,advanced-motion,pro,solar:book-linear,elements/advanced-motion/sticky-scroll-story.json,animation
+horizontal-scroll,Horizontal Scroll,advanced-motion,pro,solar:arrow-right-linear,elements/advanced-motion/horizontal-scroll.json,animation
+scroll-snap-carousel,Scroll Snap Carousel,advanced-motion,plus,solar:gallery-wide-linear,elements/advanced-motion/scroll-snap-carousel.json,carousel
+cursor-follower,Cursor Follower,advanced-motion,pro,solar:cursor-linear,elements/advanced-motion/cursor-follower.json,animation
+interactive-particles,Interactive Particles,advanced-motion,pro,solar:stars-linear,elements/advanced-motion/interactive-particles.json,animation
+spotlight-card,Spotlight Card,advanced-motion,plus,solar:flashlight-linear,elements/advanced-motion/spotlight-card.json,card
+reorder-list,Reorder List,advanced-motion,plus,solar:sort-vertical-linear,elements/advanced-motion/reorder-list.json,list
+swipe-deck,Swipe Deck,advanced-motion,pro,solar:hand-shake-linear,elements/advanced-motion/swipe-deck.json,carousel
+long-press-action,Long Press Action,advanced-motion,plus,solar:hand-shake-linear,elements/advanced-motion/long-press-action.json,button
+hold-to-confirm,Hold To Confirm,advanced-motion,plus,solar:shield-check-linear,elements/advanced-motion/hold-to-confirm.json,button
+like-burst,Like Burst,advanced-motion,plus,solar:heart-linear,elements/advanced-motion/like-burst.json,button
+icon-morph,Icon Morph,advanced-motion,plus,solar:magic-stick-3-linear,elements/advanced-motion/icon-morph.json,icon
+loading-skeleton-swap,Loading Skeleton Swap,advanced-motion,plus,solar:refresh-linear,elements/advanced-motion/loading-skeleton-swap.json,animation
+streaming-text,Streaming Text,advanced-motion,pro,solar:text-linear,elements/advanced-motion/streaming-text.json,animation
+live-activity,Live Activity,advanced-motion,plus,solar:pulse-linear,elements/advanced-motion/live-activity.json,alert
+presence-avatars,Presence Avatars,advanced-motion,plus,solar:users-group-rounded-linear,elements/advanced-motion/presence-avatars.json,gallery
+typing-indicator,Typing Indicator,advanced-motion,plus,solar:chat-round-dots-linear,elements/advanced-motion/typing-indicator.json,animation
+new-items-pill,New Items Pill,advanced-motion,plus,solar:add-circle-linear,elements/advanced-motion/new-items-pill.json,alert
+expanding-search,Expanding Search,advanced-motion,plus,solar:magnifer-linear,elements/advanced-motion/expanding-search.json,input
+inline-validation,Inline Validation,advanced-motion,plus,solar:shield-check-linear,elements/advanced-motion/inline-validation.json,input
+floating-label,Floating Label,advanced-motion,plus,solar:text-field-linear,elements/advanced-motion/floating-label.json,input
+password-strength,Password Strength,advanced-motion,plus,solar:lock-password-linear,elements/advanced-motion/password-strength.json,input
+value-flash,Value Flash,advanced-motion,plus,solar:graph-up-linear,elements/advanced-motion/value-flash.json,counter
+poll-results,Poll Results,advanced-motion,plus,solar:chart-linear,elements/advanced-motion/poll-results.json,chart
+filter-grid,Filter Grid,advanced-motion,plus,solar:filter-linear,elements/advanced-motion/filter-grid.json,filter
+show-more,Show More,advanced-motion,free,solar:alt-arrow-down-linear,elements/advanced-motion/show-more.json,button
+blur-up-image,Blur Up Image,advanced-motion,plus,solar:gallery-linear,elements/advanced-motion/blur-up-image.json,image
+reading-progress,Reading Progress,advanced-motion,plus,solar:chart-linear,elements/advanced-motion/reading-progress.json,progress
+hide-on-scroll,Hide On Scroll,advanced-motion,plus,solar:eye-closed-linear,elements/advanced-motion/hide-on-scroll.json,animation
+lightbox-gesture,Lightbox Gesture,advanced-motion,plus,solar:full-screen-linear,elements/advanced-motion/lightbox-gesture.json,gallery
+slider-detents,Slider Detents,advanced-motion,plus,solar:slider-horizontal-linear,elements/advanced-motion/slider-detents.json,range

@@ -10,6 +10,7 @@ import {
   EXTENSION_API_VERSION,
   checkAgainstRegistry,
   createCoreRegistry,
+  createEditorRegistry,
 } from './index.ts';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -356,6 +357,32 @@ describe('registration rules', () => {
     expect(r.register(def, 'vendor').ok).toBe(true);
     expect(r.validateProps('acme/card', { toString: 'abc' })).toEqual([]);
     expect(r.validateProps('acme/card', { toString: 'abcdefgh' })[0]).toMatch(/^toString:/);
+  });
+});
+
+describe('generated editor registry', () => {
+  it('adds the ten template-critical palette types while preserving the legacy core registry', () => {
+    const registry = createEditorRegistry();
+    for (const id of [
+      'page',
+      'stack',
+      'row',
+      'columns',
+      'grid',
+      'card',
+      'navigation',
+      'site-header',
+      'site-footer',
+      'site-logo',
+    ])
+      expect(registry.has(`blixis/${id}`)).toBe(true);
+    expect(createCoreRegistry().list()).toHaveLength(6);
+    expect(registry.get('blixis/navigation')?.props['items']?.kind).toBe('json');
+    expect(registry.localizedProperties('blixis/navigation')).toContainEqual({
+      id: 'items',
+      kind: 'json',
+      classification: 'translatable',
+    });
   });
 });
 

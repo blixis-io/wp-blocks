@@ -1,0 +1,486 @@
+{
+  "$schema": "../../schemas/element-definition.schema.json",
+  "definitionVersion": "1.0.0",
+  "id": "marquee-layout",
+  "namespace": "blixis",
+  "title": "Marquee Layout",
+  "category": "layout",
+  "description": "Marquee Layout element for Blixis WordPress visual builder. The record defines editor options and rendering contracts, not implementation code.",
+  "icon": {
+    "provider": "iconify",
+    "set": "solar",
+    "name": "repeat-linear",
+    "id": "solar:repeat-linear",
+    "validateAgainstInstalledSet": true
+  },
+  "subscription": {
+    "minimumTier": "pro",
+    "availableIn": [
+      "pro"
+    ],
+    "upgradeFeature": "marquee-layout",
+    "requiresServerEntitlement": true,
+    "onDowngrade": "preserve-rendering-disable-premium-editing"
+  },
+  "origin": {
+    "shadcnUiInspired": false,
+    "interiorDevInspired": false,
+    "referenceUrls": [],
+    "note": "Conceptual inspiration only; no third-party source code bundled."
+  },
+  "rendering": {
+    "strategy": "php-server-rendered",
+    "rendererKey": "blixis/marquee-layout",
+    "semanticTag": "div",
+    "clientHydration": "none",
+    "assetPolicy": "manifest-references-only",
+    "unsafeHtml": "never",
+    "fallbackRenderer": "safe-static"
+  },
+  "structure": {
+    "acceptsChildren": true,
+    "allowedChildren": "any",
+    "minChildren": 0,
+    "maxChildren": null,
+    "allowedParentTypes": [
+      "section",
+      "container",
+      "div",
+      "flex",
+      "grid",
+      "columns",
+      "stack",
+      "row",
+      "card",
+      "tabs",
+      "accordion",
+      "loop-item",
+      "form",
+      "template-part"
+    ]
+  },
+  "properties": {
+    "elementId": {
+      "type": "string",
+      "default": "",
+      "description": "Unique stable instance ID, created by the builder.",
+      "required": true,
+      "editorOnly": true
+    },
+    "cssClasses": {
+      "type": "array<string>",
+      "default": [],
+      "description": "Additional validated class names.",
+      "required": false,
+      "control": "class-picker"
+    },
+    "htmlId": {
+      "type": "string",
+      "default": "",
+      "description": "Optional sanitized HTML id.",
+      "required": false,
+      "control": "text"
+    },
+    "ariaLabel": {
+      "type": "string",
+      "default": "",
+      "description": "Accessible name when native visible text is insufficient.",
+      "required": false,
+      "localizable": true,
+      "control": "text"
+    },
+    "hidden": {
+      "type": "boolean",
+      "default": false,
+      "description": "Hide the element. Prefer responsive visibility where relevant.",
+      "required": false,
+      "control": "switch"
+    },
+    "semanticTag": {
+      "type": "enum",
+      "default": "div",
+      "description": "Choose a supported option.",
+      "required": false,
+      "options": [
+        "div",
+        "section",
+        "main",
+        "header",
+        "footer",
+        "aside",
+        "article",
+        "nav"
+      ],
+      "control": "select"
+    },
+    "innerContainer": {
+      "type": "boolean",
+      "default": false,
+      "description": "Toggle behaviour.",
+      "required": false,
+      "control": "switch"
+    }
+  },
+  "propertyControls": {
+    "elementId": {
+      "control": "text",
+      "group": "Attributes",
+      "localizable": false,
+      "supportsDynamicBinding": false
+    },
+    "cssClasses": {
+      "control": "class-picker",
+      "group": "Attributes",
+      "localizable": false,
+      "supportsDynamicBinding": false
+    },
+    "htmlId": {
+      "control": "text",
+      "group": "Attributes",
+      "localizable": false,
+      "supportsDynamicBinding": false
+    },
+    "ariaLabel": {
+      "control": "text",
+      "group": "Accessibility",
+      "localizable": true,
+      "supportsDynamicBinding": false
+    },
+    "hidden": {
+      "control": "switch",
+      "group": "Content",
+      "localizable": false,
+      "supportsDynamicBinding": false
+    },
+    "semanticTag": {
+      "control": "select",
+      "group": "Content",
+      "localizable": false,
+      "supportsDynamicBinding": false
+    },
+    "innerContainer": {
+      "control": "switch",
+      "group": "Content",
+      "localizable": false,
+      "supportsDynamicBinding": false
+    }
+  },
+  "style": {
+    "allowed": {
+      "display": {
+        "type": "enum",
+        "options": [
+          "block",
+          "inline",
+          "inline-block",
+          "flex",
+          "inline-flex",
+          "grid",
+          "inline-grid",
+          "none"
+        ],
+        "default": null
+      },
+      "gap": {
+        "type": "css-length",
+        "units": [
+          "px",
+          "rem",
+          "em",
+          "%"
+        ],
+        "default": null
+      },
+      "padding": {
+        "type": "box-sides",
+        "units": [
+          "px",
+          "%",
+          "rem",
+          "em"
+        ],
+        "sides": [
+          "top",
+          "right",
+          "bottom",
+          "left"
+        ],
+        "linkable": true,
+        "default": null
+      },
+      "margin": {
+        "type": "box-sides",
+        "units": [
+          "px",
+          "%",
+          "rem",
+          "em",
+          "auto"
+        ],
+        "sides": [
+          "top",
+          "right",
+          "bottom",
+          "left"
+        ],
+        "linkable": true,
+        "default": null
+      },
+      "backgroundColor": {
+        "type": "color-or-token",
+        "default": null
+      },
+      "borderRadius": {
+        "type": "box-corners",
+        "corners": [
+          "topLeft",
+          "topRight",
+          "bottomRight",
+          "bottomLeft"
+        ],
+        "units": [
+          "px",
+          "%",
+          "rem"
+        ],
+        "linkable": true,
+        "default": null
+      },
+      "width": {
+        "type": "css-length",
+        "units": [
+          "px",
+          "%",
+          "rem",
+          "em",
+          "vw",
+          "svw",
+          "auto",
+          "min-content",
+          "max-content",
+          "fit-content",
+          "clamp"
+        ],
+        "default": null
+      },
+      "maxWidth": {
+        "type": "css-length",
+        "units": [
+          "px",
+          "%",
+          "rem",
+          "vw",
+          "none"
+        ],
+        "default": null
+      },
+      "flexDirection": {
+        "type": "enum",
+        "options": [
+          "row",
+          "column",
+          "row-reverse",
+          "column-reverse"
+        ],
+        "default": null
+      },
+      "justifyContent": {
+        "type": "enum",
+        "options": [
+          "start",
+          "end",
+          "center",
+          "between",
+          "around",
+          "evenly"
+        ],
+        "default": null
+      },
+      "alignItems": {
+        "type": "enum",
+        "options": [
+          "start",
+          "end",
+          "center",
+          "stretch",
+          "baseline"
+        ],
+        "default": null
+      },
+      "gridTemplateColumns": {
+        "type": "css-grid-template",
+        "default": null
+      },
+      "minHeight": {
+        "type": "css-length",
+        "units": [
+          "px",
+          "rem",
+          "vh",
+          "dvh"
+        ],
+        "default": null
+      }
+    },
+    "defaultValues": {},
+    "responsive": {
+      "enabled": true,
+      "breakpoints": [
+        "base",
+        "tablet",
+        "mobile"
+      ],
+      "inheritance": "base -> breakpoint override"
+    },
+    "appearance": {
+      "enabled": true,
+      "modes": [
+        "light",
+        "dark"
+      ],
+      "defaultMode": "light",
+      "combinedOverrides": true,
+      "precedence": [
+        "base",
+        "breakpoint",
+        "appearance",
+        "appearance+breakpoint"
+      ]
+    },
+    "states": [
+      "default",
+      "hover",
+      "focus-visible"
+    ],
+    "customCss": {
+      "enabled": true,
+      "scoped": true,
+      "sanitized": true
+    }
+  },
+  "motion": {
+    "allowed": true,
+    "presets": [
+      "none",
+      "fade-in",
+      "slide-in-left",
+      "slide-in-right",
+      "slide-in-up",
+      "scale-in"
+    ],
+    "triggers": [
+      "page-load",
+      "viewport-enter",
+      "hover",
+      "click",
+      "scroll-progress"
+    ],
+    "engine": "engine-neutral",
+    "reducedMotionPolicy": "respect-prefers-reduced-motion",
+    "premiumTimelineRequires": "pro",
+    "gsap": "optional-adapter-subject-to-license-review"
+  },
+  "bindings": {
+    "supported": false,
+    "sources": [
+      "static",
+      "wordpress-post",
+      "wordpress-site",
+      "wordpress-user",
+      "wp-meta",
+      "query-result",
+      "woocommerce"
+    ],
+    "requiredTierForExternalDynamicSources": "plus"
+  },
+  "localization": {
+    "enabled": true,
+    "translatableProperties": [
+      "ariaLabel"
+    ],
+    "sourceLocale": "en",
+    "fallbackPolicy": "source-locale",
+    "stableElementIds": true
+  },
+  "accessibility": {
+    "keyboardAccessible": false,
+    "requirements": [
+      "semantic HTML",
+      "accessible name where applicable",
+      "focus visibility",
+      "reduced-motion fallback",
+      "RTL-safe layout",
+      "WCAG 2.2 AA target"
+    ],
+    "userSuppliedContentEscaped": true
+  },
+  "interactions": {
+    "events": [],
+    "actions": [
+      "none"
+    ],
+    "noArbitraryJavaScript": true
+  },
+  "dependencies": {
+    "wordpressPlugins": [],
+    "npmPackages": [],
+    "optionalServices": []
+  },
+  "security": {
+    "escapeText": true,
+    "sanitizeAttributes": true,
+    "validateUrls": true,
+    "capabilityCheckOnSave": true,
+    "doNotExecuteTemplateCode": true
+  },
+  "testing": {
+    "unit": [
+      "schema-validation",
+      "default-props",
+      "style-resolution",
+      "locale-fallback",
+      "serialization-roundtrip"
+    ],
+    "integration": [
+      "php-renderer",
+      "rest-permissions",
+      "asset-resolution"
+    ],
+    "e2e": [
+      "insert-and-select",
+      "edit-props",
+      "responsive-preview",
+      "light-dark-preview",
+      "save-reload",
+      "keyboard-navigation"
+    ]
+  },
+  "exampleInstance": {
+    "id": "example-marquee-layout",
+    "type": "marquee-layout",
+    "props": {
+      "cssClasses": [],
+      "htmlId": "",
+      "ariaLabel": "",
+      "hidden": false,
+      "semanticTag": "div",
+      "innerContainer": false
+    },
+    "styles": {
+      "base": {},
+      "tablet": {},
+      "mobile": {},
+      "dark": {},
+      "darkMobile": {}
+    },
+    "children": []
+  },
+  "implementation": {
+    "status": "proposed",
+    "priority": "post-MVP",
+    "notes": [
+      "Do not infer that a UI-component preview requires shipping React on the public site.",
+      "Any client-side behavior must use isolated, progressively enhanced assets."
+    ]
+  }
+}
