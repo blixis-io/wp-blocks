@@ -41,7 +41,7 @@ final class PreviewSanitizer {
 			}
 			$offset = $end + 1;
 		}
-		return true;
+		return ! $inside_svg;
 	}
 
 	/**
