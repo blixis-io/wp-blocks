@@ -50,6 +50,8 @@ const editorReady = new Set([
   'icon-svg',
   'icon-button',
   'picture',
+  'before-after',
+  'image-comparison',
   'gallery',
   'lightbox',
   'code-block',

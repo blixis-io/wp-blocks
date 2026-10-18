@@ -34,6 +34,11 @@ final class ContentElementsCss {
 			. '.blx-lightbox-dialog{max-width:min(96vw,90rem);max-height:94vh;padding:3rem 1rem 1rem;border:0;background:transparent;color:#fff;overflow:visible}'
 			. '.blx-lightbox-dialog::backdrop{background:rgb(0 0 0/.88)}.blx-lightbox-dialog img{display:block;max-width:92vw;max-height:82vh;width:auto;height:auto;margin:auto;object-fit:contain}'
 			. '.blx-lightbox-close{position:absolute;inset-block-start:.25rem;inset-inline-end:.25rem;min-width:2.75rem;min-height:2.75rem;border:1px solid currentColor;border-radius:50%;background:#111;color:#fff;font:inherit;font-size:1.5rem;cursor:pointer}'
+			. '[data-blx-image-comparison] [data-blx-comparison-canvas]{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem}'
+			. '[data-blx-image-comparison] [data-blx-comparison-canvas] img{display:block;width:100%;height:auto}'
+			. '[data-blx-image-comparison][data-blx-comparison-ready] [data-blx-comparison-canvas]{display:block;position:relative;overflow:hidden}'
+			. '[data-blx-image-comparison][data-blx-comparison-ready] [data-blx-comparison-after]{position:absolute;inset:0;clip-path:inset(0 calc(100% - var(--blx-comparison-position,50%)) 0 0)}'
+			. '[data-blx-comparison-label]{display:flex;align-items:center;gap:.75rem}[data-blx-comparison-label] input{flex:1;min-width:8rem}'
 			. '@media(prefers-reduced-motion:reduce){[data-blx-animated-headline] [data-blx-headline-part]{animation:none}}';
 	}
 }

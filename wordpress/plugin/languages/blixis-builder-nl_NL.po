@@ -210,3 +210,12 @@ msgstr "Afbeeldingsvoorbeeld sluiten"
 
 msgid "Open image"
 msgstr "Afbeelding openen"
+
+msgid "Before"
+msgstr "Voor"
+
+msgid "After"
+msgstr "Na"
+
+msgid "Compare images"
+msgstr "Afbeeldingen vergelijken"

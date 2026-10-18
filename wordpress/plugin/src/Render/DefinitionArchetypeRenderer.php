@@ -238,6 +238,9 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 			return $this->render_playable_media( $node, $hooks, $archetype );
 		}
 		if ( 'image' === $archetype && in_array( $id, [ 'image', 'picture', 'avatar', 'featured-image', 'product-image', 'before-after', 'image-comparison', 'image-hotspots', 'panorama-360', 'blur-up-image' ], true ) ) {
+			if ( in_array( $id, [ 'before-after', 'image-comparison' ], true ) ) {
+				return $this->render_image_comparison( $node, $hooks );
+			}
 			$image = $this->asset_image( $node );
 			if ( '' !== $image ) {
 				$caption = $node->value( 'caption', '' );
@@ -253,6 +256,49 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 			return '<div' . $hooks . ' data-blx-missing-media></div>';
 		}
 		return '<' . $tag . $hooks . '>' . $context->children_html . '</' . $tag . '>';
+	}
+
+	/** Render a safe, two-image comparison with a static fallback and progressive range control.
+	 *
+	 * @param ElementNode $node Comparison element.
+	 * @param string      $hooks Validated element hooks.
+	 */
+	private function render_image_comparison( ElementNode $node, string $hooks ): string {
+		$before_reference = $node->value( 'beforeAssetRef' );
+		$after_reference  = $node->value( 'afterAssetRef' );
+		$before           = is_string( $before_reference ) ? $this->resolve_image_reference( $before_reference ) : null;
+		$after            = is_string( $after_reference ) ? $this->resolve_image_reference( $after_reference ) : null;
+		if ( ! is_array( $before ) || ! is_array( $after ) || ! is_string( $before['url'] ?? null ) || ! is_string( $after['url'] ?? null ) || ! SafeUrl::accepts( $before['url'] ) || ! SafeUrl::accepts( $after['url'] ) ) {
+			$fallback = $this->asset_image( $node );
+			return '' !== $fallback ? '<figure' . $hooks . '>' . $fallback . '</figure>' : '<div' . $hooks . ' data-blx-missing-media></div>';
+		}
+		$position   = $node->value( 'comparisonPosition', 50 );
+		$position   = is_numeric( $position ) ? max( 0, min( 100, (int) $position ) ) : 50;
+		$before_alt = $node->value( 'beforeAlt', __( 'Before', 'blixis-builder' ) );
+		$after_alt  = $node->value( 'afterAlt', __( 'After', 'blixis-builder' ) );
+		$before_alt = is_string( $before_alt ) ? $before_alt : '';
+		$after_alt  = is_string( $after_alt ) ? $after_alt : '';
+		$label      = $node->value( 'ariaLabel', __( 'Compare images', 'blixis-builder' ) );
+		$label      = is_string( $label ) && '' !== trim( $label ) ? $label : __( 'Compare images', 'blixis-builder' );
+		$caption    = $node->value( 'caption', '' );
+		$caption    = is_string( $caption ) ? $caption : '';
+		$html       = '<figure' . $hooks . ' data-blx-image-comparison data-blx-comparison-position="' . $position . '" role="group" aria-label="' . Escape::attr( $label ) . '"><div data-blx-comparison-canvas>';
+		$html      .= $this->comparison_image( $before, $before_alt, 'before' ) . $this->comparison_image( $after, $after_alt, 'after' );
+		$html      .= '</div><label data-blx-comparison-label>' . Escape::html( $label ) . '<input type="range" min="0" max="100" value="' . $position . '" aria-label="' . Escape::attr( $label ) . '" data-blx-comparison-control hidden></label>';
+		if ( '' !== $caption ) {
+			$html .= '<figcaption>' . Escape::html( $caption ) . '</figcaption>';
+		}
+		return $html . '</figure>';
+	}
+
+	/** Render one resolved comparison image.
+	 *
+	 * @param array<string,mixed> $image Resolved image data.
+	 * @param string              $alt Accessible description.
+	 * @param string              $position Before/after marker.
+	 */
+	private function comparison_image( array $image, string $alt, string $position ): string {
+		return '<img data-blx-comparison-' . $position . ' src="' . Escape::url( $image['url'] ) . '" width="' . (int) ( $image['width'] ?? 0 ) . '" height="' . (int) ( $image['height'] ?? 0 ) . '" alt="' . Escape::attr( $alt ) . '" loading="lazy" decoding="async">';
 	}
 
 	/** Render only attachment-backed video or audio with a validated MIME type.
