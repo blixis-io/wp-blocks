@@ -1073,6 +1073,19 @@ async function smoke() {
               children: [
                 { id: 'h1x', type: 'blixis/heading', props: { level: 2 }, children: [] },
                 { id: 'b1x', type: 'blixis/button', props: { href: 'javascript:alert(1)' }, children: [] },
+                {
+                  id: 'scroll1',
+                  type: 'blixis/scroll-area',
+                  props: { ariaLabel: 'Scrollable & labeled' },
+                  children: [
+                    {
+                      id: 'scroll-text',
+                      type: 'blixis/paragraph',
+                      props: { content: 'Scrollable content' },
+                      children: [],
+                    },
+                  ],
+                },
               ],
             },
           ]),
@@ -1094,6 +1107,13 @@ async function smoke() {
           /<main[^>]*data-blx-id="sec1"/.test(richBody.html ?? '') &&
             /<h2[^>]*data-blx-id="h1x"/.test(richBody.html ?? ''),
           'sections and headings render with their semantic tags',
+        );
+        check(
+          (richBody.html ?? '').includes('data-blx-id="scroll1"') &&
+            (richBody.html ?? '').includes('aria-label="Scrollable &amp; labeled"') &&
+            (richBody.html ?? '').includes('data-blx-scroll-area tabindex="0" role="region"') &&
+            (richBody.html ?? '').includes('data-blx-id="scroll-text"'),
+          'a scroll area renders a labeled, keyboard-focusable region with its child content',
         );
         check(
           (richBody.html ?? '').includes('Hello &lt;b&gt;there&lt;/b&gt;') &&
