@@ -33,7 +33,7 @@
   "rendering": {
     "strategy": "php-server-rendered",
     "rendererKey": "blixis/blockquote",
-    "semanticTag": "p",
+    "semanticTag": "blockquote",
     "clientHydration": "on-interaction",
     "assetPolicy": "manifest-references-only",
     "unsafeHtml": "never",
@@ -108,10 +108,11 @@
     },
     "tag": {
       "type": "enum",
-      "default": "p",
+      "default": "blockquote",
       "description": "Choose a supported option.",
       "required": false,
       "options": [
+        "blockquote",
         "p",
         "h1",
         "h2",
@@ -430,7 +431,7 @@
       "ariaLabel": "",
       "hidden": false,
       "content": "Sample text",
-      "tag": "p",
+      "tag": "blockquote",
       "marks": []
     },
     "styles": {

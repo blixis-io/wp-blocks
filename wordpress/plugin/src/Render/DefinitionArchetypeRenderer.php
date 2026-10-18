@@ -27,6 +27,7 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		'container'   => 'div',
 		'section'     => 'section',
 		'heading'     => 'h2',
+		'blockquote'  => 'blockquote',
 		'text'        => 'p',
 		'button'      => 'a',
 		'image'       => 'div',
@@ -57,9 +58,11 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		}
 		$tag = self::TAGS[ (string) $id ] ?? match ( $archetype ) {
 			'heading' => 'h2', 'text', 'richtext' => 'p', 'navigation' => 'nav', default => 'div' };
-		if ( 'heading' === $id ) {
-			$candidate = $node->value( 'tag', 'h2' );
-			if ( is_string( $candidate ) && in_array( $candidate, [ 'h1','h2','h3','h4','h5','h6' ], true ) ) {
+		$tag_definition = is_array( $definition ) && is_array( $definition['properties']['tag'] ?? null ) ? $definition['properties']['tag'] : null;
+		if ( null !== $tag_definition ) {
+			$allowed_tags = $tag_definition['options'] ?? [];
+			$candidate    = $node->value( 'tag', $tag_definition['default'] ?? $tag );
+			if ( is_string( $candidate ) && is_array( $allowed_tags ) && in_array( $candidate, $allowed_tags, true ) ) {
 				$tag = $candidate;
 			}
 		}

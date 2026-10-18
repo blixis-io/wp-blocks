@@ -70,6 +70,24 @@ final class ElementDefinitionRegistryTest extends TestCase {
 			)
 		);
 		$this->assertSame(
+			'<blockquote data-blx-id="quote-1" data-blx-type="blixis/blockquote">Evidence &amp; context</blockquote>',
+			$renderer->render( new ElementNode( 'quote-1', 'blixis/blockquote', [ 'content' => 'Evidence & context' ] ), new RenderContext() )
+		);
+		$this->assertSame(
+			'<blockquote data-blx-id="quote-2" data-blx-type="blixis/blockquote">Safe fallback</blockquote>',
+			$renderer->render(
+				new ElementNode(
+					'quote-2',
+					'blixis/blockquote',
+					[
+						'content' => 'Safe fallback',
+						'tag'     => 'script',
+					]
+				),
+				new RenderContext()
+			)
+		);
+		$this->assertSame(
 			'<hr data-blx-id="separator-1" data-blx-type="blixis/separator" aria-hidden="true">',
 			$renderer->render( new ElementNode( 'separator-1', 'blixis/separator', [] ), new RenderContext() )
 		);

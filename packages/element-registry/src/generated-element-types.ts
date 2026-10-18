@@ -5446,7 +5446,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
     rendering: {
       strategy: 'php-server-rendered',
       rendererKey: 'blixis/blockquote',
-      semanticTag: 'p',
+      semanticTag: 'blockquote',
       clientHydration: 'on-interaction',
       assetPolicy: 'manifest-references-only',
       unsafeHtml: 'never',
@@ -5521,10 +5521,10 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       },
       tag: {
         type: 'enum',
-        default: 'p',
+        default: 'blockquote',
         description: 'Choose a supported option.',
         required: false,
-        options: ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'span', 'strong', 'small', 'div'],
+        options: ['blockquote', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'span', 'strong', 'small', 'div'],
         control: 'select',
       },
       marks: {
@@ -5656,7 +5656,15 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
     exampleInstance: {
       id: 'example-blockquote',
       type: 'blockquote',
-      props: { cssClasses: [], htmlId: '', ariaLabel: '', hidden: false, content: 'Sample text', tag: 'p', marks: [] },
+      props: {
+        cssClasses: [],
+        htmlId: '',
+        ariaLabel: '',
+        hidden: false,
+        content: 'Sample text',
+        tag: 'blockquote',
+        marks: [],
+      },
       styles: { base: {}, tablet: {}, mobile: {}, dark: {}, darkMobile: {} },
       children: [],
     },
