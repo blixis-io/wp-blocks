@@ -49,7 +49,7 @@
       "category": "layout",
       "icon": "solar:posts-carousel-horizontal-linear",
       "tier": "free",
-      "status": "planned",
+      "status": "ready",
       "keywords": "flex flex layout flex element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
     },
     {
