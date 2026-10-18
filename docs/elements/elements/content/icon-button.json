@@ -128,6 +128,13 @@
       "required": false,
       "control": "link-picker"
     },
+    "targetId": {
+      "type": "string",
+      "default": "",
+      "description": "Target HTML id for scrolling, toggling, or opening a dialog.",
+      "required": false,
+      "control": "text"
+    },
     "variant": {
       "type": "enum",
       "default": "primary",
@@ -228,6 +235,12 @@
     },
     "variant": {
       "control": "select",
+      "group": "Content",
+      "localizable": false,
+      "supportsDynamicBinding": false
+    },
+    "targetId": {
+      "control": "text",
       "group": "Content",
       "localizable": false,
       "supportsDynamicBinding": false
@@ -526,6 +539,7 @@
       "label": "Button",
       "action": "link",
       "href": "",
+      "targetId": "",
       "variant": "primary",
       "size": "md",
       "disabled": false,

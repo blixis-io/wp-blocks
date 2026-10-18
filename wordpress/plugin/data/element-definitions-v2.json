@@ -10871,7 +10871,7 @@
         ]
       },
       "archetype": "list",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -12863,7 +12863,12 @@
           "default": "solar:star-linear",
           "description": "Full Iconify identifier (solar namespace).",
           "required": false,
-          "control": "icon-picker"
+          "control": "icon-picker",
+          "options": [
+            "solar:star-linear",
+            "solar:check-circle-linear",
+            "solar:info-circle-linear"
+          ]
         },
         "size": {
           "type": "number",
@@ -13158,7 +13163,7 @@
         ]
       },
       "archetype": "icon",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -13290,6 +13295,13 @@
           "required": false,
           "control": "link-picker"
         },
+        "targetId": {
+          "type": "string",
+          "default": "",
+          "description": "Target HTML id for scrolling, toggling, or opening a dialog.",
+          "required": false,
+          "control": "text"
+        },
         "variant": {
           "type": "enum",
           "default": "primary",
@@ -13390,6 +13402,12 @@
         },
         "variant": {
           "control": "select",
+          "group": "Content",
+          "localizable": false,
+          "supportsDynamicBinding": false
+        },
+        "targetId": {
+          "control": "text",
           "group": "Content",
           "localizable": false,
           "supportsDynamicBinding": false
@@ -13688,6 +13706,7 @@
           "label": "Button",
           "action": "link",
           "href": "",
+          "targetId": "",
           "variant": "primary",
           "size": "md",
           "disabled": false,
@@ -13712,7 +13731,7 @@
         ]
       },
       "archetype": "button",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -14142,7 +14161,7 @@
         ]
       },
       "archetype": "code",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -14570,7 +14589,7 @@
         ]
       },
       "archetype": "code",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -15358,7 +15377,7 @@
         ]
       },
       "archetype": "countdown",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -16216,7 +16235,7 @@
         ]
       },
       "archetype": "richtext",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -16709,7 +16728,7 @@
         ]
       },
       "archetype": "richtext",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -17258,6 +17277,14 @@
           "localizable": true,
           "control": "text"
         },
+        "tooltip": {
+          "type": "string",
+          "default": "More information",
+          "description": "Text shown while the trigger is hovered or focused.",
+          "required": false,
+          "localizable": true,
+          "control": "textarea"
+        },
         "hidden": {
           "type": "boolean",
           "default": false,
@@ -17323,6 +17350,12 @@
         },
         "ariaLabel": {
           "control": "text",
+          "group": "Accessibility",
+          "localizable": true,
+          "supportsDynamicBinding": false
+        },
+        "tooltip": {
+          "control": "textarea",
           "group": "Accessibility",
           "localizable": true,
           "supportsDynamicBinding": false
@@ -17595,6 +17628,7 @@
           "cssClasses": [],
           "htmlId": "",
           "ariaLabel": "",
+          "tooltip": "More information",
           "hidden": false,
           "content": "Sample text",
           "tag": "p",
@@ -17618,7 +17652,7 @@
         ]
       },
       "archetype": "richtext",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",

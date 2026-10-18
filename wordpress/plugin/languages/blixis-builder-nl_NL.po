@@ -183,3 +183,21 @@ msgstr "Scrollen pauzeren"
 
 msgid "Resume scrolling"
 msgstr "Scrollen hervatten"
+
+msgid "Copy code"
+msgstr "Code kopiëren"
+
+msgid "Copied."
+msgstr "Gekopieerd."
+
+msgid "Copy failed."
+msgstr "Kopiëren mislukt."
+
+msgid "Countdown"
+msgstr "Aftellen"
+
+msgid "Countdown complete"
+msgstr "Aftellen voltooid"
+
+msgid "This action is not available yet."
+msgstr "Deze actie is nog niet beschikbaar."

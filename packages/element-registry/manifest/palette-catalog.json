@@ -239,7 +239,7 @@
       "category": "content",
       "icon": "solar:list-check-linear",
       "tier": "free",
-      "status": "planned",
+      "status": "ready",
       "keywords": "icon-list icon list content icon list element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
     },
     {
@@ -289,7 +289,7 @@
       "category": "content",
       "icon": "solar:star-linear",
       "tier": "free",
-      "status": "planned",
+      "status": "ready",
       "keywords": "icon icon content icon element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
     },
     {
@@ -299,7 +299,7 @@
       "category": "content",
       "icon": "solar:add-circle-linear",
       "tier": "free",
-      "status": "planned",
+      "status": "ready",
       "keywords": "icon-button icon button content icon button element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
     },
     {
@@ -309,7 +309,7 @@
       "category": "content",
       "icon": "solar:code-linear",
       "tier": "plus",
-      "status": "planned",
+      "status": "ready",
       "keywords": "code-block code block content code block element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
     },
     {
@@ -319,7 +319,7 @@
       "category": "content",
       "icon": "solar:code-square-linear",
       "tier": "plus",
-      "status": "planned",
+      "status": "ready",
       "keywords": "syntax-highlighter syntax highlighter content syntax highlighter element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
     },
     {
@@ -339,7 +339,7 @@
       "category": "content",
       "icon": "solar:clock-circle-linear",
       "tier": "plus",
-      "status": "planned",
+      "status": "ready",
       "keywords": "countdown countdown content countdown element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
     },
     {
@@ -359,7 +359,7 @@
       "category": "content",
       "icon": "solar:text-bold-circle-linear",
       "tier": "pro",
-      "status": "planned",
+      "status": "ready",
       "keywords": "animated-headline animated headline content animated headline element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
     },
     {
@@ -369,7 +369,7 @@
       "category": "content",
       "icon": "solar:palette-linear",
       "tier": "plus",
-      "status": "planned",
+      "status": "ready",
       "keywords": "gradient-text gradient text content gradient text element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
     },
     {
@@ -389,7 +389,7 @@
       "category": "content",
       "icon": "solar:info-circle-linear",
       "tier": "plus",
-      "status": "planned",
+      "status": "ready",
       "keywords": "tooltip-text tooltip text content tooltip text element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
     },
     {

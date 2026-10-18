@@ -9,6 +9,7 @@ namespace Blixis\Builder\Tests;
 
 use Blixis\Builder\Autoloader;
 use Blixis\Builder\Frontend\MarqueeCss;
+use Blixis\Builder\Preview\PreviewSanitizer;
 use Blixis\Builder\Registry\ElementDefinitionRegistry;
 use Blixis\Builder\Render\AssetReferenceResolver;
 use Blixis\Builder\Render\DefinitionArchetypeRenderer;
@@ -151,6 +152,141 @@ final class ElementDefinitionRegistryTest extends TestCase {
 		$css = MarqueeCss::css();
 		$this->assertStringContainsString( '@media(prefers-reduced-motion:reduce)', $css );
 		$this->assertStringContainsString( '@keyframes blx-marquee-left', $css );
+	}
+
+	/** Newly supported P2 content elements keep text escaped and native controls accessible. */
+	public function test_p2_content_elements_render_safe_semantic_output(): void {
+		$registry = ElementDefinitionRegistry::from_manifest_file( \dirname( __DIR__ ) . '/data/element-definitions-v2.json' );
+		$media    = new class() implements AssetReferenceResolver {
+			/** Resolve no attachment for P2 content tests.
+			 *
+			 * @param int $attachment_id Attachment ID.
+			 */
+			public function resolve( int $attachment_id ): ?array {
+				return null;
+			}
+			/** Resolve no imported asset for P2 content tests.
+			 *
+			 * @param string $reference Asset reference.
+			 */
+			public function resolve_reference( string $reference ): ?array {
+				return null;
+			}
+		};
+		$renderer = new DefinitionArchetypeRenderer( $registry, $media );
+		$code     = $renderer->render(
+			new ElementNode(
+				'code-1',
+				'blixis/syntax-highlighter',
+				[
+					'code'     => 'const x = "<safe>";',
+					'language' => 'js',
+				]
+			),
+			new RenderContext()
+		);
+		$this->assertStringContainsString( 'data-blx-code-token="keyword">const</span>', $code );
+		$this->assertStringContainsString( '&lt;safe&gt;', $code );
+		$this->assertStringContainsString( 'data-blx-code-copy', $code );
+		$this->assertTrue( PreviewSanitizer::accepts( $code ) );
+		$icon = $renderer->render(
+			new ElementNode(
+				'icon-1',
+				'blixis/icon',
+				[
+					'icon'       => 'solar:check-circle-linear',
+					'decorative' => false,
+					'ariaLabel'  => 'Complete',
+				]
+			),
+			new RenderContext()
+		);
+		$this->assertStringContainsString( 'role="img" aria-label="Complete"', $icon );
+		$this->assertStringContainsString( '<circle cx="12" cy="12" r="9"/>', $icon );
+		$this->assertTrue( PreviewSanitizer::accepts( $icon ) );
+		$list = $renderer->render(
+			new ElementNode(
+				'icon-list-1',
+				'blixis/icon-list',
+				[
+					'items'     => [
+						[
+							'id'   => 'a',
+							'text' => '<script>bad</script>',
+						],
+					],
+					'listStyle' => 'check',
+				]
+			),
+			new RenderContext()
+		);
+		$this->assertStringContainsString( '<li><span aria-hidden="true" data-blx-list-icon>&#10003;</span>&lt;script&gt;bad&lt;/script&gt;</li>', $list );
+		$this->assertTrue( PreviewSanitizer::accepts( $list ) );
+		$button = $renderer->render(
+			new ElementNode(
+				'icon-button-1',
+				'blixis/icon-button',
+				[
+					'action'   => 'toggle',
+					'targetId' => 'details',
+					'label'    => 'Details',
+				]
+			),
+			new RenderContext()
+		);
+		$this->assertStringContainsString( 'aria-expanded="false" aria-controls="details" data-blx-action="toggle"', $button );
+		$this->assertTrue( PreviewSanitizer::accepts( $button ) );
+		$countdown = $renderer->render(
+			new ElementNode( 'countdown-1', 'blixis/countdown', [ 'targetISO' => 'bad <date>' ] ),
+			new RenderContext()
+		);
+		$this->assertStringContainsString( 'role="timer" aria-live="off"', $countdown );
+		$this->assertStringContainsString( 'data-blx-countdown-target="2027-01-01T00:00:00Z"', $countdown );
+		$this->assertTrue( PreviewSanitizer::accepts( $countdown ) );
+		$gradient = $renderer->render(
+			new ElementNode(
+				'gradient-1',
+				'blixis/gradient-text',
+				[
+					'content'  => 'Gradient',
+					'gradient' => [
+						'angle' => 90,
+						'stops' => [
+							[
+								'at'    => 0,
+								'color' => 'red;}</style>',
+							],
+							[
+								'at'    => 100,
+								'color' => '#ec4899',
+							],
+						],
+					],
+				]
+			),
+			new RenderContext()
+		);
+		$this->assertStringNotContainsString( 'red;}', $gradient );
+		$this->assertStringContainsString( 'linear-gradient(90deg,#2563eb 0%,#ec4899 100%)', $gradient );
+		$this->assertTrue( PreviewSanitizer::accepts( $gradient ) );
+		$tooltip = $renderer->render(
+			new ElementNode(
+				'tooltip-1',
+				'blixis/tooltip-text',
+				[
+					'content' => 'More',
+					'tooltip' => 'Extra & helpful',
+				]
+			),
+			new RenderContext()
+		);
+		$this->assertStringContainsString( 'tabindex="0" aria-describedby="tooltip-1-tooltip"', $tooltip );
+		$this->assertStringContainsString( 'role="tooltip" id="tooltip-1-tooltip">Extra &amp; helpful</span>', $tooltip );
+		$this->assertTrue( PreviewSanitizer::accepts( $tooltip ) );
+		$headline = $renderer->render( new ElementNode( 'headline-1', 'blixis/animated-headline', [ 'content' => 'Fast & safe' ] ), new RenderContext() );
+		$this->assertStringContainsString( 'aria-label="Fast &amp; safe"', $headline );
+		$this->assertStringContainsString( 'data-blx-headline-part', $headline );
+		$this->assertTrue( PreviewSanitizer::accepts( $headline ) );
 	}
 
 	/** Entitlements remain available by default while the filter is not installed. */
@@ -401,20 +537,20 @@ final class ElementDefinitionRegistryTest extends TestCase {
 				new RenderContext()
 			)
 		);
-		$this->assertSame(
-			'<pre data-blx-id="code-1" data-blx-type="blixis/code-block"><code class="language-php">&lt;?php &amp; &lt;?&gt;</code></pre>',
-			$renderer->render(
-				new ElementNode(
-					'code-1',
-					'blixis/code-block',
-					[
-						'language' => 'php',
-						'code'     => '<?php & <?>',
-					]
-				),
-				new RenderContext()
-			)
+		$code_output = $renderer->render(
+			new ElementNode(
+				'code-1',
+				'blixis/code-block',
+				[
+					'language' => 'php',
+					'code'     => '<?php & <?>',
+				]
+			),
+			new RenderContext()
 		);
+		$this->assertStringContainsString( 'data-blx-code-block', $code_output );
+		$this->assertStringContainsString( '&lt;?php &amp; &lt;?&gt;', $code_output );
+		$this->assertStringNotContainsString( '<?php', $code_output );
 		$this->assertSame(
 			'<a data-blx-id="link-1" data-blx-type="blixis/link" href="#" target="_blank" rel="noopener noreferrer">Open &lt;menu&gt;</a>',
 			$renderer->render(

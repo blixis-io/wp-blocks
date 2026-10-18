@@ -62,6 +62,42 @@ $layout  = static fn ( int $n, string $color ): string => wp_json_encode(
 					],
 				],
 			],
+			[
+				'id'       => 'el-syntax',
+				'type'     => 'blixis/syntax-highlighter',
+				'props'    => (object) [
+					'code'     => 'const safe = "<script>";',
+					'language' => 'js',
+				],
+				'children' => [],
+			],
+			[
+				'id'       => 'el-countdown',
+				'type'     => 'blixis/countdown',
+				'props'    => (object) [ 'targetISO' => '2099-12-31T00:00:00Z' ],
+				'children' => [],
+			],
+			[
+				'id'       => 'el-tooltip',
+				'type'     => 'blixis/tooltip-text',
+				'props'    => (object) [
+					'content' => 'Tooltip trigger',
+					'tooltip' => 'Extra information',
+				],
+				'children' => [],
+			],
+			[
+				'id'       => 'el-gradient',
+				'type'     => 'blixis/gradient-text',
+				'props'    => (object) [ 'content' => 'Gradient text' ],
+				'children' => [],
+			],
+			[
+				'id'       => 'el-headline',
+				'type'     => 'blixis/animated-headline',
+				'props'    => (object) [ 'content' => 'Text content' ],
+				'children' => [],
+			],
 		],
 	]
 );

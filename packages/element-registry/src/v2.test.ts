@@ -36,6 +36,10 @@ describe('generated v2 element registry', () => {
     expect(isElementInsertableV2('blixis/split-layout')).toBe(true);
     expect(isElementInsertableV2('blixis/resizable-panels')).toBe(true);
     expect(isElementInsertableV2('blixis/marquee-layout')).toBe(true);
+    expect(isElementInsertableV2('blixis/icon-list')).toBe(true);
+    expect(isElementInsertableV2('blixis/syntax-highlighter')).toBe(true);
+    expect(isElementInsertableV2('blixis/countdown')).toBe(true);
+    expect(isElementInsertableV2('blixis/tooltip-text')).toBe(true);
     for (const type of [
       'post-title',
       'post-content',

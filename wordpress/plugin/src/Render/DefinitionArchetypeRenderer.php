@@ -44,7 +44,7 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 	 * @param string $archetype Archetype name.
 	 */
 	public function supports( string $archetype ): bool {
-		return in_array( $archetype, [ 'container','simple','text','richtext','heading','button','link','image','gallery','video','audio','navigation','pagination','list','code','accordion','tabs','steps','alert','progress','counter','dynamic','card','layout','section','page','site-header','site-footer','site-logo','row','columns','grid','stack' ], true ); }
+		return in_array( $archetype, [ 'container','simple','text','richtext','heading','button','link','image','gallery','video','audio','navigation','pagination','list','code','accordion','tabs','steps','alert','progress','counter','countdown','icon','dynamic','card','layout','section','page','site-header','site-footer','site-logo','row','columns','grid','stack' ], true ); }
 	/** Render an element with escaped text and allowlisted tags/attributes.
 	 *
 	 * @param ElementNode   $node Element input.
@@ -93,6 +93,9 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 			return '<hr' . $hooks . ' aria-hidden="true">';
 		}
 		if ( 'list' === $archetype ) {
+			if ( 'icon-list' === $id ) {
+				return $this->render_icon_list( $node, $hooks );
+			}
 			return $this->render_list( $node, $hooks );
 		}
 		if ( 'code' === $archetype ) {
@@ -100,7 +103,22 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 			$allowed  = [ 'text', 'html', 'css', 'js', 'ts', 'json', 'php', 'bash' ];
 			$language = is_string( $language ) && in_array( $language, $allowed, true ) ? $language : 'text';
 			$code     = $node->value( 'code', '' );
-			return '<pre' . $hooks . '><code class="language-' . Escape::attr( $language ) . '">' . Escape::html( is_string( $code ) ? $code : '' ) . '</code></pre>';
+			return $this->render_code_block( $node, $hooks, $language, is_string( $code ) ? $code : '', 'syntax-highlighter' === $id );
+		}
+		if ( 'countdown' === $id ) {
+			return $this->render_countdown( $node, $hooks );
+		}
+		if ( 'icon-list' === $id ) {
+			return $this->render_icon_list( $node, $hooks );
+		}
+		if ( 'icon' === $id ) {
+			return $this->render_icon( $node, $hooks );
+		}
+		if ( 'icon-button' === $id ) {
+			return $this->render_icon_button( $node, $hooks );
+		}
+		if ( 'tooltip-text' === $id ) {
+			return $this->render_tooltip_text( $node, $hooks, $tag );
 		}
 		if ( 'link' === $archetype ) {
 			$label  = $node->value( 'label', '' );
@@ -132,6 +150,19 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 			}
 			if ( 'highlight-text' === $id ) {
 				$body = '<mark>' . $body . '</mark>';
+			}
+			if ( 'gradient-text' === $id ) {
+				return '<' . $tag . $hooks . ' data-blx-gradient-text style="background-image:' . Escape::attr( $this->gradient_value( $node->value( 'gradient' ) ) ) . ';-webkit-background-clip:text;background-clip:text;color:transparent">' . $body . '</' . $tag . '>';
+			}
+			if ( 'animated-headline' === $id ) {
+				$label  = is_string( $value ) ? $value : '';
+				$parts  = preg_split( '/(\s+)/u', $label, -1, PREG_SPLIT_DELIM_CAPTURE );
+				$parts  = is_array( $parts ) ? $parts : [ $label ];
+				$visual = '';
+				foreach ( $parts as $index => $part ) {
+					$visual .= '' === trim( $part ) ? Escape::html( $part ) : '<span data-blx-headline-part style="--blx-headline-index:' . (int) $index . '">' . Escape::html( $part ) . '</span>';
+				}
+				return '<' . $tag . $hooks . ' data-blx-animated-headline aria-label="' . Escape::attr( $label ) . '"><span aria-hidden="true">' . $visual . '</span></' . $tag . '>';
 			}
 			if ( 'button' === $id ) {
 				$href        = $node->value( 'href', $node->value( 'url', '#' ) );
@@ -557,6 +588,208 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 			$attributes .= ' hidden';
 		}
 		return $attributes;
+	}
+
+	/** Render escaped source code with optional line numbers and copy enhancement.
+	 *
+	 * @param ElementNode $node Element data.
+	 * @param string      $hooks Validated attributes.
+	 * @param string      $language Allowlisted language.
+	 * @param string      $code Source text.
+	 * @param bool        $highlight Whether to wrap syntax tokens.
+	 */
+	private function render_code_block( ElementNode $node, string $hooks, string $language, string $code, bool $highlight ): string {
+		$show_lines = true === $node->value( 'showLineNumbers', true );
+		$lines      = explode( "\n", $code );
+		$source     = '';
+		foreach ( $lines as $line ) {
+			$line_html = $highlight ? $this->highlight_code_line( $line, $language ) : Escape::html( $line );
+			$source   .= ( $show_lines ? '<span data-blx-code-line>' : '' ) . $line_html . ( $show_lines ? '</span>' : '' ) . "\n";
+		}
+		$button = true === $node->value( 'copyable', true )
+			? '<button type="button" data-blx-code-copy data-blx-copy-success="' . Escape::attr( __( 'Copied.', 'blixis-builder' ) ) . '" data-blx-copy-failed="' . Escape::attr( __( 'Copy failed.', 'blixis-builder' ) ) . '" hidden>' . Escape::html( __( 'Copy code', 'blixis-builder' ) ) . '</button><span data-blx-code-status aria-live="polite"></span>'
+			: '';
+		return '<div' . $hooks . ' data-blx-code-block data-blx-code-highlight="' . ( $highlight ? 'true' : 'false' ) . '">' . $button . '<pre' . ( $show_lines ? ' data-blx-code-line-numbers' : '' ) . '><code class="language-' . Escape::attr( $language ) . '">' . $source . '</code></pre></div>';
+	}
+
+	/** Add static token spans without trusting user markup.
+	 *
+	 * @param string $line Source line.
+	 * @param string $language Allowlisted language.
+	 */
+	private function highlight_code_line( string $line, string $language ): string {
+		$comment = 'php' === $language || 'bash' === $language ? '#[^\n]*' : '//[^\n]*|/\*[\s\S]*?\*/';
+		$pattern = '~(?<comment>' . $comment . ')|(?<string>"(?:\\\\.|[^"\\\\])*"|\'(?:\\\\.|[^\'\\\\])*\')|(?<number>\b\d+(?:\.\d+)?\b)|(?<keyword>\b(?:const|let|var|function|return|if|else|class|new|true|false|null|echo|public|private)\b)~';
+		if ( false === preg_match_all( $pattern, $line, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE ) || [] === $matches ) {
+			return Escape::html( $line );
+		}
+		$html   = '';
+		$offset = 0;
+		foreach ( $matches as $match ) {
+			foreach ( [ 'comment', 'string', 'number', 'keyword' ] as $kind ) {
+				if ( isset( $match[ $kind ] ) && -1 !== $match[ $kind ][1] ) {
+					$token  = $match[ $kind ][0];
+					$html  .= Escape::html( substr( $line, $offset, $match[ $kind ][1] - $offset ) ) . '<span data-blx-code-token="' . $kind . '">' . Escape::html( $token ) . '</span>';
+					$offset = $match[ $kind ][1] + strlen( $token );
+					break;
+				}
+			}
+		}
+		return $html . Escape::html( substr( $line, $offset ) );
+	}
+
+	/** Render a client-updated countdown using an absolute UTC target.
+	 *
+	 * @param ElementNode $node Element data.
+	 * @param string      $hooks Validated attributes.
+	 */
+	private function render_countdown( ElementNode $node, string $hooks ): string {
+		$target = $node->value( 'targetISO', '2027-01-01T00:00:00Z' );
+		$target = is_string( $target ) && false !== strtotime( $target ) ? $target : '2027-01-01T00:00:00Z';
+		$format = $node->value( 'format', 'days-hours-minutes-seconds' );
+		$format = is_string( $format ) && in_array( $format, [ 'days', 'days-hours', 'days-hours-minutes-seconds' ], true ) ? $format : 'days-hours-minutes-seconds';
+		$label  = $node->value( 'ariaLabel', '' );
+		$label  = is_string( $label ) && '' !== trim( $label ) ? $label : __( 'Countdown', 'blixis-builder' );
+		return '<time' . $hooks . ' role="timer" aria-live="off" aria-label="' . Escape::attr( $label ) . '" data-blx-countdown data-blx-countdown-target="' . Escape::attr( $target ) . '" data-blx-countdown-format="' . Escape::attr( $format ) . '" data-blx-countdown-complete="' . Escape::attr( __( 'Countdown complete', 'blixis-builder' ) ) . '">' . Escape::html( $target ) . '</time>';
+	}
+
+	/** Render a validated icon glyph and its accessible label contract.
+	 *
+	 * @param ElementNode $node Element data.
+	 * @param string      $hooks Validated attributes.
+	 */
+	private function render_icon( ElementNode $node, string $hooks ): string {
+		$icon       = $node->value( 'icon', 'solar:star-linear' );
+		$icon       = is_string( $icon ) && 1 === preg_match( '/^solar:[a-z0-9-]{1,64}$/D', $icon ) ? $icon : 'solar:star-linear';
+		$decorative = true === $node->value( 'decorative', true );
+		$label      = $node->value( 'ariaLabel', '' );
+		$label      = is_string( $label ) ? trim( $label ) : '';
+		$svg        = $this->icon_svg( $icon );
+		return '<span' . $hooks . ( $decorative || '' === $label ? ' aria-hidden="true"' : ' role="img" aria-label="' . Escape::attr( $label ) . '"' ) . ' data-blx-icon="' . Escape::attr( $icon ) . '">' . $svg . '</span>';
+	}
+
+	/** Render accessible list items with decorative symbols.
+	 *
+	 * @param ElementNode $node Element data.
+	 * @param string      $hooks Validated attributes.
+	 */
+	private function render_icon_list( ElementNode $node, string $hooks ): string {
+		$items   = $node->value( 'items', [] );
+		$items   = is_array( $items ) ? $items : [];
+		$ordered = true === $node->value( 'ordered', false ) || 'number' === $node->value( 'listStyle' );
+		$tag     = $ordered ? 'ol' : 'ul';
+		$icon    = match ( $node->value( 'listStyle', 'bullet' ) ) {
+			'check' => '&#10003;',
+			'none'  => '',
+			default => '&#8226;',
+		};
+		$rows = '';
+		foreach ( array_slice( $items, 0, 100 ) as $item ) {
+			if ( ! is_array( $item ) || ! is_string( $item['text'] ?? null ) ) {
+				continue;
+			}
+			$rows .= '<li><span aria-hidden="true" data-blx-list-icon>' . $icon . '</span>' . Escape::html( $item['text'] ) . '</li>';
+		}
+		$label = $node->value( 'ariaLabel', '' );
+		$label = is_string( $label ) && '' !== trim( $label ) ? ' aria-label="' . Escape::attr( $label ) . '"' : '';
+		return '<' . $tag . $hooks . $label . ' data-blx-icon-list>' . $rows . '</' . $tag . '>';
+	}
+
+	/** Render only supported icon-button actions; unsupported actions remain visibly disabled.
+	 *
+	 * @param ElementNode $node Element data.
+	 * @param string      $hooks Validated attributes.
+	 */
+	private function render_icon_button( ElementNode $node, string $hooks ): string {
+		$label  = $node->value( 'label', 'Button' );
+		$label  = is_string( $label ) ? $label : 'Button';
+		$before = $node->value( 'iconBefore' );
+		$after  = $node->value( 'iconAfter' );
+		$before = is_string( $before ) ? $this->icon_svg( $before ) : '';
+		$after  = is_string( $after ) ? $this->icon_svg( $after ) : '';
+		$attrs  = ' data-blx-button-variant="' . Escape::attr( (string) $node->value( 'variant', 'primary' ) ) . '" data-blx-button-size="' . Escape::attr( (string) $node->value( 'size', 'md' ) ) . '"';
+		if ( true === $node->value( 'disabled', false ) ) {
+			return '<button' . $hooks . $attrs . ' type="button" disabled>' . $before . '<span>' . Escape::html( $label ) . '</span>' . $after . '</button>';
+		}
+		$action = $node->value( 'action', 'link' );
+		if ( 'link' === $action ) {
+			$href = $node->value( 'href', '' );
+			return '<a' . $hooks . $attrs . ' href="' . Escape::url( is_string( $href ) ? $href : '' ) . '">' . $before . '<span>' . Escape::html( $label ) . '</span>' . $after . '</a>';
+		}
+		if ( 'submit' === $action ) {
+			return '<button' . $hooks . $attrs . ' type="submit">' . $before . '<span>' . Escape::html( $label ) . '</span>' . $after . '</button>';
+		}
+		$target = $node->value( 'targetId', '' );
+		$target = is_string( $target ) && 1 === preg_match( '/^[A-Za-z][A-Za-z0-9:_-]{0,63}$/D', $target ) ? $target : '';
+		if ( 'custom-event' === $action ) {
+			return '<button' . $hooks . $attrs . ' type="button" data-blx-action="custom-event">' . $before . '<span>' . Escape::html( $label ) . '</span>' . $after . '</button>';
+		}
+		if ( '' === $target ) {
+			return '<button' . $hooks . $attrs . ' type="button" disabled>' . $before . '<span>' . Escape::html( $label ) . '</span>' . $after . '</button>';
+		}
+		if ( 'scroll-to' === $action ) {
+			return '<a' . $hooks . $attrs . ' href="#' . Escape::attr( $target ) . '">' . $before . '<span>' . Escape::html( $label ) . '</span>' . $after . '</a>';
+		}
+		if ( 'open-dialog' === $action ) {
+			return '<button' . $hooks . $attrs . ' type="button" data-blx-action="open-dialog" data-blx-action-target="' . Escape::attr( $target ) . '">' . $before . '<span>' . Escape::html( $label ) . '</span>' . $after . '</button>';
+		}
+		if ( 'toggle' === $action ) {
+			return '<button' . $hooks . $attrs . ' type="button" aria-expanded="false" aria-controls="' . Escape::attr( $target ) . '" data-blx-action="toggle" data-blx-action-target="' . Escape::attr( $target ) . '">' . $before . '<span>' . Escape::html( $label ) . '</span>' . $after . '</button>';
+		}
+		return '<button' . $hooks . $attrs . ' type="button" disabled>' . $before . '<span>' . Escape::html( $label ) . '</span>' . $after . '</button>';
+	}
+
+	/** Render a keyboard-focusable tooltip with a stable description id.
+	 *
+	 * @param ElementNode $node Element data.
+	 * @param string      $hooks Validated attributes.
+	 * @param string      $tag Validated semantic tag.
+	 */
+	private function render_tooltip_text( ElementNode $node, string $hooks, string $tag ): string {
+		$content = $node->value( 'content', '' );
+		$content = is_string( $content ) ? $content : '';
+		$tooltip = $node->value( 'tooltip', 'More information' );
+		$tooltip = is_string( $tooltip ) ? $tooltip : 'More information';
+		$id      = $node->id . '-tooltip';
+		return '<' . $tag . $hooks . ' tabindex="0" aria-describedby="' . Escape::attr( $id ) . '" data-blx-tooltip-text><span>' . Escape::html( $content ) . '</span><span role="tooltip" id="' . Escape::attr( $id ) . '">' . Escape::html( $tooltip ) . '</span></' . $tag . '>';
+	}
+
+	/** Build a short allowlisted gradient from hex stops.
+	 *
+	 * @param mixed $value Gradient data.
+	 */
+	private function gradient_value( mixed $value ): string {
+		$angle  = is_array( $value ) && is_numeric( $value['angle'] ?? null ) ? max( 0, min( 360, (float) $value['angle'] ) ) : 90;
+		$stops  = is_array( $value ) && is_array( $value['stops'] ?? null ) ? $value['stops'] : [];
+		$colors = [];
+		foreach ( array_slice( $stops, 0, 8 ) as $stop ) {
+			if ( ! is_array( $stop ) ) {
+				continue;
+			}
+			$color = $stop['color'] ?? '';
+			$at    = is_numeric( $stop['at'] ?? null ) ? max( 0, min( 100, (float) $stop['at'] ) ) : null;
+			if ( is_string( $color ) && 1 === preg_match( '/^#[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?$/D', $color ) ) {
+				$colors[] = $color . ( null === $at ? '' : ' ' . $at . '%' );
+			}
+		}
+		if ( count( $colors ) < 2 ) {
+			$colors = [ '#2563eb 0%', '#ec4899 100%' ];
+		}
+		return 'linear-gradient(' . $angle . 'deg,' . implode( ',', $colors ) . ')';
+	}
+
+	/** Return a small inline symbol for known Solar icon references.
+	 *
+	 * @param string $icon Icon reference.
+	 */
+	private function icon_svg( string $icon ): string {
+		$paths = [
+			'solar:star-linear'         => '<path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3l-5.6 2.9 1.1-6.2L3 9.6l6.2-.9L12 3Z"/>',
+			'solar:check-circle-linear' => '<circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/>',
+			'solar:info-circle-linear'  => '<circle cx="12" cy="12" r="9"/><path d="M12 11v5m0-8h.01"/>',
+		];
+		$path  = $paths[ $icon ] ?? $paths['solar:star-linear'];
+		return '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" focusable="false" aria-hidden="true">' . $path . '</svg>';
 	}
 
 	/** Render child panels with keyboard-operable native separators.
