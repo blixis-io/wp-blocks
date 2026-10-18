@@ -22777,7 +22777,7 @@
         ]
       },
       "archetype": "video",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -24819,7 +24819,7 @@
         ]
       },
       "archetype": "map",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -25252,7 +25252,7 @@
         ]
       },
       "archetype": "embed",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -25685,7 +25685,7 @@
         ]
       },
       "archetype": "embed",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -26117,7 +26117,7 @@
         ]
       },
       "archetype": "embed",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
