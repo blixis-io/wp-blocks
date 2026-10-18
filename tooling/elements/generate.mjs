@@ -47,6 +47,8 @@ const editorReady = new Set([
   'div',
   'spacer',
   'separator',
+  'list',
+  'link',
 ]);
 for (const entry of catalog.elements) {
   const definition = await readJson(path.join(definitionsDir, entry.file));

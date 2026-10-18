@@ -5933,7 +5933,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'list',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -6473,7 +6473,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'link',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -70126,7 +70126,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'content',
     icon: 'solar:list-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'list list content list element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -70148,7 +70148,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'content',
     icon: 'solar:link-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'link link content link element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },

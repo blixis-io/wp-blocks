@@ -16,6 +16,8 @@ describe('generated v2 element registry', () => {
     expect(isElementInsertableV2('blixis/div')).toBe(true);
     expect(isElementInsertableV2('blixis/div', true)).toBe(true);
     expect(isElementInsertableV2('blixis/flex')).toBe(false);
+    expect(isElementInsertableV2('blixis/list')).toBe(true);
+    expect(isElementInsertableV2('blixis/link')).toBe(true);
   });
 
   it('validates declared props and rejects undeclared and editor-only values', () => {

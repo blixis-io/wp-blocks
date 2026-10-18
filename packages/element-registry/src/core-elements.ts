@@ -257,7 +257,7 @@ export function createCoreRegistry(): ElementRegistry {
 /** Editor registry extends stable core contracts with generated elements whose current editor/runtime slice is ready. */
 export function createEditorRegistry(): ElementRegistry {
   const registry = createCoreRegistry();
-  const editorReady = ['stack', 'row', 'columns', 'grid', 'card', 'site-logo', 'div', 'spacer', 'separator'];
+  const editorReady = ['stack', 'row', 'columns', 'grid', 'card', 'site-logo', 'div', 'spacer', 'separator', 'list', 'link'];
   const aliases = [
     {
       id: 'page',
