@@ -53,6 +53,7 @@ const editorReady = new Set([
   'before-after',
   'image-comparison',
   'image-hotspots',
+  'panorama-360',
   'video-background',
   'map',
   'embed',

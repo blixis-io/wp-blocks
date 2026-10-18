@@ -223,6 +223,12 @@ msgstr "Kaart openen in een nieuw tabblad"
 msgid "Map locations"
 msgstr "Kaartlocaties"
 
+msgid "360 degree panorama"
+msgstr "360-grad panorama"
+
+msgid "Use the Left and Right Arrow keys to explore the panorama."
+msgstr "Gebruik de pijltoetsen links en rechts om het panorama te verkennen."
+
 msgid "Location %d"
 msgstr "Locatie %d"
 

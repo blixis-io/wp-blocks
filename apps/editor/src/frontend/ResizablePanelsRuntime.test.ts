@@ -16,6 +16,7 @@ type InitFrontendElement = (root: HTMLElement) => void;
 type InitLightbox = (root: HTMLElement) => void;
 type InitImageComparison = (root: HTMLElement) => void;
 type InitMap = (root: HTMLElement) => void;
+type InitPanorama = (root: HTMLElement) => void;
 
 function makePanels(orientation = 'horizontal', minimum = 20) {
   const root = document.createElement('div');
@@ -47,6 +48,7 @@ afterEach(() => {
   delete (window as Window & { blxInitLightbox?: InitLightbox }).blxInitLightbox;
   delete (window as Window & { blxInitImageComparison?: InitImageComparison }).blxInitImageComparison;
   delete (window as Window & { blxInitMap?: InitMap }).blxInitMap;
+  delete (window as Window & { blxInitPanorama?: InitPanorama }).blxInitPanorama;
   if (originalDialogShowModal) Object.defineProperty(HTMLDialogElement.prototype, 'showModal', originalDialogShowModal);
   else delete (HTMLDialogElement.prototype as Partial<HTMLDialogElement>).showModal;
   if (originalDialogClose) Object.defineProperty(HTMLDialogElement.prototype, 'close', originalDialogClose);
@@ -298,5 +300,26 @@ describe('consent-aware map enhancement', () => {
     button.click();
     expect(root.querySelector('iframe')).toBeNull();
     expect(button.disabled).toBe(false);
+  });
+});
+
+describe('panorama keyboard enhancement', () => {
+  it('moves the horizontal view with arrow keys and keeps a focusable fallback', () => {
+    const root = document.createElement('figure');
+    root.setAttribute('data-blx-panorama', '');
+    root.innerHTML =
+      '<div tabindex="0" role="region" aria-label="Panorama" data-blx-panorama-viewer><img alt="Coast"></div>';
+    document.body.append(root);
+    loadInitializer();
+    const initialize = (window as Window & { blxInitPanorama?: InitPanorama }).blxInitPanorama;
+    const viewer = root.querySelector<HTMLElement>('[data-blx-panorama-viewer]');
+    if (!initialize || !viewer) throw new Error('panorama initializer missing');
+    initialize(root);
+    expect(viewer.dataset['blxPanoramaReady']).toBe('true');
+    viewer.scrollLeft = 100;
+    viewer.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+    expect(viewer.scrollLeft).toBe(148);
+    viewer.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', shiftKey: true, bubbles: true }));
+    expect(viewer.scrollLeft).toBe(0);
   });
 });
