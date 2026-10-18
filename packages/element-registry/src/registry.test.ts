@@ -373,6 +373,7 @@ describe('generated editor registry', () => {
       'aspect-ratio',
       'scroll-area',
       'alert',
+      'table-of-contents',
       'card',
       'avatar',
       'navigation',

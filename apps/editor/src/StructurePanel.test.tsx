@@ -91,9 +91,10 @@ describe('left panel and element palette', () => {
       'Image',
       'Button',
       'Alert',
+      'Table Of Contents',
     ])
       expect(within(palette).getByRole('button', { name })).toBeTruthy();
-    expect(within(palette).getAllByRole('button')).toHaveLength(41);
+    expect(within(palette).getAllByRole('button')).toHaveLength(42);
   });
 
   it('remembers the selected left tab for the current session', async () => {

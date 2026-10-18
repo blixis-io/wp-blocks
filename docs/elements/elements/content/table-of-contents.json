@@ -86,7 +86,7 @@
     },
     "ariaLabel": {
       "type": "string",
-      "default": "Main navigation",
+      "default": "On this page",
       "description": "Text content. Localizable per locale.",
       "required": false,
       "localizable": true,

@@ -14560,7 +14560,7 @@
         },
         "ariaLabel": {
           "type": "string",
-          "default": "Main navigation",
+          "default": "On this page",
           "description": "Text content. Localizable per locale.",
           "required": false,
           "localizable": true,
@@ -14893,7 +14893,7 @@
         ]
       },
       "archetype": "navigation",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
