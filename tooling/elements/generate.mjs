@@ -31,6 +31,7 @@ const editorReady = new Set([
   'page',
   'stack',
   'row',
+  'flex',
   'columns',
   'grid',
   'card',

@@ -260,6 +260,7 @@ export function createEditorRegistry(): ElementRegistry {
   const editorReady = [
     'stack',
     'row',
+    'flex',
     'columns',
     'grid',
     'card',
