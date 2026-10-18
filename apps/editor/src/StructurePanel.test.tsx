@@ -80,9 +80,19 @@ describe('left panel and element palette', () => {
     const user = userEvent.setup();
     await openElements(user);
     const palette = screen.getByRole('region', { name: 'Elements' });
-    for (const name of ['Section', 'Container', 'Flex', 'Heading', 'Text', 'Image', 'Button', 'Alert'])
+    for (const name of [
+      'Section',
+      'Container',
+      'Flex',
+      'Aspect Ratio',
+      'Heading',
+      'Text',
+      'Image',
+      'Button',
+      'Alert',
+    ])
       expect(within(palette).getByRole('button', { name })).toBeTruthy();
-    expect(within(palette).getAllByRole('button')).toHaveLength(39);
+    expect(within(palette).getAllByRole('button')).toHaveLength(40);
   });
 
   it('remembers the selected left tab for the current session', async () => {

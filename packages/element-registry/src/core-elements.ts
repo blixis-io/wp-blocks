@@ -261,6 +261,7 @@ export function createEditorRegistry(): ElementRegistry {
     'stack',
     'row',
     'flex',
+    'aspect-ratio',
     'columns',
     'grid',
     'card',
