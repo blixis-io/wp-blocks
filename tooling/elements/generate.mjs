@@ -42,6 +42,7 @@ const editorReady = new Set([
   'post-date',
   'post-author',
   'site-tagline',
+  'post-terms',
   'columns',
   'grid',
   'card',

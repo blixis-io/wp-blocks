@@ -94,6 +94,7 @@ describe('left panel and element palette', () => {
       'Post Date',
       'Post Author',
       'Site Tagline',
+      'Post Terms',
       'Heading',
       'Text',
       'Image',
@@ -102,7 +103,7 @@ describe('left panel and element palette', () => {
       'Table Of Contents',
     ])
       expect(within(palette).getByRole('button', { name })).toBeTruthy();
-    expect(within(palette).getAllByRole('button')).toHaveLength(50);
+    expect(within(palette).getAllByRole('button')).toHaveLength(51);
   });
 
   it('remembers the selected left tab for the current session', async () => {

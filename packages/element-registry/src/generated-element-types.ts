@@ -42630,7 +42630,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'dynamic',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -71638,7 +71638,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'wordpress',
     icon: 'solar:tag-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'post-terms post terms wordpress post terms element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
