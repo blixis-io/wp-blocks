@@ -386,6 +386,7 @@ describe('generated editor registry', () => {
       'rich-text',
       'eyebrow',
       'blockquote',
+      'badge',
       'progress',
       'spinner',
       'skeleton',

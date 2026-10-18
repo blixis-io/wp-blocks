@@ -28,6 +28,7 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		'section'     => 'section',
 		'heading'     => 'h2',
 		'blockquote'  => 'blockquote',
+		'badge'       => 'span',
 		'text'        => 'p',
 		'button'      => 'a',
 		'image'       => 'div',

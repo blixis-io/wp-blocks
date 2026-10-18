@@ -45,6 +45,7 @@ const editorReady = new Set([
   'rich-text',
   'eyebrow',
   'blockquote',
+  'badge',
   'image',
   'section',
   'text',

@@ -273,6 +273,7 @@ export function createEditorRegistry(): ElementRegistry {
     'rich-text',
     'eyebrow',
     'blockquote',
+    'badge',
     'steps',
     'breadcrumbs',
     'pagination',

@@ -7291,7 +7291,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'text',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -70189,7 +70189,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'content',
     icon: 'solar:tag-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'badge badge content badge element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
