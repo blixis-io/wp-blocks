@@ -29,7 +29,7 @@ final class Fixtures {
 	private const MAX_SAFE_INTEGER = 9007199254740991;
 
 	/**
-	 * Decodes JSON and checks the fixture value rules: null, booleans, safe integers, NFC strings, arrays, objects.
+	 * Decodes JSON and checks the fixture value rules: null, booleans, safe integers, bounded decimals, NFC strings, arrays, objects.
 	 *
 	 * @param string $json JSON text.
 	 * @return mixed Objects are stdClass so that empty objects stay objects.
@@ -186,7 +186,10 @@ final class Fixtures {
 			return;
 		}
 		if ( is_float( $value ) ) {
-			throw new InvalidArgumentException( $path . ': only safe integers are allowed as numbers; use a string.' ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- CLI tooling.
+			if ( ! is_finite( $value ) || abs( $value ) < 0.0001 || abs( $value ) > 1000000000 || (float) rtrim( rtrim( number_format( $value, 4, '.', '' ), '0' ), '.' ) !== $value ) {
+				throw new InvalidArgumentException( $path . ': number is outside the canonical integer/decimal range.' ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- CLI tooling.
+			}
+			return;
 		}
 		if ( is_string( $value ) ) {
 			self::assert_nfc( $value, $path );

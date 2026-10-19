@@ -41,8 +41,14 @@ final class FixturesTest extends TestCase {
 		$this->assertSame( '{"k":"a/b é 日本 😀"}', Fixtures::canonical_json( Fixtures::decode( '{"k":"a\/b é 日本 😀"}' ) ) );
 	}
 
+	/** Bounded decimal values have one canonical representation shared with TypeScript. */
+	public function test_bounded_decimals_round_trip_canonically(): void {
+		$json = '{"maximum":0.0001,"rating":4.5,"value":-123.4567}';
+		$this->assertSame( $json, Fixtures::canonical_json( Fixtures::decode( $json ) ) );
+	}
+
 	/**
-	 * Non-integer numbers and unsafe integers are rejected.
+	 * Non-canonical decimals and unsafe integers are rejected.
 	 *
 	 * @param string $json Input.
 	 */
@@ -59,11 +65,13 @@ final class FixturesTest extends TestCase {
 	 */
 	public static function unsafe_numbers(): array {
 		return [
-			'float'         => [ '{"a":1.5}' ],
-			'float integer' => [ '{"a":1.0}' ],
-			'exponent'      => [ '{"a":1e3}' ],
-			'unsafe int'    => [ '{"a":9007199254740993}' ],
-			'nested'        => [ '{"a":[{"b":0.1}]}' ],
+			'float integer'    => [ '{"a":1.0}' ],
+			'exponent'         => [ '{"a":1e3}' ],
+			'excess precision' => [ '{"a":1.12345}' ],
+			'too small'        => [ '{"a":0.00001}' ],
+			'too large'        => [ '{"a":1000000000.1}' ],
+			'unsafe int'       => [ '{"a":9007199254740993}' ],
+			'nested precision' => [ '{"a":[{"b":0.12345}]}' ],
 		];
 	}
 

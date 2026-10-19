@@ -15,6 +15,12 @@ describe('canonicalJson', () => {
     expect(canonicalJson({ b: [], a: {} })).toBe('{"a":{},"b":[]}');
   });
 
+  it('serializes bounded decimals as plain canonical numbers', () => {
+    expect(canonicalJson({ rating: 4.5, minimum: 0.0001, value: -123.4567 })).toBe(
+      '{"minimum":0.0001,"rating":4.5,"value":-123.4567}',
+    );
+  });
+
   it('does not escape slashes or non-ASCII characters', () => {
     const text = `a/b ${cp(0xe9)} ${cp(0x65e5, 0x672c)} ${cp(0x1f600)}`;
     expect(canonicalJson({ k: text })).toBe(`{"k":"${text}"}`);
@@ -38,7 +44,8 @@ describe('canonicalJson', () => {
 
 describe('assertFixtureValue', () => {
   it.each([
-    ['float', { a: 1.5 }],
+    ['decimal precision beyond four places', { a: 1.12345 }],
+    ['decimal magnitude below the canonical range', { a: 0.00001 }],
     ['float that looks like an integer', { a: 1e21 }],
     ['unsafe integer', { a: 2 ** 53 }],
     ['NaN', { a: Number.NaN }],
@@ -49,7 +56,7 @@ describe('assertFixtureValue', () => {
     ['non-NFC key', { ['e' + cp(0x301)]: 1 }],
     ['lone surrogate', { a: '\ud800' }],
     ['lone surrogate key', { '\udc00': 1 }],
-    ['nested float', { a: [{ b: 0.1 }] }],
+    ['nested decimal precision beyond four places', { a: [{ b: 0.12345 }] }],
     ['sparse array', new Array(2)],
     ['array with an extra property', Object.assign([1], { extra: true })],
     ['class instance', new Date(0)],
@@ -64,6 +71,7 @@ describe('assertFixtureValue', () => {
     ['null', null],
     ['booleans', [true, false]],
     ['safe integers', [0, -1, Number.MAX_SAFE_INTEGER, Number.MIN_SAFE_INTEGER]],
+    ['bounded decimals', [4.5, -123.4567, 0.0001]],
     ['NFC text', cp(0xe9)],
     ['nesting', { a: [{ b: [null] }] }],
     ['an object without a prototype', Object.assign(Object.create(null) as object, { a: 1 })],

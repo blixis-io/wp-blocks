@@ -126,7 +126,7 @@ describe('validateTokenSet', () => {
     ).toEqual(['reserved-key']);
     expect(codes(null)).toEqual(['schema']);
     expect(codes('{}')).toEqual(['schema']);
-    expect(codes({ ...(GOOD as object), tokenVersion: 1.5 })).toEqual(['unreadable']);
+    expect(codes({ ...(GOOD as object), tokenVersion: 1.5 })).toEqual(['schema']);
     expect(codes({ ...(GOOD as object), tokenVersion: -1 })).toEqual(['schema']);
     expect(
       codes(

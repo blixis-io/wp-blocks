@@ -1,4 +1,5 @@
 import { assertJsonValue } from '../json/canonical.ts';
+import { isSafeJsonNumber } from '../json/number.ts';
 import { utf8Length } from '../json/utf8.ts';
 import { DOCUMENT_LIMITS } from '../schema/limits.ts';
 import { findReservedKeys } from '../schema/parse.ts';
@@ -57,8 +58,12 @@ export function snapshotInput(input: unknown): Gate {
         bytes += 5;
         put(parent, key, src);
       } else if (typeof src === 'number') {
-        if (!Number.isSafeInteger(src))
-          return reject('invalid-value', path, `only safe integers are allowed (got ${String(src)}); use a string`);
+        if (!isSafeJsonNumber(src))
+          return reject(
+            'invalid-value',
+            path,
+            `number is outside the canonical integer/decimal range (got ${String(src)})`,
+          );
         bytes += String(src).length;
         put(parent, key, src);
       } else if (typeof src === 'string') {

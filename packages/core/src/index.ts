@@ -44,6 +44,7 @@ export {
 export { checkSemantics, type SemanticResult } from './document/semantic.ts';
 export { assertStrictJson, MAX_DEPTH } from './json/strict.ts';
 export { assertJsonValue, canonicalJson, compareCodePoints } from './json/canonical.ts';
+export { isSafeJsonNumber, serializeJsonNumber } from './json/number.ts';
 export { utf8Length } from './json/utf8.ts';
 export { sha256Hex, sha256HexUtf8 } from './json/sha256.ts';
 export { sourceDigest } from './translation/source.ts';

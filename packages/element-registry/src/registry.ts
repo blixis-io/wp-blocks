@@ -1,4 +1,11 @@
-import { admitValue, validateRichText, type ElementNode, type Json, type TranslationCheck } from '@blixis/wp-core';
+import {
+  admitValue,
+  isSafeJsonNumber,
+  validateRichText,
+  type ElementNode,
+  type Json,
+  type TranslationCheck,
+} from '@blixis/wp-core';
 import {
   EXTENSION_API_VERSION,
   ElementDefinitionSchema,
@@ -63,11 +70,16 @@ function checkDefinition(def: ElementDefinition, source: Source): string[] {
     );
   for (const [name, prop] of Object.entries(def.props)) {
     const where = `property ${name}`;
+    if (prop.kind === 'number' && (!isSafeJsonNumber(prop.min) || !isSafeJsonNumber(prop.max)))
+      errors.push(`${where}: number bounds must use supported document numbers`);
+    if (prop.kind === 'number' && def.requiresApi < 2)
+      errors.push(`${where}: number properties require extension API 2`);
     if (prop.classification === 'translatable' && !['string', 'text', 'json'].includes(prop.kind))
       errors.push(`${where}: only string or text properties can be translatable`);
     if (prop.classification === 'locale-specific' && !['string', 'url', 'media'].includes(prop.kind))
       errors.push(`${where}: ${prop.kind} properties cannot be locale-specific`);
-    if (prop.kind === 'integer' && prop.min > prop.max) errors.push(`${where}: min is greater than max`);
+    if ((prop.kind === 'integer' || prop.kind === 'number') && prop.min > prop.max)
+      errors.push(`${where}: min is greater than max`);
     if (prop.required === true && prop.classification !== 'invariant')
       errors.push(
         `${where}: only invariant properties can be required (translated values are checked per language by the translation workflow)`,

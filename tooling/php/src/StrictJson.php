@@ -2,7 +2,7 @@
 /**
  * Strict fixture JSON validation, the PHP twin of tests/fixtures/src/strict-json.ts (BWB-018).
  *
- * Rejects what decoding would hide: non-integer number tokens (1.0, 1e3), negative zero, integers beyond 2^53, duplicate
+ * Rejects what decoding would hide: exponent and non-canonical decimal tokens, negative zero, integers beyond 2^53, duplicate
  * object keys, lone surrogate escapes and nesting deeper than MAX_DEPTH.
  *
  * @package Blixis\Tooling
@@ -187,7 +187,7 @@ final class StrictJson {
 	}
 
 	/**
-	 * Validates a number token: integers only, no negative zero, nothing beyond 2^53 - 1.
+	 * Validates a safe integer or canonical decimal token with at most four fractional places.
 	 *
 	 * @return void
 	 */
@@ -196,11 +196,24 @@ final class StrictJson {
 			$this->fail( 'invalid number' );
 		}
 		$token = $match[0];
-		if ( 1 === preg_match( '/[.eE]/', $token ) ) {
-			$this->fail( 'non-integer number ' . $token . '; use a string' );
+		if ( 1 === preg_match( '/[eE]/', $token ) ) {
+			$this->fail( 'exponent notation is not allowed for JSON numbers (' . $token . ')' );
 		}
-		if ( '-0' === $token ) {
+		if ( in_array( $token, [ '-0', '-0.0' ], true ) ) {
 			$this->fail( 'negative zero is not allowed' );
+		}
+		if ( str_contains( $token, '.' ) ) {
+			$fraction = substr( $token, strpos( $token, '.' ) + 1 );
+			$value    = (float) $token;
+			if ( strlen( $fraction ) > 4 || '0' === substr( $fraction, -1 ) || abs( $value ) < 0.0001 || abs( $value ) > 1000000000 ) {
+				$this->fail( 'non-canonical or unsupported number ' . $token );
+			}
+			$canonical = rtrim( rtrim( number_format( $value, 4, '.', '' ), '0' ), '.' );
+			if ( $canonical !== $token ) {
+				$this->fail( 'non-canonical or unsupported number ' . $token );
+			}
+			$this->pos += strlen( $token );
+			return;
 		}
 		$digits = ltrim( $token, '-' );
 		if ( strlen( $digits ) > strlen( self::MAX_SAFE_DIGITS ) || ( strlen( $digits ) === strlen( self::MAX_SAFE_DIGITS ) && strcmp( $digits, self::MAX_SAFE_DIGITS ) > 0 ) ) {

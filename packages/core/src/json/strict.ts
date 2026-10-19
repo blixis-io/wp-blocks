@@ -1,5 +1,6 @@
 import { isWellFormed } from './well-formed.ts';
 import { DOCUMENT_LIMITS } from '../schema/limits.ts';
+import { serializeJsonNumber } from './number.ts';
 
 /** Maximum container nesting accepted in documents and fixtures; the PHP implementation enforces the same limit. */
 export const MAX_DEPTH: number = DOCUMENT_LIMITS.maxJsonDepth;
@@ -8,8 +9,9 @@ const MAX_SAFE = BigInt(Number.MAX_SAFE_INTEGER);
 const NUMBER = /-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?/y;
 
 /**
- * Validates JSON text *before* it is parsed, because parsing already hides what we must reject: `1.0`, `1e3`
- * and `-0` all become ordinary JavaScript integers. Rejected: non-integer number tokens, `-0`, integers beyond 2^53,
+ * Validates JSON text *before* it is parsed, because parsing already hides non-canonical number spellings. Accepted:
+ * safe integers and bounded decimals with at most six fractional places. Rejected: exponent notation, negative zero,
+ * non-canonical decimal spellings, integers beyond 2^53,
  * duplicate object keys, lone surrogate escapes, nesting deeper than MAX_DEPTH and anything that is not strict JSON.
  * `tooling/php/src/Fixtures.php` implements the same rules; parity.test.ts compares them.
  */
@@ -45,10 +47,14 @@ export function assertStrictJson(text: string): void {
     const match = NUMBER.exec(text);
     if (match === null) return fail('invalid number');
     const token = match[0];
-    if (/[.eE]/.test(token)) fail(`non-integer number ${token}; use a string`);
-    if (token === '-0') fail('negative zero is not allowed');
-    const magnitude = BigInt(token.replace('-', ''));
-    if (magnitude > MAX_SAFE) fail(`integer ${token} is beyond 2^53; use a string`);
+    if (/[eE]/.test(token)) fail(`exponent notation is not allowed for JSON numbers (${token})`);
+    if (token === '-0' || token === '-0.0') fail('negative zero is not allowed');
+    const parsed = Number(token);
+    if (!token.includes('.')) {
+      const magnitude = BigInt(token.replace('-', ''));
+      if (magnitude > MAX_SAFE) fail(`integer ${token} is beyond 2^53; use a string`);
+    }
+    if (serializeJsonNumber(parsed) !== token) fail(`non-canonical or unsupported number ${token}`);
     i += token.length;
   };
   const value = (depth: number): void => {

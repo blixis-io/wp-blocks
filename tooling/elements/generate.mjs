@@ -161,6 +161,7 @@ const editorReady = new Set([
   'dropdown-menu',
   'command-palette',
   'carousel',
+  'rating',
   'breadcrumb-ui',
   'scroll-indicator',
   'copy-button',

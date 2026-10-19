@@ -139,7 +139,9 @@ describe('composeDocument', () => {
     });
     expect(result).toMatchObject({ ok: false, error: { code: 'invalid-content', locale: 'fr_FR' } });
     expect(
-      compose(layout, { fr_FR: contentOf('fr_FR', { 'el-heading-1': { values: { text: 1.5 }, status: 'draft' } }) }),
+      compose(layout, {
+        fr_FR: contentOf('fr_FR', { 'el-heading-1': { values: { text: 1.234567 }, status: 'draft' } }),
+      }),
     ).toMatchObject({ ok: false, error: { code: 'invalid-content' } });
   });
 

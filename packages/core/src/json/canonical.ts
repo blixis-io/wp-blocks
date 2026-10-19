@@ -1,17 +1,18 @@
 import type { Json } from '../schema/primitives.ts';
 import { isWellFormed } from './well-formed.ts';
+import { isSafeJsonNumber, serializeJsonNumber } from './number.ts';
 
 /**
- * Checks the document/fixture value rules and returns the value unchanged: `null`, booleans, safe integers, well-formed
- * NFC-normalised strings, arrays and plain objects. Non-integer numbers are rejected because PHP and JavaScript print
- * them differently, and integers beyond 2^53 lose precision; store such values as strings. Recursion is bounded by the
+ * Checks the document/fixture value rules and returns the value unchanged: `null`, booleans, safe integers, bounded
+ * decimals with at most six places, well-formed NFC-normalised strings, arrays and plain objects. Integers beyond 2^53
+ * lose precision; store such values as strings. Recursion is bounded by the
  * JSON depth limit, which callers apply first (`assertStrictJson` for text, `measureJsonShape` for parsed objects).
  */
 export function assertJsonValue(value: unknown, path = '$'): Json {
   if (value === null || typeof value === 'boolean') return value;
   if (typeof value === 'number') {
-    if (!Number.isSafeInteger(value))
-      throw new Error(`${path}: only safe integers are allowed (got ${String(value)}); use a string`);
+    if (!isSafeJsonNumber(value))
+      throw new Error(`${path}: number is outside the canonical integer/decimal range (got ${String(value)})`);
     return value;
   }
   if (typeof value === 'string') {
@@ -74,7 +75,7 @@ function serialize(value: Json): string {
     const keys = Object.keys(value).sort(compareCodePoints);
     return `{${keys.map((key) => `${JSON.stringify(key)}:${serialize(value[key] as Json)}`).join(',')}}`;
   }
-  return JSON.stringify(value);
+  return typeof value === 'number' ? serializeJsonNumber(value) : JSON.stringify(value);
 }
 
 /** Canonical JSON: keys sorted at every level, no insignificant whitespace, unescaped slashes and non-ASCII characters. */

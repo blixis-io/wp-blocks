@@ -12,9 +12,10 @@ namespace Blixis\Builder\Registry;
 /** Validated definitions from the distributable manifest. */
 final class ElementRegistry {
 	private const MAX_BYTES       = 262144;
+	private const API_VERSION     = 2;
 	private const CATEGORIES      = [ 'layout', 'content', 'media', 'interactive' ];
 	private const CLASSIFICATIONS = [ 'invariant', 'translatable', 'locale-specific' ];
-	private const KINDS           = [ 'string', 'text', 'integer', 'boolean', 'enum', 'url', 'media' ];
+	private const KINDS           = [ 'string', 'text', 'integer', 'number', 'boolean', 'enum', 'url', 'media' ];
 
 	/**
 	 * Apply the documented contract.
@@ -61,12 +62,12 @@ final class ElementRegistry {
 		if ( \strlen( $encoded ) > self::MAX_BYTES ) {
 			throw new \InvalidArgumentException( 'Manifest is too large.' );
 		}
-		if ( ! \is_array( $data ) || ! self::keys( $data, [ 'apiVersion', 'elements' ] ) || 1 !== $data['apiVersion'] || ! \is_array( $data['elements'] ) || ! \array_is_list( $data['elements'] ) || \count( $data['elements'] ) > 64 ) {
+		if ( ! \is_array( $data ) || ! self::keys( $data, [ 'apiVersion', 'elements' ] ) || ! \is_int( $data['apiVersion'] ) || $data['apiVersion'] < 1 || $data['apiVersion'] > self::API_VERSION || ! \is_array( $data['elements'] ) || ! \array_is_list( $data['elements'] ) || \count( $data['elements'] ) > 64 ) {
 			throw new \InvalidArgumentException( 'Invalid manifest.' );
 		}
 		$definitions = [];
 		foreach ( $data['elements'] as $element ) {
-			if ( ! \is_array( $element ) || ! self::keys( $element, [ 'type', 'version', 'title', 'category', 'tier', 'requiresApi', 'props', 'allowedParents', 'allowedChildren' ], [ 'fallback', 'styleProperties' ] ) || ! \is_string( $element['type'] ) || 1 !== \preg_match( '~^[a-z][a-z0-9-]{1,31}/[a-z][a-z0-9-]{1,63}$~D', $element['type'] ) || isset( $definitions[ $element['type'] ] ) || ! \is_int( $element['version'] ) || $element['version'] < 1 || ! \is_string( $element['title'] ) || '' === $element['title'] || \strlen( $element['title'] ) > 80 || ! \in_array( $element['category'], self::CATEGORIES, true ) || ! \in_array( $element['tier'], [ 'free', 'plus', 'pro' ], true ) || ! \is_int( $element['requiresApi'] ) || $element['requiresApi'] < 1 || $element['requiresApi'] > 1 || ! \is_array( $element['props'] ) || ( \array_is_list( $element['props'] ) && [] !== $element['props'] ) ) {
+			if ( ! \is_array( $element ) || ! self::keys( $element, [ 'type', 'version', 'title', 'category', 'tier', 'requiresApi', 'props', 'allowedParents', 'allowedChildren' ], [ 'fallback', 'styleProperties' ] ) || ! \is_string( $element['type'] ) || 1 !== \preg_match( '~^[a-z][a-z0-9-]{1,31}/[a-z][a-z0-9-]{1,63}$~D', $element['type'] ) || isset( $definitions[ $element['type'] ] ) || ! \is_int( $element['version'] ) || $element['version'] < 1 || ! \is_string( $element['title'] ) || '' === $element['title'] || \strlen( $element['title'] ) > 80 || ! \in_array( $element['category'], self::CATEGORIES, true ) || ! \in_array( $element['tier'], [ 'free', 'plus', 'pro' ], true ) || ! \is_int( $element['requiresApi'] ) || $element['requiresApi'] < 1 || $element['requiresApi'] > $data['apiVersion'] || ! \is_array( $element['props'] ) || ( \array_is_list( $element['props'] ) && [] !== $element['props'] ) ) {
 				throw new \InvalidArgumentException( 'Invalid element definition.' );
 			}
 			if ( isset( $element['styleProperties'] ) ) {
@@ -100,8 +101,11 @@ final class ElementRegistry {
 				if ( ! \is_string( $name ) || 1 !== \preg_match( '/^[a-z][a-zA-Z0-9]{0,63}$/D', $name ) || ! \is_array( $prop ) || ! isset( $prop['kind'], $prop['classification'], $prop['label'] ) || ! \in_array( $prop['kind'], self::KINDS, true ) || ! \in_array( $prop['classification'], self::CLASSIFICATIONS, true ) || ! \is_string( $prop['label'] ) || '' === $prop['label'] || \strlen( $prop['label'] ) > 80 ) {
 					throw new \InvalidArgumentException( 'Invalid property definition.' );
 				}
+				if ( 'number' === $prop['kind'] && ( 2 !== $element['requiresApi'] || 2 !== $data['apiVersion'] ) ) {
+					throw new \InvalidArgumentException( 'Number properties require extension API 2.' );
+				}
 				$extra = match ( $prop['kind'] ) {
-					'string' => [ 'maxLength' ], 'text' => [ 'maxLength', 'inline' ], 'integer' => [ 'min', 'max' ], 'enum' => [ 'values' ], default => [],
+					'string' => [ 'maxLength' ], 'text' => [ 'maxLength', 'inline' ], 'integer', 'number' => [ 'min', 'max' ], 'enum' => [ 'values' ], default => [],
 				};
 				$optional = 'text' === $prop['kind'] ? [ 'required', 'default', 'marks' ] : [ 'required', 'default' ];
 				if ( ! self::keys( $prop, \array_merge( [ 'kind', 'classification', 'label' ], $extra ), $optional ) || ( isset( $prop['required'] ) && ! \is_bool( $prop['required'] ) ) || ( 'translatable' === $prop['classification'] && ! \in_array( $prop['kind'], [ 'string', 'text' ], true ) ) || ( 'text' === $prop['kind'] && ( true !== ( $prop['inline'] ?? null ) || ( isset( $prop['marks'] ) && ( ! \is_array( $prop['marks'] ) || ! \array_is_list( $prop['marks'] ) || [] === $prop['marks'] || [] !== \array_diff( $prop['marks'], [ 'strong', 'em', 'u', 's', 'code', 'link', 'style' ] ) ) ) ) ) || ( 'locale-specific' === $prop['classification'] && ! \in_array( $prop['kind'], [ 'string', 'url', 'media' ], true ) ) || ( ( $prop['required'] ?? false ) && ( 'invariant' !== $prop['classification'] || ! \array_key_exists( 'default', $prop ) ) ) ) {
@@ -114,7 +118,7 @@ final class ElementRegistry {
 						}
 					}
 				}
-				if ( ( \in_array( $prop['kind'], [ 'string', 'text' ], true ) && ( ! \is_int( $prop['maxLength'] ) || $prop['maxLength'] < 1 || $prop['maxLength'] > 100000 ) ) || ( 'integer' === $prop['kind'] && ( ! \is_int( $prop['min'] ) || ! \is_int( $prop['max'] ) || $prop['min'] > $prop['max'] ) ) || ( 'enum' === $prop['kind'] && ( ! \is_array( $prop['values'] ) || ! \array_is_list( $prop['values'] ) || [] === $prop['values'] || \count( $prop['values'] ) > 32 ) ) || ( \array_key_exists( 'default', $prop ) && ! self::valid_value( $prop, $prop['default'] ) ) ) {
+				if ( ( \in_array( $prop['kind'], [ 'string', 'text' ], true ) && ( ! \is_int( $prop['maxLength'] ) || $prop['maxLength'] < 1 || $prop['maxLength'] > 100000 ) ) || ( 'integer' === $prop['kind'] && ( ! \is_int( $prop['min'] ) || ! \is_int( $prop['max'] ) || $prop['min'] > $prop['max'] ) ) || ( 'number' === $prop['kind'] && ( ! self::valid_number( $prop['min'] ) || ! self::valid_number( $prop['max'] ) || $prop['min'] > $prop['max'] ) ) || ( 'enum' === $prop['kind'] && ( ! \is_array( $prop['values'] ) || ! \array_is_list( $prop['values'] ) || [] === $prop['values'] || \count( $prop['values'] ) > 32 ) ) || ( \array_key_exists( 'default', $prop ) && ! self::valid_value( $prop, $prop['default'] ) ) ) {
 					throw new \InvalidArgumentException( 'Invalid property constraints.' );
 				}
 			}
@@ -131,7 +135,7 @@ final class ElementRegistry {
 	public function with( array $definitions ): self {
 		return self::from_array(
 			[
-				'apiVersion' => 1,
+				'apiVersion' => self::API_VERSION,
 				'elements'   => \array_merge( \array_values( $this->definitions ), $definitions ),
 			]
 		);
@@ -192,12 +196,31 @@ final class ElementRegistry {
 			'string' => \is_string( $value ) && SafeUrl::utf16_length( $value ) <= $prop['maxLength'],
 			'text' => ( \is_string( $value ) && SafeUrl::utf16_length( $value ) <= $prop['maxLength'] ) || ( $value instanceof \stdClass && \Blixis\Builder\Render\RichText::valid( $value, [], $prop['marks'] ?? [] ) && SafeUrl::utf16_length( \Blixis\Builder\Render\RichText::plain( $value ) ) <= $prop['maxLength'] ),
 			'integer' => \is_int( $value ) && $value >= $prop['min'] && $value <= $prop['max'],
+			'number' => ( \is_int( $value ) || \is_float( $value ) ) && self::valid_number( $value ) && $value >= $prop['min'] && $value <= $prop['max'],
 			'boolean' => \is_bool( $value ),
 			'enum' => \is_string( $value ) && \in_array( $value, $prop['values'], true ),
 			'url' => \is_string( $value ) && SafeUrl::accepts( $value ),
 			'media' => \is_int( $value ) && $value > 0,
 			default => false,
 		};
+	}
+
+	/** Check the document number contract: safe integer or bounded four-place decimal.
+	 *
+	 * @param mixed $value Candidate value.
+	 */
+	public static function valid_number( mixed $value ): bool {
+		if ( ! \is_int( $value ) && ! \is_float( $value ) ) {
+			return false;
+		}
+		if ( \is_int( $value ) ) {
+			return \abs( $value ) <= 9007199254740991;
+		}
+		if ( ! \is_finite( $value ) || \abs( $value ) < 0.0001 || \abs( $value ) > 1000000000 ) {
+			return false;
+		}
+		$canonical = \rtrim( \rtrim( \number_format( $value, 4, '.', '' ), '0' ), '.' );
+		return (float) $canonical === $value;
 	}
 
 	/**

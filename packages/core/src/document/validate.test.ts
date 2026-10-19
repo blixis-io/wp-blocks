@@ -180,7 +180,7 @@ describe('validateDocument: gates before and during decoding', () => {
     [
       'a decimal number',
       make((d) => {
-        d['layoutRevision'] = 1.5;
+        d['layoutRevision'] = 1.1234567;
       }),
     ],
     [
@@ -247,7 +247,7 @@ describe('validateDocument: schema versions', () => {
       make((d) => {
         d['schemaVersion'] = 1.5;
       }),
-      'invalid-value',
+      'schema',
     ],
   ])('rejects %s', (_name, input, code) => {
     expect(codes(validateDocument(input))).toEqual([code]);
@@ -713,7 +713,7 @@ describe('migration safety', () => {
   it.each([
     ['a reserved key', () => JSON.parse('{"schemaVersion":2,"__proto__":{"x":1}}') as unknown],
     ['a non-NFC string', (d: Doc) => ({ ...d, schemaVersion: 2, text: 'e\u0301' })],
-    ['a decimal number', (d: Doc) => ({ ...d, schemaVersion: 2, ratio: 0.5 })],
+    ['a decimal outside the canonical range', (d: Doc) => ({ ...d, schemaVersion: 2, ratio: 0.1234567 })],
     ['undefined values', (d: Doc) => ({ ...d, schemaVersion: 2, gone: undefined })],
     ['a class instance', (d: Doc) => ({ ...d, schemaVersion: 2, when: new Date(0) })],
     [
