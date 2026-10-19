@@ -99,6 +99,19 @@
       "required": false,
       "control": "switch"
     },
+    "name": {
+      "type": "string",
+      "default": "dates",
+      "description": "Form control name for the selected date values.",
+      "required": false
+    },
+    "maxSelections": {
+      "type": "number",
+      "default": 5,
+      "description": "Maximum dates shown in multiple-selection mode.",
+      "required": false,
+      "control": "number"
+    },
     "mode": {
       "type": "enum",
       "default": "single",
@@ -157,6 +170,18 @@
     },
     "hidden": {
       "control": "switch",
+      "group": "Content",
+      "localizable": false,
+      "supportsDynamicBinding": false
+    },
+    "name": {
+      "control": "text",
+      "group": "Content",
+      "localizable": false,
+      "supportsDynamicBinding": false
+    },
+    "maxSelections": {
+      "control": "number",
       "group": "Content",
       "localizable": false,
       "supportsDynamicBinding": false
@@ -392,6 +417,8 @@
       "htmlId": "",
       "ariaLabel": "",
       "hidden": false,
+      "name": "dates",
+      "maxSelections": 5,
       "mode": "single",
       "minDate": null,
       "maxDate": null,

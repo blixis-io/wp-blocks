@@ -819,7 +819,7 @@
       "category": "ui-components",
       "icon": "solar:users-group-rounded-linear",
       "tier": "plus",
-      "status": "planned",
+      "status": "ready",
       "keywords": "avatar-group avatar group ui-components avatar group element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
     },
     {
@@ -899,7 +899,7 @@
       "category": "ui-components",
       "icon": "solar:list-linear",
       "tier": "plus",
-      "status": "planned",
+      "status": "ready",
       "keywords": "combobox combobox ui-components combobox element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
     },
     {
@@ -939,7 +939,7 @@
       "category": "ui-components",
       "icon": "solar:slider-horizontal-linear",
       "tier": "plus",
-      "status": "planned",
+      "status": "ready",
       "keywords": "range-slider range slider ui-components range slider element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
     },
     {
@@ -949,7 +949,7 @@
       "category": "ui-components",
       "icon": "solar:text-field-linear",
       "tier": "free",
-      "status": "planned",
+      "status": "ready",
       "keywords": "input input ui-components input element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
     },
     {
@@ -959,7 +959,7 @@
       "category": "ui-components",
       "icon": "solar:text-square-linear",
       "tier": "free",
-      "status": "planned",
+      "status": "ready",
       "keywords": "textarea textarea ui-components textarea element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
     },
     {
@@ -969,7 +969,7 @@
       "category": "ui-components",
       "icon": "solar:tag-linear",
       "tier": "free",
-      "status": "planned",
+      "status": "ready",
       "keywords": "label label ui-components label element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
     },
     {
@@ -979,7 +979,7 @@
       "category": "ui-components",
       "icon": "solar:calendar-linear",
       "tier": "plus",
-      "status": "planned",
+      "status": "ready",
       "keywords": "calendar calendar ui-components calendar element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
     },
     {
@@ -989,7 +989,7 @@
       "category": "ui-components",
       "icon": "solar:calendar-mark-linear",
       "tier": "plus",
-      "status": "planned",
+      "status": "ready",
       "keywords": "date-picker date picker ui-components date picker element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
     },
     {
@@ -999,7 +999,7 @@
       "category": "ui-components",
       "icon": "solar:calendar-linear",
       "tier": "pro",
-      "status": "planned",
+      "status": "ready",
       "keywords": "date-range-picker date range picker ui-components date range picker element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
     },
     {
@@ -1009,7 +1009,7 @@
       "category": "ui-components",
       "icon": "solar:chat-round-linear",
       "tier": "plus",
-      "status": "planned",
+      "status": "ready",
       "keywords": "popover popover ui-components popover element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
     },
     {
@@ -1019,7 +1019,7 @@
       "category": "ui-components",
       "icon": "solar:question-circle-linear",
       "tier": "free",
-      "status": "planned",
+      "status": "ready",
       "keywords": "tooltip tooltip ui-components tooltip element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
     },
     {
@@ -1029,7 +1029,7 @@
       "category": "ui-components",
       "icon": "solar:card-linear",
       "tier": "plus",
-      "status": "planned",
+      "status": "ready",
       "keywords": "hover-card hover card ui-components hover card element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
     },
     {
@@ -1039,7 +1039,7 @@
       "category": "ui-components",
       "icon": "solar:window-frame-linear",
       "tier": "plus",
-      "status": "planned",
+      "status": "ready",
       "keywords": "dialog dialog ui-components dialog element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
     },
     {
@@ -1049,7 +1049,7 @@
       "category": "ui-components",
       "icon": "solar:danger-circle-linear",
       "tier": "plus",
-      "status": "planned",
+      "status": "ready",
       "keywords": "alert-dialog alert dialog ui-components alert dialog element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
     },
     {
@@ -1059,7 +1059,7 @@
       "category": "ui-components",
       "icon": "solar:sidebar-minimalistic-linear",
       "tier": "plus",
-      "status": "planned",
+      "status": "ready",
       "keywords": "drawer drawer ui-components drawer element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
     },
     {
@@ -1069,7 +1069,7 @@
       "category": "ui-components",
       "icon": "solar:sidebar-minimalistic-linear",
       "tier": "plus",
-      "status": "planned",
+      "status": "ready",
       "keywords": "sheet sheet ui-components sheet element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
     },
     {
@@ -1079,7 +1079,7 @@
       "category": "ui-components",
       "icon": "solar:menu-dots-linear",
       "tier": "free",
-      "status": "planned",
+      "status": "ready",
       "keywords": "dropdown-menu dropdown menu ui-components dropdown menu element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
     },
     {
@@ -1089,7 +1089,7 @@
       "category": "ui-components",
       "icon": "solar:menu-dots-circle-linear",
       "tier": "plus",
-      "status": "planned",
+      "status": "ready",
       "keywords": "context-menu context menu ui-components context menu element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
     },
     {
@@ -1099,7 +1099,7 @@
       "category": "ui-components",
       "icon": "solar:command-linear",
       "tier": "pro",
-      "status": "planned",
+      "status": "ready",
       "keywords": "command-palette command palette ui-components command palette element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
     },
     {
@@ -1109,7 +1109,7 @@
       "category": "ui-components",
       "icon": "solar:gallery-wide-linear",
       "tier": "free",
-      "status": "planned",
+      "status": "ready",
       "keywords": "carousel carousel ui-components carousel element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
     },
     {
@@ -1119,7 +1119,7 @@
       "category": "ui-components",
       "icon": "solar:bell-linear",
       "tier": "free",
-      "status": "planned",
+      "status": "ready",
       "keywords": "toast toast ui-components toast element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
     },
     {
@@ -1129,7 +1129,7 @@
       "category": "ui-components",
       "icon": "solar:bell-bing-linear",
       "tier": "plus",
-      "status": "planned",
+      "status": "ready",
       "keywords": "notification-center notification center ui-components notification center element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
     },
     {
@@ -1139,7 +1139,7 @@
       "category": "ui-components",
       "icon": "solar:table-linear",
       "tier": "plus",
-      "status": "planned",
+      "status": "ready",
       "keywords": "data-table data table ui-components data table element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
     },
     {
@@ -1149,7 +1149,7 @@
       "category": "ui-components",
       "icon": "solar:sort-vertical-linear",
       "tier": "plus",
-      "status": "planned",
+      "status": "ready",
       "keywords": "sortable-table sortable table ui-components sortable table element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
     },
     {
@@ -1159,7 +1159,7 @@
       "category": "ui-components",
       "icon": "solar:chart-2-linear",
       "tier": "plus",
-      "status": "planned",
+      "status": "ready",
       "keywords": "chart chart ui-components chart element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
     },
     {
@@ -1169,7 +1169,7 @@
       "category": "ui-components",
       "icon": "solar:chart-linear",
       "tier": "free",
-      "status": "planned",
+      "status": "ready",
       "keywords": "stat-card stat card ui-components stat card element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
     },
     {
@@ -1189,7 +1189,7 @@
       "category": "ui-components",
       "icon": "solar:star-linear",
       "tier": "free",
-      "status": "planned",
+      "status": "ready",
       "keywords": "rating rating ui-components rating element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
     },
     {
@@ -1209,7 +1209,7 @@
       "category": "ui-components",
       "icon": "solar:copy-linear",
       "tier": "free",
-      "status": "planned",
+      "status": "ready",
       "keywords": "copy-button copy button ui-components copy button element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
     },
     {
@@ -1219,7 +1219,7 @@
       "category": "ui-components",
       "icon": "solar:refresh-linear",
       "tier": "free",
-      "status": "planned",
+      "status": "ready",
       "keywords": "loading-button loading button ui-components loading button element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
     },
     {
@@ -1239,7 +1239,7 @@
       "category": "ui-components",
       "icon": "solar:route-linear",
       "tier": "free",
-      "status": "planned",
+      "status": "ready",
       "keywords": "breadcrumb-ui breadcrumb ui ui-components breadcrumb ui element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
     },
     {
@@ -1259,7 +1259,7 @@
       "category": "ui-components",
       "icon": "solar:arrow-down-linear",
       "tier": "plus",
-      "status": "planned",
+      "status": "ready",
       "keywords": "scroll-indicator scroll indicator ui-components scroll indicator element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
     },
     {

@@ -110,7 +110,7 @@
     },
     "action": {
       "type": "enum",
-      "default": "link",
+      "default": "copy",
       "description": "Choose a supported option.",
       "required": false,
       "options": [
@@ -119,9 +119,18 @@
         "scroll-to",
         "open-dialog",
         "toggle",
-        "custom-event"
+        "custom-event",
+        "copy"
       ],
       "control": "select"
+    },
+    "copyText": {
+      "type": "string",
+      "default": "",
+      "description": "Text copied when the button is activated.",
+      "required": false,
+      "localizable": true,
+      "control": "textarea"
     },
     "href": {
       "type": "url",
@@ -220,6 +229,12 @@
       "control": "select",
       "group": "Content",
       "localizable": false,
+      "supportsDynamicBinding": false
+    },
+    "copyText": {
+      "control": "textarea",
+      "group": "Content",
+      "localizable": true,
       "supportsDynamicBinding": false
     },
     "href": {
@@ -526,7 +541,8 @@
       "ariaLabel": "",
       "hidden": false,
       "label": "Button",
-      "action": "link",
+      "action": "copy",
+      "copyText": "Example copied text",
       "href": "",
       "variant": "primary",
       "size": "md",

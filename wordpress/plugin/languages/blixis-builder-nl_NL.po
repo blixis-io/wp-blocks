@@ -193,6 +193,21 @@ msgstr "Gekopieerd."
 msgid "Copy failed."
 msgstr "Kopiëren mislukt."
 
+msgid "Minimum"
+msgstr "Minimum"
+
+msgid "Maximum"
+msgstr "Maximum"
+
+msgid "Value range"
+msgstr "Waardebereik"
+
+msgid "Calendar"
+msgstr "Kalender"
+
+msgid "Date %s"
+msgstr "Datum %s"
+
 msgid "Countdown"
 msgstr "Aftellen"
 
@@ -255,6 +270,66 @@ msgstr "Selecteer een optie"
 
 msgid "Value"
 msgstr "Waarde"
+
+msgid "Chart data"
+msgstr "Grafiekgegevens"
+
+msgid "Date range"
+msgstr "Datumbereik"
+
+msgid "Start date"
+msgstr "Startdatum"
+
+msgid "End date"
+msgstr "Einddatum"
+
+msgid "Rating"
+msgstr "Beoordeling"
+
+msgid "Dismiss notification"
+msgstr "Melding sluiten"
+
+msgid "Search table"
+msgstr "Tabel doorzoeken"
+
+msgid "Pause"
+msgstr "Pauzeren"
+
+msgid "Play"
+msgstr "Afspelen"
+
+msgid "Previous slide"
+msgstr "Vorige dia"
+
+msgid "Next slide"
+msgstr "Volgende dia"
+
+msgid "No results"
+msgstr "Geen resultaten"
+
+msgid "Open menu"
+msgstr "Menu openen"
+
+msgid "Commands"
+msgstr "Opdrachten"
+
+msgid "Search commands"
+msgstr "Opdrachten zoeken"
+
+msgid "Reading progress"
+msgstr "Leesvoortgang"
+
+msgid "Carousel"
+msgstr "Carrousel"
+
+msgid "Go to slide %s"
+msgstr "Ga naar dia %s"
+
+msgid "More information"
+msgstr "Meer informatie"
+
+msgid "%1$s out of %2$s"
+msgstr "%1$s van %2$s"
 
 msgid "Menu"
 msgstr "Menu"

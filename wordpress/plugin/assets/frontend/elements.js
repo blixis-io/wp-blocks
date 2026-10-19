@@ -565,6 +565,213 @@
   };
 
   const init = () => {
+    document.querySelectorAll('[data-blx-loading-button]').forEach((button) => {
+      const form = button.closest('form');
+      if (!form || form.dataset.blxLoadingHandler) return;
+      form.dataset.blxLoadingHandler = 'true';
+      form.addEventListener('submit', (event) => {
+        const submitter = event.submitter;
+        if (!submitter || !submitter.matches('[data-blx-loading-button]')) return;
+        submitter.setAttribute('aria-busy', 'true');
+        submitter.disabled = true;
+        submitter.textContent = submitter.dataset.blxLoadingLabel || 'Loading…';
+      });
+    });
+    document.querySelectorAll('[data-blx-context-menu]').forEach((menu) => {
+      const summary = menu.querySelector('summary');
+      menu.addEventListener('contextmenu', (event) => {
+        event.preventDefault();
+        menu.open = true;
+        menu.dataset.blxContextPositioned = 'true';
+        menu.style.setProperty('--blx-context-x', `${event.clientX}px`);
+        menu.style.setProperty('--blx-context-y', `${event.clientY}px`);
+        summary?.focus();
+      });
+      menu.addEventListener('toggle', () => {
+        if (!menu.open || menu.dataset.blxContextPositioned === 'true' || !summary) return;
+        const rect = summary.getBoundingClientRect();
+        menu.style.setProperty('--blx-context-x', `${rect.left}px`);
+        menu.style.setProperty('--blx-context-y', `${rect.bottom}px`);
+      });
+      document.addEventListener('pointerdown', (event) => {
+        if (!menu.contains(event.target)) menu.open = false;
+      });
+      menu.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+          menu.open = false;
+          summary?.focus();
+        }
+      });
+    });
+    document.querySelectorAll('[data-blx-range-slider]').forEach((group) => {
+      if (group.dataset.blxInitialized) return;
+      group.dataset.blxInitialized = 'true';
+      const lower = group.querySelector('input[name$="[min]"]');
+      const upper = group.querySelector('input[name$="[max]"]');
+      if (!lower || !upper) return;
+      const lowerOutput = group.querySelector('[data-blx-range-lower-value]');
+      const upperOutput = group.querySelector('[data-blx-range-upper-value]');
+      const update = (changed) => {
+        if (Number(lower.value) > Number(upper.value)) {
+          if (changed === lower) upper.value = lower.value;
+          else lower.value = upper.value;
+        }
+        if (lowerOutput) lowerOutput.value = lower.value;
+        if (upperOutput) upperOutput.value = upper.value;
+      };
+      lower.addEventListener('input', () => update(lower));
+      upper.addEventListener('input', () => update(upper));
+    });
+    document.querySelectorAll('[data-blx-copy-button]').forEach((button) => {
+      button.addEventListener('click', async () => {
+        const value = button.dataset.blxCopyText || '';
+        const status = button.parentElement.querySelector('[data-blx-copy-status]');
+        try {
+          if (navigator.clipboard?.writeText && window.isSecureContext) {
+            await navigator.clipboard.writeText(value);
+          } else {
+            const field = document.createElement('textarea');
+            field.value = value;
+            field.setAttribute('readonly', '');
+            field.style.position = 'fixed';
+            field.style.opacity = '0';
+            document.body.append(field);
+            field.select();
+            const copied = document.execCommand('copy');
+            field.remove();
+            if (!copied) throw new Error('Clipboard unavailable');
+          }
+          if (status) status.textContent = button.dataset.blxCopySuccess || 'Copied.';
+        } catch {
+          if (status) status.textContent = button.dataset.blxCopyFailed || 'Copy failed.';
+        }
+      });
+    });
+    document.querySelectorAll('[data-blx-command-search]').forEach((input) => {
+      input.addEventListener('input', () => {
+        const list = input.parentElement.querySelector('ul');
+        if (!list) return;
+        const query = input.value.trim().toLocaleLowerCase();
+        const items = Array.from(list.querySelectorAll(':scope > li:not([data-blx-command-empty])'));
+        let visible = 0;
+        items.forEach((item) => {
+          item.hidden = query !== '' && !item.textContent.toLocaleLowerCase().includes(query);
+          if (!item.hidden) visible += 1;
+        });
+        const empty = list.querySelector('[data-blx-command-empty]');
+        if (empty) empty.hidden = visible > 0;
+      });
+    });
+    document.querySelectorAll('[data-blx-carousel]').forEach((carousel) => {
+      if (carousel.dataset.blxInitialized) return;
+      carousel.dataset.blxInitialized = 'true';
+      const track = carousel.querySelector('[data-blx-carousel-track]');
+      if (!track) return;
+      const loop = carousel.dataset.blxCarouselLoop === 'true';
+      const slidesPerView = Math.max(1, Number(carousel.dataset.blxCarouselSlides) || 1);
+      const step = () => Math.max(1, track.clientWidth / slidesPerView);
+      const move = (direction) => {
+        const end = track.scrollWidth - track.clientWidth;
+        if (direction > 0 && track.scrollLeft >= end - 2 && loop) track.scrollTo({ left: 0, behavior: 'smooth' });
+        else if (direction < 0 && track.scrollLeft <= 2 && loop) track.scrollTo({ left: end, behavior: 'smooth' });
+        else track.scrollBy({ left: step() * direction, behavior: 'smooth' });
+      };
+      carousel.querySelector('[data-blx-carousel-previous]')?.addEventListener('click', () => move(-1));
+      carousel.querySelector('[data-blx-carousel-next]')?.addEventListener('click', () => move(1));
+      carousel.querySelectorAll('[data-blx-carousel-dot]').forEach((dot) => {
+        dot.addEventListener('click', () => {
+          const slide = track.querySelectorAll('[data-blx-carousel-slide]')[Number(dot.dataset.blxCarouselDot)];
+          slide?.scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' });
+        });
+      });
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (carousel.dataset.blxCarouselAutoplay === 'true' && reduceMotion)
+        carousel.querySelector('[data-blx-carousel-pause]')?.remove();
+      if (carousel.dataset.blxCarouselAutoplay === 'true' && !reduceMotion) {
+        const interval = Number(carousel.dataset.blxCarouselInterval) || 5000;
+        const pauseButton = carousel.querySelector('[data-blx-carousel-pause]');
+        let timer = 0;
+        let userPaused = false;
+        const pause = () => {
+          window.clearInterval(timer);
+          timer = 0;
+        };
+        const resume = () => {
+          pause();
+          if (!userPaused && !document.hidden) timer = window.setInterval(() => move(1), interval);
+        };
+        const pauseForInteraction = () => pause();
+        const resumeFromInteraction = () => {
+          if (!userPaused) resume();
+        };
+        pauseButton?.addEventListener('click', () => {
+          userPaused = !userPaused;
+          pauseButton.setAttribute('aria-pressed', userPaused ? 'true' : 'false');
+          pauseButton.textContent = userPaused ? pauseButton.dataset.blxPlayLabel : pauseButton.dataset.blxPauseLabel;
+          if (userPaused) pause();
+          else resume();
+        });
+        if (carousel.dataset.blxCarouselPauseHover === 'true') {
+          carousel.addEventListener('pointerenter', pauseForInteraction);
+          carousel.addEventListener('pointerleave', resumeFromInteraction);
+        }
+        carousel.addEventListener('focusin', pauseForInteraction);
+        carousel.addEventListener('focusout', (event) => {
+          if (!carousel.contains(event.relatedTarget)) resumeFromInteraction();
+        });
+        document.addEventListener('visibilitychange', () => (document.hidden ? pause() : resume()));
+        resume();
+      }
+    });
+    document.querySelectorAll('[data-blx-scroll-indicator]').forEach((progress) => {
+      const update = () => {
+        const max = document.documentElement.scrollHeight - window.innerHeight;
+        const range = Number(progress.dataset.blxScrollMax) || 100;
+        const value = max > 0 ? (window.scrollY / max) * range : 0;
+        progress.value = value;
+        const output = progress.parentElement.querySelector('[data-blx-scroll-indicator-value]');
+        if (output) output.value = `${Math.round((value / range) * 100)}%`;
+      };
+      update();
+      window.addEventListener('scroll', update, { passive: true });
+      window.addEventListener('resize', update, { passive: true });
+    });
+    document.querySelectorAll('[data-blx-data-table]').forEach((table) => {
+      if (table.dataset.blxInitialized) return;
+      table.dataset.blxInitialized = 'true';
+      const body = table.tBodies[0];
+      if (!body) return;
+      const filter = document.getElementById(`${table.id}-filter`);
+      filter?.addEventListener('input', () => {
+        const query = filter.value.trim().toLocaleLowerCase();
+        Array.from(body.rows).forEach((row) => {
+          row.hidden = query !== '' && !row.textContent.toLocaleLowerCase().includes(query);
+        });
+      });
+      table.querySelectorAll('[data-blx-sort]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const index = Array.from(button.closest('tr').cells).indexOf(button.closest('th'));
+          const direction = button.dataset.blxDirection === 'asc' ? 'desc' : 'asc';
+          button.dataset.blxDirection = direction;
+          table.querySelectorAll('th').forEach((header) => header.removeAttribute('aria-sort'));
+          button.closest('th')?.setAttribute('aria-sort', direction === 'asc' ? 'ascending' : 'descending');
+          Array.from(body.rows)
+            .sort((left, right) => {
+              const a = left.cells[index]?.textContent.trim() ?? '';
+              const b = right.cells[index]?.textContent.trim() ?? '';
+              return (
+                a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }) * (direction === 'asc' ? 1 : -1)
+              );
+            })
+            .forEach((row) => body.append(row));
+        });
+      });
+    });
+    document.querySelectorAll('[data-blx-toast-dismiss]').forEach((button) => {
+      button.addEventListener('click', () => {
+        button.closest('[data-blx-toast]')?.setAttribute('hidden', '');
+      });
+    });
     document.querySelectorAll('[data-blx-toggle]').forEach((button) => {
       if (button.dataset.blxInitialized) return;
       button.dataset.blxInitialized = 'true';

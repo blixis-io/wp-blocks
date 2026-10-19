@@ -107,6 +107,13 @@
       "required": false,
       "localizable": true,
       "control": "textarea"
+    },
+    "forId": {
+      "type": "string",
+      "default": "",
+      "description": "ID of the form control this label names.",
+      "required": false,
+      "control": "text"
     }
   },
   "propertyControls": {
@@ -145,6 +152,12 @@
       "group": "Content",
       "localizable": true,
       "supportsDynamicBinding": true
+    },
+    "forId": {
+      "control": "text",
+      "group": "Accessibility",
+      "localizable": false,
+      "supportsDynamicBinding": false
     }
   },
   "style": {
@@ -353,7 +366,8 @@
       "htmlId": "",
       "ariaLabel": "",
       "hidden": false,
-      "content": "Text"
+      "content": "Text",
+      "forId": ""
     },
     "styles": {
       "base": {},

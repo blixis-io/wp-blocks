@@ -108,19 +108,20 @@
       "localizable": true,
       "control": "textarea"
     },
+    "loadingLabel": {
+      "type": "string",
+      "default": "Loading…",
+      "description": "Visible label while the containing form submits.",
+      "required": false,
+      "localizable": true,
+      "control": "textarea"
+    },
     "action": {
       "type": "enum",
-      "default": "link",
-      "description": "Choose a supported option.",
+      "default": "submit",
+      "description": "Loading button submits its containing form.",
       "required": false,
-      "options": [
-        "link",
-        "submit",
-        "scroll-to",
-        "open-dialog",
-        "toggle",
-        "custom-event"
-      ],
+      "options": [ "submit" ],
       "control": "select"
     },
     "href": {
@@ -215,6 +216,12 @@
       "group": "Content",
       "localizable": true,
       "supportsDynamicBinding": true
+    },
+    "loadingLabel": {
+      "control": "textarea",
+      "group": "Content",
+      "localizable": true,
+      "supportsDynamicBinding": false
     },
     "action": {
       "control": "select",
@@ -526,7 +533,8 @@
       "ariaLabel": "",
       "hidden": false,
       "label": "Button",
-      "action": "link",
+      "loadingLabel": "Loading…",
+      "action": "submit",
       "href": "",
       "variant": "primary",
       "size": "md",

@@ -22101,7 +22101,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'gallery',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -24201,7 +24201,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'choice',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -25119,6 +25119,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
         required: false,
         control: 'switch',
       },
+      name: { type: 'string', default: 'range', description: 'Form control name prefix.', required: false },
       min: { type: 'number', default: 0, description: 'Numeric setting.', required: false, control: 'number' },
       max: { type: 'number', default: 100, description: 'Numeric setting.', required: false, control: 'number' },
       step: { type: 'number', default: 1, description: 'Numeric setting.', required: false, control: 'number' },
@@ -25126,6 +25127,13 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
         type: 'number',
         default: 50,
         description: 'Numeric setting.',
+        required: false,
+        control: 'number',
+      },
+      upperValue: {
+        type: 'number',
+        default: 75,
+        description: 'Initial upper bound selection.',
         required: false,
         control: 'number',
       },
@@ -25144,10 +25152,12 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       htmlId: { control: 'text', group: 'Attributes', localizable: false, supportsDynamicBinding: false },
       ariaLabel: { control: 'text', group: 'Accessibility', localizable: true, supportsDynamicBinding: false },
       hidden: { control: 'switch', group: 'Content', localizable: false, supportsDynamicBinding: false },
+      name: { control: 'text', group: 'Content', localizable: false, supportsDynamicBinding: false },
       min: { control: 'number', group: 'Content', localizable: false, supportsDynamicBinding: false },
       max: { control: 'number', group: 'Content', localizable: false, supportsDynamicBinding: false },
       step: { control: 'number', group: 'Content', localizable: false, supportsDynamicBinding: false },
       defaultValue: { control: 'number', group: 'Content', localizable: false, supportsDynamicBinding: false },
+      upperValue: { control: 'number', group: 'Content', localizable: false, supportsDynamicBinding: false },
       orientation: { control: 'select', group: 'Content', localizable: false, supportsDynamicBinding: false },
     },
     style: {
@@ -25253,6 +25263,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
         max: 100,
         step: 1,
         defaultValue: 50,
+        upperValue: 75,
         orientation: 'horizontal',
       },
       styles: { base: {}, tablet: {}, mobile: {}, dark: {}, darkMobile: {} },
@@ -25267,7 +25278,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'range',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -25586,7 +25597,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'input',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -25895,7 +25906,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'input',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -26002,6 +26013,13 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
         localizable: true,
         control: 'textarea',
       },
+      forId: {
+        type: 'string',
+        default: '',
+        description: 'ID of the form control this label names.',
+        required: false,
+        control: 'text',
+      },
     },
     propertyControls: {
       elementId: { control: 'text', group: 'Attributes', localizable: false, supportsDynamicBinding: false },
@@ -26010,6 +26028,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ariaLabel: { control: 'text', group: 'Accessibility', localizable: true, supportsDynamicBinding: false },
       hidden: { control: 'switch', group: 'Content', localizable: false, supportsDynamicBinding: false },
       content: { control: 'textarea', group: 'Content', localizable: true, supportsDynamicBinding: true },
+      forId: { control: 'text', group: 'Accessibility', localizable: false, supportsDynamicBinding: false },
     },
     style: {
       allowed: {
@@ -26115,7 +26134,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
     exampleInstance: {
       id: 'example-label',
       type: 'label',
-      props: { cssClasses: [], htmlId: '', ariaLabel: '', hidden: false, content: 'Text' },
+      props: { cssClasses: [], htmlId: '', ariaLabel: '', hidden: false, content: 'Text', forId: '' },
       styles: { base: {}, tablet: {}, mobile: {}, dark: {}, darkMobile: {} },
       children: [],
     },
@@ -26128,7 +26147,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'text',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -26227,6 +26246,19 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
         required: false,
         control: 'switch',
       },
+      name: {
+        type: 'string',
+        default: 'dates',
+        description: 'Form control name for the selected date values.',
+        required: false,
+      },
+      maxSelections: {
+        type: 'number',
+        default: 5,
+        description: 'Maximum dates shown in multiple-selection mode.',
+        required: false,
+        control: 'number',
+      },
       mode: {
         type: 'enum',
         default: 'single',
@@ -26250,6 +26282,8 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       htmlId: { control: 'text', group: 'Attributes', localizable: false, supportsDynamicBinding: false },
       ariaLabel: { control: 'text', group: 'Accessibility', localizable: true, supportsDynamicBinding: false },
       hidden: { control: 'switch', group: 'Content', localizable: false, supportsDynamicBinding: false },
+      name: { control: 'text', group: 'Content', localizable: false, supportsDynamicBinding: false },
+      maxSelections: { control: 'number', group: 'Content', localizable: false, supportsDynamicBinding: false },
       mode: { control: 'select', group: 'Content', localizable: false, supportsDynamicBinding: false },
       minDate: { control: 'json-editor', group: 'Content', localizable: false, supportsDynamicBinding: false },
       maxDate: { control: 'json-editor', group: 'Content', localizable: false, supportsDynamicBinding: false },
@@ -26367,6 +26401,8 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
         htmlId: '',
         ariaLabel: '',
         hidden: false,
+        name: 'dates',
+        maxSelections: 5,
         mode: 'single',
         minDate: null,
         maxDate: null,
@@ -26384,7 +26420,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'calendar',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -26640,7 +26676,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'calendar',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -26896,7 +26932,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'calendar',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -27187,7 +27223,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'overlay',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -27478,7 +27514,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'overlay',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -27769,7 +27805,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'overlay',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -28060,7 +28096,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'overlay',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -28351,7 +28387,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'overlay',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -28642,7 +28678,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'overlay',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -28933,7 +28969,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'overlay',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -29187,7 +29223,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'navigation',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -29441,7 +29477,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'navigation',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -29702,7 +29738,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'command',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -29976,7 +30012,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'carousel',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -30244,7 +30280,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'alert',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -30512,7 +30548,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'alert',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -30782,7 +30818,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'datatable',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -31052,7 +31088,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'datatable',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -31325,7 +31361,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'chart',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -31566,7 +31602,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'counter',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -32035,7 +32071,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'rating',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -32377,11 +32413,19 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       },
       action: {
         type: 'enum',
-        default: 'link',
+        default: 'copy',
         description: 'Choose a supported option.',
         required: false,
-        options: ['link', 'submit', 'scroll-to', 'open-dialog', 'toggle', 'custom-event'],
+        options: ['link', 'submit', 'scroll-to', 'open-dialog', 'toggle', 'custom-event', 'copy'],
         control: 'select',
+      },
+      copyText: {
+        type: 'string',
+        default: '',
+        description: 'Text copied when the button is activated.',
+        required: false,
+        localizable: true,
+        control: 'textarea',
       },
       href: {
         type: 'url',
@@ -32429,6 +32473,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       hidden: { control: 'switch', group: 'Content', localizable: false, supportsDynamicBinding: false },
       label: { control: 'textarea', group: 'Content', localizable: true, supportsDynamicBinding: true },
       action: { control: 'select', group: 'Content', localizable: false, supportsDynamicBinding: false },
+      copyText: { control: 'textarea', group: 'Content', localizable: true, supportsDynamicBinding: false },
       href: { control: 'link-picker', group: 'Content', localizable: false, supportsDynamicBinding: true },
       variant: { control: 'select', group: 'Content', localizable: false, supportsDynamicBinding: false },
       size: { control: 'select', group: 'Content', localizable: false, supportsDynamicBinding: false },
@@ -32562,7 +32607,8 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
         ariaLabel: '',
         hidden: false,
         label: 'Button',
-        action: 'link',
+        action: 'copy',
+        copyText: 'Example copied text',
         href: '',
         variant: 'primary',
         size: 'md',
@@ -32582,7 +32628,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'button',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -32689,12 +32735,20 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
         localizable: true,
         control: 'textarea',
       },
+      loadingLabel: {
+        type: 'string',
+        default: 'Loading…',
+        description: 'Visible label while the containing form submits.',
+        required: false,
+        localizable: true,
+        control: 'textarea',
+      },
       action: {
         type: 'enum',
-        default: 'link',
-        description: 'Choose a supported option.',
+        default: 'submit',
+        description: 'Loading button submits its containing form.',
         required: false,
-        options: ['link', 'submit', 'scroll-to', 'open-dialog', 'toggle', 'custom-event'],
+        options: ['submit'],
         control: 'select',
       },
       href: {
@@ -32742,6 +32796,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ariaLabel: { control: 'text', group: 'Accessibility', localizable: true, supportsDynamicBinding: false },
       hidden: { control: 'switch', group: 'Content', localizable: false, supportsDynamicBinding: false },
       label: { control: 'textarea', group: 'Content', localizable: true, supportsDynamicBinding: true },
+      loadingLabel: { control: 'textarea', group: 'Content', localizable: true, supportsDynamicBinding: false },
       action: { control: 'select', group: 'Content', localizable: false, supportsDynamicBinding: false },
       href: { control: 'link-picker', group: 'Content', localizable: false, supportsDynamicBinding: true },
       variant: { control: 'select', group: 'Content', localizable: false, supportsDynamicBinding: false },
@@ -32876,7 +32931,8 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
         ariaLabel: '',
         hidden: false,
         label: 'Button',
-        action: 'link',
+        loadingLabel: 'Loading…',
+        action: 'submit',
         href: '',
         variant: 'primary',
         size: 'md',
@@ -32896,7 +32952,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'button',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -33436,7 +33492,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'navigation',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -33903,7 +33959,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'progress',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -71026,7 +71082,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:users-group-rounded-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'avatar-group avatar group ui-components avatar group element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71114,7 +71170,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:list-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'combobox combobox ui-components combobox element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71158,7 +71214,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:slider-horizontal-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'range-slider range slider ui-components range slider element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71169,7 +71225,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:text-field-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'input input ui-components input element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71180,7 +71236,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:text-square-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'textarea textarea ui-components textarea element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71191,7 +71247,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:tag-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'label label ui-components label element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71202,7 +71258,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:calendar-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'calendar calendar ui-components calendar element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71213,7 +71269,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:calendar-mark-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'date-picker date picker ui-components date picker element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71224,7 +71280,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:calendar-linear',
     tier: 'pro',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'date-range-picker date range picker ui-components date range picker element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71235,7 +71291,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:chat-round-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'popover popover ui-components popover element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71246,7 +71302,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:question-circle-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'tooltip tooltip ui-components tooltip element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71257,7 +71313,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:card-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'hover-card hover card ui-components hover card element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71268,7 +71324,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:window-frame-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'dialog dialog ui-components dialog element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71279,7 +71335,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:danger-circle-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'alert-dialog alert dialog ui-components alert dialog element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71290,7 +71346,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:sidebar-minimalistic-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'drawer drawer ui-components drawer element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71301,7 +71357,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:sidebar-minimalistic-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'sheet sheet ui-components sheet element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71312,7 +71368,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:menu-dots-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'dropdown-menu dropdown menu ui-components dropdown menu element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71323,7 +71379,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:menu-dots-circle-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'context-menu context menu ui-components context menu element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71334,7 +71390,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:command-linear',
     tier: 'pro',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'command-palette command palette ui-components command palette element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71345,7 +71401,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:gallery-wide-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'carousel carousel ui-components carousel element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71356,7 +71412,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:bell-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'toast toast ui-components toast element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71367,7 +71423,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:bell-bing-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'notification-center notification center ui-components notification center element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71378,7 +71434,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:table-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'data-table data table ui-components data table element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71389,7 +71445,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:sort-vertical-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'sortable-table sortable table ui-components sortable table element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71400,7 +71456,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:chart-2-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'chart chart ui-components chart element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71411,7 +71467,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:chart-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'stat-card stat card ui-components stat card element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71433,7 +71489,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:star-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'rating rating ui-components rating element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71455,7 +71511,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:copy-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'copy-button copy button ui-components copy button element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71466,7 +71522,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:refresh-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'loading-button loading button ui-components loading button element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71488,7 +71544,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:route-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'breadcrumb-ui breadcrumb ui ui-components breadcrumb ui element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71510,7 +71566,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:arrow-down-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'scroll-indicator scroll indicator ui-components scroll indicator element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
