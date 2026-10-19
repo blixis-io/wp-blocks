@@ -331,6 +331,7 @@ export function createEditorRegistry(): ElementRegistry {
     'scroll-timeline',
     'stagger-container',
     'typing-indicator',
+    'horizontal-scroll',
   ];
   const aliases = [
     {

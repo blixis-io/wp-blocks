@@ -242,6 +242,9 @@ final class ElementDefinitionRegistryTest extends TestCase {
 		$typing = $renderer->render( new ElementNode( 'typing', 'blixis/typing-indicator', [ 'ariaLabel' => 'Assistant typing' ] ), new RenderContext() );
 		$this->assertStringContainsString( 'role="status" aria-label="Assistant typing"', $typing );
 		$this->assertStringContainsString( 'aria-hidden="true"><i></i><i></i><i></i>', $typing );
+		$horizontal = $renderer->render( new ElementNode( 'stories', 'blixis/horizontal-scroll', [ 'ariaLabel' => 'Stories' ] ), new RenderContext( '<article>Story</article>' ) );
+		$this->assertStringContainsString( 'role="region" tabindex="0" aria-label="Stories"', $horizontal );
+		$this->assertStringContainsString( '<article>Story</article>', $horizontal );
 	}
 
 	/** Dynamic bindings pass through the document renderer and unsupported paths use their authored fallback.
