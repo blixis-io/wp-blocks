@@ -67,6 +67,7 @@ final class ElementDefinitionRegistryTest extends TestCase {
 		$renderer                     = new DefinitionArchetypeRenderer( $registry, $media );
 		$unsupported                  = [];
 		$empty                        = [];
+		$unsafe                       = [];
 		$empty_when_context_is_absent = [ 'comments-list', 'featured-image', 'form-error', 'form-success', 'query-pagination' ];
 		foreach ( $registry->all() as $definition ) {
 			if ( 'ready' !== ( $definition['status'] ?? null ) ) {
@@ -87,9 +88,13 @@ final class ElementDefinitionRegistryTest extends TestCase {
 			if ( '' === $html && ! in_array( $definition['id'], $empty_when_context_is_absent, true ) ) {
 				$empty[] = (string) $definition['id'];
 			}
+			if ( ! PreviewSanitizer::accepts( $html ) ) {
+				$unsafe[] = (string) $definition['id'] . ': ' . $html;
+			}
 		}
 		$this->assertSame( [], $unsupported, 'Ready catalog entries fell through to the unsupported renderer.' );
 		$this->assertSame( [], $empty, 'Ready catalog entries returned no public markup for their documented example.' );
+		$this->assertSame( [], $unsafe, 'Ready catalog entries produced markup refused by the preview sanitizer.' );
 	}
 
 	/** The document renderer keeps a configured safe local icon glyph instead of silently using the default. */
