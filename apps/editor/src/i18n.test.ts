@@ -2,10 +2,29 @@ import { describe, expect, it } from 'vitest';
 import { CATALOGS, createTranslator, directionOf, interpolate, resolveCatalogLocale } from './i18n';
 import { en_US } from './messages/en_US';
 import { nl_NL } from './messages/nl_NL';
+import { ELEMENT_DEFINITIONS_V2 } from '@blixis/wp-element-registry';
 
 describe('catalogs', () => {
   it('nl_NL covers every key of en_US', () => {
     expect(Object.keys(CATALOGS['nl_NL'] ?? {}).sort()).toEqual(Object.keys(en_US).sort());
+  });
+  it('provides English and Dutch labels for every generated inspector property', () => {
+    const propertyNames = new Set<string>();
+    for (const definition of ELEMENT_DEFINITIONS_V2) {
+      const properties = definition['properties'] as Record<string, Record<string, unknown>> | undefined;
+      const controls = definition['propertyControls'] as Record<string, Record<string, unknown>> | undefined;
+      for (const [name, property] of Object.entries(properties ?? {})) {
+        const control = { ...property, ...controls?.[name] };
+        if (control['editorOnly'] !== true && typeof control['control'] === 'string') propertyNames.add(name);
+      }
+    }
+    for (const name of propertyNames) {
+      const key = `inspector.prop.${name}` as keyof typeof en_US;
+      expect(en_US[key], `English inspector label for ${name}`).toBeTruthy();
+      expect(nl_NL[key], `Dutch inspector label for ${name}`).toBeTruthy();
+      expect(en_US[key]).not.toBe(key);
+      expect(nl_NL[key]).not.toBe(key);
+    }
   });
   it('messages contain no HTML', () => {
     for (const catalog of Object.values(CATALOGS)) {
