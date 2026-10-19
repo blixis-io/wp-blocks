@@ -105,6 +105,19 @@ $layout  = static fn ( int $n, string $color ): string => wp_json_encode(
 				'children' => [],
 			],
 			[
+				'id'       => 'el-show-more',
+				'type'     => 'blixis/show-more',
+				'props'    => (object) [ 'label' => 'Show more', 'defaultOpen' => false ],
+				'children' => [
+					[
+						'id'       => 'el-show-more-copy',
+						'type'     => 'blixis/text',
+						'props'    => (object) [ 'text' => 'Extra published content' ],
+						'children' => [],
+					],
+				],
+			],
+			[
 				'id'       => 'el-icon-svg',
 				'type'     => 'blixis/icon-svg',
 				'props'    => (object) [

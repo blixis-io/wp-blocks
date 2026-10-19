@@ -68,6 +68,7 @@ const editorReady = new Set([
   'reading-progress',
   'number-ticker',
   'scroll-progress',
+  'show-more',
   'icon-list',
   'icon',
   'icon-svg',

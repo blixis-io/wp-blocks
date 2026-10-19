@@ -319,6 +319,9 @@ msgstr "Opdrachten zoeken"
 msgid "Search"
 msgstr "Zoeken"
 
+msgid "Show more"
+msgstr "Meer tonen"
+
 msgid "Reading progress"
 msgstr "Leesvoortgang"
 

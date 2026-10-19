@@ -5,7 +5,7 @@
   "namespace": "blixis",
   "title": "Show More",
   "category": "advanced-motion",
-  "description": "Show More element for Blixis WordPress visual builder. The record defines editor options and rendering contracts, not implementation code.",
+  "description": "Reveals optional content through an accessible native disclosure.",
   "icon": {
     "provider": "iconify",
     "set": "solar",
@@ -35,15 +35,15 @@
   "rendering": {
     "strategy": "php-server-rendered",
     "rendererKey": "blixis/show-more",
-    "semanticTag": "button",
-    "clientHydration": "on-interaction",
+    "semanticTag": "details",
+    "clientHydration": "none",
     "assetPolicy": "manifest-references-only",
     "unsafeHtml": "never",
     "fallbackRenderer": "safe-static"
   },
   "structure": {
-    "acceptsChildren": false,
-    "allowedChildren": "none",
+    "acceptsChildren": true,
+    "allowedChildren": "any",
     "minChildren": 0,
     "maxChildren": null,
     "allowedParentTypes": [
@@ -88,7 +88,7 @@
     "ariaLabel": {
       "type": "string",
       "default": "",
-      "description": "Accessible name when native visible text is insufficient.",
+      "description": "Optional accessible label for the disclosure summary.",
       "required": false,
       "localizable": true,
       "control": "text"
@@ -102,81 +102,18 @@
     },
     "label": {
       "type": "string",
-      "default": "Button",
-      "description": "Text content. Localizable per locale.",
+      "default": "Show more",
+      "description": "Visible summary text. Localizable per locale.",
       "required": false,
       "localizable": true,
-      "control": "textarea"
+      "control": "text"
     },
-    "action": {
-      "type": "enum",
-      "default": "link",
-      "description": "Choose a supported option.",
-      "required": false,
-      "options": [
-        "link",
-        "submit",
-        "scroll-to",
-        "open-dialog",
-        "toggle",
-        "custom-event"
-      ],
-      "control": "select"
-    },
-    "href": {
-      "type": "url",
-      "default": "",
-      "description": "Validated URL (http/https or approved internal route).",
-      "required": false,
-      "control": "link-picker"
-    },
-    "variant": {
-      "type": "enum",
-      "default": "primary",
-      "description": "Choose a supported option.",
-      "required": false,
-      "options": [
-        "primary",
-        "secondary",
-        "outline",
-        "ghost",
-        "destructive",
-        "link"
-      ],
-      "control": "select"
-    },
-    "size": {
-      "type": "enum",
-      "default": "md",
-      "description": "Choose a supported option.",
-      "required": false,
-      "options": [
-        "xs",
-        "sm",
-        "md",
-        "lg",
-        "icon"
-      ],
-      "control": "select"
-    },
-    "disabled": {
+    "defaultOpen": {
       "type": "boolean",
       "default": false,
-      "description": "Toggle behaviour.",
+      "description": "Whether the additional content starts expanded.",
       "required": false,
       "control": "switch"
-    },
-    "iconBefore": {
-      "type": "iconify-ref",
-      "default": null,
-      "description": "Iconify solar icon identifier.",
-      "required": false
-    },
-    "iconAfter": {
-      "type": "iconify-ref",
-      "default": null,
-      "description": "Iconify solar icon identifier.",
-      "required": false
     }
   },
   "propertyControls": {
@@ -211,49 +148,13 @@
       "supportsDynamicBinding": false
     },
     "label": {
-      "control": "textarea",
+      "control": "text",
       "group": "Content",
       "localizable": true,
       "supportsDynamicBinding": true
     },
-    "action": {
-      "control": "select",
-      "group": "Content",
-      "localizable": false,
-      "supportsDynamicBinding": false
-    },
-    "href": {
-      "control": "link-picker",
-      "group": "Content",
-      "localizable": false,
-      "supportsDynamicBinding": true
-    },
-    "variant": {
-      "control": "select",
-      "group": "Content",
-      "localizable": false,
-      "supportsDynamicBinding": false
-    },
-    "size": {
-      "control": "select",
-      "group": "Content",
-      "localizable": false,
-      "supportsDynamicBinding": false
-    },
-    "disabled": {
+    "defaultOpen": {
       "control": "switch",
-      "group": "Content",
-      "localizable": false,
-      "supportsDynamicBinding": false
-    },
-    "iconBefore": {
-      "control": "json-editor",
-      "group": "Content",
-      "localizable": false,
-      "supportsDynamicBinding": false
-    },
-    "iconAfter": {
-      "control": "json-editor",
       "group": "Content",
       "localizable": false,
       "supportsDynamicBinding": false
@@ -473,13 +374,7 @@
       "keyboard-activate"
     ],
     "actions": [
-      "none",
-      "navigate",
-      "submit",
-      "toggle",
-      "open-overlay",
-      "scroll-to",
-      "emit-allowlisted-event"
+      "toggle"
     ],
     "noArbitraryJavaScript": true
   },
@@ -525,14 +420,8 @@
       "htmlId": "",
       "ariaLabel": "",
       "hidden": false,
-      "label": "Button",
-      "action": "link",
-      "href": "",
-      "variant": "primary",
-      "size": "md",
-      "disabled": false,
-      "iconBefore": null,
-      "iconAfter": null
+      "label": "Show more",
+      "defaultOpen": false
     },
     "styles": {
       "base": {},
@@ -547,8 +436,8 @@
     "status": "proposed",
     "priority": "post-MVP",
     "notes": [
-      "Do not infer that a UI-component preview requires shipping React on the public site.",
-      "Any client-side behavior must use isolated, progressively enhanced assets."
+      "Uses native details and summary elements; no public frontend JavaScript is required.",
+      "Additional content remains available to keyboard and assistive technology users."
     ]
   }
 }

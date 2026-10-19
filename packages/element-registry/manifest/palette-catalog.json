@@ -2489,8 +2489,8 @@
       "category": "advanced-motion",
       "icon": "solar:alt-arrow-down-linear",
       "tier": "free",
-      "status": "planned",
-      "keywords": "show-more show more advanced-motion show more element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
+      "status": "ready",
+      "keywords": "show-more show more advanced-motion reveals optional content through an accessible native disclosure."
     },
     {
       "id": "blixis/blur-up-image",
