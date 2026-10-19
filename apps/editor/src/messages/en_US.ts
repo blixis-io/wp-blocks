@@ -263,6 +263,7 @@ export const en_US = {
   'inspector.prop.label': 'Label',
   'inspector.prop.href': 'Link',
   'inspector.prop.variant': 'Button style',
+  'inspector.prop.binding': 'Data binding',
   'inspector.prop.newTab': 'Open in a new tab',
   'inspector.prop.tag': 'HTML element',
   'inspector.prop.maxWidth': 'Maximum width',

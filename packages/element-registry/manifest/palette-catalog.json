@@ -1689,7 +1689,7 @@
       "category": "wordpress",
       "icon": "solar:user-rounded-linear",
       "tier": "plus",
-      "status": "planned",
+      "status": "ready",
       "keywords": "user-profile user profile wordpress user profile element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
     },
     {
@@ -1789,7 +1789,7 @@
       "category": "wordpress",
       "icon": "solar:tag-linear",
       "tier": "plus",
-      "status": "planned",
+      "status": "ready",
       "keywords": "dynamic-tag dynamic tag wordpress dynamic tag element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
     },
     {

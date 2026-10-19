@@ -46020,7 +46020,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'dynamic',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -48708,7 +48708,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'dynamic',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -72039,7 +72039,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'wordpress',
     icon: 'solar:user-rounded-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'user-profile user profile wordpress user profile element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -72149,7 +72149,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'wordpress',
     icon: 'solar:tag-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'dynamic-tag dynamic tag wordpress dynamic tag element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },

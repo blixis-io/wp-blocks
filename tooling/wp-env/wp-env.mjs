@@ -1410,6 +1410,7 @@ async function smoke() {
             html.includes('data-blx-type="blixis/table-of-posts"') &&
             html.includes('data-blx-type="blixis/post-title">Front smoke</span>') &&
             html.includes('data-blx-type="blixis/post-content">PLAIN CONTENT</div>') &&
+            html.includes('data-blx-type="blixis/dynamic-tag">Front smoke</span>') &&
             html.includes('Smoke post title') &&
             html.includes('id="blixis-builder-elements-js"'),
           'published P5 controls and bounded P7 WordPress elements render safe fallbacks and enqueue required runtime',

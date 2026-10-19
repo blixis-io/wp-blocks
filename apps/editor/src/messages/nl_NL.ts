@@ -269,6 +269,7 @@ export const nl_NL: Record<MessageKey, string> = {
   'inspector.prop.label': 'Label',
   'inspector.prop.href': 'Link',
   'inspector.prop.variant': 'Knopstijl',
+  'inspector.prop.binding': 'Datakoppeling',
   'inspector.prop.newTab': 'Openen in een nieuw tabblad',
   'inspector.prop.tag': 'HTML-element',
   'inspector.prop.maxWidth': 'Maximale breedte',

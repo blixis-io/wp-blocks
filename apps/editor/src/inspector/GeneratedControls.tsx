@@ -539,7 +539,8 @@ export function GeneratedControls({ element, editable }: { element: ElementNode;
               control === 'textarea' ||
               control === 'rich-text' ||
               control === 'rich-text-toolbar' ||
-              control === 'json-editor';
+              control === 'json-editor' ||
+              control === 'dynamic-binding';
             const type = control === 'range' ? 'range' : control === 'number' ? 'number' : 'text';
             const Component = multiline ? 'textarea' : 'input';
             const isLink = control === 'link' || control === 'link-picker';
@@ -559,7 +560,7 @@ export function GeneratedControls({ element, editable }: { element: ElementNode;
                   aria-invalid={!validUrl || !validAsset}
                   onChange={(event) => {
                     const next = event.currentTarget.value;
-                    if (control === 'json-editor') {
+                    if (control === 'json-editor' || control === 'dynamic-binding') {
                       try {
                         commit(name, property, JSON.parse(next) as Json);
                       } catch {

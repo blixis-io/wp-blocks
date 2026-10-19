@@ -334,6 +334,12 @@ $layout  = static fn ( int $n, string $color ): string => wp_json_encode(
 				'children' => [],
 			],
 			[
+				'id'       => 'el-bound-dynamic-tag',
+				'type'     => 'blixis/dynamic-tag',
+				'props'    => (object) [ 'binding' => [ 'source' => 'wordpress-post', 'path' => 'post.title' ], 'fallback' => 'Bound title fallback' ],
+				'children' => [],
+			],
+			[
 				'id'       => 'el-query-pagination',
 				'type'     => 'blixis/query-pagination',
 				'props'    => (object) [

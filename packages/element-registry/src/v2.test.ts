@@ -62,6 +62,8 @@ describe('generated v2 element registry', () => {
       'related-posts',
       'author-box',
       'table-of-posts',
+      'dynamic-tag',
+      'user-profile',
     ]) {
       expect(isElementInsertableV2(`blixis/${type}`)).toBe(true);
     }
@@ -69,6 +71,7 @@ describe('generated v2 element registry', () => {
     expect(registry.get('blixis/query-loop')?.props['allowedPostTypes']?.kind).toBe('json');
     expect(registry.get('blixis/query-loop')?.props['maxItems']?.default).toBe(30);
     expect(registry.get('blixis/featured-image')?.props['assetRef']?.kind).toBe('string');
+    expect(registry.get('blixis/dynamic-tag')?.props['binding']?.kind).toBe('json');
   });
 
   it('validates declared props and rejects undeclared and editor-only values', () => {

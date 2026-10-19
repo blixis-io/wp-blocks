@@ -25,11 +25,43 @@
       "example": "asset:hero"
     },
     "binding": {
-      "example": {
-        "source": "wordpress-post",
-        "path": "post.title",
-        "fallback": ""
-      }
+      "readOnly": true,
+      "unknownPathsUseFallback": true,
+      "allowedSources": {
+        "wordpress-post": [
+          "post.title",
+          "post.content",
+          "post.excerpt",
+          "post.date",
+          "post.author",
+          "post.url",
+          "post.slug",
+          "post.commentCount",
+          "post.terms.category"
+        ],
+        "wordpress-site": [
+          "site.title",
+          "site.tagline",
+          "site.url"
+        ],
+        "wordpress-user": [
+          "user.displayName",
+          "user.description",
+          "user.url"
+        ]
+      },
+      "examples": [
+        {
+          "source": "wordpress-post",
+          "path": "post.title",
+          "fallback": ""
+        },
+        {
+          "source": "wordpress-site",
+          "path": "site.tagline",
+          "fallback": ""
+        }
+      ]
     },
     "css-length": {
       "example": {

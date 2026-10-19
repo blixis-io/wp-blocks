@@ -196,6 +196,7 @@ final class CoreDocumentRenderer {
 			'array<number>' => is_array( $value ) && array_is_list( $value ) && count( array_filter( $value, 'is_numeric' ) ) === count( $value ),
 			'array<object>' => is_array( $value ),
 			'object' => $value instanceof \stdClass || ( is_array( $value ) && ! array_is_list( $value ) ),
+			'binding', 'query-ref', 'action-ref' => null === $value || $value instanceof \stdClass || ( is_array( $value ) && ! array_is_list( $value ) ),
 			default => false,
 		};
 		if ( ! $valid ) {

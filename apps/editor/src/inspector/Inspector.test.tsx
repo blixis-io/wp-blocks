@@ -1072,6 +1072,17 @@ describe('Inspector controls', () => {
     ]);
   });
 
+  it('edits a typed dynamic data binding as JSON', async () => {
+    const { store } = await mount('blixis/dynamic-tag', { tab: 'content' });
+    fireEvent.change(screen.getByRole('textbox', { name: 'Data binding' }), {
+      target: { value: '{"source":"wordpress-post","path":"post.title"}' },
+    });
+    expect(store.getState().document?.root[0]?.props['binding']).toEqual({
+      source: 'wordpress-post',
+      path: 'post.title',
+    });
+  });
+
   it('renders media library guidance and translatable alternative text controls', async () => {
     const { store } = await mount('blixis/image');
     expect(screen.getByText(/Choose an image from the media library/)).toBeTruthy();
