@@ -247,6 +247,9 @@ msgstr "Afbeeldingen vergelijken"
 msgid "Back to top"
 msgstr "Naar boven"
 
+msgid "Close panel"
+msgstr "Paneel sluiten"
+
 msgid "Menu"
 msgstr "Menu"
 
@@ -255,6 +258,12 @@ msgstr "Mobiele navigatie"
 
 msgid "Navigation"
 msgstr "Navigatie"
+
+msgid "Off-canvas panel"
+msgstr "Uitschuifpaneel"
+
+msgid "Open"
+msgstr "Openen"
 
 msgid "Sections"
 msgstr "Onderdelen"

@@ -1376,6 +1376,24 @@ async function smoke() {
             html.includes('id="blixis-builder-elements-js"'),
           'published resizable panels include keyboard separators and enqueue the progressive enhancement runtime',
         );
+        const blogName = command('option', 'get', 'blogname');
+        const escapedBlogName = blogName.replace(/[&<>"']/g, (character) => {
+          const entities = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+          return entities[character];
+        });
+        check(
+          html.includes(`data-blx-id="el-site-title"`) && html.includes(`>${escapedBlogName}</p>`),
+          'the site-title element renders the current WordPress site name instead of its authored placeholder',
+        );
+        check(
+          html.includes('data-blx-tabs') &&
+            html.includes('Details panel') &&
+            html.includes('data-blx-accordion') &&
+            html.includes('data-blx-offcanvas-modal="true"') &&
+            html.includes('data-blx-offcanvas-panel') &&
+            html.includes('blx-offcanvas-fade'),
+          'published tabs, accordions, and off-canvas panels render accessible fallback markup and scoped styles',
+        );
         check(
           html.includes('data-blx-marquee="left"') &&
             html.includes('data-blx-marquee-toggle') &&

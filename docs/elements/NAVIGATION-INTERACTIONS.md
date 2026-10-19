@@ -19,3 +19,9 @@ The mobile-menu element uses native `details`/`summary` as its disclosure contro
 Sticky headers use `position: sticky` and a validated 0–256 pixel block offset. The header uses `Canvas` and `CanvasText`, which follow the active site color scheme. Back-to-top is a normal empty-fragment link, so it returns to the document start without hijacking scrolling or requiring a script.
 
 Scroll-spy navigation observes only same-origin fragment links whose target IDs exist in the document. It updates `aria-current="location"` for the closest visible section. Browsers without `IntersectionObserver` keep the ordinary link list and do not receive an incomplete scroll handler.
+
+Mega menus render all nested links in a responsive, multi-column list. This keeps every destination visible and keyboard reachable; child links are not hidden behind hover-only interaction. Wizard steps render an ordered list with the configured current step and horizontal or vertical orientation. Site-title reads the current WordPress site name when available and uses its authored content as a fallback outside WordPress or when the site name is empty.
+
+## Off-canvas panels
+
+Off-canvas content is a native `details` disclosure, so it is available without JavaScript. The placement and animation preset are allowlisted. Click, hover, and focus opening modes use the disclosure summary; `manual` mode listens for `blixis:offcanvas-open` and `blixis:offcanvas-close` events on the element. A modal panel adds `role="dialog"`, traps Tab focus, makes outside branches inert, and restores focus on close. Escape and outside-click dismissal follow their respective settings. Reduced-motion preferences disable the entrance animation.

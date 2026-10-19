@@ -29,6 +29,145 @@
     });
   };
 
+  const initOffcanvas = (root) => {
+    if (root.dataset.blxOffcanvasReady === 'true') return;
+    const summary = root.querySelector('summary');
+    const panel = root.querySelector('[data-blx-offcanvas-panel]');
+    const close = root.querySelector('[data-blx-offcanvas-close]');
+    if (!summary || !panel || !close) return;
+    root.dataset.blxOffcanvasReady = 'true';
+    const modal = root.getAttribute('data-blx-offcanvas-modal') === 'true';
+    const closeOnEscape = root.getAttribute('data-blx-offcanvas-close-escape') !== 'false';
+    const closeOnOutside = root.getAttribute('data-blx-offcanvas-close-outside') !== 'false';
+    const openOn = root.getAttribute('data-blx-offcanvas-open-on') || 'click';
+    const inerted = new Map();
+    let shouldReturnFocus = false;
+
+    const setOutsideInert = (inert) => {
+      if (!modal) return;
+      if (!inert) {
+        inerted.forEach((wasInert, element) => {
+          element.inert = wasInert;
+        });
+        inerted.clear();
+        return;
+      }
+      let branch = root;
+      while (branch.parentElement) {
+        const parent = branch.parentElement;
+        Array.from(parent.children).forEach((sibling) => {
+          if (sibling === branch || !(sibling instanceof window.HTMLElement) || inerted.has(sibling)) return;
+          inerted.set(sibling, sibling.inert === true);
+          sibling.inert = true;
+        });
+        if (parent === document.body) break;
+        branch = parent;
+      }
+    };
+
+    const focusable = () =>
+      Array.from(
+        panel.querySelectorAll(
+          'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter((element) => !element.hasAttribute('hidden') && element.getAttribute('aria-hidden') !== 'true');
+
+    const closePanel = (returnFocus = true) => {
+      shouldReturnFocus = returnFocus;
+      root.open = false;
+      setOutsideInert(false);
+      panel.removeAttribute('role');
+      panel.removeAttribute('aria-modal');
+      summary.setAttribute('aria-expanded', 'false');
+      if (returnFocus) summary.focus();
+    };
+
+    const update = () => {
+      summary.setAttribute('aria-expanded', String(root.open));
+      if (!root.open) {
+        setOutsideInert(false);
+        panel.removeAttribute('role');
+        panel.removeAttribute('aria-modal');
+        if (shouldReturnFocus) summary.focus();
+        shouldReturnFocus = false;
+        return;
+      }
+      if (modal) {
+        panel.setAttribute('role', 'dialog');
+        panel.setAttribute('aria-modal', 'true');
+        panel.setAttribute('aria-label', root.getAttribute('data-blx-offcanvas-label') || 'Panel');
+        setOutsideInert(true);
+        (focusable()[0] || panel).focus();
+      }
+    };
+
+    root.addEventListener('toggle', update);
+    close.addEventListener('click', () => closePanel());
+    if (openOn === 'hover') {
+      root.addEventListener('pointerenter', () => {
+        root.open = true;
+      });
+      root.addEventListener('pointerleave', () => {
+        if (!root.contains(document.activeElement)) closePanel(false);
+      });
+      summary.addEventListener('click', (event) => {
+        event.preventDefault();
+        root.open = true;
+      });
+    } else if (openOn === 'focus') {
+      root.addEventListener('focusin', () => {
+        root.open = true;
+      });
+      root.addEventListener('focusout', (event) => {
+        if (!root.contains(event.relatedTarget)) closePanel(false);
+      });
+      summary.addEventListener('click', (event) => {
+        event.preventDefault();
+        root.open = true;
+      });
+    } else if (openOn === 'manual') {
+      summary.addEventListener('click', (event) => {
+        event.preventDefault();
+      });
+      root.addEventListener('blixis:offcanvas-open', () => {
+        root.open = true;
+      });
+      root.addEventListener('blixis:offcanvas-close', () => closePanel(false));
+    }
+    root.addEventListener('keydown', (event) => {
+      if (closeOnEscape && event.key === 'Escape' && root.open) {
+        event.preventDefault();
+        closePanel();
+      }
+      if (modal && event.key === 'Tab' && root.open) {
+        const controls = focusable();
+        if (controls.length === 0) {
+          event.preventDefault();
+          panel.focus();
+          return;
+        }
+        const first = controls[0];
+        const last = controls[controls.length - 1];
+        if (event.shiftKey && (document.activeElement === first || !panel.contains(document.activeElement))) {
+          event.preventDefault();
+          last?.focus();
+        } else if (!event.shiftKey && (document.activeElement === last || !panel.contains(document.activeElement))) {
+          event.preventDefault();
+          first?.focus();
+        }
+      }
+    });
+    if (closeOnOutside) {
+      document.addEventListener('pointerdown', (event) => {
+        if (root.open && !root.contains(event.target)) closePanel();
+      });
+      root.addEventListener('click', (event) => {
+        if (root.open && modal && event.target === root) closePanel();
+      });
+    }
+    if (root.open) update();
+  };
+
   const initTabs = (root) => {
     if (root.dataset.blxTabsReady === 'true') return;
     const nav = root.querySelector('nav');
@@ -438,6 +577,7 @@
     document.querySelectorAll('[data-blx-accordion]').forEach(initAccordion);
     document.querySelectorAll('[data-blx-tabs]').forEach(initTabs);
     document.querySelectorAll('[data-blx-scroll-spy]').forEach(initScrollSpy);
+    document.querySelectorAll('[data-blx-offcanvas]').forEach(initOffcanvas);
   };
   window.blxInitMarquee = initMarquee;
   window.blxInitResizablePanels = initResizablePanels;
@@ -451,6 +591,7 @@
   window.blxInitAccordion = initAccordion;
   window.blxInitTabs = initTabs;
   window.blxInitScrollSpy = initScrollSpy;
+  window.blxInitOffcanvas = initOffcanvas;
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
   else init();
 })();

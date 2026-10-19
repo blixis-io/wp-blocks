@@ -64,9 +64,10 @@ final class Frontend {
 		$has_image_hotspots   = str_contains( $page['html'], 'data-blx-image-hotspots' );
 		$has_panorama         = str_contains( $page['html'], 'data-blx-panorama' );
 		$has_disclosures      = str_contains( $page['html'], 'data-blx-accordion' ) || str_contains( $page['html'], 'data-blx-tabs' );
-		$has_navigation       = str_contains( $page['html'], 'data-blx-navigation' ) || str_contains( $page['html'], 'data-blx-mobile-menu' ) || str_contains( $page['html'], 'data-blx-sticky-header' );
+		$has_navigation       = str_contains( $page['html'], 'data-blx-navigation' ) || str_contains( $page['html'], 'data-blx-mobile-menu' ) || str_contains( $page['html'], 'data-blx-sticky-header' ) || str_contains( $page['html'], 'data-blx-mega-menu' );
 		$has_scroll_spy       = str_contains( $page['html'], 'data-blx-scroll-spy' );
-		$has_content_elements = str_contains( $page['html'], 'data-blx-code-block' ) || str_contains( $page['html'], 'data-blx-countdown' ) || str_contains( $page['html'], 'data-blx-animated-headline' ) || str_contains( $page['html'], 'data-blx-tooltip-text' ) || str_contains( $page['html'], 'data-blx-action=' ) || $has_lightbox || $has_comparison || $has_disclosures || $has_navigation;
+		$has_offcanvas        = str_contains( $page['html'], 'data-blx-offcanvas' );
+		$has_content_elements = str_contains( $page['html'], 'data-blx-code-block' ) || str_contains( $page['html'], 'data-blx-countdown' ) || str_contains( $page['html'], 'data-blx-animated-headline' ) || str_contains( $page['html'], 'data-blx-tooltip-text' ) || str_contains( $page['html'], 'data-blx-action=' ) || str_contains( $page['html'], 'data-blx-wizard-steps' ) || $has_lightbox || $has_comparison || $has_disclosures || $has_navigation || $has_offcanvas;
 		$has_content_runtime  = str_contains( $page['html'], 'data-blx-code-block' ) || str_contains( $page['html'], 'data-blx-countdown' ) || str_contains( $page['html'], 'data-blx-action=' ) || $has_lightbox || $has_comparison;
 		$inline_styles        = array_filter( [ $page['css'], $has_resizable_panels ? ResizablePanelsCss::css() : '', $has_marquee ? MarqueeCss::css() : '', $has_map ? MapCss::css() : '', $has_image_hotspots ? ImageHotspotsCss::css() : '', $has_panorama ? PanoramaCss::css() : '', $has_content_elements ? ContentElementsCss::css() : '' ] );
 		if ( [] !== $inline_styles ) {
@@ -74,7 +75,7 @@ final class Frontend {
 			\wp_enqueue_style( self::STYLE_HANDLE );
 			\wp_add_inline_style( self::STYLE_HANDLE, implode( "\n", $inline_styles ) );
 		}
-		if ( $has_resizable_panels || $has_marquee || $has_content_runtime || $has_map || $has_panorama || $has_disclosures || $has_scroll_spy ) {
+		if ( $has_resizable_panels || $has_marquee || $has_content_runtime || $has_map || $has_panorama || $has_disclosures || $has_scroll_spy || $has_offcanvas ) {
 			$asset_url = \plugins_url( 'assets/frontend/elements.js', \dirname( __DIR__, 2 ) . '/blixis-builder.php' );
 			if ( '' !== $asset_url ) {
 				\wp_register_script( 'blixis-builder-elements', $asset_url, [], \Blixis\Builder\VERSION, true );
