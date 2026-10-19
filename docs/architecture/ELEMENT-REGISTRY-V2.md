@@ -108,7 +108,7 @@ Generated `asset-ref` and `array<asset-ref>` controls open the shared, permissio
 
 Every control-bearing definition property has an `inspector.prop.<property>` label in the English and Dutch editor message catalogs, including properties on planned definitions. Labels follow the editor interface locale; they do not depend on the website content locale. The i18n test checks this contract against the generated definitions so new properties cannot surface raw message keys in the inspector.
 
-The editor palette test checks every definition currently marked `ready` against the generated palette and confirms its card is insertable. Raising a definition's readiness therefore adds it to this coverage automatically.
+The editor palette test checks every definition currently marked `ready` against the generated palette, confirms its card is insertable, and clicks it to verify the corresponding node is added to the document tree. Raising a definition's readiness therefore adds it to this coverage automatically.
 
 The `icon` and `icon-svg` definitions offer only the three Solar glyphs rendered from local path data. Their size setting is bounded to 8–128 pixels, and the server and preview boundary validate the emitted SVG tags and geometry attributes.
 
