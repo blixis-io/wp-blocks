@@ -37184,7 +37184,7 @@
         ]
       },
       "archetype": "gallery",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -40692,7 +40692,7 @@
         ]
       },
       "archetype": "choice",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -42168,6 +42168,12 @@
           "required": false,
           "control": "switch"
         },
+        "name": {
+          "type": "string",
+          "default": "range",
+          "description": "Form control name prefix.",
+          "required": false
+        },
         "min": {
           "type": "number",
           "default": 0,
@@ -42193,6 +42199,13 @@
           "type": "number",
           "default": 50,
           "description": "Numeric setting.",
+          "required": false,
+          "control": "number"
+        },
+        "upperValue": {
+          "type": "number",
+          "default": 75,
+          "description": "Initial upper bound selection.",
           "required": false,
           "control": "number"
         },
@@ -42239,6 +42252,12 @@
           "localizable": false,
           "supportsDynamicBinding": false
         },
+        "name": {
+          "control": "text",
+          "group": "Content",
+          "localizable": false,
+          "supportsDynamicBinding": false
+        },
         "min": {
           "control": "number",
           "group": "Content",
@@ -42258,6 +42277,12 @@
           "supportsDynamicBinding": false
         },
         "defaultValue": {
+          "control": "number",
+          "group": "Content",
+          "localizable": false,
+          "supportsDynamicBinding": false
+        },
+        "upperValue": {
           "control": "number",
           "group": "Content",
           "localizable": false,
@@ -42462,6 +42487,7 @@
           "max": 100,
           "step": 1,
           "defaultValue": 50,
+          "upperValue": 75,
           "orientation": "horizontal"
         },
         "styles": {
@@ -42482,7 +42508,7 @@
         ]
       },
       "archetype": "range",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -43014,7 +43040,7 @@
         ]
       },
       "archetype": "input",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -43523,7 +43549,7 @@
         ]
       },
       "archetype": "input",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -43634,6 +43660,13 @@
           "required": false,
           "localizable": true,
           "control": "textarea"
+        },
+        "forId": {
+          "type": "string",
+          "default": "",
+          "description": "ID of the form control this label names.",
+          "required": false,
+          "control": "text"
         }
       },
       "propertyControls": {
@@ -43672,6 +43705,12 @@
           "group": "Content",
           "localizable": true,
           "supportsDynamicBinding": true
+        },
+        "forId": {
+          "control": "text",
+          "group": "Accessibility",
+          "localizable": false,
+          "supportsDynamicBinding": false
         }
       },
       "style": {
@@ -43880,7 +43919,8 @@
           "htmlId": "",
           "ariaLabel": "",
           "hidden": false,
-          "content": "Text"
+          "content": "Text",
+          "forId": ""
         },
         "styles": {
           "base": {},
@@ -43900,7 +43940,7 @@
         ]
       },
       "archetype": "text",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -44003,6 +44043,19 @@
           "required": false,
           "control": "switch"
         },
+        "name": {
+          "type": "string",
+          "default": "dates",
+          "description": "Form control name for the selected date values.",
+          "required": false
+        },
+        "maxSelections": {
+          "type": "number",
+          "default": 5,
+          "description": "Maximum dates shown in multiple-selection mode.",
+          "required": false,
+          "control": "number"
+        },
         "mode": {
           "type": "enum",
           "default": "single",
@@ -44061,6 +44114,18 @@
         },
         "hidden": {
           "control": "switch",
+          "group": "Content",
+          "localizable": false,
+          "supportsDynamicBinding": false
+        },
+        "name": {
+          "control": "text",
+          "group": "Content",
+          "localizable": false,
+          "supportsDynamicBinding": false
+        },
+        "maxSelections": {
+          "control": "number",
           "group": "Content",
           "localizable": false,
           "supportsDynamicBinding": false
@@ -44296,6 +44361,8 @@
           "htmlId": "",
           "ariaLabel": "",
           "hidden": false,
+          "name": "dates",
+          "maxSelections": 5,
           "mode": "single",
           "minDate": null,
           "maxDate": null,
@@ -44319,7 +44386,7 @@
         ]
       },
       "archetype": "calendar",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -44738,7 +44805,7 @@
         ]
       },
       "archetype": "calendar",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -45154,7 +45221,7 @@
         ]
       },
       "archetype": "calendar",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -45631,7 +45698,7 @@
         ]
       },
       "archetype": "overlay",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -46109,7 +46176,7 @@
         ]
       },
       "archetype": "overlay",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -46583,7 +46650,7 @@
         ]
       },
       "archetype": "overlay",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -47060,7 +47127,7 @@
         ]
       },
       "archetype": "overlay",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -47536,7 +47603,7 @@
         ]
       },
       "archetype": "overlay",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -48013,7 +48080,7 @@
         ]
       },
       "archetype": "overlay",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -48489,7 +48556,7 @@
         ]
       },
       "archetype": "overlay",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -48914,7 +48981,7 @@
         ]
       },
       "archetype": "navigation",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -49338,7 +49405,7 @@
         ]
       },
       "archetype": "navigation",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -49761,7 +49828,7 @@
         ]
       },
       "archetype": "command",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -50239,7 +50306,7 @@
         ]
       },
       "archetype": "carousel",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -50663,7 +50730,7 @@
         ]
       },
       "archetype": "alert",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -51084,7 +51151,7 @@
         ]
       },
       "archetype": "alert",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -51529,7 +51596,7 @@
         ]
       },
       "archetype": "datatable",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -51974,7 +52041,7 @@
         ]
       },
       "archetype": "datatable",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -52445,7 +52512,7 @@
         ]
       },
       "archetype": "chart",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -52832,7 +52899,7 @@
         ]
       },
       "archetype": "counter",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -53604,7 +53671,7 @@
         ]
       },
       "archetype": "rating",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -54095,7 +54162,7 @@
         },
         "action": {
           "type": "enum",
-          "default": "link",
+          "default": "copy",
           "description": "Choose a supported option.",
           "required": false,
           "options": [
@@ -54104,9 +54171,18 @@
             "scroll-to",
             "open-dialog",
             "toggle",
-            "custom-event"
+            "custom-event",
+            "copy"
           ],
           "control": "select"
+        },
+        "copyText": {
+          "type": "string",
+          "default": "",
+          "description": "Text copied when the button is activated.",
+          "required": false,
+          "localizable": true,
+          "control": "textarea"
         },
         "href": {
           "type": "url",
@@ -54205,6 +54281,12 @@
           "control": "select",
           "group": "Content",
           "localizable": false,
+          "supportsDynamicBinding": false
+        },
+        "copyText": {
+          "control": "textarea",
+          "group": "Content",
+          "localizable": true,
           "supportsDynamicBinding": false
         },
         "href": {
@@ -54511,7 +54593,8 @@
           "ariaLabel": "",
           "hidden": false,
           "label": "Button",
-          "action": "link",
+          "action": "copy",
+          "copyText": "Example copied text",
           "href": "",
           "variant": "primary",
           "size": "md",
@@ -54537,7 +54620,7 @@
         ]
       },
       "archetype": "button",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -54649,18 +54732,21 @@
           "localizable": true,
           "control": "textarea"
         },
+        "loadingLabel": {
+          "type": "string",
+          "default": "Loading…",
+          "description": "Visible label while the containing form submits.",
+          "required": false,
+          "localizable": true,
+          "control": "textarea"
+        },
         "action": {
           "type": "enum",
-          "default": "link",
-          "description": "Choose a supported option.",
+          "default": "submit",
+          "description": "Loading button submits its containing form.",
           "required": false,
           "options": [
-            "link",
-            "submit",
-            "scroll-to",
-            "open-dialog",
-            "toggle",
-            "custom-event"
+            "submit"
           ],
           "control": "select"
         },
@@ -54756,6 +54842,12 @@
           "group": "Content",
           "localizable": true,
           "supportsDynamicBinding": true
+        },
+        "loadingLabel": {
+          "control": "textarea",
+          "group": "Content",
+          "localizable": true,
+          "supportsDynamicBinding": false
         },
         "action": {
           "control": "select",
@@ -55067,7 +55159,8 @@
           "ariaLabel": "",
           "hidden": false,
           "label": "Button",
-          "action": "link",
+          "loadingLabel": "Loading…",
+          "action": "submit",
           "href": "",
           "variant": "primary",
           "size": "md",
@@ -55093,7 +55186,7 @@
         ]
       },
       "archetype": "button",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -55994,7 +56087,7 @@
         ]
       },
       "archetype": "navigation",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -56769,7 +56862,7 @@
         ]
       },
       "archetype": "progress",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",

@@ -1304,7 +1304,255 @@ final class ElementDefinitionRegistryTest extends TestCase {
 		$this->assertStringContainsString( 'type="range"', $range );
 		$this->assertStringContainsString( '>Volume</label><input', $range );
 		$this->assertStringContainsString( 'value="100"', $range );
+		$range_pair = $renderer->render(
+			new ElementNode(
+				'range-pair',
+				'blixis/range-slider',
+				[
+					'name'         => 'price',
+					'min'          => 0,
+					'max'          => 100,
+					'defaultValue' => 90,
+					'upperValue'   => 20,
+				]
+			),
+			new RenderContext()
+		);
+		$this->assertStringContainsString( 'data-blx-range-slider', $range_pair );
+		$this->assertStringContainsString( 'name="price[min]"', $range_pair );
+		$this->assertStringContainsString( 'name="price[max]"', $range_pair );
+		$this->assertStringContainsString( 'value="90"', $range_pair );
+		$this->assertTrue( PreviewSanitizer::accepts( $range_pair ) );
 		$this->assertTrue( PreviewSanitizer::accepts( $toggle ) );
 		$this->assertTrue( PreviewSanitizer::accepts( $range ) );
+		$input = $renderer->render(
+			new ElementNode(
+				'input-safe',
+				'blixis/input',
+				[
+					'label'     => 'Email',
+					'inputType' => 'email',
+					'name'      => 'email',
+					'value'     => 'a@example.test',
+					'required'  => true,
+				]
+			),
+			new RenderContext()
+		);
+		$this->assertStringContainsString( 'type="email"', $input );
+		$this->assertStringContainsString( 'required', $input );
+		$date_range = $renderer->render( new ElementNode( 'dates-safe', 'blixis/date-range-picker', [ 'ariaLabel' => 'Trip' ] ), new RenderContext() );
+		$this->assertStringContainsString( 'type="date" name="date-range[start]"', $date_range );
+		$table = $renderer->render(
+			new ElementNode(
+				'table-safe',
+				'blixis/data-table',
+				[
+					'filterable' => true,
+					'columns'    => [
+						[
+							'key'   => 'name',
+							'title' => 'Name',
+						],
+					],
+					'rows'       => [ [ 'name' => '<img src=x onerror=alert(1)>' ] ],
+				]
+			),
+			new RenderContext()
+		);
+		$this->assertStringContainsString( '&lt;img src=x onerror=alert(1)&gt;', $table );
+		$this->assertStringNotContainsString( '<img', $table );
+		$this->assertStringContainsString( 'data-blx-table-filter', $table );
+		$sortable = $renderer->render(
+			new ElementNode(
+				'sortable-safe',
+				'blixis/sortable-table',
+				[
+					'columns' => [
+						[
+							'key'   => 'name',
+							'title' => 'Name',
+						],
+					],
+					'rows'    => [ [ 'name' => 'Zed' ], [ 'name' => 'Ada' ] ],
+				]
+			),
+			new RenderContext()
+		);
+		$this->assertStringContainsString( 'data-blx-sort="name"', $sortable );
+		$chart = $renderer->render(
+			new ElementNode(
+				'chart-safe',
+				'blixis/chart',
+				[
+					'data' => [
+						[
+							'name'  => 'Visits',
+							'value' => 12,
+						],
+					],
+				]
+			),
+			new RenderContext()
+		);
+		$this->assertStringContainsString( '<meter min="0" max="1000000" value="12">', $chart );
+		$toast = $renderer->render(
+			new ElementNode(
+				'toast-safe',
+				'blixis/toast',
+				[
+					'title'       => 'Saved',
+					'dismissible' => true,
+				]
+			),
+			new RenderContext()
+		);
+		$this->assertStringContainsString( 'role="status"', $toast );
+		$this->assertStringContainsString( 'data-blx-toast-dismiss', $toast );
+		$this->assertTrue( PreviewSanitizer::accepts( $input ) );
+		$this->assertTrue( PreviewSanitizer::accepts( $date_range ) );
+		$this->assertTrue( PreviewSanitizer::accepts( $table ) );
+		$this->assertTrue( PreviewSanitizer::accepts( $sortable ) );
+		$this->assertTrue( PreviewSanitizer::accepts( $chart ) );
+		$this->assertTrue( PreviewSanitizer::accepts( $toast ) );
+		$dialog = $renderer->render(
+			new ElementNode(
+				'dialog-safe',
+				'blixis/alert-dialog',
+				[
+					'triggerLabel' => 'Open warning',
+					'modal'        => true,
+				]
+			),
+			new RenderContext( '<p>Confirm?</p>' )
+		);
+		$this->assertStringContainsString( 'role="alertdialog"', $dialog );
+		$this->assertStringContainsString( 'data-blx-offcanvas-modal="true"', $dialog );
+		$tooltip = $renderer->render( new ElementNode( 'tooltip-safe', 'blixis/tooltip', [ 'triggerLabel' => 'Help' ] ), new RenderContext( 'Short help text' ) );
+		$this->assertStringContainsString( 'aria-describedby="blx-tooltip-', $tooltip );
+		$this->assertStringContainsString( 'role="tooltip"', $tooltip );
+		$command = $renderer->render(
+			new ElementNode(
+				'commands-safe',
+				'blixis/command-palette',
+				[
+					'items' => [
+						[
+							'label' => 'Home',
+							'href'  => '/',
+						],
+					],
+				]
+			),
+			new RenderContext()
+		);
+		$this->assertStringContainsString( 'data-blx-command-search', $command );
+		$this->assertStringContainsString( 'href="/"', $command );
+		$carousel = $renderer->render(
+			new ElementNode(
+				'carousel-safe',
+				'blixis/carousel',
+				[
+					'autoplay'      => true,
+					'dots'          => true,
+					'slidesPerView' => 2,
+				]
+			),
+			new RenderContext( '', null, [ '<p>First</p>', '<p>Second</p>' ] )
+		);
+		$this->assertStringContainsString( 'data-blx-carousel-autoplay="true"', $carousel );
+		$this->assertStringContainsString( 'data-blx-carousel-dot="1"', $carousel );
+		$rating = $renderer->render(
+			new ElementNode(
+				'rating-safe',
+				'blixis/rating',
+				[
+					'max'   => 5,
+					'value' => 4,
+				]
+			),
+			new RenderContext()
+		);
+		$this->assertStringContainsString( 'type="radio" name="blx-rating-', $rating );
+		$this->assertStringContainsString( 'value="4" checked', $rating );
+		$copy = $renderer->render(
+			new ElementNode(
+				'copy-safe',
+				'blixis/copy-button',
+				[
+					'label'    => 'Copy value',
+					'copyText' => '<script>alert(1)</script>',
+				]
+			),
+			new RenderContext()
+		);
+		$this->assertStringContainsString( 'data-blx-copy-text="&lt;script&gt;alert(1)&lt;/script&gt;"', $copy );
+		$this->assertStringNotContainsString( '<script>', $copy );
+		$calendar = $renderer->render(
+			new ElementNode(
+				'calendar-safe',
+				'blixis/calendar',
+				[
+					'mode'          => 'multiple',
+					'locale'        => 'nl-NL',
+					'maxSelections' => 2,
+					'minDate'       => '2026-01-01',
+				]
+			),
+			new RenderContext()
+		);
+		$this->assertSame( 2, substr_count( $calendar, 'type="date"' ) );
+		$this->assertStringContainsString( 'lang="nl-NL"', $calendar );
+		$label = $renderer->render(
+			new ElementNode(
+				'label-safe',
+				'blixis/label',
+				[
+					'forId'   => 'email-field',
+					'content' => 'Email address',
+				]
+			),
+			new RenderContext()
+		);
+		$this->assertStringContainsString( '<label data-blx-id="label-safe" data-blx-type="blixis/label" for="email-field">Email address</label>', $label );
+		$context_menu = $renderer->render(
+			new ElementNode(
+				'context-safe',
+				'blixis/context-menu',
+				[
+					'items' => [
+						[
+							'label' => 'Open',
+							'href'  => '/',
+						],
+					],
+				]
+			),
+			new RenderContext()
+		);
+		$this->assertStringContainsString( 'data-blx-context-menu', $context_menu );
+		$loading = $renderer->render(
+			new ElementNode(
+				'loading-safe',
+				'blixis/loading-button',
+				[
+					'label'        => 'Send',
+					'loadingLabel' => 'Sending…',
+				]
+			),
+			new RenderContext()
+		);
+		$this->assertStringContainsString( 'type="submit" data-blx-loading-button', $loading );
+		$this->assertStringContainsString( 'data-blx-loading-label="Sending…"', $loading );
+		$this->assertTrue( PreviewSanitizer::accepts( $dialog ) );
+		$this->assertTrue( PreviewSanitizer::accepts( $tooltip ) );
+		$this->assertTrue( PreviewSanitizer::accepts( $command ) );
+		$this->assertTrue( PreviewSanitizer::accepts( $carousel ) );
+		$this->assertTrue( PreviewSanitizer::accepts( $rating ) );
+		$this->assertTrue( PreviewSanitizer::accepts( $copy ) );
+		$this->assertTrue( PreviewSanitizer::accepts( $calendar ) );
+		$this->assertTrue( PreviewSanitizer::accepts( $label ) );
+		$this->assertTrue( PreviewSanitizer::accepts( $context_menu ) );
+		$this->assertTrue( PreviewSanitizer::accepts( $loading ) );
 	}
 }

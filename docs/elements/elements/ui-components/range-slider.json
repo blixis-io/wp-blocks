@@ -97,6 +97,12 @@
       "required": false,
       "control": "switch"
     },
+    "name": {
+      "type": "string",
+      "default": "range",
+      "description": "Form control name prefix.",
+      "required": false
+    },
     "min": {
       "type": "number",
       "default": 0,
@@ -122,6 +128,13 @@
       "type": "number",
       "default": 50,
       "description": "Numeric setting.",
+      "required": false,
+      "control": "number"
+    },
+    "upperValue": {
+      "type": "number",
+      "default": 75,
+      "description": "Initial upper bound selection.",
       "required": false,
       "control": "number"
     },
@@ -168,6 +181,12 @@
       "localizable": false,
       "supportsDynamicBinding": false
     },
+    "name": {
+      "control": "text",
+      "group": "Content",
+      "localizable": false,
+      "supportsDynamicBinding": false
+    },
     "min": {
       "control": "number",
       "group": "Content",
@@ -187,6 +206,12 @@
       "supportsDynamicBinding": false
     },
     "defaultValue": {
+      "control": "number",
+      "group": "Content",
+      "localizable": false,
+      "supportsDynamicBinding": false
+    },
+    "upperValue": {
       "control": "number",
       "group": "Content",
       "localizable": false,
@@ -391,6 +416,7 @@
       "max": 100,
       "step": 1,
       "defaultValue": 50,
+      "upperValue": 75,
       "orientation": "horizontal"
     },
     "styles": {

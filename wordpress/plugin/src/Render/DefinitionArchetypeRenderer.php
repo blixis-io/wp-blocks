@@ -44,7 +44,7 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 	 * @param string $archetype Archetype name.
 	 */
 	public function supports( string $archetype ): bool {
-		return in_array( $archetype, [ 'container','simple','text','richtext','heading','button','link','image','gallery','video','audio','embed','iframe','pdf-viewer','map','navigation','pagination','list','code','accordion','tabs','steps','overlay','alert','progress','counter','countdown','icon','dynamic','card','layout','section','page','site-header','site-footer','site-logo','row','columns','grid','stack','input','choice','toggle','range' ], true ); }
+		return in_array( $archetype, [ 'container','simple','text','richtext','heading','button','link','image','gallery','video','audio','embed','iframe','pdf-viewer','map','navigation','pagination','list','code','accordion','tabs','steps','overlay','alert','progress','counter','countdown','icon','dynamic','card','layout','section','page','site-header','site-footer','site-logo','row','columns','grid','stack','input','choice','toggle','range','datatable','chart','rating','calendar','command','carousel' ], true ); }
 	/** Render an element with escaped text and allowlisted tags/attributes.
 	 *
 	 * @param ElementNode   $node Element input.
@@ -117,11 +117,50 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		if ( 'icon-button' === $id ) {
 			return $this->render_icon_button( $node, $hooks );
 		}
-		if ( in_array( $id, [ 'switch', 'checkbox', 'radio-group', 'select', 'toggle', 'toggle-group', 'segmented-control', 'slider' ], true ) ) {
+		if ( in_array( $id, [ 'switch', 'checkbox', 'radio-group', 'select', 'combobox', 'toggle', 'toggle-group', 'segmented-control', 'slider', 'range-slider', 'input', 'textarea', 'date-picker' ], true ) ) {
 			return $this->render_ui_control( $id, $node, $hooks );
+		}
+		if ( 'calendar' === $id ) {
+			return $this->render_calendar( $node, $hooks );
+		}
+		if ( 'date-range-picker' === $id ) {
+			return $this->render_date_range( $node, $hooks );
+		}
+		if ( in_array( $id, [ 'data-table', 'sortable-table' ], true ) ) {
+			return $this->render_data_table( $id, $node, $hooks );
+		}
+		if ( 'chart' === $id ) {
+			return $this->render_chart_summary( $node, $hooks );
+		}
+		if ( 'rating' === $id ) {
+			return $this->render_rating( $node, $hooks );
+		}
+		if ( 'copy-button' === $id ) {
+			$label = $node->value( 'label', 'Copy' );
+			$label = is_string( $label ) ? $label : 'Copy';
+			$text  = $node->value( 'copyText', '' );
+			$text  = is_string( $text ) ? $text : '';
+			return '<span' . $hooks . '><button type="button" data-blx-copy-button data-blx-copy-text="' . Escape::attr( $text ) . '" data-blx-copy-success="' . Escape::attr( $this->translate_label( 'Copied.' ) ) . '" data-blx-copy-failed="' . Escape::attr( $this->translate_label( 'Copy failed.' ) ) . '"' . ( true === $node->value( 'disabled', false ) ? ' disabled' : '' ) . '>' . Escape::html( $label ) . '</button><span data-blx-copy-status aria-live="polite"></span></span>';
+		}
+		if ( 'loading-button' === $id ) {
+			$label         = $node->value( 'label', 'Submit' );
+			$label         = is_string( $label ) ? $label : 'Submit';
+			$loading_label = $node->value( 'loadingLabel', 'Loading…' );
+			$loading_label = is_string( $loading_label ) ? $loading_label : 'Loading…';
+			return '<button' . $hooks . ' type="submit" data-blx-loading-button data-blx-loading-label="' . Escape::attr( $loading_label ) . '" aria-busy="false"' . ( true === $node->value( 'disabled', false ) ? ' disabled' : '' ) . '>' . Escape::html( $label ) . '</button>';
+		}
+		if ( in_array( $id, [ 'toast', 'notification-center' ], true ) ) {
+			return $this->render_toast( $node, $hooks, $context->children_html );
 		}
 		if ( 'tooltip-text' === $id ) {
 			return $this->render_tooltip_text( $node, $hooks, $tag );
+		}
+		if ( 'label' === $id ) {
+			$content = $node->value( 'content', '' );
+			$content = is_string( $content ) ? Escape::html( $content ) : '';
+			$for_id  = $node->value( 'forId', '' );
+			$for_id  = is_string( $for_id ) && 1 === preg_match( '/^[A-Za-z][A-Za-z0-9_:\-.]{0,63}$/D', $for_id ) ? ' for="' . Escape::attr( $for_id ) . '"' : '';
+			return '<label' . $hooks . $for_id . '>' . $content . $context->children_html . '</label>';
 		}
 		if ( 'link' === $archetype ) {
 			$label  = $node->value( 'label', '' );
@@ -188,6 +227,14 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		if ( 'pagination' === $archetype && 'pagination' === $id ) {
 			return $this->render_pagination( $node, $hooks );
 		}
+		if ( in_array( $id, [ 'dropdown-menu', 'context-menu' ], true ) ) {
+			$label  = $node->value( 'triggerLabel', $this->translate_label( 'Open menu' ) );
+			$label  = is_string( $label ) && '' !== trim( $label ) ? $label : $this->translate_label( 'Open menu' );
+			$items  = $node->value( 'items', [] );
+			$items  = is_array( $items ) ? $items : [];
+			$marker = 'context-menu' === $id ? ' data-blx-context-menu' : ' data-blx-dropdown-menu';
+			return '<details' . $hooks . $marker . '><summary>' . Escape::html( $label ) . '</summary><ul>' . $this->navigation_items( $items, 0 ) . '</ul></details>';
+		}
 		if ( 'navigation' === $archetype && in_array( $id, [ 'navigation', 'navigation-menu', 'nav-menu', 'mobile-menu', 'table-of-contents', 'anchor-links', 'mega-menu', 'sidebar-navigation', 'scroll-spy', 'sticky-header', 'dropdown-menu' ], true ) && is_array( $node->value( 'items', null ) ) ) {
 			$default_label = match ( $id ) {
 				'mobile-menu' => $this->translate_label( 'Mobile navigation' ),
@@ -217,6 +264,26 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		if ( 'overlay' === $archetype && 'offcanvas' === $id ) {
 			return $this->render_offcanvas( $node, $context->children_html, $hooks );
 		}
+		if ( in_array( $id, [ 'dialog', 'alert-dialog', 'drawer', 'sheet' ], true ) ) {
+			$overlay = $this->render_offcanvas( $node, $context->children_html, $hooks );
+			$role    = 'alert-dialog' === $id ? 'alertdialog' : 'dialog';
+			return str_replace( '<div data-blx-offcanvas-panel tabindex="-1">', '<div data-blx-offcanvas-panel role="' . $role . '" tabindex="-1">', $overlay );
+		}
+		if ( 'tooltip' === $id ) {
+			return $this->render_tooltip_component( $node, $context->children_html, $hooks );
+		}
+		if ( in_array( $id, [ 'popover', 'hover-card' ], true ) ) {
+			return $this->render_offcanvas( $node, $context->children_html, $hooks );
+		}
+		if ( 'command-palette' === $id ) {
+			return $this->render_command_palette( $node, $hooks );
+		}
+		if ( 'carousel' === $id ) {
+			return $this->render_carousel( $node, $context->children_html_list, $hooks );
+		}
+		if ( 'scroll-indicator' === $id ) {
+			return $this->render_scroll_indicator( $node, $hooks );
+		}
 		if ( 'tabs' === $archetype ) {
 			return $this->render_tabs( $node, $hooks );
 		}
@@ -242,6 +309,14 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 			$suffix = $node->value( 'suffix', '' );
 			$label  = $node->value( 'ariaLabel' );
 			return '<span' . $hooks . ( is_string( $label ) && '' !== trim( $label ) ? ' aria-label="' . Escape::attr( $label ) . '"' : '' ) . '>' . Escape::html( is_string( $prefix ) ? $prefix : '' ) . Escape::html( $text ) . Escape::html( is_string( $suffix ) ? $suffix : '' ) . '</span>';
+		}
+		if ( 'stat-card' === $id ) {
+			$value  = $node->value( 'value', 0 );
+			$value  = is_numeric( $value ) && is_finite( (float) $value ) ? sprintf( '%g', (float) $value ) : '0';
+			$prefix = $node->value( 'prefix', '' );
+			$suffix = $node->value( 'suffix', '' );
+			$label  = $node->value( 'ariaLabel', '' );
+			return '<article' . $hooks . '><data value="' . Escape::attr( $value ) . '"' . ( is_string( $label ) && '' !== trim( $label ) ? ' aria-label="' . Escape::attr( $label ) . '"' : '' ) . '>' . Escape::html( is_string( $prefix ) ? $prefix : '' ) . Escape::html( $value ) . Escape::html( is_string( $suffix ) ? $suffix : '' ) . '</data></article>';
 		}
 		if ( 'dynamic' === $archetype ) {
 			return $this->render_dynamic( $node, $hooks );
@@ -869,6 +944,36 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 			}
 			return $html . '</select>';
 		}
+		if ( in_array( $id, [ 'input', 'textarea', 'date-picker' ], true ) ) {
+			$control_id  = 'blx-field-' . substr( hash( 'sha256', $node->id ), 0, 12 );
+			$value       = $node->value( 'value', '' );
+			$value       = is_string( $value ) ? $value : '';
+			$placeholder = $node->value( 'placeholder', '' );
+			$placeholder = is_string( $placeholder ) ? ' placeholder="' . Escape::attr( $placeholder ) . '"' : '';
+			$error       = $node->value( 'errorMessage', '' );
+			$error       = is_string( $error ) && '' !== trim( $error ) ? trim( $error ) : '';
+			$error_id    = $control_id . '-error';
+			$attributes  = ' id="' . $control_id . '" name="' . Escape::attr( $name ) . '"' . ( $required ? ' required' : '' ) . $disabled_attr . $placeholder . ( '' !== $error ? ' aria-invalid="true" aria-describedby="' . $error_id . '"' : '' );
+			$label_html  = '<label for="' . $control_id . '">' . Escape::html( $label ) . '</label>';
+			if ( 'textarea' === $id ) {
+				return $label_html . '<textarea' . $hooks . $attributes . '>' . Escape::html( $value ) . '</textarea>' . ( '' !== $error ? '<p id="' . $error_id . '">' . Escape::html( $error ) . '</p>' : '' );
+			}
+			$type          = 'date-picker' === $id ? 'date' : $node->value( 'inputType', 'text' );
+			$allowed_types = [ 'text', 'email', 'password', 'tel', 'url', 'number', 'search', 'date', 'time' ];
+			$type          = is_string( $type ) && in_array( $type, $allowed_types, true ) ? $type : 'text';
+			$min_date      = $node->value( 'minDate' );
+			$max_date      = $node->value( 'maxDate' );
+			$bounds        = '';
+			foreach ( [
+				'min' => $min_date,
+				'max' => $max_date,
+			] as $bound_name => $bound_value ) {
+				if ( is_string( $bound_value ) && preg_match( '/^\d{4}-\d{2}-\d{2}$/D', $bound_value ) ) {
+					$bounds .= ' ' . $bound_name . '="' . Escape::attr( $bound_value ) . '"';
+				}
+			}
+			return $label_html . '<input' . $hooks . ' type="' . $type . '"' . $attributes . $bounds . ' value="' . Escape::attr( $value ) . '">' . ( '' !== $error ? '<p id="' . $error_id . '">' . Escape::html( $error ) . '</p>' : '' );
+		}
 		if ( 'slider' === $id ) {
 			$min = $node->value( 'min', 0 );
 			$max = $node->value( 'max', 100 );
@@ -888,7 +993,289 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 			$range_label = is_string( $range_label ) && '' !== trim( $range_label ) ? trim( $range_label ) : $this->translate_label( 'Value' );
 			return '<div' . $hooks . ' data-blx-slider data-blx-slider-orientation="' . $orientation . '"><label for="' . $control_id . '">' . Escape::html( $range_label ) . '</label><input id="' . $control_id . '" type="range" name="' . Escape::attr( $name ) . '" min="' . Escape::attr( sprintf( '%g', $min ) ) . '" max="' . Escape::attr( sprintf( '%g', $max ) ) . '" step="' . Escape::attr( sprintf( '%g', $step ) ) . '" value="' . Escape::attr( sprintf( '%g', $initial ) ) . '" aria-orientation="' . $orientation . '"' . $disabled_attr . '><output for="' . $control_id . '" data-blx-slider-value>' . Escape::html( sprintf( '%g', $initial ) ) . '</output></div>';
 		}
+		if ( 'range-slider' === $id ) {
+			$min = $node->value( 'min', 0 );
+			$max = $node->value( 'max', 100 );
+			$min = is_numeric( $min ) && is_finite( (float) $min ) ? max( -1000000, min( 1000000, (float) $min ) ) : 0;
+			$max = is_numeric( $max ) && is_finite( (float) $max ) ? max( -1000000, min( 1000000, (float) $max ) ) : 100;
+			if ( $max <= $min ) {
+				$min = 0;
+				$max = 100;
+			}
+			$lower       = $node->value( 'defaultValue', 25 );
+			$upper       = $node->value( 'upperValue', 75 );
+			$lower       = is_numeric( $lower ) && is_finite( (float) $lower ) ? max( $min, min( $max, (float) $lower ) ) : $min;
+			$upper       = is_numeric( $upper ) && is_finite( (float) $upper ) ? max( $min, min( $max, (float) $upper ) ) : $max;
+			$upper       = max( $lower, $upper );
+			$step        = $node->value( 'step', 1 );
+			$step        = is_numeric( $step ) && is_finite( (float) $step ) && (float) $step > 0 ? min( 1000000, (float) $step ) : 1;
+			$orientation = 'vertical' === $node->value( 'orientation', 'horizontal' ) ? 'vertical' : 'horizontal';
+			$range_label = $node->value( 'ariaLabel' );
+			$range_label = is_string( $range_label ) && '' !== trim( $range_label ) ? $range_label : $this->translate_label( 'Value range' );
+			$range_id    = 'blx-range-pair-' . substr( hash( 'sha256', $node->id ), 0, 12 );
+			return '<fieldset' . $hooks . ' data-blx-range-slider data-blx-range-orientation="' . $orientation . '"><legend>' . Escape::html( $range_label ) . '</legend><label for="' . $range_id . '-lower">' . Escape::html( $this->translate_label( 'Minimum' ) ) . ' <output data-blx-range-lower-value>' . Escape::html( sprintf( '%g', $lower ) ) . '</output></label><input id="' . $range_id . '-lower" type="range" name="' . Escape::attr( $name ) . '[min]" min="' . Escape::attr( sprintf( '%g', $min ) ) . '" max="' . Escape::attr( sprintf( '%g', $max ) ) . '" step="' . Escape::attr( sprintf( '%g', $step ) ) . '" value="' . Escape::attr( sprintf( '%g', $lower ) ) . '"' . $disabled_attr . '><label for="' . $range_id . '-upper">' . Escape::html( $this->translate_label( 'Maximum' ) ) . ' <output data-blx-range-upper-value>' . Escape::html( sprintf( '%g', $upper ) ) . '</output></label><input id="' . $range_id . '-upper" type="range" name="' . Escape::attr( $name ) . '[max]" min="' . Escape::attr( sprintf( '%g', $min ) ) . '" max="' . Escape::attr( sprintf( '%g', $max ) ) . '" step="' . Escape::attr( sprintf( '%g', $step ) ) . '" value="' . Escape::attr( sprintf( '%g', $upper ) ) . '"' . $disabled_attr . '></fieldset>';
+		}
 		return '';
+	}
+
+	/** Render a date range as two independently labeled native date inputs.
+	 *
+	 * @param ElementNode $node Element definition.
+	 * @param string      $hooks Validated element hooks.
+	 */
+	private function render_date_range( ElementNode $node, string $hooks ): string {
+		$base_id = 'blx-date-range-' . substr( hash( 'sha256', $node->id ), 0, 12 );
+		$name    = $node->value( 'name', 'date-range' );
+		$name    = is_string( $name ) && 1 === preg_match( '/^[A-Za-z][A-Za-z0-9_.:-]{0,63}$/D', $name ) ? $name : 'date-range';
+		$label   = $node->value( 'ariaLabel' );
+		$label   = is_string( $label ) && '' !== trim( $label ) ? $label : $this->translate_label( 'Date range' );
+		return '<fieldset' . $hooks . '><legend>' . Escape::html( $label ) . '</legend><label for="' . $base_id . '-start">' . Escape::html( $this->translate_label( 'Start date' ) ) . '</label><input id="' . $base_id . '-start" type="date" name="' . Escape::attr( $name ) . '[start]"><label for="' . $base_id . '-end">' . Escape::html( $this->translate_label( 'End date' ) ) . '</label><input id="' . $base_id . '-end" type="date" name="' . Escape::attr( $name ) . '[end]"></fieldset>';
+	}
+
+	/** Render a native date picker or a bounded group of date inputs by calendar selection mode.
+	 *
+	 * @param ElementNode $node Element definition.
+	 * @param string      $hooks Validated element hooks.
+	 */
+	private function render_calendar( ElementNode $node, string $hooks ): string {
+		$mode = $node->value( 'mode', 'single' );
+		$mode = is_string( $mode ) && in_array( $mode, [ 'single', 'multiple', 'range' ], true ) ? $mode : 'single';
+		if ( 'range' === $mode ) {
+			return $this->render_date_range( $node, $hooks );
+		}
+		$name     = $node->value( 'name', 'dates' );
+		$name     = is_string( $name ) && 1 === preg_match( '/^[A-Za-z][A-Za-z0-9_.:-]{0,63}$/D', $name ) ? $name : 'dates';
+		$label    = $node->value( 'ariaLabel' );
+		$label    = is_string( $label ) && '' !== trim( $label ) ? $label : $this->translate_label( 'Calendar' );
+		$locale   = $node->value( 'locale' );
+		$locale   = is_string( $locale ) && 1 === preg_match( '/^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/D', $locale ) ? ' lang="' . Escape::attr( $locale ) . '"' : '';
+		$min_date = $node->value( 'minDate' );
+		$max_date = $node->value( 'maxDate' );
+		$bounds   = '';
+		foreach ( [
+			'min' => $min_date,
+			'max' => $max_date,
+		] as $bound_name => $bound_value ) {
+			if ( is_string( $bound_value ) && preg_match( '/^\d{4}-\d{2}-\d{2}$/D', $bound_value ) ) {
+				$bounds .= ' ' . $bound_name . '="' . Escape::attr( $bound_value ) . '"';
+			}
+		}
+		if ( 'single' === $mode ) {
+			$control_id = 'blx-calendar-' . substr( hash( 'sha256', $node->id ), 0, 12 );
+			return '<div' . $hooks . $locale . '><label for="' . $control_id . '">' . Escape::html( $label ) . '</label><input id="' . $control_id . '" type="date" name="' . Escape::attr( $name ) . '"' . $bounds . '></div>';
+		}
+		$count   = $node->value( 'maxSelections', 5 );
+		$count   = is_numeric( $count ) ? max( 1, min( 10, (int) $count ) ) : 5;
+		$base_id = 'blx-calendar-' . substr( hash( 'sha256', $node->id ), 0, 12 );
+		$html    = '<fieldset' . $hooks . $locale . '><legend>' . Escape::html( $label ) . '</legend>';
+		for ( $index = 0; $index < $count; $index++ ) {
+			$control_id = $base_id . '-' . $index;
+			/* translators: %s: date selection number. */
+			$date_label = function_exists( '__' ) ? sprintf( __( 'Date %s', 'blixis-builder' ), (string) ( $index + 1 ) ) : sprintf( 'Date %s', (string) ( $index + 1 ) );
+			$html      .= '<label for="' . $control_id . '">' . Escape::html( $date_label ) . '</label><input id="' . $control_id . '" type="date" name="' . Escape::attr( $name ) . '[]"' . $bounds . '>';
+		}
+		return $html . '</fieldset>';
+	}
+
+	/** Render a bounded static table using allowlisted column keys and escaped cell values.
+	 *
+	 * @param string      $id Element id.
+	 * @param ElementNode $node Element definition.
+	 * @param string      $hooks Validated element hooks.
+	 */
+	private function render_data_table( string $id, ElementNode $node, string $hooks ): string {
+		$columns  = $node->value( 'columns', [] );
+		$rows     = $node->value( 'rows', [] );
+		$columns  = is_array( $columns ) ? array_slice( $columns, 0, 50 ) : [];
+		$rows     = is_array( $rows ) ? array_slice( $rows, 0, 200 ) : [];
+		$headers  = [];
+		$keys     = [];
+		$sortable = 'sortable-table' === $id && true === $node->value( 'sortable', true );
+		foreach ( $columns as $column ) {
+			$column = $this->record( $column );
+			$key    = $column['key'] ?? null;
+			$title  = $column['title'] ?? null;
+			if ( ! is_string( $key ) || ! preg_match( '/^[A-Za-z][A-Za-z0-9_-]{0,63}$/D', $key ) || ! is_string( $title ) ) {
+				continue;
+			}
+			$keys[]  = $key;
+			$heading = Escape::html( $title );
+			if ( $sortable ) {
+				$heading = '<button type="button" data-blx-sort="' . Escape::attr( $key ) . '">' . $heading . '</button>';
+			}
+			$headers[] = '<th scope="col">' . $heading . '</th>';
+		}
+		$table_id = 'blx-table-' . substr( hash( 'sha256', $node->id ), 0, 12 );
+		$search   = true === $node->value( 'filterable', false ) ? '<label for="' . $table_id . '-filter">' . Escape::html( $this->translate_label( 'Search table' ) ) . '</label><input id="' . $table_id . '-filter" type="search" data-blx-table-filter aria-controls="' . $table_id . '">' : '';
+		$html     = $search . '<table' . $hooks . ' id="' . $table_id . '"' . ( is_string( $node->value( 'ariaLabel' ) ) ? ' aria-label="' . Escape::attr( $node->value( 'ariaLabel' ) ) . '"' : '' ) . ' data-blx-data-table><thead><tr>';
+		$html    .= implode( '', $headers ) . '</tr></thead><tbody>';
+		foreach ( $rows as $row ) {
+			$row = $this->record( $row );
+			if ( null === $row ) {
+				continue;
+			}
+			$html .= '<tr>';
+			foreach ( $keys as $key ) {
+				$cell  = $row[ $key ] ?? '';
+				$cell  = is_scalar( $cell ) ? (string) $cell : '';
+				$html .= '<td>' . Escape::html( $cell ) . '</td>';
+			}
+			$html .= '</tr>';
+		}
+		return $html . '</tbody></table>';
+	}
+
+	/** Render a dismissible status notification with a no-script readable fallback.
+	 *
+	 * @param ElementNode $node Element definition.
+	 * @param string      $hooks Validated element hooks.
+	 * @param string      $children Rendered child content.
+	 */
+	private function render_toast( ElementNode $node, string $hooks, string $children ): string {
+		$title       = $node->value( 'title', '' );
+		$description = $node->value( 'description', '' );
+		$variant     = $node->value( 'variant', 'info' );
+		$role        = in_array( $variant, [ 'error', 'danger', 'destructive' ], true ) ? 'alert' : 'status';
+		$html        = '<div' . $hooks . ' data-blx-toast role="' . $role . '">';
+		if ( true === $node->value( 'dismissible', true ) ) {
+			$html .= '<button type="button" data-blx-toast-dismiss aria-label="' . Escape::attr( $this->translate_label( 'Dismiss notification' ) ) . '">×</button>';
+		}
+		if ( is_string( $title ) && '' !== $title ) {
+			$html .= '<strong>' . Escape::html( $title ) . '</strong>';
+		}
+		if ( is_string( $description ) && '' !== $description ) {
+			$html .= '<p>' . Escape::html( $description ) . '</p>';
+		}
+		return $html . $children . '</div>';
+	}
+
+	/** Render chart data as a readable, bounded list of native meters.
+	 *
+	 * @param ElementNode $node Element definition.
+	 * @param string      $hooks Validated element hooks.
+	 */
+	private function render_chart_summary( ElementNode $node, string $hooks ): string {
+		$data  = $node->value( 'data', [] );
+		$data  = is_array( $data ) ? array_slice( $data, 0, 100 ) : [];
+		$label = $node->value( 'ariaLabel' );
+		$label = is_string( $label ) && '' !== trim( $label ) ? $label : $this->translate_label( 'Chart data' );
+		$html  = '<figure' . $hooks . '><figcaption>' . Escape::html( $label ) . '</figcaption><ul>';
+		foreach ( $data as $point ) {
+			$point = $this->record( $point );
+			$name  = $point['name'] ?? null;
+			$value = $point['value'] ?? null;
+			if ( ! is_string( $name ) || ! is_numeric( $value ) || ! is_finite( (float) $value ) ) {
+				continue;
+			}
+			$value = max( 0, min( 1000000, (float) $value ) );
+			$html .= '<li>' . Escape::html( $name ) . ' <meter min="0" max="1000000" value="' . Escape::attr( sprintf( '%g', $value ) ) . '">' . Escape::html( sprintf( '%g', $value ) ) . '</meter></li>';
+		}
+		return $html . '</ul></figure>';
+	}
+
+	/** Render a static rating meter with a textual value for assistive technology.
+	 *
+	 * @param ElementNode $node Element definition.
+	 * @param string      $hooks Validated element hooks.
+	 */
+	private function render_rating( ElementNode $node, string $hooks ): string {
+		$max   = $node->value( 'max', 5 );
+		$value = $node->value( 'value', 0 );
+		$max   = is_numeric( $max ) && (float) $max > 0 ? min( 100, (float) $max ) : 5;
+		$value = is_numeric( $value ) && is_finite( (float) $value ) ? max( 0, min( $max, (float) $value ) ) : 0;
+		$label = $node->value( 'ariaLabel' );
+		$label = is_string( $label ) && '' !== trim( $label ) ? $label : $this->translate_label( 'Rating' );
+		/* translators: 1: current rating, 2: maximum rating. */
+		$rating_text = function_exists( '__' ) ? sprintf( __( '%1$s out of %2$s', 'blixis-builder' ), sprintf( '%g', $value ), sprintf( '%g', $max ) ) : sprintf( '%g out of %g', $value, $max );
+		if ( true === $node->value( 'readonly', false ) ) {
+			return '<label' . $hooks . '>' . Escape::html( $label ) . ' <meter min="0" max="' . Escape::attr( sprintf( '%g', $max ) ) . '" value="' . Escape::attr( sprintf( '%g', $value ) ) . '">' . Escape::html( $rating_text ) . '</meter><span class="screen-reader-text">' . Escape::html( $rating_text ) . '</span></label>';
+		}
+		$group_id = 'blx-rating-' . substr( hash( 'sha256', $node->id ), 0, 12 );
+		$html     = '<fieldset' . $hooks . '><legend>' . Escape::html( $label ) . '</legend>';
+		for ( $score = 1; $score <= (int) $max; $score++ ) {
+			$input_id = $group_id . '-' . $score;
+			$html    .= '<label for="' . $input_id . '"><input id="' . $input_id . '" type="radio" name="' . $group_id . '" value="' . $score . '"' . ( (float) $score === (float) $value ? ' checked' : '' ) . '> ' . $score . '</label>';
+		}
+		return $html . '</fieldset>';
+	}
+
+	/** Render a tooltip with a focusable trigger and an associated description.
+	 *
+	 * @param ElementNode $node Element definition.
+	 * @param string      $children Tooltip content.
+	 * @param string      $hooks Validated element hooks.
+	 */
+	private function render_tooltip_component( ElementNode $node, string $children, string $hooks ): string {
+		$id      = 'blx-tooltip-' . substr( hash( 'sha256', $node->id ), 0, 12 );
+		$trigger = $node->value( 'triggerLabel', $this->translate_label( 'More information' ) );
+		$trigger = is_string( $trigger ) && '' !== trim( $trigger ) ? $trigger : $this->translate_label( 'More information' );
+		return '<span' . $hooks . ' data-blx-tooltip><button type="button" aria-describedby="' . $id . '">' . Escape::html( $trigger ) . '</button><span role="tooltip" id="' . $id . '">' . $children . '</span></span>';
+	}
+
+	/** Render a searchable command list that remains fully visible without JavaScript.
+	 *
+	 * @param ElementNode $node Element definition.
+	 * @param string      $hooks Validated element hooks.
+	 */
+	private function render_command_palette( ElementNode $node, string $hooks ): string {
+		$items       = $node->value( 'items', [] );
+		$items       = is_array( $items ) ? $items : [];
+		$label       = $node->value( 'ariaLabel', $this->translate_label( 'Commands' ) );
+		$label       = is_string( $label ) && '' !== trim( $label ) ? $label : $this->translate_label( 'Commands' );
+		$placeholder = $node->value( 'placeholder', $this->translate_label( 'Search commands' ) );
+		$placeholder = is_string( $placeholder ) ? $placeholder : $this->translate_label( 'Search commands' );
+		$empty_label = $node->value( 'emptyLabel', $this->translate_label( 'No results' ) );
+		$empty_label = is_string( $empty_label ) ? $empty_label : $this->translate_label( 'No results' );
+		$control_id  = 'blx-command-' . substr( hash( 'sha256', $node->id ), 0, 12 );
+		return '<section' . $hooks . ' data-blx-command-palette aria-label="' . Escape::attr( $label ) . '"><label for="' . $control_id . '">' . Escape::html( $placeholder ) . '</label><input id="' . $control_id . '" type="search" data-blx-command-search><ul>' . $this->navigation_items( $items, 0 ) . '<li data-blx-command-empty hidden>' . Escape::html( $empty_label ) . '</li></ul></section>';
+	}
+
+	/** Render a no-script horizontal carousel with native scrolling controls.
+	 *
+	 * @param ElementNode $node Element definition.
+	 * @param string[]    $children Rendered direct children.
+	 * @param string      $hooks Validated element hooks.
+	 */
+	private function render_carousel( ElementNode $node, array $children, string $hooks ): string {
+		$label    = $node->value( 'ariaLabel', $this->translate_label( 'Carousel' ) );
+		$label    = is_string( $label ) && '' !== trim( $label ) ? $label : $this->translate_label( 'Carousel' );
+		$interval = $node->value( 'intervalMs', 5000 );
+		$interval = is_numeric( $interval ) ? max( 1000, min( 30000, (int) $interval ) ) : 5000;
+		$autoplay = true === $node->value( 'autoplay', false );
+		$loop     = true === $node->value( 'loop', false );
+		$pause    = true === $node->value( 'pauseOnHover', true );
+		$arrows   = true === $node->value( 'arrows', true );
+		$per_view = $node->value( 'slidesPerView', 1 );
+		$per_view = is_numeric( $per_view ) ? max( 1, min( 6, (int) $per_view ) ) : 1;
+		$controls = $arrows ? '<button type="button" data-blx-carousel-previous aria-label="' . Escape::attr( $this->translate_label( 'Previous slide' ) ) . '">‹</button><button type="button" data-blx-carousel-next aria-label="' . Escape::attr( $this->translate_label( 'Next slide' ) ) . '">›</button>' : '';
+		if ( $autoplay ) {
+			$controls .= '<button type="button" data-blx-carousel-pause data-blx-play-label="' . Escape::attr( $this->translate_label( 'Play' ) ) . '" data-blx-pause-label="' . Escape::attr( $this->translate_label( 'Pause' ) ) . '" aria-pressed="false">' . Escape::html( $this->translate_label( 'Pause' ) ) . '</button>';
+		}
+		$slides = '';
+		$dots   = '';
+		foreach ( $children as $index => $child ) {
+			$slides .= '<div data-blx-carousel-slide>' . $child . '</div>';
+			if ( true === $node->value( 'dots', false ) ) {
+				/* translators: %s: slide number. */
+				$dot_label = function_exists( '__' ) ? sprintf( __( 'Go to slide %s', 'blixis-builder' ), (string) ( $index + 1 ) ) : sprintf( 'Go to slide %s', (string) ( $index + 1 ) );
+				$dots     .= '<button type="button" data-blx-carousel-dot="' . (int) $index . '" aria-label="' . Escape::attr( $dot_label ) . '">' . (int) ( $index + 1 ) . '</button>';
+			}
+		}
+		return '<section' . $hooks . ' data-blx-carousel data-blx-carousel-autoplay="' . ( $autoplay ? 'true' : 'false' ) . '" data-blx-carousel-pause-hover="' . ( $pause ? 'true' : 'false' ) . '" data-blx-carousel-loop="' . ( $loop ? 'true' : 'false' ) . '" data-blx-carousel-interval="' . $interval . '" data-blx-carousel-slides="' . $per_view . '" aria-label="' . Escape::attr( $label ) . '"><div>' . $controls . '</div><div data-blx-carousel-track tabindex="0">' . $slides . '</div>' . ( '' !== $dots ? '<div data-blx-carousel-dots>' . $dots . '</div>' : '' ) . '</section>';
+	}
+
+	/** Render a progress element updated from the page scroll position.
+	 *
+	 * @param ElementNode $node Element definition.
+	 * @param string      $hooks Validated element hooks.
+	 */
+	private function render_scroll_indicator( ElementNode $node, string $hooks ): string {
+		$label = $node->value( 'ariaLabel' );
+		$label = is_string( $label ) && '' !== trim( $label ) ? $label : $this->translate_label( 'Reading progress' );
+		$max   = $node->value( 'max', 100 );
+		$max   = is_numeric( $max ) && (float) $max > 0 ? max( 1, min( 1000000, (float) $max ) ) : 100;
+		$shown = true === $node->value( 'showLabel', false ) ? '<output data-blx-scroll-indicator-value>0%</output>' : '';
+		return '<div' . $hooks . '>' . $shown . '<progress data-blx-scroll-indicator data-blx-scroll-max="' . Escape::attr( sprintf( '%g', $max ) ) . '" max="' . Escape::attr( sprintf( '%g', $max ) ) . '" value="0" aria-label="' . Escape::attr( $label ) . '"></progress></div>';
 	}
 
 	/** Render all tab content with in-page links so content remains available without JavaScript.
@@ -1420,17 +1807,41 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 			'Back to top' => __( 'Back to top', 'blixis-builder' ),
 			'Breadcrumb' => __( 'Breadcrumb', 'blixis-builder' ),
 			'Close panel' => __( 'Close panel', 'blixis-builder' ),
+			'Copied.' => __( 'Copied.', 'blixis-builder' ),
+			'Copy failed.' => __( 'Copy failed.', 'blixis-builder' ),
+			'Chart data' => __( 'Chart data', 'blixis-builder' ),
+			'Date range' => __( 'Date range', 'blixis-builder' ),
+			'Dismiss notification' => __( 'Dismiss notification', 'blixis-builder' ),
 			'Menu' => __( 'Menu', 'blixis-builder' ),
 			'Mobile navigation' => __( 'Mobile navigation', 'blixis-builder' ),
 			'Navigation' => __( 'Navigation', 'blixis-builder' ),
 			'Off-canvas panel' => __( 'Off-canvas panel', 'blixis-builder' ),
 			'Open' => __( 'Open', 'blixis-builder' ),
+			'Pause' => __( 'Pause', 'blixis-builder' ),
+			'Play' => __( 'Play', 'blixis-builder' ),
 			'Pagination' => __( 'Pagination', 'blixis-builder' ),
 			'Previous'  => __( 'Previous', 'blixis-builder' ),
+			'Previous slide' => __( 'Previous slide', 'blixis-builder' ),
+			'Next slide' => __( 'Next slide', 'blixis-builder' ),
 			'Next'      => __( 'Next', 'blixis-builder' ),
 			'Load more' => __( 'Load more', 'blixis-builder' ),
+			'More information' => __( 'More information', 'blixis-builder' ),
+			'Minimum' => __( 'Minimum', 'blixis-builder' ),
+			'Maximum' => __( 'Maximum', 'blixis-builder' ),
+			'Value range' => __( 'Value range', 'blixis-builder' ),
+			'No results' => __( 'No results', 'blixis-builder' ),
+			'Open menu' => __( 'Open menu', 'blixis-builder' ),
+			'Commands' => __( 'Commands', 'blixis-builder' ),
+			'Search commands' => __( 'Search commands', 'blixis-builder' ),
+			'Reading progress' => __( 'Reading progress', 'blixis-builder' ),
+			'Carousel' => __( 'Carousel', 'blixis-builder' ),
+			'Calendar' => __( 'Calendar', 'blixis-builder' ),
 			'Progress' => __( 'Progress', 'blixis-builder' ),
+			'Rating' => __( 'Rating', 'blixis-builder' ),
 			'Select option' => __( 'Select option', 'blixis-builder' ),
+			'Search table' => __( 'Search table', 'blixis-builder' ),
+			'Start date' => __( 'Start date', 'blixis-builder' ),
+			'End date' => __( 'End date', 'blixis-builder' ),
 			'Value' => __( 'Value', 'blixis-builder' ),
 			'Sidebar navigation' => __( 'Sidebar navigation', 'blixis-builder' ),
 			'Sections' => __( 'Sections', 'blixis-builder' ),
