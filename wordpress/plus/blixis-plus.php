@@ -36,3 +36,18 @@ if ( ! function_exists( 'blixis_plus_api_version' ) ) {
 		return 1;
 	}
 }
+
+require_once __DIR__ . '/src/PlanEntitlement.php';
+
+/** Return the Plus plan API version consumed by paid extensions. */
+function blixis_plus_plan_api_version(): int {
+	return PlanEntitlement::API_VERSION;
+}
+
+/** Check a server-authoritative plan entitlement; no provider means no paid access.
+ *
+ * @param string $plan Plan identifier.
+ */
+function blixis_plus_has_plan( string $plan ): bool {
+	return ( new PlanEntitlement() )->has_plan( $plan );
+}
