@@ -236,6 +236,9 @@ final class ElementDefinitionRegistryTest extends TestCase {
 		$hover = $renderer->render( new ElementNode( 'tilt', 'blixis/hover-tilt', [ 'trigger' => 'hover' ] ), new RenderContext( '<p>Card</p>' ) );
 		$this->assertStringContainsString( 'data-blx-motion="hover"', $hover );
 		$this->assertStringContainsString( '<p>Card</p>', $hover );
+		$scroll = $renderer->render( new ElementNode( 'timeline', 'blixis/scroll-timeline', [] ), new RenderContext( '<p>Timeline content</p>' ) );
+		$this->assertStringContainsString( 'data-blx-motion="scroll"', $scroll );
+		$this->assertStringContainsString( '<p>Timeline content</p>', $scroll );
 	}
 
 	/** Dynamic bindings pass through the document renderer and unsupported paths use their authored fallback.
