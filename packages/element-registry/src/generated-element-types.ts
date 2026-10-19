@@ -23057,7 +23057,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'toggle',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -23343,7 +23343,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'toggle',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -23629,7 +23629,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'choice',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -23915,7 +23915,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'choice',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -24487,7 +24487,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'toggle',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -24773,7 +24773,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'choice',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -25020,7 +25020,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'range',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -33182,7 +33182,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'choice',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -71070,7 +71070,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:settings-minimalistic-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'switch switch ui-components switch element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71081,7 +71081,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:check-square-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'checkbox checkbox ui-components checkbox element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71092,7 +71092,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:check-circle-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'radio-group radio group ui-components radio group element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71103,7 +71103,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:alt-arrow-down-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'select select ui-components select element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71125,7 +71125,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:settings-minimalistic-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'toggle toggle ui-components toggle element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71136,7 +71136,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:widget-2-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'toggle-group toggle group ui-components toggle group element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71147,7 +71147,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:slider-horizontal-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'slider slider ui-components slider element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71477,7 +71477,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:widget-2-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'segmented-control segmented control ui-components segmented control element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },

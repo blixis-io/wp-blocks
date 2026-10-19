@@ -250,6 +250,12 @@ msgstr "Naar boven"
 msgid "Close panel"
 msgstr "Paneel sluiten"
 
+msgid "Select option"
+msgstr "Selecteer een optie"
+
+msgid "Value"
+msgstr "Waarde"
+
 msgid "Menu"
 msgstr "Menu"
 
