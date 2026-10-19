@@ -30,11 +30,11 @@ The blueprint proposed WordPress 7.0+ because of the Font Library, and left PHP/
 
 ## Consequences
 - Some shared hosts on PHP < 8.2 or WordPress < 7.0 cannot install the product; the plugin must fail activation with a clear notice rather than fatal.
-- Fewer matrix cells; modern PHP features allowed.
+- Pull request CI runs the WordPress 7.0 and 7.1 images against PHP 8.2, 8.3 and 8.5, for six integration smoke cells. The separate PHP quality matrix also runs PHPCS, PHPStan and PHPUnit on all three PHP versions.
 
 ## Test strategy
 - Activation guard unit/integration tests on unsupported WP/PHP versions (plugin and theme refuse to activate, no fatals, notice shown).
-- CI matrix: WP {7.0, latest} × PHP {8.2, 8.3, latest}; Node {24, and 26 once it is LTS}.
+- CI matrix: WP {7.0, latest} × PHP {8.2, 8.3, latest}; Node {24, and 26 once it is LTS}. Integration smoke runs all six WordPress/PHP combinations; PHP-only quality checks run all three PHP versions.
 - A scheduled job re-checks php.net/nodejs.org/wordpress.org lifecycle pages and opens an issue when a floor is about to go end of life.
 
 ## Rollback

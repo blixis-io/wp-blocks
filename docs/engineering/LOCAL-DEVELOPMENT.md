@@ -31,7 +31,7 @@ BLX_CLI_IMAGE=wordpress:cli-php8.5@sha256:52d8832dc8b90022c22fe963e696e4107d86f6
 pnpm wp:reset && pnpm wp:start
 ```
 
-CI runs the smoke test on both the floor and the latest combination (`.github/workflows/ci.yml`, job `wordpress`). When you change an image, update its digest (`docker buildx imagetools inspect <image>`), the compose defaults and the CI matrix together.
+CI runs the smoke test across WordPress 7.0 and 7.1 × PHP 8.2, 8.3 and 8.5 (`.github/workflows/ci.yml`, job `wordpress`). This covers the ADR 0001 floor, latest WordPress, PHP floor, recommended PHP and latest PHP in every supported combination. When you change an image, update its digest (`docker buildx imagetools inspect <image>`), the compose defaults and the CI matrix together.
 
 ## Safety notes
 - The Compose project is named `blixis-wp-blocks`. Plain `blixis` collided with another Blixis stack on a developer machine; the reset command also never removes orphan containers, because they may belong to other projects.
@@ -39,7 +39,7 @@ CI runs the smoke test on both the floor and the latest combination (`.github/wo
 - Packages (`wordpress/theme`, `wordpress/plugin`, add-ons) are mounted through `docker/compose.packages.yml` once they contain PHP, so Docker never creates empty host directories. That file and the WordPress PHPUnit integration bootstrap arrive with BWB-018 and BWB-039.
 
 ## Guards
-`seed.php` refuses to run unless `BLIXIS_DEV_FIXTURES` is defined and the environment type is `local` (both set by `docker/compose.yml`), because it resets passwords, overwrites pages and changes options. `wp-env.mjs` always passes the project name explicitly and ignores `COMPOSE_PROJECT_NAME`, so `pnpm wp:reset` can only remove this project's containers and volumes. Compatibility coverage in CI is the floor and the latest combination; the wider WordPress x PHP matrix of ADR 0001 is added when integration tests exist (nightly job).
+`seed.php` refuses to run unless `BLIXIS_DEV_FIXTURES` is defined and the environment type is `local` (both set by `docker/compose.yml`), because it resets passwords, overwrites pages and changes options. `wp-env.mjs` always passes the project name explicitly and ignores `COMPOSE_PROJECT_NAME`, so `pnpm wp:reset` can only remove this project's containers and volumes. CI runs the full six-cell WordPress × PHP integration matrix on each pull request.
 
 ## Fixtures
 `tooling/wp-env/fixtures/seed.php` is run with `wp eval-file`. Keep it deterministic and idempotent; locale- and mode-specific fixtures for the translation and appearance features are added by BWB-018 and the P2 issues.

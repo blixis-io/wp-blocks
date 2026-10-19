@@ -80,11 +80,24 @@ test('the project name is distinctive and always passed explicitly; reset never 
   assert.doesNotMatch(js, /--remove-orphans/);
 });
 
-test('the CI matrix images are pinned by digest', () => {
+test('the CI integration matrix covers all supported WordPress/PHP combinations with pinned images', () => {
   const ci = read('.github/workflows/ci.yml');
-  const images = [...ci.matchAll(/^\s+(?:wp|cli)_image:\s*'([^']+)'/gm)].map((m) => m[1]);
-  assert.ok(images.length >= 4);
-  for (const i of images) assert.match(i, /@sha256:[0-9a-f]{64}$/, i);
+  const cells = [
+    ...ci.matchAll(
+      /^\s+- name: '(7\.\d) \/ PHP (8\.\d) \([^)]+\)'\n\s+expect_wp: '(7\.\d)'\n\s+expect_php: '(8\.\d)'\n\s+wp_image: '([^']+)'\n\s+cli_image: '([^']+)'/gm,
+    ),
+  ];
+  const pairs = cells.map((m) => `${m[1]}/${m[2]}`).sort();
+  assert.deepEqual(pairs, ['7.0/8.2', '7.0/8.3', '7.0/8.5', '7.1/8.2', '7.1/8.3', '7.1/8.5']);
+  for (const [, wp, php, expectedWp, expectedPhp, wpImage, cliImage] of cells) {
+    assert.equal(expectedWp, wp);
+    assert.equal(expectedPhp, php);
+    assert.match(
+      wpImage,
+      new RegExp(`^wordpress:(?:${wp === '7.1' ? '7\\.1\\.3' : wp})-php${php}-apache@sha256:[0-9a-f]{64}$`),
+    );
+    assert.match(cliImage, new RegExp(`^wordpress:cli-php${php}@sha256:[0-9a-f]{64}$`));
+  }
 });
 
 test('development credentials are labelled as development-only', () => {
