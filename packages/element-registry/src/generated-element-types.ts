@@ -57784,7 +57784,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'animation',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -72512,7 +72512,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'advanced-motion',
     icon: 'solar:clock-circle-linear',
     tier: 'pro',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'scroll-timeline scroll timeline advanced-motion scroll timeline element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
