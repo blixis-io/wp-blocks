@@ -34267,7 +34267,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'form',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -34576,7 +34576,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'input',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -34895,7 +34895,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'input',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -35852,7 +35852,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'input',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -36171,7 +36171,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'input',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -36490,7 +36490,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'input',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -38835,7 +38835,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'input',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -39442,7 +39442,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'button',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -39710,7 +39710,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'alert',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -39978,7 +39978,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'alert',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -40813,7 +40813,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'form',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -41107,7 +41107,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'form',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -71462,7 +71462,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'forms',
     icon: 'solar:clipboard-text-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'form form forms form element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71473,7 +71473,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'forms',
     icon: 'solar:text-field-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'text-field text field forms text field element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71484,7 +71484,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'forms',
     icon: 'solar:letter-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'email-field email field forms email field element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71517,7 +71517,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'forms',
     icon: 'solar:hashtag-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'number-field number field forms number field element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71528,7 +71528,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'forms',
     icon: 'solar:link-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'url-field url field forms url field element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71539,7 +71539,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'forms',
     icon: 'solar:magnifer-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'search-field search field forms search field element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71627,7 +71627,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'forms',
     icon: 'solar:eye-closed-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'hidden-field hidden field forms hidden field element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71649,7 +71649,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'forms',
     icon: 'solar:plain-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'submit-button submit button forms submit button element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71660,7 +71660,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'forms',
     icon: 'solar:check-circle-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'form-success form success forms form success element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71671,7 +71671,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'forms',
     icon: 'solar:danger-circle-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'form-error form error forms form error element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71704,7 +71704,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'forms',
     icon: 'solar:letter-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'newsletter-signup newsletter signup forms newsletter signup element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71715,7 +71715,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'forms',
     icon: 'solar:letter-opened-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'contact-form contact form forms contact form element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },

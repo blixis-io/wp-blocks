@@ -57357,7 +57357,7 @@
         ]
       },
       "archetype": "form",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -57864,7 +57864,7 @@
         ]
       },
       "archetype": "input",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -58388,7 +58388,7 @@
         ]
       },
       "archetype": "input",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -59959,7 +59959,7 @@
         ]
       },
       "archetype": "input",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -60483,7 +60483,7 @@
         ]
       },
       "archetype": "input",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -61007,7 +61007,7 @@
         ]
       },
       "archetype": "input",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -64850,7 +64850,7 @@
         ]
       },
       "archetype": "input",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -65884,7 +65884,7 @@
         ]
       },
       "archetype": "button",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -66303,7 +66303,7 @@
         ]
       },
       "archetype": "alert",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -66722,7 +66722,7 @@
         ]
       },
       "archetype": "alert",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -68092,7 +68092,7 @@
         ]
       },
       "archetype": "form",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -68573,7 +68573,7 @@
         ]
       },
       "archetype": "form",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",

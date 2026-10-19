@@ -30,6 +30,31 @@ test('element artifacts are generated from schema-valid definitions and are curr
       `${id} is implemented and insertable`,
     );
   }
+  for (const id of [
+    'blixis/form',
+    'blixis/text-field',
+    'blixis/email-field',
+    'blixis/number-field',
+    'blixis/url-field',
+    'blixis/search-field',
+    'blixis/hidden-field',
+    'blixis/submit-button',
+    'blixis/form-success',
+    'blixis/form-error',
+    'blixis/newsletter-signup',
+    'blixis/contact-form',
+  ]) {
+    assert.equal(
+      palette.elements.find((element) => element.id === id)?.status,
+      'ready',
+      `${id} has a supported native renderer and submission contract`,
+    );
+  }
+  assert.equal(
+    palette.elements.find((element) => element.id === 'blixis/password-field')?.status,
+    'planned',
+    'password submissions are rejected by the no-retention email handler',
+  );
   assert.equal(icons.package, '@iconify-icons/solar');
   assert.ok(icons.mismatches.every((entry) => entry.resolved.startsWith('solar:')));
 });
