@@ -88,6 +88,80 @@ final class ElementDefinitionRegistryTest extends TestCase {
 		);
 	}
 
+	/** P7 static WordPress elements retain safe fallback markup without query context. */
+	public function test_p7_static_wordpress_elements_render_safe_fallbacks(): void {
+		$registry = ElementDefinitionRegistry::from_manifest_file( \dirname( __DIR__ ) . '/data/element-definitions-v2.json' );
+		$media    = new class() implements AssetReferenceResolver {
+			/** No attachment metadata is available in this static renderer test.
+			 *
+			 * @param int $attachment_id Attachment identifier.
+			 */
+			public function resolve( int $attachment_id ): ?array {
+				return null; }
+			/** No bundled asset metadata is available in this static renderer test.
+			 *
+			 * @param string $reference Asset reference.
+			 */
+			public function resolve_reference( string $reference ): ?array {
+				return null; }
+		};
+		$renderer = new DefinitionArchetypeRenderer( $registry, $media );
+		$this->assertSame( '', $renderer->render( new ElementNode( 'featured', 'blixis/featured-image', [] ), new RenderContext() ) );
+		$this->assertStringContainsString(
+			'<table',
+			$renderer->render(
+				new ElementNode(
+					'posts',
+					'blixis/table-of-posts',
+					[
+						'columns' => [
+							[
+								'key'   => 'title',
+								'title' => 'Title',
+							],
+						],
+						'rows'    => [ [ 'title' => '<unsafe>' ] ],
+					]
+				),
+				new RenderContext()
+			)
+		);
+		$this->assertStringContainsString(
+			'&lt;unsafe&gt;',
+			$renderer->render(
+				new ElementNode(
+					'posts',
+					'blixis/table-of-posts',
+					[
+						'columns' => [
+							[
+								'key'   => 'title',
+								'title' => 'Title',
+							],
+						],
+						'rows'    => [ [ 'title' => '<unsafe>' ] ],
+					]
+				),
+				new RenderContext()
+			)
+		);
+		$this->assertSame( '', $renderer->render( new ElementNode( 'pages', 'blixis/query-pagination', [ 'total' => 1 ] ), new RenderContext() ) );
+		$this->assertStringContainsString(
+			'<span aria-current="page">2</span>',
+			$renderer->render(
+				new ElementNode(
+					'pages',
+					'blixis/query-pagination',
+					[
+						'total'       => 5,
+						'currentPage' => 2,
+					]
+				),
+				new RenderContext()
+			)
+		);
+	}
+
 	/** Resizable panels preserve child order and expose a labeled keyboard separator. */
 	public function test_resizable_panels_render_keyboard_separator_markup(): void {
 		$registry = ElementDefinitionRegistry::from_manifest_file( \dirname( __DIR__ ) . '/data/element-definitions-v2.json' );

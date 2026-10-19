@@ -173,6 +173,35 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 			}
 			return '<a' . $hooks . ' href="' . Escape::url( is_string( $href ) ? $href : '#' ) . '" target="' . $target . '" rel="' . Escape::attr( $rel ) . '">' . Escape::html( is_string( $label ) ? $label : '' ) . '</a>';
 		}
+		if ( 'featured-image' === $id ) {
+			if ( ! $node->value( 'assetRef' ) && function_exists( 'get_post_thumbnail_id' ) ) {
+				$thumbnail_id = get_post_thumbnail_id();
+				if ( is_int( $thumbnail_id ) && $thumbnail_id > 0 ) {
+					$node = new ElementNode( $node->id, $node->type, array_merge( $node->values, [ 'assetRef' => 'attachment:' . $thumbnail_id ] ), $node->classes );
+				}
+			}
+			$image = $this->asset_image( $node );
+			if ( '' === $image ) {
+				return '';
+			}
+			$caption = $node->value( 'caption', '' );
+			return '<figure' . $hooks . '>' . $image . ( is_string( $caption ) && '' !== trim( $caption ) ? '<figcaption>' . Escape::html( $caption ) . '</figcaption>' : '' ) . '</figure>';
+		}
+		if ( 'author-box' === $id ) {
+			return $this->render_author_box( $node, $hooks );
+		}
+		if ( 'comments-list' === $id ) {
+			return $this->render_comments_list( $node, $hooks );
+		}
+		if ( 'query-loop' === $id || 'related-posts' === $id ) {
+			return $this->render_post_loop( $node, $hooks, 'related-posts' === $id );
+		}
+		if ( 'query-pagination' === $id ) {
+			return $this->render_query_pagination( $node, $hooks );
+		}
+		if ( 'table-of-posts' === $id ) {
+			return $this->render_data_table( 'data-table', $node, $hooks );
+		}
 		if ( 'container' === $id ) {
 			$width = $node->value( 'maxWidthToken', $node->value( 'maxWidth', 'default' ) );
 			if ( ! is_string( $width ) || ! preg_match( '/^[a-z0-9-]{1,40}$/D', $width ) ) {
@@ -713,20 +742,21 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 	 */
 	private function render_dynamic( ElementNode $node, string $hooks ): string {
 		$value   = null;
+		$type    = preg_replace( '~^blixis/~', '', $node->type );
 		$post_id = function_exists( 'get_the_ID' ) ? get_the_ID() : false;
-		if ( 'post-title' === $node->type && function_exists( 'get_the_title' ) ) {
+		if ( 'post-title' === $type && function_exists( 'get_the_title' ) ) {
 			$value = get_the_title();
-		} elseif ( 'post-excerpt' === $node->type && function_exists( 'get_the_excerpt' ) ) {
+		} elseif ( 'post-excerpt' === $type && function_exists( 'get_the_excerpt' ) ) {
 			$value = get_the_excerpt();
-		} elseif ( 'post-content' === $node->type && function_exists( 'get_post_field' ) && is_int( $post_id ) && $post_id > 0 ) {
+		} elseif ( 'post-content' === $type && function_exists( 'get_post_field' ) && is_int( $post_id ) && $post_id > 0 ) {
 			$value = get_post_field( 'post_content', $post_id );
-		} elseif ( 'post-date' === $node->type && function_exists( 'get_the_date' ) ) {
+		} elseif ( 'post-date' === $type && function_exists( 'get_the_date' ) ) {
 			$value = get_the_date();
-		} elseif ( 'post-author' === $node->type && function_exists( 'get_the_author' ) ) {
+		} elseif ( 'post-author' === $type && function_exists( 'get_the_author' ) ) {
 			$value = get_the_author();
-		} elseif ( 'site-tagline' === $node->type && function_exists( 'get_bloginfo' ) ) {
+		} elseif ( 'site-tagline' === $type && function_exists( 'get_bloginfo' ) ) {
 			$value = get_bloginfo( 'description' );
-		} elseif ( 'post-terms' === $node->type && function_exists( 'get_the_terms' ) && is_int( $post_id ) && $post_id > 0 ) {
+		} elseif ( 'post-terms' === $type && function_exists( 'get_the_terms' ) && is_int( $post_id ) && $post_id > 0 ) {
 			$terms = get_the_terms( $post_id, 'category' );
 			if ( is_array( $terms ) ) {
 				$value = implode( ', ', array_filter( array_map( static fn ( mixed $term ): string => $term instanceof \WP_Term ? $term->name : '', $terms ) ) );
@@ -736,11 +766,135 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 			$value = $node->value( 'fallback', '' );
 		}
 		$value = is_string( $value ) ? $value : '';
-		if ( in_array( $node->type, [ 'blixis/post-content', 'blixis/post-excerpt' ], true ) && function_exists( 'wp_strip_all_tags' ) ) {
+		if ( in_array( $type, [ 'post-content', 'post-excerpt' ], true ) && function_exists( 'wp_strip_all_tags' ) ) {
 			$value = wp_strip_all_tags( $value );
 		}
-		$tag = 'blixis/post-content' === $node->type ? 'div' : 'span';
+		$tag = 'post-content' === $type ? 'div' : 'span';
 		return '<' . $tag . $hooks . '>' . Escape::html( $value ) . '</' . $tag . '>';
+	}
+
+	/** Render the public current author with an explicit field allowlist.
+	 *
+	 * @param ElementNode $node Author box.
+	 * @param string      $hooks Validated hooks.
+	 */
+	private function render_author_box( ElementNode $node, string $hooks ): string {
+		$author_id = function_exists( 'get_the_author_meta' ) ? (int) get_the_author_meta( 'ID' ) : 0;
+		$name      = $author_id > 0 ? (string) get_the_author_meta( 'display_name', $author_id ) : '';
+		$bio       = $author_id > 0 ? (string) get_the_author_meta( 'description', $author_id ) : '';
+		$title     = $node->value( 'title', '' );
+		$href      = $author_id > 0 && function_exists( 'get_author_posts_url' ) ? get_author_posts_url( $author_id ) : '';
+		if ( '' === $name ) {
+			$name = is_string( $title ) ? $title : '';
+		}
+		if ( '' === $bio ) {
+			$bio = (string) $node->value( 'description', '' );
+		}
+		$name_html = '' !== $href && true === $node->value( 'interactive', false ) ? '<a href="' . Escape::url( $href ) . '">' . Escape::html( $name ) . '</a>' : Escape::html( $name );
+		return '<article' . $hooks . '><h2>' . $name_html . '</h2>' . ( '' !== $bio ? '<p>' . Escape::html( $bio ) . '</p>' : '' ) . '</article>';
+	}
+
+	/** Render approved comments for the current post, bounded to 50 entries.
+	 *
+	 * @param ElementNode $node Comments list.
+	 * @param string      $hooks Validated hooks.
+	 */
+	private function render_comments_list( ElementNode $node, string $hooks ): string {
+		$post_id  = function_exists( 'get_the_ID' ) ? (int) get_the_ID() : 0;
+		$comments = $post_id > 0 && function_exists( 'get_comments' ) ? get_comments(
+			[
+				'post_id'      => $post_id,
+				'status'       => 'approve',
+				'number'       => 50,
+				'hierarchical' => false,
+			]
+		) : [];
+		if ( ! is_array( $comments ) || [] === $comments ) {
+			$fallback = $node->value( 'fallback', '' );
+			return is_string( $fallback ) && '' !== $fallback ? '<div' . $hooks . '>' . Escape::html( $fallback ) . '</div>' : '';
+		}
+		$html = '<ol' . $hooks . '>';
+		foreach ( $comments as $comment ) {
+			if ( ! $comment instanceof \WP_Comment || '1' !== (string) $comment->comment_approved ) {
+				continue;
+			}
+			$html .= '<li><article><p>' . Escape::html( (string) $comment->comment_author ) . '</p><div>' . ( function_exists( 'wp_kses_post' ) ? wp_kses_post( (string) $comment->comment_content ) : Escape::html( (string) $comment->comment_content ) ) . '</div></article></li>';
+		}
+		return $html . '</ol>';
+	}
+
+	/** Render a bounded public post query using only public post types and published content.
+	 *
+	 * @param ElementNode $node Loop definition.
+	 * @param string      $hooks Validated hooks.
+	 * @param bool        $related Use current post categories.
+	 */
+	private function render_post_loop( ElementNode $node, string $hooks, bool $related ): string {
+		if ( ! function_exists( 'get_posts' ) || ! function_exists( 'get_post_types' ) ) {
+			return '';
+		}
+		$maximum    = $node->value( 'maxItems', 30 );
+		$maximum    = is_numeric( $maximum ) ? max( 1, min( 30, (int) $maximum ) ) : 10;
+		$requested  = $related ? [ 'post' ] : $node->value( 'allowedPostTypes', [ 'post' ] );
+		$public     = get_post_types( [ 'public' => true ], 'names' );
+		$post_types = is_array( $requested ) ? array_values( array_intersect( array_filter( $requested, 'is_string' ), $public ) ) : [ 'post' ];
+		$post_types = array_slice( $post_types, 0, 10 );
+		if ( [] === $post_types ) {
+			return '';
+		}
+		$args = [
+			'post_type'        => $post_types,
+			'post_status'      => 'publish',
+			'numberposts'      => $maximum,
+			'orderby'          => 'date',
+			'order'            => 'DESC',
+			'suppress_filters' => false,
+		];
+		if ( $related && function_exists( 'wp_get_post_categories' ) ) {
+			$categories           = wp_get_post_categories( (int) get_the_ID() );
+			$args['post__not_in'] = [ (int) get_the_ID() ];
+			$args['category__in'] = is_array( $categories ) ? $categories : [];
+		}
+		$posts = get_posts( $args );
+		if ( ! is_array( $posts ) || [] === $posts ) {
+			$empty = $node->value( 'emptyMessage', 'No results' );
+			return '<p' . $hooks . '>' . Escape::html( is_string( $empty ) ? $empty : 'No results' ) . '</p>';
+		}
+		$html = '<ul' . $hooks . '>';
+		foreach ( $posts as $post ) {
+			if ( ! $post instanceof \WP_Post ) {
+				continue;
+			}
+			$title = get_the_title( $post );
+			$url   = get_permalink( $post );
+			$html .= '<li><a href="' . Escape::url( is_string( $url ) ? $url : '' ) . '">' . Escape::html( is_string( $title ) ? $title : '' ) . '</a></li>';
+		}
+		return $html . '</ul>';
+	}
+
+	/** Render pagination links from bounded numeric settings.
+	 *
+	 * @param ElementNode $node Pagination definition.
+	 * @param string      $hooks Validated hooks.
+	 */
+	private function render_query_pagination( ElementNode $node, string $hooks ): string {
+		$current = $node->value( 'currentPage', 1 );
+		$total   = $node->value( 'total', 1 );
+		$current = is_numeric( $current ) ? max( 1, (int) $current ) : 1;
+		$total   = is_numeric( $total ) ? max( 1, min( 1000, (int) $total ) ) : 1;
+		if ( $total < 2 ) {
+			return '';
+		}
+		$base  = $node->value( 'basePath', '' );
+		$base  = is_string( $base ) && SafeUrl::accepts( $base ) ? $base : ( function_exists( 'get_pagenum_link' ) ? get_pagenum_link( 1 ) : '/' );
+		$html  = '<nav' . $hooks . ' aria-label="' . Escape::attr( $this->translate_label( 'Pagination' ) ) . '"><ul>';
+		$start = max( 1, $current - 2 );
+		$end   = min( $total, $current + 2 );
+		for ( $page = $start; $page <= $end; $page++ ) {
+			$url   = function_exists( 'add_query_arg' ) ? add_query_arg( 'paged', $page, $base ) : $base;
+			$html .= '<li>' . ( $page === $current ? '<span aria-current="page">' . $page . '</span>' : '<a href="' . Escape::url( $url ) . '">' . $page . '</a>' ) . '</li>';
+		}
+		return $html . '</ul></nav>';
 	}
 
 	/** Render a static alert with semantic live-region behavior.
