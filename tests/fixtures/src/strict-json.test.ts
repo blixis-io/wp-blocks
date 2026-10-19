@@ -8,6 +8,9 @@ export const REJECTED: [string, string][] = [
   ['-0', '{"a":-0}'],
   ['-0.0', '{"a":-0.0}'],
   ['unsafe integer', '{"a":9007199254740992}'],
+  ['decimal precision beyond four places', '{"a":1.12345}'],
+  ['decimal magnitude below the canonical range', '{"a":0.00001}'],
+  ['decimal magnitude above the canonical range', '{"a":1000000000.1}'],
   ['duplicate key', '{"a":1,"a":2}'],
   ['duplicate nested key', '{"x":{"a":1,"a":1}}'],
   ['lone high surrogate', '{"a":"\\ud800"}'],
@@ -31,6 +34,7 @@ describe('assertStrictJson', () => {
   it.each([
     ['empty containers', '{"a":{},"b":[]}'],
     ['safe integer limits', '[9007199254740991,-9007199254740991,0]'],
+    ['bounded decimal values', '[4.5,-123.4567,0.0001]'],
     ['escapes and paired surrogates', '{"a":"\\n\\u00e9\\ud83d\\ude00\\"\\\\"}'],
     ['whitespace', ' \n\t { "a" : [ 1 , 2 ] } \n'],
     ['same key in different objects', '{"a":{"x":1},"b":{"x":2}}'],

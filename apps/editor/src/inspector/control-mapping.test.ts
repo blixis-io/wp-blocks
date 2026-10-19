@@ -1,10 +1,14 @@
-import { createCoreRegistry } from '@blixis/wp-element-registry';
+import { createCoreRegistry, type PropDefinition } from '@blixis/wp-element-registry';
 import { describe, expect, it } from 'vitest';
 import { controlFamilyFor, propertyBelongsToTab } from './control-mapping';
 
 const registry = createCoreRegistry();
 
 describe('schema to inspector control mapping', () => {
+  it('maps decimal properties to the number control family', () => {
+    expect(controlFamilyFor({ kind: 'number' } as PropDefinition)).toBe('number');
+  });
+
   it('maps every core property kind to a control family', () => {
     const kinds = new Set<string>();
     for (const type of [

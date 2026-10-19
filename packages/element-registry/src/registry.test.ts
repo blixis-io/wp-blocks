@@ -271,6 +271,22 @@ describe('registration rules', () => {
     expect(errorsOf(vendorDef({ requiresApi: EXTENSION_API_VERSION + 1 })).join()).toMatch(/requires extension API/);
   });
 
+  it('gates bounded decimal properties on extension API v2', () => {
+    const rating = { kind: 'number', classification: 'invariant', label: 'Rating', min: 0, max: 5, default: 4.5 };
+    const numberDef = vendorDef({
+      requiresApi: 2,
+      props: { rating },
+    });
+    expect(errorsOf({ ...numberDef, requiresApi: 1 }).join()).toMatch(/number properties require extension API 2/);
+    expect(errorsOf(numberDef)).toEqual([]);
+    expect(errorsOf({ ...numberDef, props: { rating: { ...rating, default: 1.23456 } } }).join()).toMatch(
+      /outside the canonical integer\/decimal range/,
+    );
+    expect(errorsOf({ ...numberDef, props: { rating: { ...rating, min: 0.00001 } } }).join()).toMatch(
+      /outside the canonical integer\/decimal range/,
+    );
+  });
+
   it('refuses duplicates', () => {
     const r = new ElementRegistry();
     expect(r.register(vendorDef(), 'vendor').ok).toBe(true);

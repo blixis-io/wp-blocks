@@ -1,6 +1,6 @@
-# Element registry and extension API (v1)
+# Element registry and extension API (v2)
 
-Implements BWB-021 in `packages/element-registry`. The registry is the single list of element types the editor, the REST API and the PHP renderers know. It is also the public registration contract that Plus, Pro and third-party add-ons use (ADR 0009: add-ons depend on this API only). Versioning and compatibility rules for the contract itself are in `VERSIONING-AND-COMPATIBILITY.md`; the current version is `EXTENSION_API_VERSION = 1`.
+Implements BWB-021 in `packages/element-registry`. The registry is the single list of element types the editor, the REST API and the PHP renderers know. It is also the public registration contract that Plus, Pro and third-party add-ons use (ADR 0009: add-ons depend on this API only). Versioning and compatibility rules for the contract itself are in `VERSIONING-AND-COMPATIBILITY.md`; the current version is `EXTENSION_API_VERSION = 2`.
 
 ## Definition
 
@@ -15,7 +15,7 @@ A definition is plain data (no code), validated strictly when registered and fro
 | `props` | Property definitions by id (below). |
 | `allowedParents` / `allowedChildren` | Types, categories (`@layout`) and, for parents, `#root` (the page). A nesting is legal only if the parent accepts the child **and** the child accepts the parent. |
 
-Property kinds: `string` (max length), `enum`, `integer` (min, max), `boolean`, `media` (a media-library attachment id) and `url`. Every property is classified (FR-051): **invariant** (stored in `props`, identical in every language), **translatable** (strings only; stored in the translation streams, edited per locale) or **locale-specific** (string, url or media; also stored per locale but never offered for automatic translation, for example a link target). Only invariant properties can be `required` (translated values are checked per language by the translation workflow), and a required property must have a default so a new element can always be created.
+Property kinds: `string` (max length), `enum`, `integer` (min, max), `number` (bounded canonical decimal or safe integer, min, max), `boolean`, `media` (a media-library attachment id) and `url`. `number` was added in extension API v2; definitions using it must declare `requiresApi: 2`. Decimal values use the shared JSON contract: at most four decimal places and magnitude from 0.0001 through 1,000,000,000. API v1 manifests remain valid when they use v1 property kinds. Every property is classified (FR-051): **invariant** (stored in `props`, identical in every language), **translatable** (strings only; stored in the translation streams, edited per locale) or **locale-specific** (string, url or media; also stored per locale but never offered for automatic translation, for example a link target). Only invariant properties can be `required` (translated values are checked per language by the translation workflow), and a required property must have a default so a new element can always be created.
 
 ## Who may register what
 

@@ -13,6 +13,7 @@ export function controlFamilyFor(definition: PropDefinition): ControlFamily {
     case 'json':
       return 'text';
     case 'integer':
+    case 'number':
       return 'number';
     case 'enum':
     case 'boolean':

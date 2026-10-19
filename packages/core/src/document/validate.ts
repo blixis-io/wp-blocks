@@ -47,7 +47,7 @@ function pathOf(segments: readonly PropertyKey[]): string {
  * normalise (`1.0`, `-0`, duplicate keys). Already-parsed objects are accepted too: they are snapshotted once and bounded by the same limits (size is estimated from their contents).
  *
  * Order: byte limit -> strict JSON -> inert snapshot (depth, value count, size estimate, no accessors or exotic objects) ->
- * value rules (safe integers, NFC) -> reserved keys -> schema version and migration (output re-checked) -> shape -> semantic
+ * value rules (canonical integers/decimals, NFC) -> reserved keys -> schema version and migration (output re-checked) -> shape -> semantic
  * checks. Parsed objects are copied once and bounded by the same size limit as text; they are never read again.
  */
 export function validateDocument(input: unknown, options: ValidateOptions = {}): ValidationResult {

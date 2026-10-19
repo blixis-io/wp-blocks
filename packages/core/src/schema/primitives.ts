@@ -1,8 +1,9 @@
 import { z } from 'zod';
+import { isSafeJsonNumber } from '../json/number.ts';
 
 /**
- * Value rules shared with the fixtures (docs/engineering/FIXTURES.md): numbers are safe integers only, so documents
- * serialise identically in TypeScript and PHP. Decimal quantities (opacity, line height) are stored as strings.
+ * Value rules shared with the fixtures (docs/engineering/FIXTURES.md): numbers are safe integers or bounded decimals
+ * with at most four fractional places, so documents serialise identically in TypeScript and PHP.
  * Unicode normalisation (NFC) and the size/depth/node caps cannot be expressed in JSON Schema and are checked by
  * `validateDocument` (BWB-020).
  */
@@ -18,12 +19,18 @@ export const NO_RESERVED_PROPERTY_NAMES = { propertyNames: { not: { enum: [...RE
 
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json };
 
+const JsonNumberSchema = z.union([
+  z.number().int().min(Number.MIN_SAFE_INTEGER).max(Number.MAX_SAFE_INTEGER),
+  z.number().multipleOf(0.0001).min(0.0001).max(1_000_000_000),
+  z.number().multipleOf(0.0001).min(-1_000_000_000).max(-0.0001),
+]);
+
 export const JsonValueSchema: z.ZodType<Json> = z
   .lazy(() =>
     z.union([
       z.null(),
       z.boolean(),
-      z.number().int(),
+      JsonNumberSchema.refine(isSafeJsonNumber),
       z.string(),
       z.array(JsonValueSchema),
       z.record(z.string().regex(new RegExp(`^${NOT_RESERVED}[\\s\\S]*$`)), JsonValueSchema),

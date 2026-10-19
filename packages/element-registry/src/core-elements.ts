@@ -1,4 +1,4 @@
-import type { ElementDefinition } from './definition.ts';
+import { EXTENSION_API_VERSION, type ElementDefinition } from './definition.ts';
 import { ElementRegistry } from './registry.ts';
 import { ELEMENT_DEFINITIONS_V2 } from './v2.ts';
 
@@ -367,13 +367,21 @@ export function createEditorRegistry(): ElementRegistry {
           kind: 'boolean',
           ...(typeof property['default'] === 'boolean' ? { default: property['default'] } : {}),
         };
-      else if (type === 'integer' || type === 'number')
+      else if (type === 'integer')
         props[id] = {
           ...base,
           kind: 'integer',
           min: Number(property['min'] ?? property['minimum'] ?? Number.MIN_SAFE_INTEGER),
           max: Number(property['max'] ?? property['maximum'] ?? Number.MAX_SAFE_INTEGER),
           ...(typeof property['default'] === 'number' ? { default: Math.trunc(property['default']) } : {}),
+        };
+      else if (type === 'number')
+        props[id] = {
+          ...base,
+          kind: 'number',
+          min: Number(property['min'] ?? property['minimum'] ?? -1_000_000_000),
+          max: Number(property['max'] ?? property['maximum'] ?? 1_000_000_000),
+          ...(typeof property['default'] === 'number' ? { default: property['default'] } : {}),
         };
       else if (type === 'enum') {
         const values = Array.isArray(property['options'])
@@ -429,7 +437,7 @@ export function createEditorRegistry(): ElementRegistry {
       // Editor registration is permission to author static document data; tier stays on the generated palette metadata.
       // Entitlement does not gate insertion or rendering.
       tier: 'free',
-      requiresApi: 1,
+      requiresApi: Object.values(props).some((prop) => prop.kind === 'number') ? EXTENSION_API_VERSION : 1,
       props,
       styleProperties: Object.keys((raw['style'] as { allowed?: Record<string, unknown> } | undefined)?.allowed ?? {})
         .map((property) => property.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`))

@@ -60,7 +60,7 @@ function PropField({
       ? value
       : typeof value === 'number'
         ? String(value)
-        : definition.kind === 'integer' || definition.kind === 'media'
+        : definition.kind === 'integer' || definition.kind === 'number' || definition.kind === 'media'
           ? String(definition.default ?? '')
           : '';
   const [local, setLocal] = useState({ source: initial, draft: initial, error: '' });

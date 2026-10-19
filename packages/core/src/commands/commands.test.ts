@@ -338,7 +338,7 @@ describe('update-props', () => {
     for (const command of [
       { type: 'update-props', id: 'el-a', set: { 'Bad-Key': 1 } },
       { type: 'update-props', id: 'el-a', set: { constructor: 1 } },
-      { type: 'update-props', id: 'el-a', set: { x: 1.5 } },
+      { type: 'update-props', id: 'el-a', set: { x: 1.1234567 } },
       { type: 'update-props', id: 'el-a', set: { x: 'é' } },
       { type: 'update-props', id: 'el-a', set: { x: 1 }, unset: ['x'] },
       { type: 'update-props', id: 'el-a', unset: ['__proto__'] },
@@ -671,7 +671,7 @@ describe('limits and payload checks (a command can never produce a document vali
     const rules = Array.from({ length: 257 }, (_, i) => ({ breakpoint: `bp${String(i)}`, declarations: {} }));
     expect(errorOf(doc, insertEl({ ...el('el-x'), style: rules }) as Command)).toBe('invalid-argument');
     expect(errorOf(doc, insertEl({ ...el('el-x'), classIds: ['cls-999'] }) as Command)).toBe('invalid-argument');
-    expect(errorOf(doc, insertEl({ ...el('el-x'), props: { ratio: 0.5 } }) as Command)).toBe('invalid-argument');
+    expect(errorOf(doc, insertEl({ ...el('el-x'), props: { ratio: 0.1234567 } }) as Command)).toBe('invalid-argument');
     expect(errorOf(doc, insertEl({ ...el('el-x'), type: 'nope' }) as Command)).toBe('invalid-argument');
     expect(
       errorOf(

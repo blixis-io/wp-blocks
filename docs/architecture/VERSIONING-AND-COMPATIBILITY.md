@@ -16,7 +16,7 @@ Everything that is stored, shared between TypeScript and PHP, or exposed to add-
 |---|---|---|---|
 | Builder document (`schemaVersion`) | `CURRENT_SCHEMA_VERSION` (core) | 1 | a breaking document change, with a migration |
 | Design token set (`schemaVersion`) | `CURRENT_TOKEN_SCHEMA_VERSION` (design-tokens) | 1 | a breaking token-set change, with a migration |
-| Extension API | `EXTENSION_API_VERSION` (element-registry) | 1 | the public surface changes (see below) |
+| Extension API | `EXTENSION_API_VERSION` (element-registry) | 2 | the public surface changes (see below) |
 | CSS compiler output | `COMPILER_VERSION` (style-engine) | 1 | the same inputs would produce different CSS |
 
 Other versions: an element definition's own `version` (below), `fixtureVersion` and `contractVersion` (test data formats, `docs/engineering/FIXTURES.md`), the JSON Schema `$id` URNs (`urn:blixis:wp-blocks:document:1`, `urn:blixis:wp-blocks:token-set:1`, which end in the schema version and change with it), `tokenVersion` (a cache counter, not a format version), `classListVersion` (global class list, ADR 0004), the plugin and add-on SemVer releases, and the REST namespace `blixis/v1` (BWB-041).

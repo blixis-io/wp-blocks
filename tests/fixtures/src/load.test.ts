@@ -32,14 +32,17 @@ describe('fixture envelopes', () => {
     ['wrong fixtureVersion', valid({ fixtureVersion: 2 }), 'sample.fixture.json', /fixtureVersion/],
     ['bad tag', valid({ tags: ['Fine', 1] }), 'sample.fixture.json', /tags/],
     ['tags not an array', valid({ tags: 'a' }), 'sample.fixture.json', /tags/],
-    ['float in input', valid({ input: { a: 1.5 } }), 'sample.fixture.json', /non-integer/],
-    ['1.0 written as a float token', withInput('{"a": 1.0}'), 'sample.fixture.json', /non-integer/],
-    ['1e3 written as an exponent', withInput('{"a": 1e3}'), 'sample.fixture.json', /non-integer/],
+    ['1.0 written as a non-canonical decimal token', withInput('{"a": 1.0}'), 'sample.fixture.json', /non-canonical/],
+    ['1e3 written as an exponent', withInput('{"a": 1e3}'), 'sample.fixture.json', /exponent/],
     ['negative zero', withInput('{"a": -0}'), 'sample.fixture.json', /negative zero/],
     ['duplicate keys', withInput('{"a": 1, "a": 2}'), 'sample.fixture.json', /duplicate key/],
     ['array instead of object', '[]\n', 'sample.fixture.json', /JSON object/],
   ])('rejects %s', (_name, text, file, message) => {
     expect(() => parseFixture(text, file)).toThrow(message);
+  });
+
+  it('accepts a bounded decimal in a fixture input', () => {
+    expect(parseFixture(valid({ input: { rating: 4.5 } }), 'sample.fixture.json').input).toEqual({ rating: 4.5 });
   });
 });
 

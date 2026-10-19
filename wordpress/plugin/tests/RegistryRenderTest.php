@@ -53,10 +53,56 @@ final class RegistryRenderTest extends TestCase {
 		ElementRegistry::from_array( $manifest );
 	}
 
+	/** API v1 stays readable while number properties require the v2 contract. */
+	public function test_extension_api_v2_number_contract(): void {
+		$manifest      = \json_decode( (string) \file_get_contents( \dirname( __DIR__ ) . '/data/core-elements.json' ), true ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Fixture.
+		$section_index = \array_search( 'blixis/section', \array_column( $manifest['elements'], 'type' ), true );
+		$this->assertIsInt( $section_index );
+		$manifest['apiVersion']                                    = 2;
+		$manifest['elements'][ $section_index ]['requiresApi']     = 2;
+		$manifest['elements'][ $section_index ]['props']['rating'] = [
+			'kind'           => 'number',
+			'classification' => 'invariant',
+			'label'          => 'Rating',
+			'min'            => 0,
+			'max'            => 5,
+			'default'        => 4.5,
+		];
+		$registry   = ElementRegistry::from_array( $manifest );
+		$definition = $registry->get( 'blixis/section' );
+		$this->assertIsArray( $definition );
+		$this->assertTrue( ElementRegistry::valid_value( $definition['props']['rating'], 4.5 ) );
+		$this->assertFalse( ElementRegistry::valid_value( $definition['props']['rating'], 4.55555 ) );
+		$this->assertFalse( ElementRegistry::valid_number( 1.0e-8 ) );
+
+		$manifest['elements'][ $section_index ]['props']['rating']['min'] = 0.00001;
+		$this->expectException( \InvalidArgumentException::class );
+		ElementRegistry::from_array( $manifest );
+
+		$manifest['apiVersion'] = 1;
+	}
+
 	/** Mark names in text property definitions must match the TypeScript enum. */
 	public function test_manifest_rejects_unknown_text_marks(): void {
 		$manifest = \json_decode( (string) \file_get_contents( \dirname( __DIR__ ) . '/data/core-elements.json' ), true ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Fixture.
 		$manifest['elements'][0]['props']['text']['marks'] = [ 'bogus', 1 ];
+		$this->expectException( \InvalidArgumentException::class );
+		ElementRegistry::from_array( $manifest );
+	}
+
+	/** API v1 manifests cannot opt into a v2 property kind. */
+	public function test_extension_api_v1_rejects_number_properties(): void {
+		$manifest      = \json_decode( (string) \file_get_contents( \dirname( __DIR__ ) . '/data/core-elements.json' ), true ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Fixture.
+		$section_index = \array_search( 'blixis/section', \array_column( $manifest['elements'], 'type' ), true );
+		$this->assertIsInt( $section_index );
+		$manifest['elements'][ $section_index ]['props']['rating'] = [
+			'kind'           => 'number',
+			'classification' => 'invariant',
+			'label'          => 'Rating',
+			'min'            => 0,
+			'max'            => 5,
+			'default'        => 4.5,
+		];
 		$this->expectException( \InvalidArgumentException::class );
 		ElementRegistry::from_array( $manifest );
 	}

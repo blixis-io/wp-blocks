@@ -1189,7 +1189,7 @@
       "category": "ui-components",
       "icon": "solar:star-linear",
       "tier": "free",
-      "status": "planned",
+      "status": "ready",
       "keywords": "rating rating ui-components rating element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
     },
     {

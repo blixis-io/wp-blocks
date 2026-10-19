@@ -4,13 +4,14 @@ import {
   ElementTypeSchema,
   PropertyIdSchema,
   richToPlain,
+  isSafeJsonNumber,
   validateRichText,
   type Json,
 } from '@blixis/wp-core';
 import { isSafeUrl } from './url.ts';
 
 /** Version of the registration contract. A definition may require at most this version (docs/architecture/EXTENSION-API.md). */
-export const EXTENSION_API_VERSION = 1;
+export const EXTENSION_API_VERSION = 2;
 
 export const CATEGORIES = ['layout', 'content', 'media', 'interactive'] as const;
 export type Category = (typeof CATEGORIES)[number];
@@ -60,6 +61,13 @@ export const PropDefinitionSchema = z.discriminatedUnion('kind', [
     min: z.number().int(),
     max: z.number().int(),
     default: z.number().int().optional(),
+  }),
+  z.strictObject({
+    ...common,
+    kind: z.literal('number'),
+    min: z.number(),
+    max: z.number(),
+    default: z.number().optional(),
   }),
   z.strictObject({ ...common, kind: z.literal('boolean'), default: z.boolean().optional() }),
   /** A WordPress media-library attachment id (a positive integer). */
@@ -116,6 +124,8 @@ export function valueSchemaFor(def: PropDefinition): z.ZodType<Json> {
       return z.enum(def.values as [string, ...string[]]);
     case 'integer':
       return z.number().int().min(def.min).max(def.max);
+    case 'number':
+      return z.number().refine(isSafeJsonNumber).min(def.min).max(def.max);
     case 'boolean':
       return z.boolean();
     case 'media':

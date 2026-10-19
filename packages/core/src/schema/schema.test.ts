@@ -179,11 +179,11 @@ describe('Zod schema and JSON Schema agree', () => {
       false,
     ],
     [
-      'a decimal in props',
+      'a bounded decimal in props',
       mutate((d) => {
         element(d)['props'] = { opacity: 0.5 };
       }),
-      false,
+      true,
     ],
     [
       'an integer beyond 2^53 in props',

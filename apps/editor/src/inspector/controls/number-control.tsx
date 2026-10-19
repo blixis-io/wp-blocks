@@ -11,14 +11,14 @@ export function NumberControl({
   onFocus,
   onBlur,
 }: FieldControlProps) {
-  if (definition.kind !== 'integer') return null;
+  if (definition.kind !== 'integer' && definition.kind !== 'number') return null;
   return (
     <input
       id={id}
       type="number"
       min={definition.min}
       max={definition.max}
-      step={1}
+      step={definition.kind === 'integer' ? 1 : 0.0001}
       disabled={disabled}
       aria-describedby={describedBy}
       value={draft}

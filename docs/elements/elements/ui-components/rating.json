@@ -101,6 +101,8 @@
     "value": {
       "type": "number",
       "default": 4.5,
+      "min": 0,
+      "max": 5,
       "description": "Numeric setting.",
       "required": false,
       "control": "number"
@@ -108,6 +110,8 @@
     "max": {
       "type": "number",
       "default": 5,
+      "min": 1,
+      "max": 10,
       "description": "Numeric setting.",
       "required": false,
       "control": "number"
