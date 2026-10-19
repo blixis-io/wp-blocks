@@ -1403,7 +1403,7 @@ async function smoke() {
         check(
           html.includes('data-blx-range-slider') &&
             html.includes('data-blx-id="el-email-field"') &&
-            html.includes('type="email" name="smoke_email" autocomplete="email"') &&
+            html.includes('type="email" name="fields[smoke_email]" autocomplete="email"') &&
             html.includes('for="blx-field-') &&
             html.includes('data-blx-data-table') &&
             html.includes('data-blx-sort="name"') &&
@@ -1470,6 +1470,43 @@ async function smoke() {
         check(
           html.includes('Extra published content'),
           'published show-more disclosure preserves its collapsed content',
+        );
+        check(
+          html.includes('data-blx-form="contact"') &&
+            html.includes('name="fields[email]"') &&
+            html.includes('name="company_website"') &&
+            html.includes('value="blx_submit_form"'),
+          'published native form renders its validated email field and honeypot',
+        );
+        const formNonce = wpOut(
+          'eval',
+          `echo wp_create_nonce( \\Blixis\\Builder\\Rest\\FormSubmissionController::nonce_action( ${pageId}, 'contact-smoke' ) );`,
+        );
+        wpOut(
+          'eval',
+          `add_filter( 'pre_wp_mail', static function ( $result, $mail ) { update_option( 'blx_form_mail_probe', [ 'to' => $mail['to'], 'subject' => $mail['subject'], 'message' => $mail['message'] ] ); return true; }, 10, 2 ); $_SERVER['REQUEST_METHOD'] = 'POST'; $_SERVER['REMOTE_ADDR'] = '127.0.0.1'; $_POST = [ 'post_id' => ${pageId}, 'form_id' => 'contact-smoke', '_wpnonce' => '${formNonce}', 'fields' => [ 'email' => 'visitor@example.test' ] ]; do_action( 'admin_post_nopriv_blx_submit_form' );`,
+        );
+        const submittedMail = JSON.parse(wpOut('eval', `echo wp_json_encode( get_option( 'blx_form_mail_probe' ) );`));
+        const submittedRecipients = Array.isArray(submittedMail.to) ? submittedMail.to : [submittedMail.to];
+        check(
+          submittedRecipients.includes(command('option', 'get', 'admin_email')) &&
+            submittedMail.message.includes('Email address: visitor@example.test'),
+          'a valid form submission emails the site admin',
+        );
+        check(
+          (await get(`/?page_id=${pageId}&form=contact-smoke&status=success`)).text.includes(
+            'Thanks for reaching out!',
+          ),
+          'the published form displays its success status after redirect',
+        );
+        wpOut('option', 'delete', 'blx_form_mail_probe');
+        wpOut(
+          'eval',
+          `add_filter( 'pre_wp_mail', static function ( $result, $mail ) { update_option( 'blx_form_mail_probe', true ); return true; }, 10, 2 ); $_SERVER['REQUEST_METHOD'] = 'POST'; $_SERVER['REMOTE_ADDR'] = '127.0.0.1'; $_POST = [ 'post_id' => ${pageId}, 'form_id' => 'contact-smoke', '_wpnonce' => '${formNonce}', 'company_website' => 'bot-filled', 'fields' => [ 'email' => 'visitor@example.test' ] ]; do_action( 'admin_post_nopriv_blx_submit_form' );`,
+        );
+        check(
+          'not-set' === wpOut('eval', `echo get_option( 'blx_form_mail_probe', 'not-set' );`),
+          'the form honeypot discards automated submissions before mailing',
         );
         // A WordPress nonce is bound to the user's session token, so mint the nonces and the logged-in cookie in one session.
         const previewSession = JSON.parse(
