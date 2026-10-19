@@ -343,7 +343,7 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		if ( in_array( $id, [ 'carousel', 'scroll-snap-carousel' ], true ) ) {
 			return $this->render_carousel( $node, $context->children_html_list, $hooks );
 		}
-		if ( in_array( $id, [ 'scroll-indicator', 'reading-progress' ], true ) ) {
+		if ( in_array( $id, [ 'scroll-indicator', 'reading-progress', 'scroll-progress' ], true ) ) {
 			return $this->render_scroll_indicator( $node, $hooks );
 		}
 		if ( 'tabs' === $archetype ) {
@@ -361,15 +361,21 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		if ( 'progress' === $archetype ) {
 			return $this->render_progress( $node, $hooks );
 		}
-		if ( 'counter' === $archetype && 'counter' === $id ) {
+		if ( 'counter' === $archetype && in_array( $id, [ 'counter', 'number-ticker' ], true ) ) {
 			$value = $node->value( 'value', 42 );
 			if ( ( ! is_int( $value ) && ! is_float( $value ) ) || ! is_finite( (float) $value ) ) {
 				$value = 42;
 			}
+			$value  = max( -1000000000, min( 1000000000, (float) $value ) );
 			$text   = is_int( $value ) ? (string) $value : sprintf( '%g', $value );
 			$prefix = $node->value( 'prefix', '' );
 			$suffix = $node->value( 'suffix', '' );
 			$label  = $node->value( 'ariaLabel' );
+			if ( 'number-ticker' === $id ) {
+				$duration = $node->value( 'durationMs', 900 );
+				$duration = is_numeric( $duration ) ? max( 100, min( 10000, (int) $duration ) ) : 900;
+				return '<span' . $hooks . ( is_string( $label ) && '' !== trim( $label ) ? ' aria-label="' . Escape::attr( $label ) . '"' : '' ) . '><span>' . Escape::html( is_string( $prefix ) ? $prefix : '' ) . '</span><span data-blx-number-ticker data-blx-number-target="' . Escape::attr( $text ) . '" data-blx-number-duration="' . $duration . '">' . Escape::html( $text ) . '</span><span>' . Escape::html( is_string( $suffix ) ? $suffix : '' ) . '</span></span>';
+			}
 			return '<span' . $hooks . ( is_string( $label ) && '' !== trim( $label ) ? ' aria-label="' . Escape::attr( $label ) . '"' : '' ) . '>' . Escape::html( is_string( $prefix ) ? $prefix : '' ) . Escape::html( $text ) . Escape::html( is_string( $suffix ) ? $suffix : '' ) . '</span>';
 		}
 		if ( 'stat-card' === $id ) {

@@ -380,6 +380,24 @@ final class ElementDefinitionRegistryTest extends TestCase {
 		);
 		$this->assertStringContainsString( 'data-blx-scroll-indicator data-blx-scroll-max="200" max="200" value="0" aria-label="Reading position"', $progress );
 		$this->assertStringContainsString( '<output data-blx-scroll-indicator-value>0%</output>', $progress );
+		$scroll_progress = $renderer->render( new ElementNode( 'scroll-progress', 'blixis/scroll-progress', [ 'max' => 100 ] ), new RenderContext() );
+		$this->assertStringContainsString( 'data-blx-scroll-indicator data-blx-scroll-max="100"', $scroll_progress );
+		$ticker = $renderer->render(
+			new ElementNode(
+				'revenue',
+				'blixis/number-ticker',
+				[
+					'value'      => 1250,
+					'prefix'     => '$',
+					'suffix'     => ' USD',
+					'durationMs' => 1500,
+					'ariaLabel'  => 'Revenue',
+				]
+			),
+			new RenderContext()
+		);
+		$this->assertStringContainsString( 'aria-label="Revenue"', $ticker );
+		$this->assertStringContainsString( '<span>$</span><span data-blx-number-ticker data-blx-number-target="1250" data-blx-number-duration="1500">1250</span><span> USD</span>', $ticker );
 	}
 
 	/** Newly supported P2 content elements keep text escaped and native controls accessible. */

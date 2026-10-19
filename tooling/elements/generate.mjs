@@ -65,6 +65,8 @@ const editorReady = new Set([
   'logo-marquee',
   'scroll-snap-carousel',
   'reading-progress',
+  'number-ticker',
+  'scroll-progress',
   'icon-list',
   'icon',
   'icon-svg',

@@ -17,7 +17,13 @@ test('element artifacts are generated from schema-valid definitions and are curr
   assert.doesNotMatch(types, /gsap/i, 'runtime editor metadata must not bundle the optional animation engine');
   assert.equal(palette.elements.length, 253);
   assert.ok(palette.elements.some((element) => element.status === 'planned'));
-  for (const id of ['blixis/logo-marquee', 'blixis/scroll-snap-carousel', 'blixis/reading-progress']) {
+  for (const id of [
+    'blixis/logo-marquee',
+    'blixis/scroll-snap-carousel',
+    'blixis/reading-progress',
+    'blixis/number-ticker',
+    'blixis/scroll-progress',
+  ]) {
     assert.equal(
       palette.elements.find((element) => element.id === id)?.status,
       'ready',

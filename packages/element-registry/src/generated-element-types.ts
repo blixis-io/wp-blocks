@@ -57459,7 +57459,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'progress',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -59013,7 +59013,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'counter',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -72501,7 +72501,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'advanced-motion',
     icon: 'solar:chart-linear',
     tier: 'pro',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'scroll-progress scroll progress advanced-motion scroll progress element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -72556,7 +72556,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'advanced-motion',
     icon: 'solar:calculator-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'number-ticker number ticker advanced-motion number ticker element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
