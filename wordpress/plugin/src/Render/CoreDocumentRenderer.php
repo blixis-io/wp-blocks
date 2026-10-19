@@ -48,7 +48,7 @@ final class CoreDocumentRenderer {
 		$this->definitions = ElementDefinitionRegistry::from_manifest_file( dirname( __DIR__, 2 ) . '/data/element-definitions-v2.json' );
 		$this->archetypes  = new ArchetypeRendererRegistry( $this->definitions, new StaticFallbackRenderer() );
 		$this->archetypes->register( new DefinitionArchetypeRenderer( $this->definitions, $media ) );
-		$this->renderers = [
+		$renderers = [
 			'blixis/heading'   => new HeadingRenderer(),
 			'blixis/section'   => new SectionRenderer(),
 			'blixis/container' => new ContainerRenderer(),
@@ -56,6 +56,15 @@ final class CoreDocumentRenderer {
 			'blixis/image'     => new ImageRenderer( $media ),
 			'blixis/button'    => new ButtonRenderer(),
 		];
+		$candidate = function_exists( 'apply_filters' ) ? apply_filters( 'blixis_builder_element_renderers', [], 2 ) : [];
+		if ( is_array( $candidate ) ) {
+			foreach ( $candidate as $type => $renderer ) {
+				if ( is_string( $type ) && 1 === preg_match( '~^[a-z][a-z0-9-]{1,31}/[a-z][a-z0-9-]{1,63}$~D', $type ) && $renderer instanceof ElementRenderer ) {
+					$renderers[ $type ] = $renderer;
+				}
+			}
+		}
+		$this->renderers = $renderers;
 	}
 
 	/**
