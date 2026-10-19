@@ -1141,6 +1141,12 @@ async function smoke() {
                   children: [],
                 },
                 {
+                  id: 'number-ticker1',
+                  type: 'blixis/number-ticker',
+                  props: { value: 1250, prefix: '$', suffix: ' USD', durationMs: 1500 },
+                  children: [],
+                },
+                {
                   id: 'icon1',
                   type: 'blixis/icon',
                   props: { icon: 'solar:check-circle-linear', decorative: false, ariaLabel: 'Complete' },
@@ -1428,6 +1434,10 @@ async function smoke() {
             html.includes('data-blx-tooltip-text') &&
             html.includes('data-blx-gradient-text') &&
             html.includes('data-blx-animated-headline') &&
+            html.includes(
+              'data-blx-number-ticker data-blx-number-target="1250" data-blx-number-duration="1500">1250',
+            ) &&
+            html.includes('id="blixis-builder-elements-js"') &&
             html.includes('@keyframes blx-headline-in') &&
             html.includes('data-blx-code-token="keyword"'),
           'published P2 content uses accessible fallbacks and reduced-motion styles',

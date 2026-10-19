@@ -565,6 +565,43 @@
   };
 
   const init = () => {
+    const tickers = Array.from(document.querySelectorAll('[data-blx-number-ticker]'));
+    if (
+      tickers.length > 0 &&
+      'IntersectionObserver' in window &&
+      !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    ) {
+      const observer = new window.IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (!entry.isIntersecting) return;
+            const ticker = entry.target;
+            const targetText = ticker.getAttribute('data-blx-number-target') || '0';
+            const target = Number(targetText);
+            const duration = Math.max(
+              100,
+              Math.min(10000, Number(ticker.getAttribute('data-blx-number-duration')) || 900),
+            );
+            if (!Number.isFinite(target)) {
+              observer.unobserve(ticker);
+              return;
+            }
+            const start = performance.now();
+            const frame = (now) => {
+              const progress = Math.min(1, Math.max(0, (now - start) / duration));
+              const eased = 1 - (1 - progress) ** 3;
+              ticker.textContent = progress >= 1 ? targetText : String(Number((target * eased).toFixed(4)));
+              if (progress < 1) window.requestAnimationFrame(frame);
+            };
+            window.requestAnimationFrame(frame);
+            observer.unobserve(ticker);
+          });
+        },
+        { threshold: 0.15 },
+      );
+      tickers.forEach((ticker) => observer.observe(ticker));
+    }
+
     const motionItems = Array.from(document.querySelectorAll('[data-blx-motion]'));
     if (motionItems.length > 0) {
       const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;

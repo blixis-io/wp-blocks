@@ -99,6 +99,12 @@ $layout  = static fn ( int $n, string $color ): string => wp_json_encode(
 				'children' => [],
 			],
 			[
+				'id'       => 'el-number-ticker',
+				'type'     => 'blixis/number-ticker',
+				'props'    => (object) [ 'value' => 1250, 'prefix' => '$', 'suffix' => ' USD', 'durationMs' => 1500 ],
+				'children' => [],
+			],
+			[
 				'id'       => 'el-icon-svg',
 				'type'     => 'blixis/icon-svg',
 				'props'    => (object) [
