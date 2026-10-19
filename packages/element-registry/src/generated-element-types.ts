@@ -59621,7 +59621,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'carousel',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -62102,7 +62102,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'carousel',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -69367,7 +69367,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'progress',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -72578,7 +72578,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'advanced-motion',
     icon: 'solar:repeat-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'logo-marquee logo marquee advanced-motion logo marquee element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -72666,7 +72666,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'advanced-motion',
     icon: 'solar:gallery-wide-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'scroll-snap-carousel scroll snap carousel advanced-motion scroll snap carousel element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -72941,7 +72941,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'advanced-motion',
     icon: 'solar:chart-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'reading-progress reading progress advanced-motion reading progress element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
