@@ -329,6 +329,7 @@ export function createEditorRegistry(): ElementRegistry {
     'scroll-reveal',
     'hover-tilt',
     'scroll-timeline',
+    'stagger-container',
   ];
   const aliases = [
     {
