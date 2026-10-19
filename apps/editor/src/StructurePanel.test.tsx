@@ -120,7 +120,7 @@ describe('left panel and element palette', () => {
       'Table Of Contents',
     ])
       expect(within(palette).getByRole('button', { name })).toBeTruthy();
-    expect(within(palette).getAllByRole('button')).toHaveLength(84);
+    expect(within(palette).getAllByRole('button')).toHaveLength(96);
   });
 
   it('remembers the selected left tab for the current session', async () => {
@@ -454,6 +454,45 @@ describe('left panel and element palette', () => {
     const expected = store.getState().registry.defaultsFor(type)?.props;
     expect(inserted?.props).toEqual(expected);
     expect(inserted?.type).toBe(type);
+  });
+
+  it('inserts a supported native form and its email control from the accessible palette', async () => {
+    const user = userEvent.setup();
+    const { store } = renderEditor();
+    await waitFor(() => {
+      expect(store.getState().document).not.toBeNull();
+    });
+    act(() => {
+      store.getState().select('el-container-1');
+    });
+    await openElements(user);
+
+    const formCard = required(document.querySelector('[data-element-type="blixis/form"]'));
+    expect(formCard.getAttribute('aria-disabled')).toBe('false');
+    await user.click(formCard);
+    const formId = store.getState().selectedId;
+    expect(formId).toMatch(/^el-new-/);
+
+    act(() => {
+      store.getState().select(formId);
+    });
+    const emailCard = required(document.querySelector('[data-element-type="blixis/email-field"]'));
+    expect(emailCard.getAttribute('aria-disabled')).toBe('false');
+    await user.click(emailCard);
+
+    const stack = (store.getState().document?.root ?? []).map((node) => ({ node, parentId: null as string | null }));
+    let emailField: (typeof stack)[number] | undefined;
+    while (stack.length) {
+      const entry = stack.pop();
+      if (entry?.node.type === 'blixis/email-field') {
+        emailField = entry;
+        break;
+      }
+      if (entry) stack.push(...entry.node.children.map((node) => ({ node, parentId: entry.node.id })));
+    }
+    expect(emailField).toBeTruthy();
+    expect(emailField?.parentId).toBe(formId);
+    expect(emailField?.node.props).toEqual(store.getState().registry.defaultsFor('blixis/email-field')?.props);
   });
 
   it.each([
