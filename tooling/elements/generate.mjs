@@ -57,6 +57,7 @@ const editorReady = new Set([
   'user-profile',
   'entrance-animation',
   'scroll-reveal',
+  'hover-tilt',
   'icon-list',
   'icon',
   'icon-svg',

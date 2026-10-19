@@ -54,7 +54,7 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		$id         = preg_replace( '~^blixis/~', '', $node->type );
 		$definition = $this->definitions->get( (string) $id );
 		$archetype  = is_array( $definition ) ? (string) ( $definition['archetype'] ?? '' ) : '';
-		if ( ! $this->supports( $archetype ) || ( 'loop' === $archetype && ! in_array( $id, [ 'query-loop', 'related-posts' ], true ) ) || ( 'animation' === $archetype && ! in_array( $id, [ 'entrance-animation', 'scroll-reveal' ], true ) ) ) {
+		if ( ! $this->supports( $archetype ) || ( 'loop' === $archetype && ! in_array( $id, [ 'query-loop', 'related-posts' ], true ) ) || ( 'animation' === $archetype && ! in_array( $id, [ 'entrance-animation', 'scroll-reveal', 'hover-tilt' ], true ) ) ) {
 			return ( new StaticFallbackRenderer() )->render( $node, $context );
 		}
 		$tag = self::TAGS[ (string) $id ] ?? match ( $archetype ) {
@@ -68,7 +68,7 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 			}
 		}
 		$hooks = Escape::hooks( $node );
-		if ( in_array( $id, [ 'entrance-animation', 'scroll-reveal' ], true ) ) {
+		if ( in_array( $id, [ 'entrance-animation', 'scroll-reveal', 'hover-tilt' ], true ) ) {
 			return $this->render_motion_reveal( $node, $hooks, $context->children_html );
 		}
 		if ( 'button-group' === $id ) {
@@ -420,7 +420,7 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		$effect   = $node->value( 'effect', 'fade-in' );
 		$effect   = is_string( $effect ) && in_array( $effect, [ 'fade-in', 'slide-in-left', 'slide-in-right', 'slide-in-up', 'scale-in' ], true ) ? $effect : 'fade-in';
 		$trigger  = $node->value( 'trigger', 'viewport-enter' );
-		$trigger  = is_string( $trigger ) && in_array( $trigger, [ 'viewport-enter', 'page-load' ], true ) ? $trigger : 'static';
+		$trigger  = is_string( $trigger ) && in_array( $trigger, [ 'viewport-enter', 'page-load', 'hover' ], true ) ? $trigger : 'static';
 		$duration = $node->value( 'durationMs', 600 );
 		$duration = is_numeric( $duration ) ? max( 0, min( 3000, (int) $duration ) ) : 600;
 		$delay    = $node->value( 'delayMs', 0 );

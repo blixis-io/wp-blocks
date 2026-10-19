@@ -78,6 +78,7 @@ final class ContentElementsCss {
 			. '[data-blx-motion][data-blx-motion-ready="true"]:not([data-blx-motion-visible="true"]){opacity:0;transform:var(--blx-motion-from,translateY(.5rem))}'
 			. '[data-blx-motion][data-blx-motion-ready="true"]{transition:opacity var(--blx-motion-duration,600ms) var(--blx-motion-easing,ease-out) var(--blx-motion-delay,0ms),transform var(--blx-motion-duration,600ms) var(--blx-motion-easing,ease-out) var(--blx-motion-delay,0ms)}'
 			. '[data-blx-motion-effect="slide-in-left"]{--blx-motion-from:translateX(-1rem)}[data-blx-motion-effect="slide-in-right"]{--blx-motion-from:translateX(1rem)}[data-blx-motion-effect="slide-in-up"]{--blx-motion-from:translateY(.5rem)}[data-blx-motion-effect="scale-in"]{--blx-motion-from:scale(.96)}'
+			. '[data-blx-motion="hover"]{transition:transform var(--blx-motion-duration,300ms) var(--blx-motion-easing,ease-out)}[data-blx-motion="hover"][data-blx-motion-effect="fade-in"]:hover{transform:perspective(50rem) rotateX(2deg) rotateY(-2deg)}'
 			. '[data-blx-animated-headline] [data-blx-headline-part]{display:inline-block;animation:blx-headline-in .65s both;animation-delay:calc(var(--blx-headline-index,0)*70ms)}'
 			. '@keyframes blx-headline-in{from{opacity:0;transform:translateY(.35em)}to{opacity:1;transform:translateY(0)}}'
 			. '[data-blx-gallery] ul{display:grid;grid-template-columns:repeat(var(--blx-gallery-columns,3),minmax(0,1fr));gap:1rem;list-style:none;margin:0;padding:0}'
@@ -93,6 +94,6 @@ final class ContentElementsCss {
 			. '[data-blx-image-comparison][data-blx-comparison-ready] [data-blx-comparison-after]{position:absolute;inset:0;clip-path:inset(0 calc(100% - var(--blx-comparison-position,50%)) 0 0)}'
 			. '[data-blx-comparison-label]{display:flex;align-items:center;gap:.75rem}[data-blx-comparison-label] input{flex:1;min-width:8rem}'
 			. '@media(min-width:48rem){[data-blx-mobile-menu]>summary{display:none}[data-blx-mobile-menu]>nav{display:block!important}[data-blx-mobile-menu]>nav>ul{flex-direction:row;flex-wrap:wrap}}'
-			. '@media(prefers-reduced-motion:reduce){[data-blx-motion][data-blx-motion-ready="true"]{opacity:1!important;transform:none!important;transition:none!important}[data-blx-animated-headline] [data-blx-headline-part],[data-blx-offcanvas][open]>[data-blx-offcanvas-panel]{animation:none}}';
+			. '@media(prefers-reduced-motion:reduce){[data-blx-motion][data-blx-motion-ready="true"],[data-blx-motion="hover"]{opacity:1!important;transform:none!important;transition:none!important}[data-blx-animated-headline] [data-blx-headline-part],[data-blx-offcanvas][open]>[data-blx-offcanvas-panel]{animation:none}}';
 	}
 }

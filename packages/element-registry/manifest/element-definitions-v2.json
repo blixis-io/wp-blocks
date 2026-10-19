@@ -101030,7 +101030,7 @@
         ]
       },
       "archetype": "animation",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
