@@ -336,6 +336,36 @@ final class ElementDefinitionRegistryTest extends TestCase {
 		$css = MarqueeCss::css();
 		$this->assertStringContainsString( '@media(prefers-reduced-motion:reduce)', $css );
 		$this->assertStringContainsString( '@keyframes blx-marquee-left', $css );
+		$logo_static = $renderer->render( new ElementNode( 'logos', 'blixis/logo-marquee', [ 'durationMs' => 16500 ] ), new RenderContext( '<img src="/logo.svg" alt="Brand">' ) );
+		$this->assertSame( '<div data-blx-id="logos" data-blx-type="blixis/logo-marquee" data-blx-marquee="left" data-blx-marquee-duration="17"><img src="/logo.svg" alt="Brand"></div>', $logo_static );
+		$logo_motion = $renderer->render(
+			new ElementNode(
+				'logos-motion',
+				'blixis/logo-marquee',
+				[
+					'autoplay'   => true,
+					'durationMs' => 18000,
+				]
+			),
+			new RenderContext( '<img src="/logo.svg" alt="Brand">' )
+		);
+		$this->assertStringContainsString( 'data-blx-marquee="left" data-blx-marquee-duration="18"', $logo_motion );
+		$this->assertStringContainsString( 'data-blx-marquee-toggle', $logo_motion );
+		$this->assertStringContainsString( 'aria-hidden="true" inert', $logo_motion );
+		$snap = $renderer->render(
+			new ElementNode(
+				'snap',
+				'blixis/scroll-snap-carousel',
+				[
+					'ariaLabel'     => 'Featured stories',
+					'slidesPerView' => 2,
+				]
+			),
+			new RenderContext( '', null, [ '<article>One</article>', '<article>Two</article>' ] )
+		);
+		$this->assertStringContainsString( 'data-blx-carousel-slides="2" aria-label="Featured stories"', $snap );
+		$this->assertStringContainsString( '<div data-blx-carousel-slide><article>One</article></div>', $snap );
+		$this->assertStringContainsString( 'data-blx-carousel-next', $snap );
 	}
 
 	/** Newly supported P2 content elements keep text escaped and native controls accessible. */
