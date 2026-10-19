@@ -112,7 +112,32 @@ $layout  = static fn ( int $n, string $color ): string => wp_json_encode(
 					[
 						'id'       => 'el-show-more-copy',
 						'type'     => 'blixis/text',
-						'props'    => (object) [ 'text' => 'Extra published content' ],
+						'props'    => new stdClass(),
+						'children' => [],
+					],
+				],
+			],
+			[
+				'id'       => 'el-contact-form',
+				'type'     => 'blixis/form',
+				'props'    => (object) [ 'formId' => 'contact-smoke', 'spamProtection' => 'honeypot', 'rateLimitPerMinute' => 5 ],
+				'children' => [
+					[
+						'id'       => 'el-contact-email',
+						'type'     => 'blixis/email-field',
+						'props'    => (object) [ 'name' => 'email', 'required' => true ],
+						'children' => [],
+					],
+					[
+						'id'       => 'el-contact-submit',
+						'type'     => 'blixis/submit-button',
+						'props'    => new stdClass(),
+						'children' => [],
+					],
+					[
+						'id'       => 'el-contact-success',
+						'type'     => 'blixis/form-success',
+						'props'    => new stdClass(),
 						'children' => [],
 					],
 				],
@@ -417,6 +442,22 @@ $content = static fn ( int $n, string $text ): string => wp_json_encode(
 			'el-003' => [
 				'status' => 'translated',
 				'values' => [ 'text' => 'Moving ticker' ],
+			],
+			'el-show-more-copy' => [
+				'status' => 'translated',
+				'values' => [ 'text' => 'Extra published content' ],
+			],
+			'el-contact-email' => [
+				'status' => 'translated',
+				'values' => [ 'label' => 'Email address' ],
+			],
+			'el-contact-submit' => [
+				'status' => 'translated',
+				'values' => [ 'label' => 'Send message' ],
+			],
+			'el-contact-success' => [
+				'status' => 'translated',
+				'values' => [ 'title' => 'Thanks for reaching out!', 'description' => 'Your message was sent.' ],
 			],
 		],
 	]
