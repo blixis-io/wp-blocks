@@ -1395,6 +1395,20 @@ async function smoke() {
           'published tabs, accordions, and off-canvas panels render accessible fallback markup and scoped styles',
         );
         check(
+          html.includes('data-blx-range-slider') &&
+            html.includes('data-blx-data-table') &&
+            html.includes('data-blx-sort="name"') &&
+            html.includes('data-blx-toast-dismiss') &&
+            html.includes('data-blx-command-search') &&
+            html.includes('data-blx-carousel') &&
+            html.includes('data-blx-scroll-indicator') &&
+            html.includes('data-blx-copy-button') &&
+            html.includes('data-blx-loading-button') &&
+            html.includes('data-blx-context-menu') &&
+            html.includes('id="blixis-builder-elements-js"'),
+          'published P5 controls render accessible native fallbacks and enqueue only their required runtime',
+        );
+        check(
           html.includes('data-blx-marquee="left"') &&
             html.includes('data-blx-marquee-toggle') &&
             html.includes('@media(prefers-reduced-motion:reduce)') &&
