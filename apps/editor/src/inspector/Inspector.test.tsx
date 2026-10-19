@@ -209,6 +209,12 @@ async function mount(
 }
 
 describe('generated inspector controls', () => {
+  it('uses the editor locale for generated labels without changing the content locale', async () => {
+    const { store } = await mount('blixis/sticky-container', { editorLocale: 'nl_NL', locale: 'en_US' });
+    expect(screen.getByRole('spinbutton', { name: 'Verschuiving voor vastzetten (px)' })).toBeTruthy();
+    expect(store.getState().contentLocale).toBe('en_US');
+  });
+
   it('edits navigation repeater rows in the active locale stream', async () => {
     const user = userEvent.setup();
     const { store, container } = await mount('blixis/navigation');
@@ -1696,10 +1702,10 @@ describe('Inspector controls', () => {
 
   it('edits table of contents links through the generated navigation editor', async () => {
     const { store } = await mount('blixis/table-of-contents', { tab: 'content' });
-    fireEvent.change(screen.getByRole('textbox', { name: 'inspector.prop.items 1' }), {
+    fireEvent.change(screen.getByRole('textbox', { name: 'Items 1' }), {
       target: { value: 'Getting started' },
     });
-    fireEvent.change(screen.getByRole('textbox', { name: 'inspector.prop.items 1 link' }), {
+    fireEvent.change(screen.getByRole('textbox', { name: 'Items 1 link' }), {
       target: { value: '#getting-started' },
     });
     expect(store.getState().document?.translations['en_US']?.['target']?.values['items']).toEqual([

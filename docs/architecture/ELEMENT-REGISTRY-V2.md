@@ -106,6 +106,8 @@ The preview response adds a final markup boundary after rendering. It rejects ex
 
 Generated `asset-ref` and `array<asset-ref>` controls open the shared, permission-aware media library and save canonical `attachment:<id>` references. The inspector caps repeaters at the definition's `maxItems` (up to 32) and removes selections without accepting arbitrary URLs or typed attachment identifiers.
 
+Every control-bearing definition property has an `inspector.prop.<property>` label in the English and Dutch editor message catalogs, including properties on planned definitions. Labels follow the editor interface locale; they do not depend on the website content locale. The i18n test checks this contract against the generated definitions so new properties cannot surface raw message keys in the inspector.
+
 The `icon` and `icon-svg` definitions offer only the three Solar glyphs rendered from local path data. Their size setting is bounded to 8–128 pixels, and the server and preview boundary validate the emitted SVG tags and geometry attributes.
 
 ## Entitlement and status
