@@ -13,6 +13,8 @@
     "@blixis/wp-editor-ui": "workspace:*",
     "@blixis/wp-element-registry": "workspace:*",
     "@blixis/wp-style-engine": "workspace:*",
+    "@dnd-kit/helpers": "0.5.1",
+    "@dnd-kit/react": "0.5.1",
     "@tiptap/core": "3.32.0",
     "@tiptap/extension-bold": "3.32.0",
     "@tiptap/extension-code": "3.32.0",

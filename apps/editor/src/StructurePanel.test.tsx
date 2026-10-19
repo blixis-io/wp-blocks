@@ -70,9 +70,24 @@ describe('left panel and element palette', () => {
     const user = userEvent.setup();
     await user.click(screen.getByRole('treeitem', { name: /el-heading-1/ }));
     const rows = screen.getAllByRole('treeitem');
+    expect(screen.getAllByRole('button', { name: /Move element: Section/ }).length).toBeGreaterThan(0);
     const selected = rows.find((row) => row.getAttribute('aria-selected') === 'true');
     expect(selected?.getAttribute('data-id')).toBe('el-heading-1');
     expect(rows.every((row) => !row.hasAttribute('data-on-path'))).toBe(true);
+  });
+
+  it('reorders siblings through the keyboard and the domain move command', async () => {
+    const { store } = renderEditor();
+    await waitFor(() => {
+      expect(screen.getByRole('tree')).toBeTruthy();
+    });
+    const text = required(document.querySelector<HTMLElement>('[data-id="el-text-1"]'));
+    text.focus();
+    fireEvent.keyDown(text, { key: 'ArrowUp', altKey: true });
+    const sectionPath = store.getState().document?.root;
+    const container = sectionPath?.[0]?.children[0];
+    expect(container?.children.map((node) => node.id)).toEqual(['el-text-1', 'el-heading-1']);
+    expect(store.getState().dirty.layout).toBe(true);
   });
 
   it('indents tree rows from aria-level and renders decorative RTL-safe guide marks', async () => {

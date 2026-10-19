@@ -242,7 +242,7 @@ describe('structure tree layout contract', () => {
       /padding-inline-start:\s*calc\(var\(--tree-pad,\s*8px\)\s*\+\s*var\(--tree-depth\)\s*\*\s*var\(--tree-indent,\s*16px\)\)/,
     );
     expect(source).toMatch(
-      /inset-inline-start:\s*calc\([\s\S]*var\(--tree-pad\)\s*\+\s*var\(--tree-chevron\)\s*\+\s*var\(--tree-gap\)\s*\+\s*var\(--tree-icon-center\)\s*\+[\s\S]*var\(--guide-depth,\s*0\)\s*\*\s*var\(--tree-indent\)/,
+      /inset-inline-start:\s*calc\([\s\S]*var\(--tree-pad\)\s*\+\s*var\(--tree-handle-space,\s*0px\)\s*\+\s*var\(--tree-chevron\)\s*\+\s*var\(--tree-gap\)\s*\+[\s\S]*var\(--guide-depth,\s*0\)\s*\*\s*var\(--tree-indent\)/,
     );
     expect(source).toMatch(
       /border-inline-start:\s*1px solid color-mix\(in srgb, var\(--ed-border\) 35%, transparent\)/,

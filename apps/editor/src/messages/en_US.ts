@@ -125,6 +125,9 @@ export const en_US = {
   'panel.tree.collapse': 'Collapse',
   'panel.rowMenu': 'Element actions',
   'panel.delete': 'Delete',
+  'panel.structure.move': 'Move element',
+  'panel.structure.moveHelp':
+    'Drag this handle to reorder. Drop on a compatible container to nest. Press Alt and an arrow key to reorder with the keyboard.',
   'panel.palette.locked': 'Editing is disabled for this document.',
   'panel.palette.unavailable': 'This element has no valid position here.',
   'panel.palette.insertFailed':
