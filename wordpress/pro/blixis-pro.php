@@ -22,6 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 const MINIMUM_EXTENSION_API = 2;
+const MINIMUM_PLAN_API      = 1;
 
 /** Show a clear admin notice when the required Builder API is unavailable. */
 function dependency_notice(): void {
@@ -30,13 +31,15 @@ function dependency_notice(): void {
 	}
 	if ( ! function_exists( 'blixis_builder_extension_api_version' ) || blixis_builder_extension_api_version() < MINIMUM_EXTENSION_API || ! function_exists( 'blixis_builder_capability_api_version' ) || blixis_builder_capability_api_version() < 1 ) {
 		echo '<div class="notice notice-error"><p>' . esc_html__( 'Blixis Pro requires Blixis Builder with extension API version 2 or newer.', 'blixis-pro' ) . '</p></div>';
-	} elseif ( ! function_exists( 'blixis_plus_api_version' ) || blixis_plus_api_version() < 1 ) {
-		echo '<div class="notice notice-error"><p>' . esc_html__( 'Blixis Pro requires Blixis Plus version 1 or newer.', 'blixis-pro' ) . '</p></div>';
+	} elseif ( ! function_exists( 'blixis_plus_api_version' ) || blixis_plus_api_version() < 1 || ! function_exists( 'blixis_plus_plan_api_version' ) || blixis_plus_plan_api_version() < MINIMUM_PLAN_API ) {
+		echo '<div class="notice notice-error"><p>' . esc_html__( 'Blixis Pro requires Blixis Plus with plan API version 1 or newer.', 'blixis-pro' ) . '</p></div>';
+	} elseif ( ! function_exists( 'blixis_plus_has_plan' ) || ! blixis_plus_has_plan( 'pro' ) ) {
+		echo '<div class="notice notice-warning"><p>' . esc_html__( 'Blixis Pro is installed, but no active Pro plan is available for this site.', 'blixis-pro' ) . '</p></div>';
 	}
 }
 add_action( 'admin_notices', __NAMESPACE__ . '\dependency_notice' );
 
-if ( ! function_exists( 'blixis_builder_extension_api_version' ) || blixis_builder_extension_api_version() < MINIMUM_EXTENSION_API || ! function_exists( 'blixis_builder_capability_api_version' ) || blixis_builder_capability_api_version() < 1 || ! function_exists( 'blixis_plus_api_version' ) || blixis_plus_api_version() < 1 ) {
+if ( ! function_exists( 'blixis_builder_extension_api_version' ) || blixis_builder_extension_api_version() < MINIMUM_EXTENSION_API || ! function_exists( 'blixis_builder_capability_api_version' ) || blixis_builder_capability_api_version() < 1 || ! function_exists( 'blixis_plus_api_version' ) || blixis_plus_api_version() < 1 || ! function_exists( 'blixis_plus_plan_api_version' ) || blixis_plus_plan_api_version() < MINIMUM_PLAN_API ) {
 	return;
 }
 
@@ -48,6 +51,9 @@ add_filter(
 	static function ( mixed $available, string $capability, int $api_version ): bool {
 		if ( true === $available ) {
 			return true;
+		}
+		if ( ! function_exists( 'blixis_plus_has_plan' ) || ! blixis_plus_has_plan( 'pro' ) ) {
+			return false;
 		}
 		$commerce_capabilities = array_map(
 			static fn( string $element ): string => 'blixis-pro/' . $element,
