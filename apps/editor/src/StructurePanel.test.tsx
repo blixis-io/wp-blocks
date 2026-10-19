@@ -36,14 +36,23 @@ describe('left panel and element palette', () => {
     sessionStorage.removeItem('blixis-left-tab');
   });
   it('shows every ready generated catalog definition as insertable in the palette', async () => {
-    renderEditor();
+    const { store } = renderEditor();
     await openElements(userEvent.setup());
     const ready = ELEMENT_PALETTE_V2.filter((element) => element.status === 'ready');
     expect(ready.length).toBeGreaterThan(0);
+    const countType = (nodes: ReturnType<typeof makeDocument>['root'], type: string): number =>
+      nodes.reduce((total, node) => total + (node.type === type ? 1 : 0) + countType(node.children, type), 0);
     for (const element of ready) {
       const card = document.querySelector<HTMLButtonElement>(`button[data-element-type="${element.id}"]`);
       expect(card, `${element.definitionId} has a palette card`).not.toBeNull();
       expect(card?.getAttribute('aria-disabled'), `${element.definitionId} is insertable`).toBe('false');
+      if (card === null) throw new Error(`${element.definitionId} has no palette card`);
+      const type = `blixis/${element.definitionId}`;
+      const before = countType(store.getState().document?.root ?? [], type);
+      fireEvent.click(card);
+      expect(countType(store.getState().document?.root ?? [], type), `${element.definitionId} inserts`).toBe(
+        before + 1,
+      );
     }
   });
 
