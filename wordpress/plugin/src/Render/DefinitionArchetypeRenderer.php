@@ -71,6 +71,9 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		if ( 'site-search' === $id ) {
 			return $this->render_site_search( $node, $hooks );
 		}
+		if ( 'show-more' === $id ) {
+			return $this->render_show_more( $node, $hooks, $context->children_html );
+		}
 		if ( 'horizontal-scroll' === $id ) {
 			$label = $node->value( 'ariaLabel', $this->translate_label( 'Horizontally scrollable content' ) );
 			$label = is_string( $label ) && '' !== trim( $label ) ? $label : $this->translate_label( 'Horizontally scrollable content' );
@@ -812,6 +815,22 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		$placeholder = $node->value( 'placeholder', $this->translate_label( 'Search' ) . '…' );
 		$placeholder = is_string( $placeholder ) && '' !== $placeholder ? ' placeholder="' . Escape::attr( $placeholder ) . '"' : '';
 		return '<form' . $hooks . ' role="search" method="get" action="' . Escape::url( $action ) . '"><label for="' . $input_id . '">' . Escape::html( $label ) . '</label><input id="' . $input_id . '" type="search" name="s" value=""' . $placeholder . '><button type="submit">' . Escape::html( $this->translate_label( 'Search' ) ) . '</button></form>';
+	}
+
+	/** Render a keyboard-operable disclosure using native HTML, without JavaScript.
+	 *
+	 * @param ElementNode $node Show-more element.
+	 * @param string      $hooks Validated element hooks.
+	 * @param string      $children Already-rendered child markup.
+	 */
+	private function render_show_more( ElementNode $node, string $hooks, string $children ): string {
+		$label = $node->value( 'label', $this->translate_label( 'Show more' ) );
+		$label = is_string( $label ) && '' !== trim( $label ) ? trim( $label ) : $this->translate_label( 'Show more' );
+		$id    = $node->value( 'htmlId' );
+		$id    = is_string( $id ) && 1 === preg_match( '/^[A-Za-z][A-Za-z0-9_:\-.]{0,63}$/D', $id ) ? ' id="' . Escape::attr( $id ) . '"' : '';
+		$aria  = $node->value( 'ariaLabel' );
+		$aria  = is_string( $aria ) && '' !== trim( $aria ) ? ' aria-label="' . Escape::attr( trim( $aria ) ) . '"' : '';
+		return '<details' . $hooks . $id . ( true === $node->value( 'hidden', false ) ? ' hidden' : '' ) . ( true === $node->value( 'defaultOpen', false ) ? ' open' : '' ) . '><summary' . $aria . '>' . Escape::html( $label ) . '</summary>' . $children . '</details>';
 	}
 
 	/** Resolve only allowlisted public WordPress fields from the current render context.
@@ -2152,6 +2171,7 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 			'Commands' => __( 'Commands', 'blixis-builder' ),
 			'Search commands' => __( 'Search commands', 'blixis-builder' ),
 			'Search' => __( 'Search', 'blixis-builder' ),
+			'Show more' => __( 'Show more', 'blixis-builder' ),
 			'Reading progress' => __( 'Reading progress', 'blixis-builder' ),
 			'Carousel' => __( 'Carousel', 'blixis-builder' ),
 			'Calendar' => __( 'Calendar', 'blixis-builder' ),

@@ -2252,7 +2252,7 @@
       "minimumTier": "free",
       "icon": "solar:alt-arrow-down-linear",
       "file": "elements/advanced-motion/show-more.json",
-      "archetype": "button"
+      "archetype": "accordion"
     },
     {
       "id": "blur-up-image",

@@ -40,6 +40,7 @@ final class ElementDefinitionRegistryTest extends TestCase {
 		$this->assertSame( 'ready', $registry->get( 'avatar' )['status'] ?? null );
 		$this->assertSame( 'ready', $registry->get( 'post-title' )['status'] ?? null );
 		$this->assertSame( 'ready', $registry->get( 'site-search' )['status'] ?? null );
+		$this->assertSame( 'ready', $registry->get( 'show-more' )['status'] ?? null );
 	}
 
 	/** The document renderer keeps a configured safe local icon glyph instead of silently using the default. */
@@ -405,6 +406,23 @@ final class ElementDefinitionRegistryTest extends TestCase {
 		);
 		$this->assertStringContainsString( 'aria-label="Revenue"', $ticker );
 		$this->assertStringContainsString( '<span>$</span><span data-blx-number-ticker data-blx-number-target="1250" data-blx-number-duration="1500">1250</span><span> USD</span>', $ticker );
+		$show_more = $renderer->render(
+			new ElementNode(
+				'more-content',
+				'blixis/show-more',
+				[
+					'label'       => 'Show more & read',
+					'htmlId'      => 'more-content',
+					'defaultOpen' => true,
+				]
+			),
+			new RenderContext( '<p>Additional &amp; safe content</p>' )
+		);
+		$this->assertStringContainsString( '<details data-blx-id="more-content" data-blx-type="blixis/show-more" id="more-content" open><summary>Show more &amp; read</summary><p>Additional &amp; safe content</p></details>', $show_more );
+		$this->assertTrue( PreviewSanitizer::accepts( $show_more ) );
+		$collapsed = $renderer->render( new ElementNode( 'collapsed', 'blixis/show-more', [] ), new RenderContext( '<p>Collapsed content</p>' ) );
+		$this->assertStringContainsString( '<details data-blx-id="collapsed" data-blx-type="blixis/show-more"><summary>Show more</summary><p>Collapsed content</p></details>', $collapsed );
+		$this->assertTrue( PreviewSanitizer::accepts( $collapsed ) );
 	}
 
 	/** Newly supported P2 content elements keep text escaped and native controls accessible. */
