@@ -59,6 +59,7 @@ const editorReady = new Set([
   'scroll-reveal',
   'hover-tilt',
   'scroll-timeline',
+  'stagger-container',
   'icon-list',
   'icon',
   'icon-svg',

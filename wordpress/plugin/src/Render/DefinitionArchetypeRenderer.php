@@ -54,7 +54,7 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		$id         = preg_replace( '~^blixis/~', '', $node->type );
 		$definition = $this->definitions->get( (string) $id );
 		$archetype  = is_array( $definition ) ? (string) ( $definition['archetype'] ?? '' ) : '';
-		if ( ! $this->supports( $archetype ) || ( 'loop' === $archetype && ! in_array( $id, [ 'query-loop', 'related-posts' ], true ) ) || ( 'animation' === $archetype && ! in_array( $id, [ 'entrance-animation', 'scroll-reveal', 'hover-tilt', 'scroll-timeline' ], true ) ) ) {
+		if ( ! $this->supports( $archetype ) || ( 'loop' === $archetype && ! in_array( $id, [ 'query-loop', 'related-posts' ], true ) ) || ( 'animation' === $archetype && ! in_array( $id, [ 'entrance-animation', 'scroll-reveal', 'hover-tilt', 'scroll-timeline', 'stagger-container' ], true ) ) ) {
 			return ( new StaticFallbackRenderer() )->render( $node, $context );
 		}
 		$tag = self::TAGS[ (string) $id ] ?? match ( $archetype ) {
@@ -68,7 +68,7 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 			}
 		}
 		$hooks = Escape::hooks( $node );
-		if ( in_array( $id, [ 'entrance-animation', 'scroll-reveal', 'hover-tilt', 'scroll-timeline' ], true ) ) {
+		if ( in_array( $id, [ 'entrance-animation', 'scroll-reveal', 'hover-tilt', 'scroll-timeline', 'stagger-container' ], true ) ) {
 			return $this->render_motion_reveal( $node, $hooks, $context->children_html );
 		}
 		if ( 'button-group' === $id ) {
@@ -427,7 +427,8 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		$delay    = is_numeric( $delay ) ? max( 0, min( 3000, (int) $delay ) ) : 0;
 		$easing   = $node->value( 'easing', 'ease-out' );
 		$easing   = is_string( $easing ) && in_array( $easing, [ 'linear', 'ease', 'ease-in', 'ease-out', 'ease-in-out' ], true ) ? $easing : 'ease-out';
-		return '<div' . $hooks . ' data-blx-motion="' . Escape::attr( $trigger ) . '" data-blx-motion-effect="' . Escape::attr( $effect ) . '" style="--blx-motion-duration:' . $duration . 'ms;--blx-motion-delay:' . $delay . 'ms;--blx-motion-easing:' . Escape::attr( $easing ) . '">' . $children . '</div>';
+		$id_attr  = preg_replace( '~^blixis/~', '', $node->type );
+		return '<div' . $hooks . ' data-blx-motion="' . Escape::attr( $trigger ) . '" data-blx-motion-id="' . Escape::attr( (string) $id_attr ) . '" data-blx-motion-effect="' . Escape::attr( $effect ) . '" style="--blx-motion-duration:' . $duration . 'ms;--blx-motion-delay:' . $delay . 'ms;--blx-motion-easing:' . Escape::attr( $easing ) . '">' . $children . '</div>';
 	}
 
 	/** Render a safe, two-image comparison with a static fallback and progressive range control.
