@@ -61,6 +61,7 @@ const editorReady = new Set([
   'scroll-timeline',
   'stagger-container',
   'typing-indicator',
+  'horizontal-scroll',
   'icon-list',
   'icon',
   'icon-svg',
