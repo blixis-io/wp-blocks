@@ -69,4 +69,23 @@ final class WooCommerceRendererTest extends TestCase {
 		self::assertStringContainsString( 'is-unavailable', $html );
 		self::assertStringContainsString( 'Currently unavailable', $html );
 	}
+
+	/** Related product blocks query only the selected relationship IDs in their saved order. */
+	public function test_upsells_use_bounded_woo_relationship_ids(): void {
+		$query    = [];
+		$renderer = new WooCommerceRenderer(
+			'upsells',
+			static function ( array $arguments ) use ( &$query ): array {
+				$query = $arguments;
+				return [];
+			},
+			null,
+			static fn( string $kind ): array => 'upsells' === $kind ? [ 21, 21, 0, 22, -3 ] : []
+		);
+		$renderer->render( new ElementNode( 'upsell-01', 'blixis/upsells', [ 'maxItems' => 30 ] ), new RenderContext() );
+		self::assertSame( [ 21, 22 ], $query['include'] );
+		self::assertSame( 'include', $query['orderby'] );
+		self::assertSame( 'publish', $query['status'] );
+		self::assertSame( 12, $query['limit'] );
+	}
 }

@@ -25,16 +25,23 @@ final class WooCommerceRenderer implements ElementRenderer {
 	 * @var callable(string):string|null
 	 */
 	private $html_sanitizer;
+	/** Optional adapter for deterministic related-product tests.
+	 *
+	 * @var callable(string):mixed|null
+	 */
+	private $related_products;
 
 	/** Construct a commerce renderer with optional test adapters.
 	 *
 	 * @param string                                   $kind           Commerce definition id.
 	 * @param callable(array<string,mixed>):mixed|null $product_query Optional bounded product query adapter.
 	 * @param ?callable(string):string                 $html_sanitizer Optional safe markup sanitizer.
+	 * @param ?callable(string):mixed                  $related_products Optional WooCommerce relation adapter.
 	 */
-	public function __construct( private readonly string $kind, ?callable $product_query = null, ?callable $html_sanitizer = null ) {
-		$this->product_query  = $product_query;
-		$this->html_sanitizer = $html_sanitizer;
+	public function __construct( private readonly string $kind, ?callable $product_query = null, ?callable $html_sanitizer = null, ?callable $related_products = null ) {
+		$this->product_query    = $product_query;
+		$this->html_sanitizer   = $html_sanitizer;
+		$this->related_products = $related_products;
 	}
 
 	/** Render safe, escaped visitor markup.
@@ -95,12 +102,20 @@ final class WooCommerceRenderer implements ElementRenderer {
 		if ( null === $this->product_query && ! function_exists( 'wc_get_products' ) ) {
 			return '<div' . $hooks . '>' . Escape::html( $this->label( $node ) ) . '</div>';
 		}
-		$limit = max( 1, min( 12, (int) $node->value( 'maxItems', 4 ) ) );
+		$limit       = max( 1, min( 12, (int) $node->value( 'maxItems', 4 ) ) );
+		$related_ids = $this->related_product_ids();
+		if ( in_array( $this->kind, [ 'upsells', 'cross-sells' ], true ) && [] === $related_ids ) {
+			return '<div' . $hooks . ' class="blx-product-grid"></div>';
+		}
 		$query = [
 			'status' => 'publish',
 			'limit'  => $limit,
 			'return' => 'objects',
 		];
+		if ( in_array( $this->kind, [ 'upsells', 'cross-sells' ], true ) ) {
+			$query['include'] = array_slice( $related_ids, 0, $limit );
+			$query['orderby'] = 'include';
+		}
 		if ( null !== $this->product_query ) {
 			$products = ( $this->product_query )( $query );
 		} elseif ( function_exists( 'wc_get_products' ) ) {
@@ -129,6 +144,28 @@ final class WooCommerceRenderer implements ElementRenderer {
 			$html .= '</article>';
 		}
 		return $html . '</div>';
+	}
+
+	/** Return only WooCommerce's explicitly related published product IDs.
+	 *
+	 * @return list<int>
+	 */
+	private function related_product_ids(): array {
+		if ( null !== $this->related_products ) {
+			$ids = ( $this->related_products )( $this->kind );
+		} else {
+			global $product;
+			$method = 'upsells' === $this->kind ? 'get_upsell_ids' : 'get_cross_sell_ids';
+			if ( ! is_object( $product ) || ! is_callable( [ $product, $method ] ) ) {
+				return [];
+			}
+			$ids = $product->{$method}();
+		}
+		if ( ! is_array( $ids ) ) {
+			return [];
+		}
+		$ids = array_values( array_unique( array_filter( array_map( 'intval', $ids ), static fn( int $id ): bool => $id > 0 ) ) );
+		return array_slice( $ids, 0, 12 );
 	}
 
 	/** Sanitize WooCommerce's supported price markup, or escape as plain text outside WordPress.
