@@ -1033,7 +1033,8 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 			return '<p' . $hooks . '>' . Escape::html( is_string( $empty ) ? $empty : 'No results' ) . '</p>';
 		}
 		if ( ! function_exists( 'get_posts' ) || ! function_exists( 'get_post_types' ) ) {
-			return '';
+			$empty = $node->value( 'emptyMessage', 'No results' );
+			return '<p' . $hooks . '>' . Escape::html( is_string( $empty ) ? $empty : 'No results' ) . '</p>';
 		}
 		$maximum    = $node->value( 'maxItems', 30 );
 		$maximum    = is_numeric( $maximum ) ? max( 1, min( 30, (int) $maximum ) ) : 10;
@@ -1283,7 +1284,7 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 			}
 			return $html . '</fieldset>';
 		}
-		if ( 'select' === $id ) {
+		if ( in_array( $id, [ 'select', 'combobox' ], true ) ) {
 			$control_id = 'blx-control-' . substr( hash( 'sha256', $node->id ), 0, 12 );
 			$html       = '<label for="' . $control_id . '">' . Escape::html( $label ) . '</label><select' . $hooks . ' id="' . $control_id . '" name="' . Escape::attr( $name ) . '"' . ( $required ? ' required' : '' ) . $disabled_attr . '>';
 			if ( true === $node->value( 'allowClear', false ) ) {
