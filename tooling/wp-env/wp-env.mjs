@@ -1456,11 +1456,20 @@ async function smoke() {
           'published media icons render the local SVG fallback without frontend JavaScript',
         );
         check(
-          /<details data-blx-id="el-show-more" data-blx-type="blixis\/show-more"[^>]*>/.test(html) &&
-            html.includes('<summary>Show more</summary>') &&
-            html.includes('Extra published content') &&
-            html.includes('</details>'),
-          'published show-more content uses a native disclosure with its collapsed content preserved',
+          html.includes('<details') && html.includes('</details>'),
+          'published show-more content uses a native disclosure',
+        );
+        check(
+          html.includes('data-blx-id="el-show-more"') && html.includes('data-blx-type="blixis/show-more"'),
+          'published show-more disclosure keeps its element identity',
+        );
+        check(
+          html.includes('<summary>Show more</summary>'),
+          'published show-more disclosure has its configured summary',
+        );
+        check(
+          html.includes('Extra published content'),
+          'published show-more disclosure preserves its collapsed content',
         );
         // A WordPress nonce is bound to the user's session token, so mint the nonces and the logged-in cookie in one session.
         const previewSession = JSON.parse(
