@@ -186,6 +186,20 @@ $layout  = static fn ( int $n, string $color ): string => wp_json_encode(
 				'children' => [],
 			],
 			[
+				'id'       => 'el-email-field',
+				'type'     => 'blixis/email-field',
+				'props'    => (object) [
+					'name'         => 'smoke_email',
+				'label'        => 'Contact email',
+				'placeholder'  => 'name@example.test',
+				'autocomplete' => 'email',
+				'required'     => true,
+				'value'        => '',
+				'validation'   => (object) [ 'maxLength' => 120 ],
+				],
+				'children' => [],
+			],
+			[
 				'id'       => 'el-range-pair',
 				'type'     => 'blixis/range-slider',
 				'props'    => (object) [
