@@ -99375,7 +99375,7 @@
         ]
       },
       "archetype": "carousel",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -103597,7 +103597,7 @@
         ]
       },
       "archetype": "carousel",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -115797,7 +115797,7 @@
         ]
       },
       "archetype": "progress",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
