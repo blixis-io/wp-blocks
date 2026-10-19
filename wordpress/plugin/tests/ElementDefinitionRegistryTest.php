@@ -349,6 +349,10 @@ final class ElementDefinitionRegistryTest extends TestCase {
 		$renderer = new DefinitionArchetypeRenderer( $registry, $media );
 		$this->assertTrue( $renderer->supports( 'simple' ) );
 		$this->assertSame(
+			'<p data-blx-id="site-title-1" data-blx-type="blixis/site-title">Store &amp; Studio</p>',
+			$renderer->render( new ElementNode( 'site-title-1', 'blixis/site-title', [ 'content' => 'Store & Studio' ] ), new RenderContext() )
+		);
+		$this->assertSame(
 			'<img data-blx-id="avatar-1" data-blx-type="blixis/avatar" src="https://example.test/avatar.png" width="64" height="64" alt="A &amp; B" loading="eager" fetchpriority="high" decoding="async">',
 			$renderer->render(
 				new ElementNode(
@@ -1168,5 +1172,61 @@ final class ElementDefinitionRegistryTest extends TestCase {
 			'<a data-blx-id="top-1" data-blx-type="blixis/back-to-top" href="#" data-blx-back-to-top>Back to top</a>',
 			$renderer->render( new ElementNode( 'top-1', 'blixis/back-to-top', [] ), new RenderContext() )
 		);
+		$this->assertSame(
+			'<nav data-blx-id="mega-1" data-blx-type="blixis/mega-menu" data-blx-mega-menu aria-label="Navigation"><ul><li><a href="/products">Products</a><ul><li><a href="/products/one">One</a></li></ul></li></ul></nav>',
+			$renderer->render(
+				new ElementNode(
+					'mega-1',
+					'blixis/mega-menu',
+					[
+						'items' => [
+							[
+								'label'    => 'Products',
+								'href'     => '/products',
+								'children' => [
+									[
+										'label' => 'One',
+										'href'  => '/products/one',
+									],
+								],
+							],
+						],
+					]
+				),
+				new RenderContext()
+			)
+		);
+		$this->assertStringContainsString(
+			'<ol data-blx-id="wizard-1" data-blx-type="blixis/wizard-steps" data-blx-wizard-steps data-blx-steps-orientation="vertical" aria-label="Progress steps">',
+			$renderer->render(
+				new ElementNode(
+					'wizard-1',
+					'blixis/wizard-steps',
+					[
+						'orientation' => 'vertical',
+						'ariaLabel'   => 'Progress steps',
+						'steps'       => [ [ 'title' => 'Build' ] ],
+					]
+				),
+				new RenderContext()
+			)
+		);
+		$offcanvas = $renderer->render(
+			new ElementNode(
+				'offcanvas-1',
+				'blixis/offcanvas',
+				[
+					'placement'    => 'left',
+					'modal'        => true,
+					'triggerLabel' => 'Open navigation',
+				]
+			),
+			new RenderContext( '<p>Panel &amp; links</p>' )
+		);
+		$this->assertStringContainsString( 'data-blx-offcanvas-placement="left"', $offcanvas );
+		$this->assertStringContainsString( 'data-blx-offcanvas-modal="true"', $offcanvas );
+		$this->assertStringContainsString( '<summary>Open navigation</summary>', $offcanvas );
+		$this->assertStringContainsString( '<p>Panel &amp; links</p>', $offcanvas );
+		$this->assertTrue( PreviewSanitizer::accepts( $offcanvas ) );
 	}
 }

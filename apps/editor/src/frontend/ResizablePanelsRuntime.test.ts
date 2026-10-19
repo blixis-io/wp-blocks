@@ -20,6 +20,7 @@ type InitMap = (root: HTMLElement) => void;
 type InitPanorama = (root: HTMLElement) => void;
 type InitDisclosure = (root: HTMLElement) => void;
 type InitScrollSpy = (root: HTMLElement) => void;
+type InitOffcanvas = (root: HTMLDetailsElement) => void;
 
 function makePanels(orientation = 'horizontal', minimum = 20) {
   const root = document.createElement('div');
@@ -55,6 +56,7 @@ afterEach(() => {
   delete (window as Window & { blxInitAccordion?: InitDisclosure }).blxInitAccordion;
   delete (window as Window & { blxInitTabs?: InitDisclosure }).blxInitTabs;
   delete (window as Window & { blxInitScrollSpy?: InitScrollSpy }).blxInitScrollSpy;
+  delete (window as Window & { blxInitOffcanvas?: InitOffcanvas }).blxInitOffcanvas;
   if (originalIntersectionObserver) Object.defineProperty(window, 'IntersectionObserver', originalIntersectionObserver);
   else delete (window as unknown as { IntersectionObserver?: typeof IntersectionObserver }).IntersectionObserver;
   if (originalDialogShowModal) Object.defineProperty(HTMLDialogElement.prototype, 'showModal', originalDialogShowModal);
@@ -64,6 +66,69 @@ afterEach(() => {
 });
 
 describe('public content element enhancement', () => {
+  it('traps modal off-canvas focus, inerts surrounding content, and restores focus', () => {
+    const wrapper = document.createElement('main');
+    const root = document.createElement('details');
+    root.setAttribute('data-blx-offcanvas', '');
+    root.setAttribute('data-blx-offcanvas-modal', 'true');
+    root.setAttribute('data-blx-offcanvas-close-escape', 'false');
+    root.setAttribute('data-blx-offcanvas-close-outside', 'true');
+    root.setAttribute('data-blx-offcanvas-label', 'Navigation panel');
+    root.innerHTML =
+      '<summary>Open panel</summary><div data-blx-offcanvas-panel tabindex="-1"><button type="button" data-blx-offcanvas-close aria-label="Close panel">Close</button></div>';
+    const sibling = document.createElement('section');
+    sibling.textContent = 'Page content';
+    wrapper.append(root, sibling);
+    const aside = document.createElement('aside');
+    document.body.append(wrapper, aside);
+    runInNewContext(runtime, { window, document });
+    const initialize = (window as Window & { blxInitOffcanvas?: InitOffcanvas }).blxInitOffcanvas;
+    if (!initialize) throw new Error('off-canvas initializer missing');
+    initialize(root);
+    root.open = true;
+    root.dispatchEvent(new Event('toggle'));
+    const panel = root.querySelector<HTMLElement>('[data-blx-offcanvas-panel]');
+    const summary = root.querySelector<HTMLElement>('summary');
+    const close = root.querySelector<HTMLButtonElement>('[data-blx-offcanvas-close]');
+    if (!panel || !summary || !close) throw new Error('off-canvas controls missing');
+    expect(panel.getAttribute('role')).toBe('dialog');
+    expect(panel.getAttribute('aria-modal')).toBe('true');
+    expect(panel.getAttribute('aria-label')).toBe('Navigation panel');
+    expect(sibling.inert).toBe(true);
+    expect(aside.inert).toBe(true);
+    expect(document.activeElement).toBe(close);
+    const tab = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true });
+    close.dispatchEvent(tab);
+    expect(tab.defaultPrevented).toBe(true);
+    const escape = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+    close.dispatchEvent(escape);
+    expect(root.open).toBe(true);
+    close.click();
+    expect(root.open).toBe(false);
+    expect(sibling.inert).toBe(false);
+    expect(aside.inert).toBe(false);
+    expect(document.activeElement).toBe(summary);
+  });
+
+  it('supports manually triggered off-canvas disclosures', () => {
+    const root = document.createElement('details');
+    root.setAttribute('data-blx-offcanvas', '');
+    root.setAttribute('data-blx-offcanvas-open-on', 'manual');
+    root.innerHTML =
+      '<summary>Open panel</summary><div data-blx-offcanvas-panel tabindex="-1"><button type="button" data-blx-offcanvas-close>Close</button></div>';
+    document.body.append(root);
+    runInNewContext(runtime, { window, document });
+    const initialize = (window as Window & { blxInitOffcanvas?: InitOffcanvas }).blxInitOffcanvas;
+    if (!initialize) throw new Error('off-canvas initializer missing');
+    initialize(root);
+    root.querySelector('summary')?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    expect(root.open).toBe(false);
+    root.dispatchEvent(new CustomEvent('blixis:offcanvas-open'));
+    expect(root.open).toBe(true);
+    root.dispatchEvent(new CustomEvent('blixis:offcanvas-close'));
+    expect(root.open).toBe(false);
+  });
+
   it('marks the closest visible same-page section in a scroll-spy navigation', () => {
     let callback: IntersectionObserverCallback | undefined;
     class TestIntersectionObserver {

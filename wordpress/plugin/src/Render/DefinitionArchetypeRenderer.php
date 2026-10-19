@@ -44,7 +44,7 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 	 * @param string $archetype Archetype name.
 	 */
 	public function supports( string $archetype ): bool {
-		return in_array( $archetype, [ 'container','simple','text','richtext','heading','button','link','image','gallery','video','audio','embed','iframe','pdf-viewer','map','navigation','pagination','list','code','accordion','tabs','steps','alert','progress','counter','countdown','icon','dynamic','card','layout','section','page','site-header','site-footer','site-logo','row','columns','grid','stack' ], true ); }
+		return in_array( $archetype, [ 'container','simple','text','richtext','heading','button','link','image','gallery','video','audio','embed','iframe','pdf-viewer','map','navigation','pagination','list','code','accordion','tabs','steps','overlay','alert','progress','counter','countdown','icon','dynamic','card','layout','section','page','site-header','site-footer','site-logo','row','columns','grid','stack' ], true ); }
 	/** Render an element with escaped text and allowlisted tags/attributes.
 	 *
 	 * @param ElementNode   $node Element input.
@@ -142,6 +142,10 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		}
 		if ( in_array( $id, [ 'text','heading','button','site-title','rich-text','paragraph' ], true ) || in_array( $archetype, [ 'text','richtext' ], true ) ) {
 			$value = $node->value( 'content', $node->value( 'text', $node->value( 'label', '' ) ) );
+			if ( 'site-title' === $id && function_exists( 'get_bloginfo' ) ) {
+				$site_title = get_bloginfo( 'name' );
+				$value      = is_string( $site_title ) && '' !== trim( $site_title ) ? $site_title : $value;
+			}
 			if ( is_array( $value ) && array_is_list( $value ) ) {
 				$value = implode( '', array_map( static fn ( mixed $part ): string => is_array( $part ) && is_string( $part['text'] ?? null ) ? $part['text'] : '', $value ) );
 			}
@@ -199,10 +203,16 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 				$offset = is_numeric( $offset ) && is_finite( (float) $offset ) ? max( 0, min( 256, (float) $offset ) ) : 0;
 				return '<header' . $hooks . ' data-blx-sticky-header style="--blx-sticky-offset:' . Escape::attr( sprintf( '%g', $offset ) ) . 'px">' . $nav . '</header>';
 			}
+			if ( 'mega-menu' === $id ) {
+				return '<nav' . $hooks . ' data-blx-mega-menu aria-label="' . Escape::attr( $label ) . '">' . $list . '</nav>';
+			}
 			return '<nav' . $hooks . ' data-blx-navigation-orientation="' . Escape::attr( $node->value( 'orientation', 'horizontal' ) === 'vertical' ? 'vertical' : 'horizontal' ) . '"' . ( 'scroll-spy' === $id ? ' data-blx-scroll-spy' : '' ) . ' aria-label="' . Escape::attr( $label ) . '">' . $list . '</nav>';
 		}
 		if ( 'accordion' === $archetype ) {
 			return $this->render_accordion( $node, $hooks );
+		}
+		if ( 'overlay' === $archetype && 'offcanvas' === $id ) {
+			return $this->render_offcanvas( $node, $context->children_html, $hooks );
 		}
 		if ( 'tabs' === $archetype ) {
 			return $this->render_tabs( $node, $hooks );
@@ -764,6 +774,27 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		return $html . '</div>';
 	}
 
+	/** Render an off-canvas disclosure that the runtime upgrades to a modal when requested.
+	 *
+	 * @param ElementNode $node Off-canvas definition.
+	 * @param string      $children Validated child markup.
+	 * @param string      $hooks Validated element hooks.
+	 */
+	private function render_offcanvas( ElementNode $node, string $children, string $hooks ): string {
+		$placement = $node->value( 'placement', 'right' );
+		$placement = in_array( $placement, [ 'top', 'bottom', 'left', 'right' ], true ) ? $placement : 'right';
+		$open_on   = $node->value( 'openOn', 'click' );
+		$open_on   = in_array( $open_on, [ 'click', 'hover', 'focus', 'manual' ], true ) ? $open_on : 'click';
+		$animation = $node->value( 'animationPreset', 'fade' );
+		$animation = in_array( $animation, [ 'none', 'fade', 'scale', 'slide' ], true ) ? $animation : 'fade';
+		$label     = $node->value( 'ariaLabel' );
+		$label     = is_string( $label ) && '' !== trim( $label ) ? trim( $label ) : $this->translate_label( 'Off-canvas panel' );
+		$trigger   = $node->value( 'triggerLabel', $this->translate_label( 'Open' ) );
+		$trigger   = is_string( $trigger ) && '' !== trim( $trigger ) ? trim( $trigger ) : $this->translate_label( 'Open' );
+		$modal     = true === $node->value( 'modal', false );
+		return '<details' . $hooks . ' data-blx-offcanvas data-blx-offcanvas-placement="' . Escape::attr( $placement ) . '" data-blx-offcanvas-open-on="' . Escape::attr( $open_on ) . '" data-blx-offcanvas-animation="' . Escape::attr( $animation ) . '" data-blx-offcanvas-modal="' . ( $modal ? 'true' : 'false' ) . '" data-blx-offcanvas-close-escape="' . ( true === $node->value( 'closeOnEscape', true ) ? 'true' : 'false' ) . '" data-blx-offcanvas-close-outside="' . ( true === $node->value( 'closeOnOutside', true ) ? 'true' : 'false' ) . '" data-blx-offcanvas-label="' . Escape::attr( $label ) . '"><summary>' . Escape::html( $trigger ) . '</summary><div data-blx-offcanvas-panel tabindex="-1"><button type="button" data-blx-offcanvas-close aria-label="' . Escape::attr( $this->translate_label( 'Close panel' ) ) . '">×</button>' . $children . '</div></details>';
+	}
+
 	/** Render all tab content with in-page links so content remains available without JavaScript.
 	 *
 	 * @param ElementNode $node Tabs definition.
@@ -804,12 +835,15 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 	 * @param string      $hooks Validated element hooks.
 	 */
 	private function render_steps( ElementNode $node, string $hooks ): string {
-		$steps  = $node->value( 'steps', [] );
-		$steps  = is_array( $steps ) ? array_slice( $steps, 0, 100 ) : [];
-		$active = $node->value( 'activeStep', 0 );
-		$active = is_numeric( $active ) ? max( 0, (int) $active ) : 0;
-		$label  = $node->value( 'ariaLabel' );
-		$html   = '<ol' . $hooks . ( is_string( $label ) && '' !== trim( $label ) ? ' aria-label="' . Escape::attr( $label ) . '"' : '' ) . '>';
+		$steps       = $node->value( 'steps', [] );
+		$steps       = is_array( $steps ) ? array_slice( $steps, 0, 100 ) : [];
+		$active      = $node->value( 'activeStep', 0 );
+		$active      = is_numeric( $active ) ? max( 0, (int) $active ) : 0;
+		$label       = $node->value( 'ariaLabel' );
+		$orientation = $node->value( 'orientation', 'horizontal' );
+		$orientation = in_array( $orientation, [ 'horizontal', 'vertical' ], true ) ? $orientation : 'horizontal';
+		$data        = 'wizard-steps' === preg_replace( '~^blixis/~', '', $node->type ) ? ' data-blx-wizard-steps data-blx-steps-orientation="' . Escape::attr( $orientation ) . '"' : '';
+		$html        = '<ol' . $hooks . $data . ( is_string( $label ) && '' !== trim( $label ) ? ' aria-label="' . Escape::attr( $label ) . '"' : '' ) . '>';
 		foreach ( $steps as $index => $step ) {
 			$step = $this->record( $step );
 			if ( null === $step || ! is_string( $step['title'] ?? null ) ) {
@@ -1289,9 +1323,12 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		return match ( $label ) {
 			'Back to top' => __( 'Back to top', 'blixis-builder' ),
 			'Breadcrumb' => __( 'Breadcrumb', 'blixis-builder' ),
+			'Close panel' => __( 'Close panel', 'blixis-builder' ),
 			'Menu' => __( 'Menu', 'blixis-builder' ),
 			'Mobile navigation' => __( 'Mobile navigation', 'blixis-builder' ),
 			'Navigation' => __( 'Navigation', 'blixis-builder' ),
+			'Off-canvas panel' => __( 'Off-canvas panel', 'blixis-builder' ),
+			'Open' => __( 'Open', 'blixis-builder' ),
 			'Pagination' => __( 'Pagination', 'blixis-builder' ),
 			'Previous'  => __( 'Previous', 'blixis-builder' ),
 			'Next'      => __( 'Next', 'blixis-builder' ),

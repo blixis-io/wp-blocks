@@ -108,6 +108,45 @@ $layout  = static fn ( int $n, string $color ): string => wp_json_encode(
 				],
 				'children' => [],
 			],
+			[
+				'id'       => 'el-site-title',
+				'type'     => 'blixis/site-title',
+				'props'    => (object) [ 'content' => 'Fallback site name' ],
+				'children' => [],
+			],
+			[
+				'id'       => 'el-tabs',
+				'type'     => 'blixis/tabs',
+				'props'    => (object) [
+					'defaultValue' => 'details',
+					'items'        => [
+						[ 'id' => 'overview', 'label' => 'Overview', 'content' => 'Overview panel' ],
+						[ 'id' => 'details', 'label' => 'Details', 'content' => 'Details panel' ],
+					],
+				],
+				'children' => [],
+			],
+			[
+				'id'       => 'el-accordion',
+				'type'     => 'blixis/accordion',
+				'props'    => (object) [
+					'items' => [ [ 'id' => 'one', 'title' => 'First item', 'content' => 'First answer' ], [ 'id' => 'two', 'title' => 'Second item', 'content' => 'Second answer' ] ],
+				],
+				'children' => [],
+			],
+			[
+				'id'       => 'el-offcanvas',
+				'type'     => 'blixis/offcanvas',
+				'props'    => (object) [ 'modal' => true, 'placement' => 'left', 'triggerLabel' => 'Open panel' ],
+				'children' => [
+					[
+						'id'       => 'el-offcanvas-copy',
+						'type'     => 'blixis/paragraph',
+						'props'    => (object) [ 'content' => 'Panel content' ],
+						'children' => [],
+					],
+				],
+			],
 		],
 	]
 );

@@ -16587,7 +16587,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'text',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -19455,7 +19455,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'navigation',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -20205,7 +20205,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'steps',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -21007,7 +21007,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'overlay',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -70795,7 +70795,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'navigation',
     icon: 'solar:text-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'site-title site title navigation site title element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -70916,7 +70916,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'navigation',
     icon: 'solar:menu-dots-linear',
     tier: 'pro',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'mega-menu mega menu navigation mega menu element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -70949,7 +70949,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'navigation',
     icon: 'solar:list-check-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'wizard-steps wizard steps navigation wizard steps element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -70982,7 +70982,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'navigation',
     icon: 'solar:sidebar-minimalistic-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'offcanvas offcanvas navigation offcanvas element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
