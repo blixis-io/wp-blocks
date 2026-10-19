@@ -4,6 +4,7 @@ import { CURRENT_SCHEMA_VERSION } from '@blixis/wp-core';
 import { CURRENT_TOKEN_SCHEMA_VERSION } from '@blixis/wp-design-tokens';
 import { EXTENSION_API_VERSION } from '@blixis/wp-element-registry';
 import { COMPILER_VERSION } from '@blixis/wp-style-engine';
+import { CAPABILITY_API_VERSION } from '@blixis/wp-capabilities';
 import { describe, expect, it } from 'vitest';
 import { REPO_ROOT } from './contracts.ts';
 
@@ -15,6 +16,7 @@ const ACTUAL: Record<string, number> = {
   CURRENT_TOKEN_SCHEMA_VERSION,
   EXTENSION_API_VERSION,
   COMPILER_VERSION,
+  CAPABILITY_API_VERSION,
 };
 
 describe('the version inventory in docs/architecture/VERSIONING-AND-COMPATIBILITY.md', () => {

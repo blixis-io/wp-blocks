@@ -11,6 +11,8 @@ namespace Blixis\Builder\Rest;
 
 use Blixis\Builder\Storage\Envelope;
 use Blixis\Builder\Registry\ElementDefinitionRegistry;
+use Blixis\Builder\Registry\CapabilityEditPolicy;
+use Blixis\Builder\Registry\FeatureCapabilityGate;
 use Blixis\Builder\Registry\DefinitionPropsValidator;
 use Blixis\Builder\Storage\LocaleMismatchException;
 use Blixis\Builder\Storage\MetaKeys;
@@ -27,12 +29,13 @@ final class DocumentRequest {
 	/**
 	 * Create the request policy.
 	 *
-	 * @param StreamStore   $streams Working stream repository.
-	 * @param PostAccess    $access Post access policy.
-	 * @param ?RevisionRing $ring Revision history, if kept.
-	 * @param ?ThemeGuard   $guard Shared theme policy.
+	 * @param StreamStore            $streams Working stream repository.
+	 * @param PostAccess             $access Post access policy.
+	 * @param ?RevisionRing          $ring Revision history, if kept.
+	 * @param ?ThemeGuard            $guard Shared theme policy.
+	 * @param ?FeatureCapabilityGate $capability_gate Server capability gate.
 	 */
-	public function __construct( private StreamStore $streams, private PostAccess $access, private ?RevisionRing $ring = null, private ?ThemeGuard $guard = null ) {}
+	public function __construct( private StreamStore $streams, private PostAccess $access, private ?RevisionRing $ring = null, private ?ThemeGuard $guard = null, private ?FeatureCapabilityGate $capability_gate = null ) {}
 
 	/** Check access without revealing whether a forbidden post exists.
 	 *
@@ -140,6 +143,26 @@ final class DocumentRequest {
 			}
 		}
 		try {
+			$policy = new CapabilityEditPolicy(
+				ElementDefinitionRegistry::from_manifest_file( dirname( __DIR__, 2 ) . '/data/element-definitions-v2.json' ),
+				$this->capability_gate ?? new FeatureCapabilityGate()
+			);
+			if ( MetaKeys::LAYOUT === $key && isset( $layout ) && $policy->requires_layout_baseline( $layout ) ) {
+				$previous_row    = $this->streams->read( $post_id, MetaKeys::LAYOUT );
+				$previous_layout = null === $previous_row ? null : Envelope::decode( $previous_row['value'], MetaKeys::LAYOUT );
+				if ( ! $policy->allows_layout_update( $previous_layout, $layout ) ) {
+					return DocumentResult::error( 403, 'blixis_feature_unavailable', 'The active add-on does not allow editing this feature.' );
+				}
+			} elseif ( MetaKeys::LAYOUT !== $key ) {
+				$layout_row  = $this->streams->read( $post_id, MetaKeys::LAYOUT );
+				$content_row = $this->streams->read( $post_id, $key );
+				$layout      = null === $layout_row ? null : Envelope::decode( $layout_row['value'], MetaKeys::LAYOUT );
+				$content     = Envelope::decode( $body, $key );
+				$previous    = null === $content_row ? null : Envelope::decode( $content_row['value'], $key );
+				if ( null !== $layout && null !== $content && ! $policy->allows_content_update( $layout, $previous, $content ) ) {
+					return DocumentResult::error( 403, 'blixis_feature_unavailable', 'The active add-on does not allow editing this feature.' );
+				}
+			}
 			$result = $this->streams->write( $post_id, $key, $body, $expected );
 			if ( ! $result->success ) {
 				return DocumentResult::error(

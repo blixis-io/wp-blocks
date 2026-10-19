@@ -104,6 +104,7 @@ PUT requires `Content-Type: application/json`, a JSON envelope object of at most
 | 400 | `blixis_invalid_page_settings` | Page settings are invalid. |
 | 401 | `blixis_unauthenticated` | Authentication is required. |
 | 403 | `blixis_forbidden` | Access is forbidden. |
+| 403 | `blixis_feature_unavailable` | The active add-on does not allow editing this feature. |
 | 403 | `rest_cookie_invalid_nonce` | WordPress core rejects cookie nonce |
 | 404 | `blixis_revision_not_found` | Revision not found. |
 | 404 | `blixis_snapshot_not_found` | Snapshot not found. |

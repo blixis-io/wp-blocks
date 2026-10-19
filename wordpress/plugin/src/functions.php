@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 use Blixis\Builder\Locale\NativeLocaleRouter;
 use Blixis\Builder\Locale\Switcher;
+use Blixis\Builder\Registry\FeatureCapabilityGate;
 
 \defined( 'ABSPATH' ) || exit;
 
@@ -31,5 +32,36 @@ if ( ! \function_exists( 'blixis_builder_locale_switcher' ) ) {
 			}
 		}
 		echo Switcher::html( $urls, $router->current(), \__( 'Language', 'blixis-builder' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped inside Switcher::html().
+	}
+}
+
+if ( ! \function_exists( 'blixis_builder_extension_api_version' ) ) {
+	/** Return the Builder's public extension API version.
+	 *
+	 * @return int
+	 */
+	function blixis_builder_extension_api_version(): int {
+		return \Blixis\Builder\EXTENSION_API_VERSION;
+	}
+}
+
+if ( ! \function_exists( 'blixis_builder_capability_api_version' ) ) {
+	/** Return the server capability contract version.
+	 *
+	 * @return int
+	 */
+	function blixis_builder_capability_api_version(): int {
+		return FeatureCapabilityGate::API_VERSION;
+	}
+}
+
+if ( ! \function_exists( 'blixis_builder_has_capability' ) ) {
+	/** Resolve a namespaced add-on capability on the server. False is the safe default.
+	 *
+	 * @param string $capability Capability id.
+	 * @return bool
+	 */
+	function blixis_builder_has_capability( string $capability ): bool {
+		return ( new FeatureCapabilityGate() )->allows( $capability );
 	}
 }

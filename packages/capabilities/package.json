@@ -4,5 +4,12 @@
   "private": true,
   "description": "Feature registry types and capability maps (Free/Plus/Pro). Hints only; the server is authoritative.",
   "license": "GPL-2.0-or-later",
-  "type": "module"
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  }
 }

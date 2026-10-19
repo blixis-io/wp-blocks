@@ -25,6 +25,7 @@ final class ErrorCatalog {
 		'blixis_invalid_page_settings'        => [ 400, 'Page settings are invalid.' ],
 		'blixis_unauthenticated'              => [ 401, 'Authentication is required.' ],
 		'blixis_forbidden'                    => [ 403, 'Access is forbidden.' ],
+		'blixis_feature_unavailable'          => [ 403, 'The active add-on does not allow editing this feature.' ],
 		'blixis_revision_not_found'           => [ 404, 'Revision not found.' ],
 		'blixis_snapshot_not_found'           => [ 404, 'Snapshot not found.' ],
 		'blixis_media_not_found'              => [ 404, 'Media not found.' ],

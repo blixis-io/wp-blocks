@@ -20,9 +20,10 @@ namespace Blixis\Builder;
 
 \defined( 'ABSPATH' ) || exit;
 
-const VERSION = '0.1.0';
-const FILE    = __FILE__;
-const DIR     = __DIR__;
+const VERSION               = '0.1.0';
+const EXTENSION_API_VERSION = 2;
+const FILE                  = __FILE__;
+const DIR                   = __DIR__;
 
 require_once DIR . '/src/Compatibility.php';
 

@@ -14,6 +14,7 @@
     "generate:compile-corpus": "node src/generate-compile-corpus.ts"
   },
   "dependencies": {
+    "@blixis/wp-capabilities": "workspace:*",
     "@blixis/wp-core": "workspace:*",
     "@blixis/wp-design-tokens": "workspace:*",
     "@blixis/wp-element-registry": "workspace:*",

@@ -17,6 +17,7 @@ Everything that is stored, shared between TypeScript and PHP, or exposed to add-
 | Builder document (`schemaVersion`) | `CURRENT_SCHEMA_VERSION` (core) | 1 | a breaking document change, with a migration |
 | Design token set (`schemaVersion`) | `CURRENT_TOKEN_SCHEMA_VERSION` (design-tokens) | 1 | a breaking token-set change, with a migration |
 | Extension API | `EXTENSION_API_VERSION` (element-registry) | 2 | the public surface changes (see below) |
+| Capability API | `CAPABILITY_API_VERSION` (capabilities) | 1 | capability registration or resolution contract changes |
 | CSS compiler output | `COMPILER_VERSION` (style-engine) | 1 | the same inputs would produce different CSS |
 
 Other versions: an element definition's own `version` (below), `fixtureVersion` and `contractVersion` (test data formats, `docs/engineering/FIXTURES.md`), the JSON Schema `$id` URNs (`urn:blixis:wp-blocks:document:1`, `urn:blixis:wp-blocks:token-set:1`, which end in the schema version and change with it), `tokenVersion` (a cache counter, not a format version), `classListVersion` (global class list, ADR 0004), the plugin and add-on SemVer releases, and the REST namespace `blixis/v1` (BWB-041).
@@ -69,6 +70,8 @@ Where it applies:
 The extension API is the registration contract for Plus, Pro and third-party add-ons (ADR 0009; details in `EXTENSION-API.md`). Add-ons depend on it only.
 
 ### API version
+
+The server capability contract has its own `CAPABILITY_API_VERSION`; capability registration and entitlement resolution can evolve independently from element definition fields. A capability declares the minimum capability API version it needs. The server defaults to unavailable and only trusted installed add-ons may grant it. Client snapshots never authorize REST writes.
 
 - `EXTENSION_API_VERSION` is an integer. It increases whenever the public surface changes in a way an add-on can rely on or be broken by: a new definition field, hook or property kind (an add-on may require it) as well as any removal, rename or tightening. Purely internal changes do not bump it. The add-on surface is the definition format and the registration handle (`registry.registrarFor(source).register`); the registry's query methods that the Builder itself calls (`canNest`, `translationValue`, `localizedProperties`, `manifest`, `validateProps`) are host-internal and not part of it.
 - A definition declares `requiresApi`, the minimum version it needs; declare the lowest version that provides what you use. The host refuses a definition that needs a newer version than it has (implemented in `registry.ts`).

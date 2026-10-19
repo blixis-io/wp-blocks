@@ -16,7 +16,7 @@
 | Dynamic data bindings / ACF adapter | — | Yes | Yes |
 | Enhanced reusable design patterns | — | Yes | Yes |
 | Query loop and advanced conditional rendering | — | — | Yes |
-| WooCommerce component templates | — | — | Yes |
+| WooCommerce cart and product display elements | — | — | Yes |
 | Advanced animation controls (approved engine) | — | — | Yes |
 | Extended integration SDK examples | — | — | Yes |
 
@@ -32,6 +32,6 @@ Decision record: [ADR 0007](../architecture/adrs/0007-free-plus-pro-allocation-t
 - Avoid artificial limitations in code hosted on WordPress.org. Read the latest directory guidelines before submission.
 - Marketing tiers, billing platform, agency tiers and license pricing are separate business decisions, not baked into document schemas.
 
-## Proposed implementation
+## Capability and entitlement implementation
 
-`FeatureRegistry` declared in TS + PHP capability map; server returns effective feature set for editor hints but authoritative checks live on REST handlers/render registration. Add-ons register optional elements/control bundles through versioned hooks. Tests cover downgrade, expired license, missing add-on and site restoration.
+TypeScript capability registration and the server capability API are versioned separately from the element API. The Builder defaults server grants to false and checks changed paid layout/content on REST writes. Add-ons register renderers through a versioned filter; Pro currently provides the cart and product display adapters. The client may use capability snapshots as editor hints only. License expiry workflows, broad editor control registration, and site restoration coverage remain future work.
