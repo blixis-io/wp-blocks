@@ -58,3 +58,14 @@ test('theme text and background use semantic color tokens', async () => {
     /#[0-9a-f]{3,8}\b/i,
   );
 });
+
+test('native forms use responsive token colors and visible keyboard focus', async () => {
+  const css = await readFile(new URL('assets/css/theme.src.css', theme), 'utf8');
+  assert.match(css, /form\[data-blx-form\]\s*\{[\s\S]*?display:\s*grid/);
+  assert.match(css, /form\[data-blx-form\][\s\S]*?max-inline-size:\s*100%/);
+  assert.match(css, /form\[data-blx-form\][\s\S]*?background:\s*var\(--blx-color-bg/);
+  assert.match(css, /form\[data-blx-form\][\s\S]*?color:\s*var\(--blx-color-text/);
+  assert.match(css, /form\[data-blx-form\][\s\S]*?:focus-visible\s*\{[\s\S]*?outline:\s*3px solid/);
+  assert.match(css, /form\[data-blx-form\][\s\S]*?min-block-size:\s*2\.75rem/);
+  assert.doesNotMatch(css, /form\[data-blx-form\][^}]*#[0-9a-f]{3,8}\b/i);
+});
