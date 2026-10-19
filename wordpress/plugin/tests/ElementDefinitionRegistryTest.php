@@ -233,6 +233,9 @@ final class ElementDefinitionRegistryTest extends TestCase {
 			new RenderContext( '<p>Visible content</p>' )
 		);
 		$this->assertSame( '<div data-blx-id="reveal" data-blx-type="blixis/entrance-animation" data-blx-motion="viewport-enter" data-blx-motion-effect="slide-in-left" style="--blx-motion-duration:3000ms;--blx-motion-delay:0ms;--blx-motion-easing:ease-out"><p>Visible content</p></div>', $html );
+		$hover = $renderer->render( new ElementNode( 'tilt', 'blixis/hover-tilt', [ 'trigger' => 'hover' ] ), new RenderContext( '<p>Card</p>' ) );
+		$this->assertStringContainsString( 'data-blx-motion="hover"', $hover );
+		$this->assertStringContainsString( '<p>Card</p>', $hover );
 	}
 
 	/** Dynamic bindings pass through the document renderer and unsupported paths use their authored fallback.

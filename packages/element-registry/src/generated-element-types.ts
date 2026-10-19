@@ -60574,7 +60574,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'animation',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -72611,7 +72611,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'advanced-motion',
     icon: 'solar:refresh-linear',
     tier: 'pro',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'hover-tilt hover tilt advanced-motion hover tilt element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
