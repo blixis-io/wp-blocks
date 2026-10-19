@@ -40,6 +40,7 @@ Nothing throws. Every declaration goes through `sanitizeDeclarations` (docs/arch
 ## Tests
 
 - Conformance with `tests/fixtures/style-resolution/cases.json` (all element and class cases, with classes attached in reverse order of precedence): the compiled CSS is evaluated by a small cascade evaluator in the tests (`cascade.test-helper.ts`) for explicit themes, `auto` and no `data-theme`, at desktop, tablet and mobile widths. The presence matrix of the four rule layers (16 x 2 modes x 3 viewports) and 1,500 seeded random rule sets in 6,000 random contexts are checked against an independent TypeScript port of the lexicographic key.
+- Every generated definition marked `ready` is compiled with base, tablet, dark and dark-mobile rules. The cascade evaluator confirms the expected values at desktop and mobile widths in both light and dark appearance, so new ready catalog entries inherit tested responsive and appearance support automatically.
 - The evaluator refuses any selector or media query outside the compiler's known forms and every selector is checked against a one-class pattern, which is the specificity assertion.
 - Mutation checks (done by hand when writing the compiler): swapping the `bp` and `mode` layer order, or sorting by class order before breakpoint, makes tests fail.
 - The precedence matrix of ADR 0005 (all 16 layer combinations, states, classes) is a golden fixture checked against hand-written expectations: see `BREAKPOINTS-AND-STATES.md`.
