@@ -209,6 +209,45 @@ describe('compile: structure', () => {
   });
 });
 
+describe('compile: ready element responsive and appearance coverage', () => {
+  it('keeps light, dark, tablet and mobile overrides distinct for every ready catalog type', () => {
+    const manifest = JSON.parse(
+      readFileSync(new URL('../../element-registry/manifest/element-definitions-v2.json', import.meta.url), 'utf8'),
+    ) as { definitions: { id: string; status: string }[] };
+    const ready = manifest.definitions.filter((definition) => definition.status === 'ready');
+    expect(ready.length).toBeGreaterThan(0);
+
+    const document = doc(
+      ready.map((definition, index) =>
+        node(`el-${String(index)}`, {
+          type: `blixis/${definition.id}`,
+          style: [
+            { declarations: { color: '#111111' } },
+            { breakpoint: 'tablet', declarations: { color: '#222222' } },
+            { mode: 'dark', declarations: { color: '#333333' } },
+            { mode: 'dark', breakpoint: 'mobile', declarations: { color: '#444444' } },
+          ],
+        }),
+      ),
+    );
+    const compiled = compile({ document });
+    const parsed = parse(compiled.css);
+
+    for (const [index, definition] of ready.entries()) {
+      const className = compiled.classNames.get(`el-${String(index)}`)?.[0];
+      if (className === undefined) throw new Error(`${definition.id} has no compiled class`);
+      for (const [context, expected] of [
+        [ctx({ width: 1440, dataTheme: 'light' }), '#111111'],
+        [ctx({ width: 768, dataTheme: 'light' }), '#222222'],
+        [ctx({ width: 1440, dataTheme: 'dark' }), '#333333'],
+        [ctx({ width: 375, dataTheme: 'dark' }), '#444444'],
+      ] as const) {
+        expect(resolve(parsed, 'color', { ...context, classes: [className] }), definition.id).toBe(expected);
+      }
+    }
+  });
+});
+
 describe('compile: classes, tokens and problems', () => {
   it('emits only the global classes an element uses, named from the class id', () => {
     const classes: GlobalClass[] = [
