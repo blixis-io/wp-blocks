@@ -1575,6 +1575,87 @@ final class ElementDefinitionRegistryTest extends TestCase {
 		);
 		$this->assertStringContainsString( 'type="email"', $input );
 		$this->assertStringContainsString( 'required', $input );
+		$free_fields = [
+			'text-field'     => 'text',
+			'email-field'    => 'email',
+			'password-field' => 'password',
+			'number-field'   => 'number',
+			'url-field'      => 'url',
+			'search-field'   => 'search',
+		];
+		foreach ( $free_fields as $field_id => $field_type ) {
+			$field = $renderer->render(
+				new ElementNode(
+					$field_id . '-safe',
+					'blixis/' . $field_id,
+					[
+						'label'        => 'Label & input',
+						'name'         => 'contact.email',
+						'value'        => '<script>initial</script>',
+						'placeholder'  => 'Enter & continue',
+						'autocomplete' => 'email',
+						'required'     => true,
+						'validation'   => [
+							'minLength' => 2,
+							'maxLength' => 40,
+						],
+					]
+				),
+				new RenderContext()
+			);
+			$this->assertStringContainsString( 'type="' . $field_type . '"', $field );
+			$this->assertStringContainsString( 'name="contact.email"', $field );
+			$this->assertStringContainsString( 'Label &amp; input', $field );
+			$this->assertStringContainsString( 'required', $field );
+			if ( 'number' !== $field_type ) {
+				$this->assertStringContainsString( 'maxlength="40"', $field );
+			} else {
+				$this->assertStringNotContainsString( 'maxlength=', $field );
+			}
+			$this->assertTrue( PreviewSanitizer::accepts( $field ) );
+			$this->assertStringNotContainsString( '<script>', $field );
+		}
+		$password = $renderer->render(
+			new ElementNode(
+				'password-secret',
+				'blixis/password-field',
+				[
+					'label' => 'Password',
+					'value' => 'do-not-render-this',
+				]
+			),
+			new RenderContext()
+		);
+		$this->assertStringNotContainsString( 'do-not-render-this', $password );
+		$hidden = $renderer->render(
+			new ElementNode(
+				'hidden-safe',
+				'blixis/hidden-field',
+				[
+					'name'  => 'campaign',
+					'value' => 'spring',
+					'label' => 'Must not show',
+				]
+			),
+			new RenderContext()
+		);
+		$this->assertStringContainsString( 'type="hidden" name="campaign"', $hidden );
+		$this->assertStringNotContainsString( 'Must not show', $hidden );
+		$this->assertTrue( PreviewSanitizer::accepts( $hidden ) );
+		$invalid = $renderer->render(
+			new ElementNode(
+				'hostile-field',
+				'blixis/text-field',
+				[
+					'label'        => 'Safe',
+					'name'         => 'x" onfocus="alert(1)',
+					'autocomplete' => 'javascript:alert(1)',
+				]
+			),
+			new RenderContext()
+		);
+		$this->assertStringContainsString( 'name="field" autocomplete="off"', $invalid );
+		$this->assertFalse( PreviewSanitizer::accepts( '<input onfocus="alert(1)">' ) );
 		$date_range = $renderer->render( new ElementNode( 'dates-safe', 'blixis/date-range-picker', [ 'ariaLabel' => 'Trip' ] ), new RenderContext() );
 		$this->assertStringContainsString( 'type="date" name="date-range[start]"', $date_range );
 		$table = $renderer->render(

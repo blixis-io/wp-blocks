@@ -150,7 +150,7 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		if ( 'icon-button' === $id ) {
 			return $this->render_icon_button( $node, $hooks );
 		}
-		if ( in_array( $id, [ 'switch', 'checkbox', 'radio-group', 'select', 'combobox', 'toggle', 'toggle-group', 'segmented-control', 'slider', 'range-slider', 'input', 'textarea', 'date-picker' ], true ) ) {
+		if ( in_array( $id, [ 'switch', 'checkbox', 'radio-group', 'select', 'combobox', 'toggle', 'toggle-group', 'segmented-control', 'slider', 'range-slider', 'input', 'textarea', 'date-picker', 'text-field', 'email-field', 'password-field', 'number-field', 'url-field', 'search-field', 'hidden-field' ], true ) ) {
 			return $this->render_ui_control( $id, $node, $hooks );
 		}
 		if ( 'calendar' === $id ) {
@@ -1228,6 +1228,50 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 				}
 			}
 			return $label_html . '<input' . $hooks . ' type="' . $type . '"' . $attributes . $bounds . ' value="' . Escape::attr( $value ) . '">' . ( '' !== $error ? '<p id="' . $error_id . '">' . Escape::html( $error ) . '</p>' : '' );
+		}
+		$field_types = [
+			'text-field'     => 'text',
+			'email-field'    => 'email',
+			'password-field' => 'password',
+			'number-field'   => 'number',
+			'url-field'      => 'url',
+			'search-field'   => 'search',
+			'hidden-field'   => 'hidden',
+		];
+		if ( isset( $field_types[ $id ] ) ) {
+			$control_id          = 'blx-field-' . substr( hash( 'sha256', $node->id ), 0, 12 );
+			$field_type          = $field_types[ $id ];
+			$name                = $node->value( 'name', 'field' );
+			$name                = is_string( $name ) && 1 === preg_match( '/^[A-Za-z][A-Za-z0-9_.:-]{0,63}$/D', $name ) ? $name : 'field';
+			$value               = $node->value( 'value', '' );
+			$value               = is_string( $value ) && 'password' !== $field_type ? $value : '';
+			$required            = true === $node->value( 'required', false ) && 'hidden' !== $field_type;
+			$disabled            = true === $node->value( 'disabled', false );
+			$placeholder         = $node->value( 'placeholder', '' );
+			$placeholder         = is_string( $placeholder ) && 'hidden' !== $field_type ? ' placeholder="' . Escape::attr( $placeholder ) . '"' : '';
+			$autocomplete        = $node->value( 'autocomplete', 'off' );
+			$autocomplete_values = [ 'off', 'on', 'name', 'email', 'username', 'new-password', 'current-password', 'url', 'search', 'tel', 'given-name', 'family-name' ];
+			$autocomplete        = is_string( $autocomplete ) && in_array( $autocomplete, $autocomplete_values, true ) ? $autocomplete : 'off';
+			$constraints         = '';
+			$validation          = $this->record( $node->value( 'validation', null ) ) ?? [];
+			if ( in_array( $field_type, [ 'text', 'email', 'password', 'url', 'search' ], true ) ) {
+				foreach ( [
+					'minLength' => 'minlength',
+					'maxLength' => 'maxlength',
+				] as $property => $attribute ) {
+					$length = $validation[ $property ] ?? ( 'minLength' === $property ? 0 : 255 );
+					if ( is_int( $length ) && $length >= 0 ) {
+						$constraints .= ' ' . $attribute . '="' . min( 10000, $length ) . '"';
+					}
+				}
+			}
+			$input = '<input' . $hooks . ' id="' . $control_id . '" type="' . $field_type . '" name="' . Escape::attr( $name ) . '" autocomplete="' . $autocomplete . '"' . $placeholder . $constraints . ( $required ? ' required' : '' ) . ( $disabled ? ' disabled' : '' ) . ' value="' . Escape::attr( $value ) . '">';
+			if ( 'hidden' === $field_type ) {
+				return $input;
+			}
+			$label = $node->value( 'label', $node->value( 'ariaLabel', $this->translate_label( 'Field' ) ) );
+			$label = is_string( $label ) && '' !== trim( $label ) ? trim( $label ) : $this->translate_label( 'Field' );
+			return '<label for="' . $control_id . '">' . Escape::html( $label ) . '</label>' . $input;
 		}
 		if ( 'slider' === $id ) {
 			$min = $node->value( 'min', 0 );

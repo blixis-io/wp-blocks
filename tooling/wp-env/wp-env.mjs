@@ -1402,6 +1402,9 @@ async function smoke() {
         );
         check(
           html.includes('data-blx-range-slider') &&
+            html.includes('data-blx-id="el-email-field"') &&
+            html.includes('type="email" name="smoke_email" autocomplete="email"') &&
+            html.includes('for="blx-field-') &&
             html.includes('data-blx-data-table') &&
             html.includes('data-blx-sort="name"') &&
             html.includes('data-blx-toast-dismiss') &&
