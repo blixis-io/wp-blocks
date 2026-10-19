@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { ELEMENT_PALETTE_V2 } from '@blixis/wp-element-registry';
 import { EditorApp } from './App';
 import { makeBootstrap } from './test/fixtures';
 import { makeDocument, makeStore, el } from './test/state-helpers';
@@ -34,6 +35,18 @@ describe('left panel and element palette', () => {
   beforeEach(() => {
     sessionStorage.removeItem('blixis-left-tab');
   });
+  it('shows every ready generated catalog definition as insertable in the palette', async () => {
+    renderEditor();
+    await openElements(userEvent.setup());
+    const ready = ELEMENT_PALETTE_V2.filter((element) => element.status === 'ready');
+    expect(ready.length).toBeGreaterThan(0);
+    for (const element of ready) {
+      const card = document.querySelector<HTMLButtonElement>(`button[data-element-type="${element.id}"]`);
+      expect(card, `${element.definitionId} has a palette card`).not.toBeNull();
+      expect(card?.getAttribute('aria-disabled'), `${element.definitionId} is insertable`).toBe('false');
+    }
+  });
+
   it('highlights only the selected tree row and never paints the ancestor guide path', async () => {
     renderEditor();
     await waitFor(() => {
