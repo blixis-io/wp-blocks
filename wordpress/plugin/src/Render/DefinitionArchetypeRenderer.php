@@ -44,7 +44,7 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 	 * @param string $archetype Archetype name.
 	 */
 	public function supports( string $archetype ): bool {
-		return in_array( $archetype, [ 'container','simple','text','richtext','heading','button','link','image','gallery','video','audio','embed','iframe','pdf-viewer','map','navigation','pagination','list','code','accordion','tabs','steps','overlay','alert','progress','counter','countdown','icon','dynamic','card','layout','section','page','site-header','site-footer','site-logo','row','columns','grid','stack','input','choice','toggle','range','datatable','chart','rating','calendar','command','carousel' ], true ); }
+		return in_array( $archetype, [ 'container','simple','text','richtext','heading','button','link','image','gallery','video','audio','embed','iframe','pdf-viewer','map','navigation','pagination','list','loop','code','accordion','tabs','steps','overlay','alert','progress','counter','countdown','icon','dynamic','card','layout','section','page','site-header','site-footer','site-logo','row','columns','grid','stack','input','choice','toggle','range','datatable','chart','rating','calendar','command','carousel' ], true ); }
 	/** Render an element with escaped text and allowlisted tags/attributes.
 	 *
 	 * @param ElementNode   $node Element input.
@@ -54,7 +54,7 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		$id         = preg_replace( '~^blixis/~', '', $node->type );
 		$definition = $this->definitions->get( (string) $id );
 		$archetype  = is_array( $definition ) ? (string) ( $definition['archetype'] ?? '' ) : '';
-		if ( ! $this->supports( $archetype ) ) {
+		if ( ! $this->supports( $archetype ) || ( 'loop' === $archetype && ! in_array( $id, [ 'query-loop', 'related-posts' ], true ) ) ) {
 			return ( new StaticFallbackRenderer() )->render( $node, $context );
 		}
 		$tag = self::TAGS[ (string) $id ] ?? match ( $archetype ) {
@@ -830,6 +830,10 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 	 * @param bool        $related Use current post categories.
 	 */
 	private function render_post_loop( ElementNode $node, string $hooks, bool $related ): string {
+		if ( null !== $node->value( 'queryRef' ) ) {
+			$empty = $node->value( 'emptyMessage', 'No results' );
+			return '<p' . $hooks . '>' . Escape::html( is_string( $empty ) ? $empty : 'No results' ) . '</p>';
+		}
 		if ( ! function_exists( 'get_posts' ) || ! function_exists( 'get_post_types' ) ) {
 			return '';
 		}

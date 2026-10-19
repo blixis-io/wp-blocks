@@ -107,6 +107,10 @@ final class ElementDefinitionRegistryTest extends TestCase {
 		};
 		$renderer = new DefinitionArchetypeRenderer( $registry, $media );
 		$this->assertSame( '', $renderer->render( new ElementNode( 'featured', 'blixis/featured-image', [] ), new RenderContext() ) );
+		$this->assertSame( '', $renderer->render( new ElementNode( 'query', 'blixis/query-loop', [] ), new RenderContext() ) );
+		$this->assertSame( '<p data-blx-id="query-ref" data-blx-type="blixis/query-loop">No results</p>', $renderer->render( new ElementNode( 'query-ref', 'blixis/query-loop', [ 'queryRef' => [ 'id' => 'unregistered' ] ] ), new RenderContext() ) );
+		$this->assertStringContainsString( '<h2>Author fallback</h2>', $renderer->render( new ElementNode( 'author', 'blixis/author-box', [ 'title' => 'Author fallback' ] ), new RenderContext() ) );
+		$this->assertSame( '<div data-blx-id="comments" data-blx-type="blixis/comments-list">No comments yet</div>', $renderer->render( new ElementNode( 'comments', 'blixis/comments-list', [ 'fallback' => 'No comments yet' ] ), new RenderContext() ) );
 		$this->assertStringContainsString(
 			'<table',
 			$renderer->render(
