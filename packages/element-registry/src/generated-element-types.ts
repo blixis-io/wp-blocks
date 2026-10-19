@@ -66251,7 +66251,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'animation',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -72820,7 +72820,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'advanced-motion',
     icon: 'solar:chat-round-dots-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'typing-indicator typing indicator advanced-motion typing indicator element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },

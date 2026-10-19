@@ -330,6 +330,7 @@ export function createEditorRegistry(): ElementRegistry {
     'hover-tilt',
     'scroll-timeline',
     'stagger-container',
+    'typing-indicator',
   ];
   const aliases = [
     {

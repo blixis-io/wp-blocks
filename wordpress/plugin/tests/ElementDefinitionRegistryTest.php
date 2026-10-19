@@ -239,6 +239,9 @@ final class ElementDefinitionRegistryTest extends TestCase {
 		$scroll = $renderer->render( new ElementNode( 'timeline', 'blixis/scroll-timeline', [] ), new RenderContext( '<p>Timeline content</p>' ) );
 		$this->assertStringContainsString( 'data-blx-motion="scroll"', $scroll );
 		$this->assertStringContainsString( '<p>Timeline content</p>', $scroll );
+		$typing = $renderer->render( new ElementNode( 'typing', 'blixis/typing-indicator', [ 'ariaLabel' => 'Assistant typing' ] ), new RenderContext() );
+		$this->assertStringContainsString( 'role="status" aria-label="Assistant typing"', $typing );
+		$this->assertStringContainsString( 'aria-hidden="true"><i></i><i></i><i></i>', $typing );
 	}
 
 	/** Dynamic bindings pass through the document renderer and unsupported paths use their authored fallback.
