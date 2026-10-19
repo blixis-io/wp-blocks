@@ -70312,7 +70312,7 @@
         ]
       },
       "archetype": "image",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -73269,7 +73269,7 @@
         ]
       },
       "archetype": "dynamic",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -74211,7 +74211,7 @@
         ]
       },
       "archetype": "loop",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -75117,7 +75117,7 @@
         ]
       },
       "archetype": "pagination",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -78631,7 +78631,7 @@
         ]
       },
       "archetype": "loop",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -79076,7 +79076,7 @@
         ]
       },
       "archetype": "card",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -79519,7 +79519,7 @@
         ]
       },
       "archetype": "datatable",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",

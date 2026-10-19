@@ -6,6 +6,7 @@ import {
   isElementInsertableV2,
   validateElementTreeV2,
 } from './v2.ts';
+import { createEditorRegistry } from './core-elements.ts';
 
 describe('generated v2 element registry', () => {
   it('loads all 253 definitions and separates ready from planned palette items', () => {
@@ -54,9 +55,20 @@ describe('generated v2 element registry', () => {
       'post-author',
       'site-tagline',
       'post-terms',
+      'featured-image',
+      'comments-list',
+      'query-loop',
+      'query-pagination',
+      'related-posts',
+      'author-box',
+      'table-of-posts',
     ]) {
       expect(isElementInsertableV2(`blixis/${type}`)).toBe(true);
     }
+    const registry = createEditorRegistry();
+    expect(registry.get('blixis/query-loop')?.props['allowedPostTypes']?.kind).toBe('json');
+    expect(registry.get('blixis/query-loop')?.props['maxItems']?.default).toBe(30);
+    expect(registry.get('blixis/featured-image')?.props['assetRef']?.kind).toBe('string');
   });
 
   it('validates declared props and rejects undeclared and editor-only values', () => {
