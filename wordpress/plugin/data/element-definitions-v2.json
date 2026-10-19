@@ -93874,7 +93874,7 @@
         ]
       },
       "archetype": "animation",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -94417,7 +94417,7 @@
         ]
       },
       "archetype": "animation",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",

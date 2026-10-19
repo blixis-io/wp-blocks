@@ -200,6 +200,41 @@ final class ElementDefinitionRegistryTest extends TestCase {
 		);
 	}
 
+	/** P9 reveal effects keep content visible without scripting and clamp presentation values. */
+	public function test_p9_reveal_renderer_uses_bounded_progressive_enhancement(): void {
+		$registry = ElementDefinitionRegistry::from_manifest_file( \dirname( __DIR__ ) . '/data/element-definitions-v2.json' );
+		$media    = new class() implements AssetReferenceResolver {
+			/** No attachment fixture is configured.
+			 *
+			 * @param int $attachment_id Attachment id.
+			 */
+			public function resolve( int $attachment_id ): ?array {
+				return null; }
+			/** No imported asset fixture is configured.
+			 *
+			 * @param string $reference Asset reference.
+			 */
+			public function resolve_reference( string $reference ): ?array {
+				return null; }
+		};
+		$renderer = new DefinitionArchetypeRenderer( $registry, $media );
+		$html     = $renderer->render(
+			new ElementNode(
+				'reveal',
+				'blixis/entrance-animation',
+				[
+					'effect'     => 'slide-in-left',
+					'trigger'    => 'viewport-enter',
+					'durationMs' => 90000,
+					'delayMs'    => -4,
+					'easing'     => 'expression(alert(1))',
+				]
+			),
+			new RenderContext( '<p>Visible content</p>' )
+		);
+		$this->assertSame( '<div data-blx-id="reveal" data-blx-type="blixis/entrance-animation" data-blx-motion="viewport-enter" data-blx-motion-effect="slide-in-left" style="--blx-motion-duration:3000ms;--blx-motion-delay:0ms;--blx-motion-easing:ease-out"><p>Visible content</p></div>', $html );
+	}
+
 	/** Dynamic bindings pass through the document renderer and unsupported paths use their authored fallback.
 	 *
 	 * @throws \RuntimeException When the test fixture cannot be decoded.

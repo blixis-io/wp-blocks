@@ -56368,7 +56368,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'animation',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -56693,7 +56693,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'animation',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -72457,7 +72457,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'advanced-motion',
     icon: 'solar:magic-stick-3-linear',
     tier: 'pro',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'entrance-animation entrance animation advanced-motion entrance animation element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -72468,7 +72468,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'advanced-motion',
     icon: 'solar:eye-linear',
     tier: 'pro',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'scroll-reveal scroll reveal advanced-motion scroll reveal element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },

@@ -565,6 +565,31 @@
   };
 
   const init = () => {
+    const motionItems = Array.from(document.querySelectorAll('[data-blx-motion]'));
+    if (motionItems.length > 0) {
+      const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+      if (reducedMotion || !('IntersectionObserver' in window)) {
+        motionItems.forEach((item) => item.setAttribute('data-blx-motion-visible', 'true'));
+      } else {
+        const observer = new window.IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              if (!entry.isIntersecting) return;
+              entry.target.setAttribute('data-blx-motion-visible', 'true');
+              observer.unobserve(entry.target);
+            });
+          },
+          { threshold: 0.12 },
+        );
+        motionItems.forEach((item) => {
+          item.setAttribute('data-blx-motion-ready', 'true');
+          if (item.getAttribute('data-blx-motion') === 'page-load') {
+            window.requestAnimationFrame(() => item.setAttribute('data-blx-motion-visible', 'true'));
+          } else if (item.getAttribute('data-blx-motion') === 'viewport-enter') observer.observe(item);
+          else item.setAttribute('data-blx-motion-visible', 'true');
+        });
+      }
+    }
     document.querySelectorAll('[data-blx-loading-button]').forEach((button) => {
       const form = button.closest('form');
       if (!form || form.dataset.blxLoadingHandler) return;
