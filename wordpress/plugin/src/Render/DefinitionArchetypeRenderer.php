@@ -44,7 +44,7 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 	 * @param string $archetype Archetype name.
 	 */
 	public function supports( string $archetype ): bool {
-		return in_array( $archetype, [ 'container','simple','text','richtext','heading','button','link','image','gallery','video','audio','embed','iframe','pdf-viewer','map','navigation','pagination','list','code','accordion','tabs','steps','overlay','alert','progress','counter','countdown','icon','dynamic','card','layout','section','page','site-header','site-footer','site-logo','row','columns','grid','stack' ], true ); }
+		return in_array( $archetype, [ 'container','simple','text','richtext','heading','button','link','image','gallery','video','audio','embed','iframe','pdf-viewer','map','navigation','pagination','list','code','accordion','tabs','steps','overlay','alert','progress','counter','countdown','icon','dynamic','card','layout','section','page','site-header','site-footer','site-logo','row','columns','grid','stack','input','choice','toggle','range' ], true ); }
 	/** Render an element with escaped text and allowlisted tags/attributes.
 	 *
 	 * @param ElementNode   $node Element input.
@@ -116,6 +116,9 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		}
 		if ( 'icon-button' === $id ) {
 			return $this->render_icon_button( $node, $hooks );
+		}
+		if ( in_array( $id, [ 'switch', 'checkbox', 'radio-group', 'select', 'toggle', 'toggle-group', 'segmented-control', 'slider' ], true ) ) {
+			return $this->render_ui_control( $id, $node, $hooks );
 		}
 		if ( 'tooltip-text' === $id ) {
 			return $this->render_tooltip_text( $node, $hooks, $tag );
@@ -795,6 +798,99 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		return '<details' . $hooks . ' data-blx-offcanvas data-blx-offcanvas-placement="' . Escape::attr( $placement ) . '" data-blx-offcanvas-open-on="' . Escape::attr( $open_on ) . '" data-blx-offcanvas-animation="' . Escape::attr( $animation ) . '" data-blx-offcanvas-modal="' . ( $modal ? 'true' : 'false' ) . '" data-blx-offcanvas-close-escape="' . ( true === $node->value( 'closeOnEscape', true ) ? 'true' : 'false' ) . '" data-blx-offcanvas-close-outside="' . ( true === $node->value( 'closeOnOutside', true ) ? 'true' : 'false' ) . '" data-blx-offcanvas-label="' . Escape::attr( $label ) . '"><summary>' . Escape::html( $trigger ) . '</summary><div data-blx-offcanvas-panel tabindex="-1"><button type="button" data-blx-offcanvas-close aria-label="' . Escape::attr( $this->translate_label( 'Close panel' ) ) . '">×</button>' . $children . '</div></details>';
 	}
 
+	/** Render accessible native input and choice components with escaped labels and bounded option lists.
+	 *
+	 * @param string      $id Element id.
+	 * @param ElementNode $node Element definition.
+	 * @param string      $hooks Validated element hooks.
+	 */
+	private function render_ui_control( string $id, ElementNode $node, string $hooks ): string {
+		$label         = $node->value( 'label', $this->translate_label( 'Select option' ) );
+		$label         = is_string( $label ) && '' !== trim( $label ) ? trim( $label ) : $this->translate_label( 'Select option' );
+		$name          = $node->value( 'name', 'blixis-choice' );
+		$name          = is_string( $name ) && 1 === preg_match( '/^[A-Za-z][A-Za-z0-9_.:-]{0,63}$/D', $name ) ? $name : 'blixis-choice';
+		$disabled      = true === $node->value( 'disabled', false );
+		$required      = true === $node->value( 'required', false );
+		$state         = true === $node->value( 'checked', false );
+		$options       = $node->value( 'options', [] );
+		$options       = is_array( $options ) ? array_slice( $options, 0, 100 ) : [];
+		$value         = $node->value( 'defaultValue' );
+		$value         = is_string( $value ) ? $value : '';
+		$disabled_attr = $disabled ? ' disabled' : '';
+
+		if ( in_array( $id, [ 'switch', 'checkbox' ], true ) ) {
+			return '<label' . $hooks . '><input type="checkbox"' . ( 'switch' === $id ? ' role="switch"' : '' ) . ' name="' . Escape::attr( $name ) . '" value="1"' . ( $state ? ' checked' : '' ) . ( $required ? ' required' : '' ) . $disabled_attr . '> ' . Escape::html( $label ) . '</label>';
+		}
+		if ( 'toggle' === $id ) {
+			return '<button' . $hooks . ' type="button" aria-pressed="' . ( $state ? 'true' : 'false' ) . '" data-blx-toggle' . $disabled_attr . '>' . Escape::html( $label ) . '</button>';
+		}
+		if ( in_array( $id, [ 'toggle-group', 'segmented-control' ], true ) ) {
+			$html = '<fieldset' . $hooks . '><legend>' . Escape::html( $label ) . '</legend>';
+			foreach ( $options as $index => $candidate ) {
+				$candidate    = $this->record( $candidate );
+				$option_value = $candidate['value'] ?? null;
+				$option_label = $candidate['label'] ?? null;
+				if ( ! is_string( $option_value ) || ! is_string( $option_label ) ) {
+					continue;
+				}
+				$option_id = 'blx-option-' . substr( hash( 'sha256', $node->id . ':' . (string) $index ), 0, 12 );
+				$html     .= '<label for="' . $option_id . '"><input id="' . $option_id . '" type="radio" name="' . Escape::attr( $name ) . '" value="' . Escape::attr( $option_value ) . '"' . ( $option_value === $value ? ' checked' : '' ) . $disabled_attr . '> ' . Escape::html( $option_label ) . '</label>';
+			}
+			return $html . '</fieldset>';
+		}
+		if ( 'radio-group' === $id ) {
+			$html = '<fieldset' . $hooks . '><legend>' . Escape::html( $label ) . '</legend>';
+			foreach ( $options as $index => $candidate ) {
+				$candidate    = $this->record( $candidate );
+				$option_value = $candidate['value'] ?? null;
+				$option_label = $candidate['label'] ?? null;
+				if ( ! is_string( $option_value ) || ! is_string( $option_label ) ) {
+					continue;
+				}
+				$option_id = 'blx-option-' . substr( hash( 'sha256', $node->id . ':' . (string) $index ), 0, 12 );
+				$html     .= '<label for="' . $option_id . '"><input id="' . $option_id . '" type="radio" name="' . Escape::attr( $name ) . '" value="' . Escape::attr( $option_value ) . '"' . ( $option_value === $value ? ' checked' : '' ) . ( $required ? ' required' : '' ) . $disabled_attr . '> ' . Escape::html( $option_label ) . '</label>';
+			}
+			return $html . '</fieldset>';
+		}
+		if ( 'select' === $id ) {
+			$control_id = 'blx-control-' . substr( hash( 'sha256', $node->id ), 0, 12 );
+			$html       = '<label for="' . $control_id . '">' . Escape::html( $label ) . '</label><select' . $hooks . ' id="' . $control_id . '" name="' . Escape::attr( $name ) . '"' . ( $required ? ' required' : '' ) . $disabled_attr . '>';
+			if ( true === $node->value( 'allowClear', false ) ) {
+				$html .= '<option value=""' . ( '' === $value ? ' selected' : '' ) . '>' . Escape::html( $this->translate_label( 'Select option' ) ) . '</option>';
+			}
+			foreach ( $options as $candidate ) {
+				$candidate    = $this->record( $candidate );
+				$option_value = $candidate['value'] ?? null;
+				$option_label = $candidate['label'] ?? null;
+				if ( ! is_string( $option_value ) || ! is_string( $option_label ) ) {
+					continue;
+				}
+				$html .= '<option value="' . Escape::attr( $option_value ) . '"' . ( $option_value === $value ? ' selected' : '' ) . '>' . Escape::html( $option_label ) . '</option>';
+			}
+			return $html . '</select>';
+		}
+		if ( 'slider' === $id ) {
+			$min = $node->value( 'min', 0 );
+			$max = $node->value( 'max', 100 );
+			$min = is_numeric( $min ) && is_finite( (float) $min ) ? max( -1000000, min( 1000000, (float) $min ) ) : 0;
+			$max = is_numeric( $max ) && is_finite( (float) $max ) ? max( -1000000, min( 1000000, (float) $max ) ) : 100;
+			if ( $max <= $min ) {
+				$min = 0;
+				$max = 100;
+			}
+			$step        = $node->value( 'step', 1 );
+			$step        = is_numeric( $step ) && is_finite( (float) $step ) && (float) $step > 0 ? min( 1000000, (float) $step ) : 1;
+			$initial     = $node->value( 'defaultValue', 50 );
+			$initial     = is_numeric( $initial ) && is_finite( (float) $initial ) ? max( $min, min( $max, (float) $initial ) ) : $min;
+			$orientation = 'vertical' === $node->value( 'orientation', 'horizontal' ) ? 'vertical' : 'horizontal';
+			$control_id  = 'blx-range-' . substr( hash( 'sha256', $node->id ), 0, 12 );
+			$range_label = $node->value( 'ariaLabel' );
+			$range_label = is_string( $range_label ) && '' !== trim( $range_label ) ? trim( $range_label ) : $this->translate_label( 'Value' );
+			return '<div' . $hooks . ' data-blx-slider data-blx-slider-orientation="' . $orientation . '"><label for="' . $control_id . '">' . Escape::html( $range_label ) . '</label><input id="' . $control_id . '" type="range" name="' . Escape::attr( $name ) . '" min="' . Escape::attr( sprintf( '%g', $min ) ) . '" max="' . Escape::attr( sprintf( '%g', $max ) ) . '" step="' . Escape::attr( sprintf( '%g', $step ) ) . '" value="' . Escape::attr( sprintf( '%g', $initial ) ) . '" aria-orientation="' . $orientation . '"' . $disabled_attr . '><output for="' . $control_id . '" data-blx-slider-value>' . Escape::html( sprintf( '%g', $initial ) ) . '</output></div>';
+		}
+		return '';
+	}
+
 	/** Render all tab content with in-page links so content remains available without JavaScript.
 	 *
 	 * @param ElementNode $node Tabs definition.
@@ -1334,6 +1430,8 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 			'Next'      => __( 'Next', 'blixis-builder' ),
 			'Load more' => __( 'Load more', 'blixis-builder' ),
 			'Progress' => __( 'Progress', 'blixis-builder' ),
+			'Select option' => __( 'Select option', 'blixis-builder' ),
+			'Value' => __( 'Value', 'blixis-builder' ),
 			'Sidebar navigation' => __( 'Sidebar navigation', 'blixis-builder' ),
 			'Sections' => __( 'Sections', 'blixis-builder' ),
 			default     => $label,

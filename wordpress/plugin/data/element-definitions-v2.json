@@ -38777,7 +38777,7 @@
         ]
       },
       "archetype": "toggle",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -39256,7 +39256,7 @@
         ]
       },
       "archetype": "toggle",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -39735,7 +39735,7 @@
         ]
       },
       "archetype": "choice",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -40214,7 +40214,7 @@
         ]
       },
       "archetype": "choice",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -41171,7 +41171,7 @@
         ]
       },
       "archetype": "toggle",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -41649,7 +41649,7 @@
         ]
       },
       "archetype": "choice",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -42067,7 +42067,7 @@
         ]
       },
       "archetype": "range",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",
@@ -55572,7 +55572,7 @@
         ]
       },
       "archetype": "choice",
-      "status": "planned"
+      "status": "ready"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",

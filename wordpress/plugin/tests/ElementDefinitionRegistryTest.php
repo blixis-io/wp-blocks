@@ -1229,4 +1229,82 @@ final class ElementDefinitionRegistryTest extends TestCase {
 		$this->assertStringContainsString( '<p>Panel &amp; links</p>', $offcanvas );
 		$this->assertTrue( PreviewSanitizer::accepts( $offcanvas ) );
 	}
+
+	/** UI controls use native semantics, bounded values and escaped labels/options. */
+	public function test_ui_control_elements_render_accessible_and_safe_native_markup(): void {
+		$registry = ElementDefinitionRegistry::from_manifest_file( \dirname( __DIR__ ) . '/data/element-definitions-v2.json' );
+		$media    = new class() implements AssetReferenceResolver {
+			/** Resolve no WordPress attachment for this isolated renderer test.
+			 *
+			 * @param int $attachment_id WordPress attachment ID.
+			 */
+			public function resolve( int $attachment_id ): ?array {
+				return null; }
+			/** Resolve no imported asset for this isolated renderer test.
+			 *
+			 * @param string $reference Asset reference.
+			 */
+			public function resolve_reference( string $reference ): ?array {
+				return null; }
+		};
+		$renderer = new DefinitionArchetypeRenderer( $registry, $media );
+		$radio    = $renderer->render(
+			new ElementNode(
+				'radio-safe',
+				'blixis/radio-group',
+				[
+					'label'        => 'Choose &lt;one&gt;',
+					'name'         => 'choice',
+					'defaultValue' => 'a',
+					'options'      => [
+						[
+							'value' => 'a',
+							'label' => 'Alpha',
+						],
+						[
+							'value' => 'b',
+							'label' => '<script>alert(1)</script>',
+						],
+					],
+				]
+			),
+			new RenderContext()
+		);
+		$this->assertStringContainsString( '<fieldset', $radio );
+		$this->assertStringContainsString( 'value="a" checked', $radio );
+		$this->assertStringContainsString( '&lt;script&gt;alert(1)&lt;/script&gt;', $radio );
+		$this->assertStringNotContainsString( '<script>', $radio );
+		$this->assertTrue( PreviewSanitizer::accepts( $radio ) );
+
+		$toggle = $renderer->render(
+			new ElementNode(
+				'toggle-safe',
+				'blixis/toggle',
+				[
+					'label'   => 'Show details',
+					'checked' => true,
+				]
+			),
+			new RenderContext()
+		);
+		$this->assertStringContainsString( 'aria-pressed="true" data-blx-toggle', $toggle );
+		$range = $renderer->render(
+			new ElementNode(
+				'range-safe',
+				'blixis/slider',
+				[
+					'min'          => 100,
+					'max'          => 10,
+					'defaultValue' => 1000,
+					'ariaLabel'    => 'Volume',
+				]
+			),
+			new RenderContext()
+		);
+		$this->assertStringContainsString( 'type="range"', $range );
+		$this->assertStringContainsString( '>Volume</label><input', $range );
+		$this->assertStringContainsString( 'value="100"', $range );
+		$this->assertTrue( PreviewSanitizer::accepts( $toggle ) );
+		$this->assertTrue( PreviewSanitizer::accepts( $range ) );
+	}
 }

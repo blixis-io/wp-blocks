@@ -565,6 +565,25 @@
   };
 
   const init = () => {
+    document.querySelectorAll('[data-blx-toggle]').forEach((button) => {
+      if (button.dataset.blxInitialized) return;
+      button.dataset.blxInitialized = 'true';
+      button.addEventListener('click', () => {
+        button.setAttribute('aria-pressed', button.getAttribute('aria-pressed') === 'true' ? 'false' : 'true');
+      });
+    });
+    document.querySelectorAll('[data-blx-slider]').forEach((slider) => {
+      const input = slider.querySelector('input[type="range"]');
+      const output = slider.querySelector('output');
+      if (!input || !output || slider.dataset.blxInitialized) return;
+      slider.dataset.blxInitialized = 'true';
+      input.addEventListener('input', () => {
+        output.value = input.value;
+      });
+      input.addEventListener('change', () => {
+        output.value = input.value;
+      });
+    });
     document.querySelectorAll('[data-blx-marquee]').forEach(initMarquee);
     document.querySelectorAll('[data-blx-resizable-panels]').forEach(initResizablePanels);
     document.querySelectorAll('[data-blx-code-block]').forEach(initCodeBlock);
