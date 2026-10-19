@@ -343,7 +343,7 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		if ( in_array( $id, [ 'carousel', 'scroll-snap-carousel' ], true ) ) {
 			return $this->render_carousel( $node, $context->children_html_list, $hooks );
 		}
-		if ( 'scroll-indicator' === $id ) {
+		if ( in_array( $id, [ 'scroll-indicator', 'reading-progress' ], true ) ) {
 			return $this->render_scroll_indicator( $node, $hooks );
 		}
 		if ( 'tabs' === $archetype ) {

@@ -366,6 +366,20 @@ final class ElementDefinitionRegistryTest extends TestCase {
 		$this->assertStringContainsString( 'data-blx-carousel-slides="2" aria-label="Featured stories"', $snap );
 		$this->assertStringContainsString( '<div data-blx-carousel-slide><article>One</article></div>', $snap );
 		$this->assertStringContainsString( 'data-blx-carousel-next', $snap );
+		$progress = $renderer->render(
+			new ElementNode(
+				'reading',
+				'blixis/reading-progress',
+				[
+					'ariaLabel' => 'Reading position',
+					'max'       => 200,
+					'showLabel' => true,
+				]
+			),
+			new RenderContext()
+		);
+		$this->assertStringContainsString( 'data-blx-scroll-indicator data-blx-scroll-max="200" max="200" value="0" aria-label="Reading position"', $progress );
+		$this->assertStringContainsString( '<output data-blx-scroll-indicator-value>0%</output>', $progress );
 	}
 
 	/** Newly supported P2 content elements keep text escaped and native controls accessible. */
