@@ -73,7 +73,13 @@ async function install() {
       'wp core install',
     );
   }
-  must(wp('language', 'core', 'install', 'nl_NL'), 'install nl_NL language pack');
+  let languageInstall;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    languageInstall = wp('language', 'core', 'install', 'nl_NL');
+    if (languageInstall.status === 0) break;
+    if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 1000 * (attempt + 1)));
+  }
+  must(languageInstall, 'install nl_NL language pack');
   must(wp('eval-file', '/fixtures/seed.php'), 'seed fixtures');
   // Packages that are mounted into wp-content are activated here; the theme defines what the public pages look like.
   if (hasPackages) {
