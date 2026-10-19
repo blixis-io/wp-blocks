@@ -281,6 +281,8 @@ export function createEditorRegistry(): ElementRegistry {
     'related-posts',
     'author-box',
     'table-of-posts',
+    'dynamic-tag',
+    'user-profile',
     'icon-list',
     'icon',
     'icon-svg',
@@ -436,6 +438,12 @@ export function createEditorRegistry(): ElementRegistry {
           kind: 'string',
           maxLength: 128,
           ...(typeof property['default'] === 'string' ? { default: property['default'] } : {}),
+        };
+      else if (type === 'binding' || type === 'query-ref' || type === 'action-ref' || type === 'object')
+        props[id] = {
+          ...base,
+          kind: 'json',
+          ...(property['default'] !== undefined ? { default: property['default'] } : {}),
         };
       else if (type.startsWith('array<'))
         props[id] = {

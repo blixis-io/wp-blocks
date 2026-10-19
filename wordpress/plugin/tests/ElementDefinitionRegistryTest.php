@@ -109,7 +109,41 @@ final class ElementDefinitionRegistryTest extends TestCase {
 		$this->assertSame( '', $renderer->render( new ElementNode( 'featured', 'blixis/featured-image', [] ), new RenderContext() ) );
 		$this->assertSame( '', $renderer->render( new ElementNode( 'query', 'blixis/query-loop', [] ), new RenderContext() ) );
 		$this->assertSame( '<p data-blx-id="query-ref" data-blx-type="blixis/query-loop">No results</p>', $renderer->render( new ElementNode( 'query-ref', 'blixis/query-loop', [ 'queryRef' => [ 'id' => 'unregistered' ] ] ), new RenderContext() ) );
+		$this->assertSame(
+			'<span data-blx-id="binding" data-blx-type="blixis/dynamic-tag">Safe fallback</span>',
+			$renderer->render(
+				new ElementNode(
+					'binding',
+					'blixis/dynamic-tag',
+					[
+						'binding'  => [
+							'source' => 'wordpress-post',
+							'path'   => 'post.meta._private',
+						],
+						'fallback' => 'Safe fallback',
+					]
+				),
+				new RenderContext()
+			)
+		);
 		$this->assertStringContainsString( '<h2>Author fallback</h2>', $renderer->render( new ElementNode( 'author', 'blixis/author-box', [ 'title' => 'Author fallback' ] ), new RenderContext() ) );
+		$this->assertSame(
+			'<span data-blx-id="binding-schema-fallback" data-blx-type="blixis/dynamic-tag">Schema fallback</span>',
+			$renderer->render(
+				new ElementNode(
+					'binding-schema-fallback',
+					'blixis/dynamic-tag',
+					[
+						'binding' => [
+							'source'   => 'wordpress-post',
+							'path'     => 'post.meta._private',
+							'fallback' => 'Schema fallback',
+						],
+					]
+				),
+				new RenderContext()
+			)
+		);
 		$this->assertSame( '<div data-blx-id="comments" data-blx-type="blixis/comments-list">No comments yet</div>', $renderer->render( new ElementNode( 'comments', 'blixis/comments-list', [ 'fallback' => 'No comments yet' ] ), new RenderContext() ) );
 		$this->assertStringContainsString(
 			'<table',
@@ -164,6 +198,19 @@ final class ElementDefinitionRegistryTest extends TestCase {
 				new RenderContext()
 			)
 		);
+	}
+
+	/** Dynamic bindings pass through the document renderer and unsupported paths use their authored fallback.
+	 *
+	 * @throws \RuntimeException When the test fixture cannot be decoded.
+	 */
+	public function test_dynamic_binding_contract_reaches_the_safe_renderer(): void {
+		$document = json_decode( '{"root":[{"id":"binding-node","type":"blixis/dynamic-tag","props":{"binding":{"source":"wordpress-post","path":"post.meta._private","fallback":"Schema fallback"}},"children":[]}]}' );
+		if ( ! $document instanceof \stdClass ) {
+			throw new \RuntimeException( 'Dynamic binding fixture failed to decode.' );
+		}
+		$html = ( new CoreDocumentRenderer( \Blixis\Builder\Registry\ElementRegistry::from_manifest_file( \dirname( __DIR__ ) . '/data/core-elements.json' ), new WordPressMediaResolver() ) )->render( $document, 'en_US', 'light' );
+		$this->assertSame( '<span data-blx-id="binding-node" data-blx-type="blixis/dynamic-tag">Schema fallback</span>', $html );
 	}
 
 	/** Resizable panels preserve child order and expose a labeled keyboard separator. */

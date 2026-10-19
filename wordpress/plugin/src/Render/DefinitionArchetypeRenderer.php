@@ -735,7 +735,7 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		return $html . '</ul></div>';
 	}
 
-	/** Resolve a small allowlist of current-post and site values without executing document bindings.
+	/** Resolve only allowlisted public WordPress fields from the current render context.
 	 *
 	 * @param ElementNode $node Dynamic definition.
 	 * @param string      $hooks Validated element hooks.
@@ -744,26 +744,52 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		$value   = null;
 		$type    = preg_replace( '~^blixis/~', '', $node->type );
 		$post_id = function_exists( 'get_the_ID' ) ? get_the_ID() : false;
+		$binding = $node->value( 'binding' );
+		if ( $binding instanceof \stdClass ) {
+			$binding = get_object_vars( $binding );
+		}
+		if ( is_array( $binding ) && is_string( $binding['source'] ?? null ) && is_string( $binding['path'] ?? null ) ) {
+			$value = match ( $binding['source'] . ':' . $binding['path'] ) {
+				'wordpress-post:post.title' => function_exists( 'get_the_title' ) ? get_the_title() : null,
+				'wordpress-post:post.content' => is_int( $post_id ) && $post_id > 0 && function_exists( 'get_post_field' ) ? get_post_field( 'post_content', $post_id ) : null,
+				'wordpress-post:post.excerpt' => function_exists( 'get_the_excerpt' ) ? get_the_excerpt() : null,
+				'wordpress-post:post.date' => function_exists( 'get_the_date' ) ? get_the_date() : null,
+				'wordpress-post:post.author' => function_exists( 'get_the_author' ) ? get_the_author() : null,
+				'wordpress-post:post.url' => is_int( $post_id ) && $post_id > 0 && function_exists( 'get_permalink' ) ? get_permalink( $post_id ) : null,
+				'wordpress-post:post.slug' => is_int( $post_id ) && $post_id > 0 && function_exists( 'get_post_field' ) ? get_post_field( 'post_name', $post_id ) : null,
+				'wordpress-post:post.commentCount' => is_int( $post_id ) && $post_id > 0 && function_exists( 'get_comments_number' ) ? (string) get_comments_number( $post_id ) : null,
+				'wordpress-post:post.terms.category' => is_int( $post_id ) && $post_id > 0 && function_exists( 'get_the_terms' ) ? $this->term_names( get_the_terms( $post_id, 'category' ) ) : null,
+				'wordpress-site:site.title' => function_exists( 'get_bloginfo' ) ? get_bloginfo( 'name' ) : null,
+				'wordpress-site:site.tagline' => function_exists( 'get_bloginfo' ) ? get_bloginfo( 'description' ) : null,
+				'wordpress-site:site.url' => function_exists( 'home_url' ) ? home_url( '/' ) : null,
+				'wordpress-user:user.displayName' => function_exists( 'get_the_author' ) ? get_the_author() : null,
+				'wordpress-user:user.description' => function_exists( 'get_the_author_meta' ) ? get_the_author_meta( 'description' ) : null,
+				'wordpress-user:user.url' => function_exists( 'get_the_author_meta' ) ? get_the_author_meta( 'user_url' ) : null,
+				default => null,
+			};
+		}
 		if ( 'post-title' === $type && function_exists( 'get_the_title' ) ) {
-			$value = get_the_title();
+			$value = $value ?? get_the_title();
 		} elseif ( 'post-excerpt' === $type && function_exists( 'get_the_excerpt' ) ) {
-			$value = get_the_excerpt();
+			$value = $value ?? get_the_excerpt();
 		} elseif ( 'post-content' === $type && function_exists( 'get_post_field' ) && is_int( $post_id ) && $post_id > 0 ) {
-			$value = get_post_field( 'post_content', $post_id );
+			$value = $value ?? get_post_field( 'post_content', $post_id );
 		} elseif ( 'post-date' === $type && function_exists( 'get_the_date' ) ) {
-			$value = get_the_date();
+			$value = $value ?? get_the_date();
 		} elseif ( 'post-author' === $type && function_exists( 'get_the_author' ) ) {
-			$value = get_the_author();
+			$value = $value ?? get_the_author();
 		} elseif ( 'site-tagline' === $type && function_exists( 'get_bloginfo' ) ) {
-			$value = get_bloginfo( 'description' );
+			$value = $value ?? get_bloginfo( 'description' );
 		} elseif ( 'post-terms' === $type && function_exists( 'get_the_terms' ) && is_int( $post_id ) && $post_id > 0 ) {
-			$terms = get_the_terms( $post_id, 'category' );
-			if ( is_array( $terms ) ) {
-				$value = implode( ', ', array_filter( array_map( static fn ( mixed $term ): string => $term instanceof \WP_Term ? $term->name : '', $terms ) ) );
+			if ( null === $value ) {
+				$value = $this->term_names( get_the_terms( $post_id, 'category' ) );
 			}
 		}
 		if ( ! is_string( $value ) || '' === trim( $value ) ) {
 			$value = $node->value( 'fallback', '' );
+			if ( ( ! is_string( $value ) || '' === trim( $value ) ) && is_array( $binding ) ) {
+				$value = $binding['fallback'] ?? $value;
+			}
 		}
 		$value = is_string( $value ) ? $value : '';
 		if ( in_array( $type, [ 'post-content', 'post-excerpt' ], true ) && function_exists( 'wp_strip_all_tags' ) ) {
@@ -771,6 +797,17 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		}
 		$tag = 'post-content' === $type ? 'div' : 'span';
 		return '<' . $tag . $hooks . '>' . Escape::html( $value ) . '</' . $tag . '>';
+	}
+
+	/** Convert only WordPress terms to a plain text label list.
+	 *
+	 * @param mixed $terms Term list or error.
+	 */
+	private function term_names( mixed $terms ): ?string {
+		if ( ! is_array( $terms ) ) {
+			return null;
+		}
+		return implode( ', ', array_filter( array_map( static fn ( mixed $term ): string => $term instanceof \WP_Term ? $term->name : '', $terms ) ) );
 	}
 
 	/** Render the public current author with an explicit field allowlist.

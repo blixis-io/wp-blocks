@@ -53,6 +53,8 @@ const editorReady = new Set([
   'related-posts',
   'author-box',
   'table-of-posts',
+  'dynamic-tag',
+  'user-profile',
   'icon-list',
   'icon',
   'icon-svg',
