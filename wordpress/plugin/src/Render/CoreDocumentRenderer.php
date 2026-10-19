@@ -67,9 +67,10 @@ final class CoreDocumentRenderer {
 	 * @param array<string, array<string>> $class_names Generated class names by element ID (from the CSS compiler).
 	 * @param string                       $fallback Missing-translation policy: `source` or `blank`.
 	 * @param ?string[]                    $token_ids Active color token ids; null means unavailable.
+	 * @param bool                         $preview Render forms as inert preview markup.
 	 * @throws \RuntimeException When limits are exceeded.
 	 */
-	public function render( \stdClass $document, string $locale, string $mode, array $class_names = [], string $fallback = 'source', ?array $token_ids = null ): string {
+	public function render( \stdClass $document, string $locale, string $mode, array $class_names = [], string $fallback = 'source', ?array $token_ids = null, bool $preview = false ): string {
 		// Appearance affects CSS only (compiled separately); the compiler's class names are attached to the elements.
 		unset( $mode );
 		$roots = \is_array( $document->root ?? null ) ? $document->root : [];
@@ -110,7 +111,7 @@ final class CoreDocumentRenderer {
 			$values = isset( $this->renderers[ $node->type ] ) ? $this->content->values( $node, $document, $locale, $fallback ) : $this->definition_values( $node, $document, $locale, $fallback );
 			if ( isset( $values['content'] ) && ! isset( $values['text'] ) ) {
 				$values['text'] = $values['content']; }
-			$output[] = $renderer->render( new ElementNode( $node->id, $node->type, $values, \is_array( $class_names[ $node->id ] ?? null ) ? $class_names[ $node->id ] : [] ), new RenderContext( $child_html, $token_ids, $child_html_list ) );
+			$output[] = $renderer->render( new ElementNode( $node->id, $node->type, $values, \is_array( $class_names[ $node->id ] ?? null ) ? $class_names[ $node->id ] : [] ), new RenderContext( $child_html, $token_ids, $child_html_list, $preview ) );
 		}
 		return \implode( '', $output );
 	}

@@ -54,7 +54,7 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		$id         = preg_replace( '~^blixis/~', '', $node->type );
 		$definition = $this->definitions->get( (string) $id );
 		$archetype  = is_array( $definition ) ? (string) ( $definition['archetype'] ?? '' ) : '';
-		if ( ! $this->supports( $archetype ) || ( 'loop' === $archetype && ! in_array( $id, [ 'query-loop', 'related-posts' ], true ) ) || ( 'animation' === $archetype && ! in_array( $id, [ 'entrance-animation', 'scroll-reveal', 'hover-tilt', 'scroll-timeline', 'stagger-container', 'typing-indicator', 'horizontal-scroll' ], true ) ) || ( 'form' === $archetype && 'site-search' !== $id ) ) {
+		if ( ! $this->supports( $archetype ) || ( 'loop' === $archetype && ! in_array( $id, [ 'query-loop', 'related-posts' ], true ) ) || ( 'animation' === $archetype && ! in_array( $id, [ 'entrance-animation', 'scroll-reveal', 'hover-tilt', 'scroll-timeline', 'stagger-container', 'typing-indicator', 'horizontal-scroll' ], true ) ) || ( 'form' === $archetype && ! in_array( $id, [ 'site-search', 'form', 'contact-form', 'newsletter-signup' ], true ) ) ) {
 			return ( new StaticFallbackRenderer() )->render( $node, $context );
 		}
 		$tag = self::TAGS[ (string) $id ] ?? match ( $archetype ) {
@@ -70,6 +70,17 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		$hooks = Escape::hooks( $node );
 		if ( 'site-search' === $id ) {
 			return $this->render_site_search( $node, $hooks );
+		}
+		if ( in_array( $id, [ 'form', 'contact-form', 'newsletter-signup' ], true ) ) {
+			return $this->render_form( $id, $node, $hooks, $context->children_html, $context->preview );
+		}
+		if ( in_array( $id, [ 'form-success', 'form-error' ], true ) ) {
+			return $this->render_form_feedback( $id, $node, $hooks );
+		}
+		if ( 'submit-button' === $id ) {
+			$label = $node->value( 'label', $this->translate_label( 'Submit' ) );
+			$label = is_string( $label ) && '' !== trim( $label ) ? trim( $label ) : $this->translate_label( 'Submit' );
+			return '<button' . $hooks . ' type="' . ( $context->preview ? 'button" disabled' : 'submit"' ) . '>' . Escape::html( $label ) . '</button>';
 		}
 		if ( 'show-more' === $id ) {
 			return $this->render_show_more( $node, $hooks, $context->children_html );
@@ -817,6 +828,58 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		return '<form' . $hooks . ' role="search" method="get" action="' . Escape::url( $action ) . '"><label for="' . $input_id . '">' . Escape::html( $label ) . '</label><input id="' . $input_id . '" type="search" name="s" value=""' . $placeholder . '><button type="submit">' . Escape::html( $this->translate_label( 'Search' ) ) . '</button></form>';
 	}
 
+	/** Render a native POST form with the built-in no-retention admin-email handler.
+	 *
+	 * @param string      $id Element definition id.
+	 * @param ElementNode $node Form element.
+	 * @param string      $hooks Validated hooks.
+	 * @param string      $children Rendered field markup.
+	 * @param bool        $preview Whether to render an inert preview.
+	 */
+	private function render_form( string $id, ElementNode $node, string $hooks, string $children, bool $preview ): string {
+		if ( $preview ) {
+			return '<div' . $hooks . ' data-blx-form-preview inert aria-disabled="true">' . $children . '</div>';
+		}
+		$post_id = function_exists( 'get_the_ID' ) ? (int) get_the_ID() : 0;
+		$form_id = $node->value( 'formId', 'contact' );
+		$form_id = is_string( $form_id ) && 1 === preg_match( '/^[a-zA-Z][a-zA-Z0-9_-]{0,63}$/D', $form_id ) ? ( function_exists( 'sanitize_key' ) ? sanitize_key( $form_id ) : strtolower( $form_id ) ) : 'contact';
+		$action  = function_exists( 'admin_url' ) ? admin_url( 'admin-post.php' ) : '/wp-admin/admin-post.php';
+		$label   = $node->value( 'ariaLabel' );
+		$label   = is_string( $label ) && '' !== trim( $label ) ? ' aria-label="' . Escape::attr( trim( $label ) ) . '"' : '';
+		$fields  = '<input type="hidden" name="action" value="blx_submit_form"><input type="hidden" name="post_id" value="' . $post_id . '"><input type="hidden" name="form_id" value="' . Escape::attr( $form_id ) . '">';
+		if ( function_exists( 'wp_nonce_field' ) && $post_id > 0 ) {
+			$nonce   = wp_nonce_field( \Blixis\Builder\Rest\FormSubmissionController::nonce_action( $post_id, $form_id ), '_wpnonce', false, false );
+			$fields .= is_string( $nonce ) ? $nonce : '';
+		}
+		$trap   = '<label class="screen-reader-text" aria-hidden="true">' . Escape::html( $this->translate_label( 'Leave this field empty' ) ) . '<input type="text" name="company_website" value="" tabindex="-1" autocomplete="off"></label>';
+		$status = isset( $_GET['status'], $_GET['form'] ) && is_string( $_GET['status'] ) && is_string( $_GET['form'] ) && ( function_exists( 'sanitize_key' ) ? sanitize_key( wp_unslash( $_GET['form'] ) ) : strtolower( wp_unslash( $_GET['form'] ) ) ) === $form_id ? ( function_exists( 'sanitize_key' ) ? sanitize_key( wp_unslash( $_GET['status'] ) ) : strtolower( wp_unslash( $_GET['status'] ) ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Public result flag only controls a status message.
+		if ( in_array( $status, [ 'success', 'error' ], true ) && function_exists( 'nocache_headers' ) ) {
+			nocache_headers();
+		}
+		$type = 'newsletter-signup' === $id ? 'newsletter' : 'contact';
+		return '<form' . $hooks . ' method="post" action="' . Escape::url( $action ) . '" data-blx-form="' . $type . '"' . $label . '>' . $fields . $trap . $children . '</form>';
+	}
+
+	/** Show only the configured form result, with an accessible status role.
+	 *
+	 * @param string      $id Success or error element id.
+	 * @param ElementNode $node Feedback element.
+	 * @param string      $hooks Validated hooks.
+	 */
+	private function render_form_feedback( string $id, ElementNode $node, string $hooks ): string {
+		$status = isset( $_GET['status'] ) && is_string( $_GET['status'] ) ? ( function_exists( 'sanitize_key' ) ? sanitize_key( wp_unslash( $_GET['status'] ) ) : strtolower( wp_unslash( $_GET['status'] ) ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Public result flag only controls a status message.
+		$target = 'form-success' === $id ? 'success' : 'error';
+		if ( $target !== $status ) {
+			return '';
+		}
+		$title       = $node->value( 'title', 'success' === $target ? $this->translate_label( 'Thanks!' ) : $this->translate_label( 'Something went wrong.' ) );
+		$description = $node->value( 'description', '' );
+		$title       = is_string( $title ) ? $title : '';
+		$description = is_string( $description ) ? $description : '';
+		$role        = 'success' === $target ? 'status' : 'alert';
+		return '<div' . $hooks . ' role="' . $role . '"><strong>' . Escape::html( $title ) . '</strong>' . ( '' !== trim( $description ) ? '<p>' . Escape::html( $description ) . '</p>' : '' ) . '</div>';
+	}
+
 	/** Render a keyboard-operable disclosure using native HTML, without JavaScript.
 	 *
 	 * @param ElementNode $node Show-more element.
@@ -1281,6 +1344,7 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 			$field_type          = $field_types[ $id ];
 			$name                = $node->value( 'name', 'field' );
 			$name                = is_string( $name ) && 1 === preg_match( '/^[A-Za-z][A-Za-z0-9_.:-]{0,63}$/D', $name ) ? $name : 'field';
+			$name                = 'fields[' . $name . ']';
 			$value               = $node->value( 'value', '' );
 			$value               = is_string( $value ) && 'password' !== $field_type ? $value : '';
 			$required            = true === $node->value( 'required', false ) && 'hidden' !== $field_type;

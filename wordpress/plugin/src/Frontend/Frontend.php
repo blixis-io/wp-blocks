@@ -133,12 +133,15 @@ final class Frontend {
 	 * @return ?array{html: string, css: string}
 	 */
 	private static function page_for( int $post_id ): ?array {
-		$draft    = DraftPreview::active();
-		$memo_key = ( $draft ? 'draft:' : 'public:' ) . $post_id;
-		if ( array_key_exists( $memo_key, self::$memo ) ) {
+		$draft       = DraftPreview::active();
+		$form_result = isset( $_GET['form'], $_GET['status'] ) && is_string( $_GET['form'] ) && is_string( $_GET['status'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Public form result flags only select feedback copy.
+		$memo_key    = ( $draft ? 'draft:' : 'public:' ) . $post_id;
+		if ( ! $form_result && array_key_exists( $memo_key, self::$memo ) ) {
 			return self::$memo[ $memo_key ];
 		}
-		self::$memo[ $memo_key ] = null;
+		if ( ! $form_result ) {
+			self::$memo[ $memo_key ] = null;
+		}
 		/**
 		 * Disable builder output on the public site (for debugging or emergency fallback to the plain post content).
 		 *
@@ -163,7 +166,7 @@ final class Frontend {
 		// The reason distinguishes changed declarations even if the stylesheet version was not bumped.
 		$reason = ( new ThemeCompat( new WordPressCompatibilityReader() ) )->status()->reason;
 		$key    = RenderCacheKey::build( $post_id, $published->locale, $published->layout_revision, $published->content_revision, $published->default_content_revision, Invalidation::epoch(), Compiler::COMPILER_VERSION, \Blixis\Builder\VERSION, $theme->get_stylesheet() . '@' . (string) $theme->get( 'Version' ) . '|fallback=' . $fallback, $reason );
-		$cache  = $draft ? null : new TransientRenderCache();
+		$cache  = $draft || $form_result ? null : new TransientRenderCache();
 		$page   = null === $cache ? null : $cache->get( $key );
 		if ( null === $page ) {
 			$system    = \get_option( 'blixis_design_system', false );
@@ -203,7 +206,9 @@ final class Frontend {
 				$cache->set( $key, $page );
 			}
 		}
-		self::$memo[ $memo_key ] = $page;
+		if ( ! $form_result ) {
+			self::$memo[ $memo_key ] = $page;
+		}
 		return $page;
 	}
 }

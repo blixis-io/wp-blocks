@@ -41,6 +41,6 @@ final class CoreElementPreviewRenderer implements PreviewRenderer {
 	 */
 	public function render( \stdClass $document, string $locale, string $mode ): PreviewOutput {
 		$compiled = Compiler::compile( $document );
-		return new PreviewOutput( $this->renderer->render( $document, $locale, $mode, $compiled->class_names ), $compiled->css );
+		return new PreviewOutput( $this->renderer->render( $document, $locale, $mode, $compiled->class_names, 'source', null, true ), $compiled->css );
 	}
 }
