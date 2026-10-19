@@ -186,6 +186,18 @@ const editorReady = new Set([
   'skeleton',
   'alert',
   'table-of-contents',
+  'form',
+  'text-field',
+  'email-field',
+  'number-field',
+  'url-field',
+  'search-field',
+  'hidden-field',
+  'submit-button',
+  'form-success',
+  'form-error',
+  'newsletter-signup',
+  'contact-form',
 ]);
 for (const entry of catalog.elements) {
   const definition = await readJson(path.join(definitionsDir, entry.file));
