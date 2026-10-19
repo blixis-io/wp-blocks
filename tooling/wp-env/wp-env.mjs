@@ -1512,8 +1512,8 @@ async function smoke() {
           'the element carries the generated class that the printed stylesheet targets',
         );
         check(
-          !html.includes('PLAIN CONTENT') && !html.includes('DRAFT-SECRET'),
-          'the published output replaces the post content and ignores drafts',
+          html.includes('data-blx-type="blixis/post-content">PLAIN CONTENT</div>') && !html.includes('DRAFT-SECRET'),
+          'the explicit post-content element renders published content and ignores draft streams',
         );
         check(
           /<style[^>]*id=['"]blixis-builder-frontend-inline-css['"][^>]*>[^<]*\/\*blx-css:1\*\/[^<]*color:red/.test(
