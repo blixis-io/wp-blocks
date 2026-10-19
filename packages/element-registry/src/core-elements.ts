@@ -4,6 +4,29 @@ import { ELEMENT_DEFINITIONS_V2 } from './v2.ts';
 
 const everything = ['@layout', '@content', '@media', '@interactive'];
 const inContainers = ['blixis/section', 'blixis/container'];
+const formControls = [
+  'blixis/text-field',
+  'blixis/email-field',
+  'blixis/password-field',
+  'blixis/phone-field',
+  'blixis/number-field',
+  'blixis/url-field',
+  'blixis/search-field',
+  'blixis/file-upload',
+  'blixis/dropzone-upload',
+  'blixis/otp-input',
+  'blixis/tag-input',
+  'blixis/multi-select',
+  'blixis/signature-field',
+  'blixis/repeater-field',
+  'blixis/hidden-field',
+  'blixis/captcha',
+  'blixis/submit-button',
+  'blixis/form-success',
+  'blixis/form-error',
+  'blixis/conditional-fields',
+  'blixis/multi-step-form',
+];
 
 /**
  * The six elements of the Free builder (PRD section 6.2). These are definitions only: editors (BWB-054) and the PHP
@@ -325,6 +348,18 @@ export function createEditorRegistry(): ElementRegistry {
     'skeleton',
     'alert',
     'table-of-contents',
+    'form',
+    'text-field',
+    'email-field',
+    'number-field',
+    'url-field',
+    'search-field',
+    'hidden-field',
+    'submit-button',
+    'form-success',
+    'form-error',
+    'newsletter-signup',
+    'contact-form',
     'entrance-animation',
     'scroll-reveal',
     'hover-tilt',
@@ -536,9 +571,11 @@ export function createEditorRegistry(): ElementRegistry {
       allowedChildren:
         children === 'any'
           ? ['@layout', '@content', '@media', '@interactive']
-          : Array.isArray(children)
-            ? children.filter((value): value is string => typeof value === 'string')
-            : [],
+          : children === 'form-control'
+            ? formControls
+            : Array.isArray(children)
+              ? children.filter((value): value is string => typeof value === 'string')
+              : [],
     };
     const result = registry.register(def, 'core');
     if (!result.ok) throw new Error(`generated editor definition ${def.type} is invalid: ${result.errors.join('; ')}`);
