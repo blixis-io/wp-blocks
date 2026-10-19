@@ -45,6 +45,7 @@ const editorReady = new Set([
   'post-author',
   'site-tagline',
   'site-title',
+  'site-search',
   'post-terms',
   'featured-image',
   'comments-list',

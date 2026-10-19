@@ -53,6 +53,10 @@ final class PreviewTest extends TestCase {
 		$this->assertTrue( PreviewSanitizer::accepts( '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" focusable="false" aria-hidden="true"><path d="M12 3 9 9 3 10"/></svg>' ) );
 		$this->assertTrue( PreviewSanitizer::accepts( '<span style="background-image:linear-gradient(90deg,#2563eb 0%,#ec4899 100%);-webkit-background-clip:text;background-clip:text;color:transparent">Safe</span>' ) );
 		$this->assertTrue( PreviewSanitizer::accepts( '<span style="--blx-headline-index:2">Safe</span>' ) );
+		$this->assertTrue( PreviewSanitizer::accepts( '<form data-blx-id="search-1" data-blx-type="blixis/site-search" role="search" method="get" action="/"><label for="blx-search-0123456789ab">Search</label><input id="blx-search-0123456789ab" type="search" name="s" value=""><button type="submit">Search</button></form>' ) );
+		foreach ( [ '<form role="search" method="post" action="/">x</form>', '<form role="search" method="get" action="https://evil.test/">x</form>', '<form role="search" method="get" action="https://user@example.test/">x</form>', '<form role="search" method="get" action="/" onsubmit="alert(1)">x</form>', '<form role="search" method="get" action="/"><input type="search" name="s" formaction="https://evil.test/"></form>', '<form role="search" method="get" action="/"><script>x</script></form>', '<form role="search" method="get" action="/">x' ] as $html ) {
+			$this->assertFalse( PreviewSanitizer::accepts( $html ), $html );
+		}
 	}
 
 	/** Structural output never interpolates hostile attributes or props. */

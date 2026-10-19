@@ -1415,6 +1415,10 @@ async function smoke() {
             html.includes('data-blx-loading-button') &&
             html.includes('data-blx-context-menu') &&
             html.includes('data-blx-type="blixis/query-loop"') &&
+            html.includes('data-blx-type="blixis/site-search" role="search" method="get"') &&
+            html.includes(
+              'type="search" name="s" value="" placeholder="Search…"><button type="submit">Search</button>',
+            ) &&
             html.includes('data-blx-type="blixis/query-pagination"') &&
             html.includes('data-blx-type="blixis/table-of-posts"') &&
             html.includes('data-blx-type="blixis/post-title">Front smoke</span>') &&

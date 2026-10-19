@@ -200,6 +200,12 @@ $layout  = static fn ( int $n, string $color ): string => wp_json_encode(
 				'children' => [],
 			],
 			[
+				'id'       => 'el-site-search',
+				'type'     => 'blixis/site-search',
+				'props'    => (object) [ 'ariaLabel' => 'Search this site' ],
+				'children' => [],
+			],
+			[
 				'id'       => 'el-range-pair',
 				'type'     => 'blixis/range-slider',
 				'props'    => (object) [

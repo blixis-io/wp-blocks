@@ -44,7 +44,7 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 	 * @param string $archetype Archetype name.
 	 */
 	public function supports( string $archetype ): bool {
-		return in_array( $archetype, [ 'container','simple','text','richtext','heading','button','link','image','gallery','video','audio','embed','iframe','pdf-viewer','map','navigation','pagination','list','loop','code','accordion','tabs','steps','overlay','alert','progress','counter','countdown','icon','dynamic','card','layout','section','page','site-header','site-footer','site-logo','row','columns','grid','stack','input','choice','toggle','range','datatable','chart','rating','calendar','command','carousel','animation' ], true ); }
+		return in_array( $archetype, [ 'container','simple','text','richtext','heading','button','link','image','gallery','video','audio','embed','iframe','pdf-viewer','map','navigation','pagination','list','loop','code','accordion','tabs','steps','overlay','alert','progress','counter','countdown','icon','dynamic','card','layout','section','page','site-header','site-footer','site-logo','row','columns','grid','stack','input','choice','toggle','range','datatable','chart','rating','calendar','command','carousel','animation','form' ], true ); }
 	/** Render an element with escaped text and allowlisted tags/attributes.
 	 *
 	 * @param ElementNode   $node Element input.
@@ -54,7 +54,7 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		$id         = preg_replace( '~^blixis/~', '', $node->type );
 		$definition = $this->definitions->get( (string) $id );
 		$archetype  = is_array( $definition ) ? (string) ( $definition['archetype'] ?? '' ) : '';
-		if ( ! $this->supports( $archetype ) || ( 'loop' === $archetype && ! in_array( $id, [ 'query-loop', 'related-posts' ], true ) ) || ( 'animation' === $archetype && ! in_array( $id, [ 'entrance-animation', 'scroll-reveal', 'hover-tilt', 'scroll-timeline', 'stagger-container', 'typing-indicator', 'horizontal-scroll' ], true ) ) ) {
+		if ( ! $this->supports( $archetype ) || ( 'loop' === $archetype && ! in_array( $id, [ 'query-loop', 'related-posts' ], true ) ) || ( 'animation' === $archetype && ! in_array( $id, [ 'entrance-animation', 'scroll-reveal', 'hover-tilt', 'scroll-timeline', 'stagger-container', 'typing-indicator', 'horizontal-scroll' ], true ) ) || ( 'form' === $archetype && 'site-search' !== $id ) ) {
 			return ( new StaticFallbackRenderer() )->render( $node, $context );
 		}
 		$tag = self::TAGS[ (string) $id ] ?? match ( $archetype ) {
@@ -68,6 +68,9 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 			}
 		}
 		$hooks = Escape::hooks( $node );
+		if ( 'site-search' === $id ) {
+			return $this->render_site_search( $node, $hooks );
+		}
 		if ( 'horizontal-scroll' === $id ) {
 			$label = $node->value( 'ariaLabel', $this->translate_label( 'Horizontally scrollable content' ) );
 			$label = is_string( $label ) && '' !== trim( $label ) ? $label : $this->translate_label( 'Horizontally scrollable content' );
@@ -793,6 +796,22 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 			$html .= '</li>';
 		}
 		return $html . '</ul></div>';
+	}
+
+	/** Render the site's native WordPress search form with a same-origin GET destination.
+	 *
+	 * @param ElementNode $node Search element.
+	 * @param string      $hooks Validated element hooks.
+	 */
+	private function render_site_search( ElementNode $node, string $hooks ): string {
+		$label       = $node->value( 'ariaLabel', $this->translate_label( 'Search' ) );
+		$label       = is_string( $label ) && '' !== trim( $label ) ? trim( $label ) : $this->translate_label( 'Search' );
+		$action      = function_exists( 'home_url' ) ? home_url( '/' ) : '/';
+		$action      = SafeUrl::accepts( $action ) ? $action : '/';
+		$input_id    = 'blx-search-' . substr( hash( 'sha256', $node->id ), 0, 12 );
+		$placeholder = $node->value( 'placeholder', $this->translate_label( 'Search' ) . '…' );
+		$placeholder = is_string( $placeholder ) && '' !== $placeholder ? ' placeholder="' . Escape::attr( $placeholder ) . '"' : '';
+		return '<form' . $hooks . ' role="search" method="get" action="' . Escape::url( $action ) . '"><label for="' . $input_id . '">' . Escape::html( $label ) . '</label><input id="' . $input_id . '" type="search" name="s" value=""' . $placeholder . '><button type="submit">' . Escape::html( $this->translate_label( 'Search' ) ) . '</button></form>';
 	}
 
 	/** Resolve only allowlisted public WordPress fields from the current render context.
@@ -2132,6 +2151,7 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 			'Open menu' => __( 'Open menu', 'blixis-builder' ),
 			'Commands' => __( 'Commands', 'blixis-builder' ),
 			'Search commands' => __( 'Search commands', 'blixis-builder' ),
+			'Search' => __( 'Search', 'blixis-builder' ),
 			'Reading progress' => __( 'Reading progress', 'blixis-builder' ),
 			'Carousel' => __( 'Carousel', 'blixis-builder' ),
 			'Calendar' => __( 'Calendar', 'blixis-builder' ),

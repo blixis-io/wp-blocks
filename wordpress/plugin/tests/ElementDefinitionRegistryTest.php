@@ -39,6 +39,7 @@ final class ElementDefinitionRegistryTest extends TestCase {
 		$this->assertSame( 'ready', $registry->get( 'grid' )['status'] ?? null );
 		$this->assertSame( 'ready', $registry->get( 'avatar' )['status'] ?? null );
 		$this->assertSame( 'ready', $registry->get( 'post-title' )['status'] ?? null );
+		$this->assertSame( 'ready', $registry->get( 'site-search' )['status'] ?? null );
 	}
 
 	/** The document renderer keeps a configured safe local icon glyph instead of silently using the default. */
@@ -90,8 +91,8 @@ final class ElementDefinitionRegistryTest extends TestCase {
 
 	/** P7 static WordPress elements retain safe fallback markup without query context. */
 	public function test_p7_static_wordpress_elements_render_safe_fallbacks(): void {
-		$registry = ElementDefinitionRegistry::from_manifest_file( \dirname( __DIR__ ) . '/data/element-definitions-v2.json' );
-		$media    = new class() implements AssetReferenceResolver {
+		$registry      = ElementDefinitionRegistry::from_manifest_file( \dirname( __DIR__ ) . '/data/element-definitions-v2.json' );
+		$media         = new class() implements AssetReferenceResolver {
 			/** No attachment metadata is available in this static renderer test.
 			 *
 			 * @param int $attachment_id Attachment identifier.
@@ -105,7 +106,13 @@ final class ElementDefinitionRegistryTest extends TestCase {
 			public function resolve_reference( string $reference ): ?array {
 				return null; }
 		};
-		$renderer = new DefinitionArchetypeRenderer( $registry, $media );
+		$renderer      = new DefinitionArchetypeRenderer( $registry, $media );
+		$search        = $renderer->render( new ElementNode( 'site-search-1', 'blixis/site-search', [ 'ariaLabel' => 'Search our site' ] ), new RenderContext() );
+		$search_action = function_exists( 'home_url' ) ? home_url( '/' ) : '/';
+		$this->assertStringContainsString( '<form data-blx-id="site-search-1" data-blx-type="blixis/site-search" role="search" method="get" action="' . $search_action . '">', $search );
+		$this->assertStringContainsString( '<label for="blx-search-', $search );
+		$this->assertStringContainsString( 'type="search" name="s" value="" placeholder="Search…"><button type="submit">Search</button>', $search );
+		$this->assertTrue( PreviewSanitizer::accepts( $search ) );
 		$this->assertSame( '', $renderer->render( new ElementNode( 'featured', 'blixis/featured-image', [] ), new RenderContext() ) );
 		$this->assertSame( '', $renderer->render( new ElementNode( 'query', 'blixis/query-loop', [] ), new RenderContext() ) );
 		$this->assertSame( '<p data-blx-id="query-ref" data-blx-type="blixis/query-loop">No results</p>', $renderer->render( new ElementNode( 'query-ref', 'blixis/query-loop', [ 'queryRef' => [ 'id' => 'unregistered' ] ] ), new RenderContext() ) );
