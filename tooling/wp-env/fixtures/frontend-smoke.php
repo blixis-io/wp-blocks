@@ -120,8 +120,16 @@ $layout  = static fn ( int $n, string $color ): string => wp_json_encode(
 				'props'    => (object) [
 					'defaultValue' => 'details',
 					'items'        => [
-						[ 'id' => 'overview', 'label' => 'Overview', 'content' => 'Overview panel' ],
-						[ 'id' => 'details', 'label' => 'Details', 'content' => 'Details panel' ],
+						[
+							'id'      => 'overview',
+							'label'   => 'Overview',
+							'content' => 'Overview panel',
+						],
+						[
+							'id'      => 'details',
+							'label'   => 'Details',
+							'content' => 'Details panel',
+						],
 					],
 				],
 				'children' => [],
@@ -130,14 +138,29 @@ $layout  = static fn ( int $n, string $color ): string => wp_json_encode(
 				'id'       => 'el-accordion',
 				'type'     => 'blixis/accordion',
 				'props'    => (object) [
-					'items' => [ [ 'id' => 'one', 'title' => 'First item', 'content' => 'First answer' ], [ 'id' => 'two', 'title' => 'Second item', 'content' => 'Second answer' ] ],
+					'items' => [
+						[
+							'id'      => 'one',
+							'title'   => 'First item',
+							'content' => 'First answer',
+						],
+						[
+							'id'      => 'two',
+							'title'   => 'Second item',
+							'content' => 'Second answer',
+						],
+					],
 				],
 				'children' => [],
 			],
 			[
 				'id'       => 'el-offcanvas',
 				'type'     => 'blixis/offcanvas',
-				'props'    => (object) [ 'modal' => true, 'placement' => 'left', 'triggerLabel' => 'Open panel' ],
+				'props'    => (object) [
+					'modal'        => true,
+					'placement'    => 'left',
+					'triggerLabel' => 'Open panel',
+				],
 				'children' => [
 					[
 						'id'       => 'el-offcanvas-copy',
@@ -150,76 +173,188 @@ $layout  = static fn ( int $n, string $color ): string => wp_json_encode(
 			[
 				'id'       => 'el-switch',
 				'type'     => 'blixis/switch',
-				'props'    => (object) [ 'label' => 'Enable updates', 'checked' => true ],
+				'props'    => (object) [
+					'label'   => 'Enable updates',
+					'checked' => true,
+				],
 				'children' => [],
 			],
 			[
 				'id'       => 'el-range-pair',
 				'type'     => 'blixis/range-slider',
-				'props'    => (object) [ 'name' => 'price', 'defaultValue' => 20, 'upperValue' => 80 ],
+				'props'    => (object) [
+					'name'         => 'price',
+					'defaultValue' => 20,
+					'upperValue'   => 80,
+				],
 				'children' => [],
 			],
 			[
 				'id'       => 'el-calendar',
 				'type'     => 'blixis/calendar',
-				'props'    => (object) [ 'mode' => 'multiple', 'locale' => 'en-US', 'maxSelections' => 2 ],
+				'props'    => (object) [
+					'mode'          => 'multiple',
+					'locale'        => 'en-US',
+					'maxSelections' => 2,
+				],
 				'children' => [],
 			],
 			[
 				'id'       => 'el-data-table',
 				'type'     => 'blixis/sortable-table',
-				'props'    => (object) [ 'ariaLabel' => 'Scores', 'columns' => [ [ 'key' => 'name', 'title' => 'Name' ] ], 'rows' => [ [ 'name' => 'Ada' ] ] ],
+				'props'    => (object) [
+					'ariaLabel' => 'Scores',
+					'columns'   => [
+						[
+							'key'   => 'name',
+							'title' => 'Name',
+						],
+					],
+					'rows'      => [ [ 'name' => 'Ada' ] ],
+				],
 				'children' => [],
 			],
 			[
 				'id'       => 'el-chart',
 				'type'     => 'blixis/chart',
-				'props'    => (object) [ 'ariaLabel' => 'Visits', 'data' => [ [ 'name' => 'Home', 'value' => 10 ] ] ],
+				'props'    => (object) [
+					'ariaLabel' => 'Visits',
+					'data'      => [
+						[
+							'name'  => 'Home',
+							'value' => 10,
+						],
+					],
+				],
 				'children' => [],
 			],
 			[
 				'id'       => 'el-toast',
 				'type'     => 'blixis/toast',
-				'props'    => (object) [ 'title' => 'Saved', 'dismissible' => true ],
+				'props'    => (object) [
+					'title'       => 'Saved',
+					'dismissible' => true,
+				],
 				'children' => [],
 			],
 			[
 				'id'       => 'el-command-palette',
 				'type'     => 'blixis/command-palette',
-				'props'    => (object) [ 'items' => [ [ 'label' => 'Home', 'href' => '/' ] ] ],
+				'props'    => (object) [
+					'items' => [
+						[
+							'label' => 'Home',
+							'href'  => '/',
+						],
+					],
+				],
 				'children' => [],
 			],
 			[
 				'id'       => 'el-carousel',
 				'type'     => 'blixis/carousel',
-				'props'    => (object) [ 'arrows' => true, 'dots' => true ],
+				'props'    => (object) [
+					'arrows' => true,
+					'dots'   => true,
+				],
 				'children' => [
-					[ 'id' => 'el-carousel-one', 'type' => 'blixis/text', 'props' => (object) [ 'content' => 'First slide' ], 'children' => [] ],
-					[ 'id' => 'el-carousel-two', 'type' => 'blixis/text', 'props' => (object) [ 'content' => 'Second slide' ], 'children' => [] ],
+					[
+						'id'       => 'el-carousel-one',
+						'type'     => 'blixis/text',
+						'props'    => (object) [ 'content' => 'First slide' ],
+						'children' => [],
+					],
+					[
+						'id'       => 'el-carousel-two',
+						'type'     => 'blixis/text',
+						'props'    => (object) [ 'content' => 'Second slide' ],
+						'children' => [],
+					],
 				],
 			],
 			[
 				'id'       => 'el-scroll-indicator',
 				'type'     => 'blixis/scroll-indicator',
-				'props'    => (object) [ 'ariaLabel' => 'Reading progress', 'showLabel' => true ],
+				'props'    => (object) [
+					'ariaLabel' => 'Reading progress',
+					'showLabel' => true,
+				],
 				'children' => [],
 			],
 			[
 				'id'       => 'el-copy-button',
 				'type'     => 'blixis/copy-button',
-				'props'    => (object) [ 'label' => 'Copy', 'copyText' => 'Safe text' ],
+				'props'    => (object) [
+					'label'    => 'Copy',
+					'copyText' => 'Safe text',
+				],
 				'children' => [],
 			],
 			[
 				'id'       => 'el-loading-button',
 				'type'     => 'blixis/loading-button',
-				'props'    => (object) [ 'label' => 'Send', 'loadingLabel' => 'Sending…' ],
+				'props'    => (object) [
+					'label'        => 'Send',
+					'loadingLabel' => 'Sending…',
+				],
 				'children' => [],
 			],
 			[
 				'id'       => 'el-context-menu',
 				'type'     => 'blixis/context-menu',
-				'props'    => (object) [ 'items' => [ [ 'label' => 'Open', 'href' => '/' ] ] ],
+				'props'    => (object) [
+					'items' => [
+						[
+							'label' => 'Open',
+							'href'  => '/',
+						],
+					],
+				],
+				'children' => [],
+			],
+			[
+				'id'       => 'el-query-loop',
+				'type'     => 'blixis/query-loop',
+				'props'    => (object) [
+					'allowedPostTypes' => [ 'post' ],
+					'maxItems'         => 3,
+				],
+				'children' => [],
+			],
+			[
+				'id'       => 'el-dynamic-title',
+				'type'     => 'blixis/post-title',
+				'props'    => (object) [ 'fallback' => 'Title fallback' ],
+				'children' => [],
+			],
+			[
+				'id'       => 'el-dynamic-content',
+				'type'     => 'blixis/post-content',
+				'props'    => (object) [ 'fallback' => 'Content fallback' ],
+				'children' => [],
+			],
+			[
+				'id'       => 'el-query-pagination',
+				'type'     => 'blixis/query-pagination',
+				'props'    => (object) [
+					'total'       => 4,
+					'currentPage' => 2,
+					'basePath'    => '/',
+				],
+				'children' => [],
+			],
+			[
+				'id'       => 'el-table-of-posts',
+				'type'     => 'blixis/table-of-posts',
+				'props'    => (object) [
+					'columns' => [
+						[
+							'key'   => 'title',
+							'title' => 'Post title',
+						],
+					],
+					'rows'    => [ [ 'title' => 'Smoke post title' ] ],
+				],
 				'children' => [],
 			],
 		],

@@ -1405,8 +1405,14 @@ async function smoke() {
             html.includes('data-blx-copy-button') &&
             html.includes('data-blx-loading-button') &&
             html.includes('data-blx-context-menu') &&
+            html.includes('data-blx-type="blixis/query-loop"') &&
+            html.includes('data-blx-type="blixis/query-pagination"') &&
+            html.includes('data-blx-type="blixis/table-of-posts"') &&
+            html.includes('data-blx-type="blixis/post-title">Front smoke</span>') &&
+            html.includes('data-blx-type="blixis/post-content">PLAIN CONTENT</div>') &&
+            html.includes('Smoke post title') &&
             html.includes('id="blixis-builder-elements-js"'),
-          'published P5 controls render accessible native fallbacks and enqueue only their required runtime',
+          'published P5 controls and bounded P7 WordPress elements render safe fallbacks and enqueue required runtime',
         );
         check(
           html.includes('data-blx-marquee="left"') &&
