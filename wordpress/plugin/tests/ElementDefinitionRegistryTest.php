@@ -10,6 +10,7 @@ namespace Blixis\Builder\Tests;
 use Blixis\Builder\Autoloader;
 use Blixis\Builder\Frontend\MarqueeCss;
 use Blixis\Builder\Preview\PreviewSanitizer;
+use Blixis\Builder\Preview\CoreElementPreviewRenderer;
 use Blixis\Builder\Registry\ElementDefinitionRegistry;
 use Blixis\Builder\Render\AssetReferenceResolver;
 use Blixis\Builder\Render\CoreDocumentRenderer;
@@ -1629,7 +1630,7 @@ final class ElementDefinitionRegistryTest extends TestCase {
 				new RenderContext()
 			);
 			$this->assertStringContainsString( 'type="' . $field_type . '"', $field );
-			$this->assertStringContainsString( 'name="contact.email"', $field );
+			$this->assertStringContainsString( 'name="fields[contact.email]"', $field );
 			$this->assertStringContainsString( 'Label &amp; input', $field );
 			$this->assertStringContainsString( 'required', $field );
 			if ( 'number' !== $field_type ) {
@@ -1664,9 +1665,37 @@ final class ElementDefinitionRegistryTest extends TestCase {
 			),
 			new RenderContext()
 		);
-		$this->assertStringContainsString( 'type="hidden" name="campaign"', $hidden );
+			$this->assertStringContainsString( 'type="hidden" name="fields[campaign]"', $hidden );
 		$this->assertStringNotContainsString( 'Must not show', $hidden );
 		$this->assertTrue( PreviewSanitizer::accepts( $hidden ) );
+		$form = $renderer->render(
+			new ElementNode(
+				'contact-form',
+				'blixis/form',
+				[
+					'formId'    => 'contact-smoke',
+					'ariaLabel' => 'Contact us',
+				]
+			),
+			new RenderContext( '<label for="blx-field-0123456789ab">Email</label><input id="blx-field-0123456789ab" type="email" name="fields[email]" autocomplete="off" value="">' )
+		);
+		$this->assertStringContainsString( 'method="post" action="/wp-admin/admin-post.php"', $form );
+		$this->assertStringContainsString( 'name="action" value="blx_submit_form"', $form );
+		$this->assertStringContainsString( 'name="form_id" value="contact-smoke"', $form );
+		$this->assertStringContainsString( 'name="company_website"', $form );
+		$this->assertStringContainsString( 'name="fields[email]"', $form );
+		$this->assertStringContainsString( 'aria-label="Contact us"', $form );
+		$this->assertTrue( PreviewSanitizer::accepts( $form ), $form );
+		$this->assertSame( 'blx_form_submission_42_contact-smoke', \Blixis\Builder\Rest\FormSubmissionController::nonce_action( 42, 'contact-smoke' ) );
+		$preview = ( new CoreElementPreviewRenderer() )->render(
+			json_decode( '{"root":[{"id":"form-preview","type":"blixis/form","props":{"formId":"contact-smoke"},"children":[{"id":"email-preview","type":"blixis/email-field","props":{"label":"Email","name":"email"},"children":[]},{"id":"submit-preview","type":"blixis/submit-button","props":{"label":"Send"},"children":[]}]}]}' ),
+			'en_US',
+			'light'
+		)->html;
+		$this->assertStringContainsString( 'data-blx-form-preview inert', $preview );
+		$this->assertStringNotContainsString( '<form', $preview );
+		$this->assertStringContainsString( 'type="button" disabled', $preview );
+		$this->assertTrue( PreviewSanitizer::accepts( $preview ) );
 		$invalid = $renderer->render(
 			new ElementNode(
 				'hostile-field',
@@ -1679,7 +1708,7 @@ final class ElementDefinitionRegistryTest extends TestCase {
 			),
 			new RenderContext()
 		);
-		$this->assertStringContainsString( 'name="field" autocomplete="off"', $invalid );
+		$this->assertStringContainsString( 'name="fields[field]" autocomplete="off"', $invalid );
 		$this->assertFalse( PreviewSanitizer::accepts( '<input onfocus="alert(1)">' ) );
 		$date_range = $renderer->render( new ElementNode( 'dates-safe', 'blixis/date-range-picker', [ 'ariaLabel' => 'Trip' ] ), new RenderContext() );
 		$this->assertStringContainsString( 'type="date" name="date-range[start]"', $date_range );

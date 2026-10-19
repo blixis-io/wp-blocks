@@ -34070,7 +34070,8 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       endpointRef: {
         type: 'action-ref',
         default: null,
-        description: 'Registered secure server-side form handler.',
+        description:
+          'Null uses the built-in site-admin-email handler, which stores no entries; other references require a registered provider.',
         required: false,
       },
       successMessage: {
@@ -40629,7 +40630,8 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       endpointRef: {
         type: 'action-ref',
         default: null,
-        description: 'Registered secure server-side form handler.',
+        description:
+          'Null uses the built-in site-admin-email handler, which stores no entries; other references require a registered provider.',
         required: false,
       },
       successMessage: {
@@ -40922,7 +40924,8 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       endpointRef: {
         type: 'action-ref',
         default: null,
-        description: 'Registered secure server-side form handler.',
+        description:
+          'Null uses the built-in site-admin-email handler, which stores no entries; other references require a registered provider.',
         required: false,
       },
       successMessage: {

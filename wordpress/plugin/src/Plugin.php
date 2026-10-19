@@ -22,6 +22,7 @@ use Blixis\Builder\Canvas\PageShell;
 use Blixis\Builder\Rest\PageSettingsController;
 use Blixis\Builder\Seo\Head;
 use Blixis\Builder\Rest\TemplateController;
+use Blixis\Builder\Rest\FormSubmissionController;
 use Blixis\Builder\Templates\FontCollection;
 use Blixis\Builder\Admin\AdminMenu;
 
@@ -45,6 +46,7 @@ final class Plugin {
 		);
 		add_filter( 'blixis_builder_templates_admin_url', static fn() => admin_url( 'admin.php?page=blixis-templates' ) );
 		add_action( 'admin_post_blixis_install_template_fonts', [ TemplateController::class, 'admin_install' ] );
+		FormSubmissionController::hooks();
 		\add_filter( 'blixis_builder_admin_menu_slug', static fn() => AdminMenu::SLUG );
 		AdminMenu::hooks();
 		\add_action( 'init', [ self::class, 'load_text_domain' ] );

@@ -11,9 +11,10 @@ namespace Blixis\Builder\Preview;
 
 /** Inspects tags and attributes only; ordinary text is never treated as markup. */
 final class PreviewSanitizer {
-	private const FORBIDDEN_TAGS = [ 'html', 'body', 'script', 'iframe', 'object', 'embed', 'link', 'meta', 'base', 'style' ];
-	private const SVG_TAGS       = [ 'svg', 'path', 'circle' ];
-	private const URL_ATTRIBUTES = [ 'href', 'src', 'xlink:href', 'action', 'formaction', 'poster' ];
+	private const FORBIDDEN_TAGS     = [ 'html', 'body', 'script', 'iframe', 'object', 'embed', 'link', 'meta', 'base', 'style' ];
+	private const SVG_TAGS           = [ 'svg', 'path', 'circle' ];
+	private const URL_ATTRIBUTES     = [ 'href', 'src', 'xlink:href', 'action', 'formaction', 'poster' ];
+	private const FORM_CONTROL_TYPES = [ 'text', 'email', 'password', 'number', 'url', 'search', 'hidden' ];
 
 	/**
 	 * Apply the documented contract.
@@ -27,6 +28,7 @@ final class PreviewSanitizer {
 		$offset      = 0;
 		$inside_svg  = false;
 		$inside_form = false;
+		$form_kind   = '';
 		while ( true ) {
 			$start = \strpos( $html, '<', $offset );
 			if ( false === $start ) {
@@ -37,7 +39,7 @@ final class PreviewSanitizer {
 				return false;
 			}
 			$tag = \substr( $html, $start + 1, $end - $start - 1 );
-			if ( \str_contains( $tag, '<' ) || ! self::accepts_tag( $tag, $inside_svg, $inside_form ) ) {
+			if ( \str_contains( $tag, '<' ) || ! self::accepts_tag( $tag, $inside_svg, $inside_form, $form_kind ) ) {
 				return false;
 			}
 			$offset = $end + 1;
@@ -66,9 +68,10 @@ final class PreviewSanitizer {
 	 *
 	 * @param string $source Source.
 	 * @param bool   $inside_svg Whether the current tag is inside a permitted SVG.
-	 * @param bool   $inside_form Whether the current tag is inside a permitted search form.
+	 * @param bool   $inside_form Whether the current tag is inside a permitted form.
+	 * @param string $form_kind The permitted form kind.
 	 */
-	private static function accepts_tag( string $source, bool &$inside_svg, bool &$inside_form ): bool {
+	private static function accepts_tag( string $source, bool &$inside_svg, bool &$inside_form, string &$form_kind ): bool {
 		if ( 1 !== \preg_match( '~^\s*(/?)\s*([a-z][a-z0-9:-]*)(.*)$~isD', $source, $match ) ) {
 			return false;
 		}
@@ -76,7 +79,8 @@ final class PreviewSanitizer {
 		if ( \in_array( $name, self::FORBIDDEN_TAGS, true ) || ( $inside_svg && ! \in_array( $name, self::SVG_TAGS, true ) ) ) {
 			return false;
 		}
-		if ( $inside_form && ! \in_array( $name, [ 'form', 'label', 'input', 'button' ], true ) ) {
+		$submission_feedback = $inside_form && 'submission' === $form_kind && \in_array( $name, [ 'div', 'p', 'strong' ], true );
+		if ( $inside_form && ! $submission_feedback && ! \in_array( $name, [ 'form', 'label', 'input', 'button' ], true ) ) {
 			return false;
 		}
 		$rest = $match[3];
@@ -86,6 +90,7 @@ final class PreviewSanitizer {
 					return false;
 				}
 				$inside_form = false;
+				$form_kind   = '';
 				return true;
 			}
 			if ( '' !== \trim( $rest ) || ( $inside_svg && 'svg' !== $name ) || ( ! $inside_svg && \in_array( $name, self::SVG_TAGS, true ) ) ) {
@@ -129,7 +134,9 @@ final class PreviewSanitizer {
 					return false;
 				}
 				$form_attributes[ $key ] = $value;
-			} elseif ( $inside_form && ! self::accepts_search_control_attribute( $name, $key, $value ) ) {
+			} elseif ( $inside_form && $submission_feedback && ! self::accepts_feedback_attribute( $key, $value ) ) {
+				return false;
+			} elseif ( $inside_form && ! $submission_feedback && ! self::accepts_form_control_attribute( $name, $key, $value, $form_kind ) ) {
 				return false;
 			}
 			if ( \str_starts_with( $key, 'on' ) || \in_array( $key, [ 'style', 'srcdoc' ], true ) ) {
@@ -146,12 +153,86 @@ final class PreviewSanitizer {
 			$rest = $attribute[5];
 		}
 		if ( 'form' === $name ) {
-			if ( 'search' !== ( $form_attributes['role'] ?? '' ) || 'get' !== \strtolower( $form_attributes['method'] ?? '' ) || ! self::is_same_origin_url( $form_attributes['action'] ?? '' ) ) {
+			$method = \strtolower( $form_attributes['method'] ?? '' );
+			if ( ! self::is_same_origin_url( $form_attributes['action'] ?? '' ) ) {
+				return false;
+			}
+			if ( 'search' === ( $form_attributes['role'] ?? '' ) && 'get' === $method && 'blixis/site-search' === ( $form_attributes['data-blx-type'] ?? '' ) ) {
+				$form_kind = 'search';
+			} elseif ( 'post' === $method && \in_array( $form_attributes['data-blx-form'] ?? '', [ 'contact', 'newsletter' ], true ) && \in_array( $form_attributes['data-blx-type'] ?? '', [ 'blixis/form', 'blixis/contact-form', 'blixis/newsletter-signup' ], true ) ) {
+				$form_kind = 'submission';
+			} else {
 				return false;
 			}
 			$inside_form = true;
 		}
 		return true;
+	}
+
+	/** Permit only the renderer's same-site search and submission form attributes.
+	 *
+	 * @param string $tag Tag name.
+	 * @param string $key Attribute name.
+	 * @param string $value Attribute value.
+	 * @param string $form_kind Form kind.
+	 */
+	private static function accepts_form_control_attribute( string $tag, string $key, string $value, string $form_kind ): bool {
+		if ( 'search' === $form_kind ) {
+			return self::accepts_search_control_attribute( $tag, $key, $value );
+		}
+		if ( 'data-blx-id' === $key ) {
+			return 1 === \preg_match( '/^[A-Za-z0-9_-]{1,128}$/D', $value );
+		}
+		if ( 'data-blx-type' === $key ) {
+			return 1 === \preg_match( '~^blixis/(?:form|contact-form|newsletter-signup|(?:text|email|password|number|url|search|hidden)-field|submit-button)$~D', $value );
+		}
+		if ( 'class' === $key ) {
+			return 'label' === $tag ? 'screen-reader-text' === $value : 1 === \preg_match( '/^blx-(?:c-)?[0-9a-f]{12}(?: blx-(?:c-)?[0-9a-f]{12})*$/D', $value );
+		}
+		if ( 'label' === $tag ) {
+			return ( 'for' === $key && 1 === \preg_match( '/^blx-field-[0-9a-f]{12}$/D', $value ) ) || ( 'aria-hidden' === $key && 'true' === $value );
+		}
+		if ( 'button' === $tag ) {
+			return 'type' === $key && 'submit' === $value;
+		}
+		if ( 'input' !== $tag ) {
+			return false;
+		}
+		$patterns = [
+			'id'           => '/^(?:blx-field-[0-9a-f]{12}|_wpnonce)$/D',
+			'type'         => '/^(?:' . \implode( '|', self::FORM_CONTROL_TYPES ) . ')$/D',
+			'name'         => '/^(?:action|post_id|form_id|_wpnonce|company_website|fields\[[A-Za-z][A-Za-z0-9_.:-]{0,63}\])$/D',
+			'autocomplete' => '/^(?:off|on|name|email|username|new-password|current-password|url|search|tel|given-name|family-name)$/D',
+			'value'        => '/^[^\x00]*$/D',
+			'placeholder'  => '/^[^\x00]*$/D',
+			'tabindex'     => '/^-1$/D',
+			'minlength'    => '/^\d{1,5}$/D',
+			'maxlength'    => '/^\d{1,5}$/D',
+			'min'          => '/^-?\d+(?:\.\d+)?$/D',
+			'max'          => '/^-?\d+(?:\.\d+)?$/D',
+		];
+		if ( 'required' === $key || 'disabled' === $key ) {
+			return '' === $value;
+		}
+		return isset( $patterns[ $key ] ) && 1 === \preg_match( $patterns[ $key ], $value );
+	}
+
+	/** Permit only safe status markup inside a submission form.
+	 *
+	 * @param string $key Attribute name.
+	 * @param string $value Attribute value.
+	 */
+	private static function accepts_feedback_attribute( string $key, string $value ): bool {
+		if ( 'role' === $key ) {
+			return \in_array( $value, [ 'status', 'alert' ], true );
+		}
+		if ( 'data-blx-id' === $key ) {
+			return 1 === \preg_match( '/^[A-Za-z0-9_-]{1,128}$/D', $value );
+		}
+		if ( 'data-blx-type' === $key ) {
+			return 'blixis/form-success' === $value || 'blixis/form-error' === $value;
+		}
+		return 'class' === $key && 1 === \preg_match( '/^blx-(?:c-)?[0-9a-f]{12}(?: blx-(?:c-)?[0-9a-f]{12})*$/D', $value );
 	}
 
 	/** Permit only the attributes required by a native same-site search form.
@@ -160,11 +241,26 @@ final class PreviewSanitizer {
 	 * @param string $value Attribute value.
 	 */
 	private static function accepts_search_form_attribute( string $key, string $value ): bool {
+		if ( 'data-blx-id' === $key ) {
+			return 1 === \preg_match( '/^[A-Za-z0-9_-]{1,128}$/D', $value );
+		}
+		if ( 'data-blx-type' === $key ) {
+			return 'blixis/site-search' === $value || \in_array( $value, [ 'blixis/form', 'blixis/contact-form', 'blixis/newsletter-signup' ], true );
+		}
+		if ( 'data-blx-form' === $key ) {
+			return \in_array( $value, [ 'contact', 'newsletter' ], true );
+		}
+		if ( 'aria-label' === $key ) {
+			return '' !== $value && ! \str_contains( $value, "\0" );
+		}
+		if ( 'class' === $key ) {
+			return 1 === \preg_match( '/^blx-(?:c-)?[0-9a-f]{12}(?: blx-(?:c-)?[0-9a-f]{12})*$/D', $value );
+		}
 		if ( 'role' === $key ) {
 			return 'search' === $value;
 		}
 		if ( 'method' === $key ) {
-			return 'get' === \strtolower( $value );
+			return \in_array( \strtolower( $value ), [ 'get', 'post' ], true );
 		}
 		if ( 'action' === $key ) {
 			return self::is_same_origin_url( $value );
