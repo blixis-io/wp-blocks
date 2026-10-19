@@ -1156,7 +1156,7 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		$label   = $node->value( 'ariaLabel' );
 		$label   = is_string( $label ) && '' !== trim( $label ) ? $label : $this->translate_label( 'Progress' );
 		$visible = true === $node->value( 'showLabel', true ) ? '<span>' . (int) round( $percent ) . '%</span>' : '';
-		return '<div' . $hooks . ' data-blx-progress-ring role="progressbar" aria-label="' . Escape::attr( $label ) . '" aria-valuemin="0" aria-valuemax="' . Escape::attr( sprintf( '%g', $max ) ) . '" aria-valuenow="' . Escape::attr( sprintf( '%g', $value ) ) . '"><svg aria-hidden="true" viewBox="0 0 48 48"><circle cx="24" cy="24" r="20" pathLength="100" fill="none" stroke="currentColor" opacity="0.2" stroke-width="4"></circle><circle cx="24" cy="24" r="20" pathLength="100" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="' . Escape::attr( sprintf( '%g', $percent ) ) . ' 100" transform="rotate(-90 24 24)"></circle></svg>' . $visible . '</div>';
+		return '<div' . $hooks . ' data-blx-progress-ring role="progressbar" aria-label="' . Escape::attr( $label ) . '" aria-valuemin="0" aria-valuemax="' . Escape::attr( sprintf( '%g', $max ) ) . '" aria-valuenow="' . Escape::attr( sprintf( '%g', $value ) ) . '"><svg aria-hidden="true" viewBox="0 0 48 48"><circle cx="24" cy="24" r="20" pathLength="100" fill="none" stroke="currentColor" opacity="0.2" stroke-width="4"/><circle cx="24" cy="24" r="20" pathLength="100" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="' . Escape::attr( sprintf( '%g', $percent ) ) . ' 100" transform="rotate(-90 24 24)"/></svg>' . $visible . '</div>';
 	}
 
 	/** Render disclosure sections with native keyboard and no-script behavior.

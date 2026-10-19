@@ -326,6 +326,13 @@ final class PreviewSanitizer {
 	 * @param string $value Style value.
 	 */
 	private static function accepts_style( string $value ): bool {
+		if ( 1 === \preg_match( '/^--blx-sticky-offset:(?:0(?:\.[0-9]{1,4})?|[1-9][0-9]{0,2}(?:\.[0-9]{1,4})?)px$/D', $value ) ) {
+			return (float) \substr( $value, \strlen( '--blx-sticky-offset:' ), -2 ) <= 256;
+		}
+		if ( 1 === \preg_match( '/^--blx-motion-duration:(?:0|[1-9][0-9]{0,3})ms;--blx-motion-delay:(?:0|[1-9][0-9]{0,3})ms;--blx-motion-easing:(?:linear|ease|ease-in|ease-out|ease-in-out)$/D', $value ) ) {
+			\preg_match( '/^--blx-motion-duration:([0-9]+)ms;--blx-motion-delay:([0-9]+)ms;/', $value, $timing );
+			return (int) ( $timing[1] ?? 10001 ) <= 3000 && (int) ( $timing[2] ?? 10001 ) <= 3000;
+		}
 		if ( 1 === \preg_match( '/^--blx-hotspot-x:(?:100|[1-9]?[0-9](?:\.[0-9]{1,2})?)%;--blx-hotspot-y:(?:100|[1-9]?[0-9](?:\.[0-9]{1,2})?)%$/D', $value ) ) {
 			return true;
 		}
@@ -342,20 +349,24 @@ final class PreviewSanitizer {
 	 */
 	private static function accepts_svg_attribute( string $key, string $value ): bool {
 		$patterns = [
-			'viewbox'         => '/^0 0 24 24$/D',
-			'width'           => '/^(?:1em|[1-9][0-9]?|1[01][0-9]|12[0-8])$/D',
-			'height'          => '/^(?:1em|[1-9][0-9]?|1[01][0-9]|12[0-8])$/D',
-			'fill'            => '/^(?:none|currentColor)$/D',
-			'stroke'          => '/^(?:none|currentColor)$/D',
-			'stroke-width'    => '/^(?:[0-9](?:\.[0-9]{1,2})?)$/D',
-			'stroke-linecap'  => '/^(?:round|butt|square)$/D',
-			'stroke-linejoin' => '/^(?:round|bevel|miter)$/D',
-			'focusable'       => '/^(?:true|false)$/D',
-			'aria-hidden'     => '/^(?:true|false)$/D',
-			'cx'              => '/^[0-9]{1,2}(?:\.[0-9]{1,2})?$/D',
-			'cy'              => '/^[0-9]{1,2}(?:\.[0-9]{1,2})?$/D',
-			'r'               => '/^[0-9]{1,2}(?:\.[0-9]{1,2})?$/D',
-			'd'               => '/^[MmLlHhVvCcSsQqTtAaZz0-9 .,+-]+$/D',
+			'viewbox'          => '/^0 0 (?:24 24|48 48)$/D',
+			'width'            => '/^(?:1em|[1-9][0-9]?|1[01][0-9]|12[0-8])$/D',
+			'height'           => '/^(?:1em|[1-9][0-9]?|1[01][0-9]|12[0-8])$/D',
+			'fill'             => '/^(?:none|currentColor)$/D',
+			'stroke'           => '/^(?:none|currentColor)$/D',
+			'stroke-width'     => '/^(?:[0-9](?:\.[0-9]{1,2})?)$/D',
+			'stroke-linecap'   => '/^(?:round|butt|square)$/D',
+			'stroke-linejoin'  => '/^(?:round|bevel|miter)$/D',
+			'focusable'        => '/^(?:true|false)$/D',
+			'aria-hidden'      => '/^(?:true|false)$/D',
+			'opacity'          => '/^(?:0|1|0?\.\d{1,3})$/D',
+			'pathlength'       => '/^100$/D',
+			'stroke-dasharray' => '/^(?:100|[0-9]{1,2}(?:\.\d{1,4})?) 100$/D',
+			'transform'        => '/^rotate\(-90 24 24\)$/D',
+			'cx'               => '/^[0-9]{1,2}(?:\.[0-9]{1,2})?$/D',
+			'cy'               => '/^[0-9]{1,2}(?:\.[0-9]{1,2})?$/D',
+			'r'                => '/^[0-9]{1,2}(?:\.[0-9]{1,2})?$/D',
+			'd'                => '/^[MmLlHhVvCcSsQqTtAaZz0-9 .,+-]+$/D',
 		];
 		return isset( $patterns[ $key ] ) && 1 === \preg_match( $patterns[ $key ], $value );
 	}
