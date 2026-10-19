@@ -44,7 +44,7 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 	 * @param string $archetype Archetype name.
 	 */
 	public function supports( string $archetype ): bool {
-		return in_array( $archetype, [ 'container','simple','text','richtext','heading','button','link','image','gallery','video','audio','embed','iframe','pdf-viewer','map','navigation','pagination','list','loop','code','accordion','tabs','steps','overlay','alert','progress','counter','countdown','icon','dynamic','card','layout','section','page','site-header','site-footer','site-logo','row','columns','grid','stack','input','choice','toggle','range','datatable','chart','rating','calendar','command','carousel' ], true ); }
+		return in_array( $archetype, [ 'container','simple','text','richtext','heading','button','link','image','gallery','video','audio','embed','iframe','pdf-viewer','map','navigation','pagination','list','loop','code','accordion','tabs','steps','overlay','alert','progress','counter','countdown','icon','dynamic','card','layout','section','page','site-header','site-footer','site-logo','row','columns','grid','stack','input','choice','toggle','range','datatable','chart','rating','calendar','command','carousel','animation' ], true ); }
 	/** Render an element with escaped text and allowlisted tags/attributes.
 	 *
 	 * @param ElementNode   $node Element input.
@@ -54,7 +54,7 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		$id         = preg_replace( '~^blixis/~', '', $node->type );
 		$definition = $this->definitions->get( (string) $id );
 		$archetype  = is_array( $definition ) ? (string) ( $definition['archetype'] ?? '' ) : '';
-		if ( ! $this->supports( $archetype ) || ( 'loop' === $archetype && ! in_array( $id, [ 'query-loop', 'related-posts' ], true ) ) ) {
+		if ( ! $this->supports( $archetype ) || ( 'loop' === $archetype && ! in_array( $id, [ 'query-loop', 'related-posts' ], true ) ) || ( 'animation' === $archetype && ! in_array( $id, [ 'entrance-animation', 'scroll-reveal' ], true ) ) ) {
 			return ( new StaticFallbackRenderer() )->render( $node, $context );
 		}
 		$tag = self::TAGS[ (string) $id ] ?? match ( $archetype ) {
@@ -68,6 +68,9 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 			}
 		}
 		$hooks = Escape::hooks( $node );
+		if ( in_array( $id, [ 'entrance-animation', 'scroll-reveal' ], true ) ) {
+			return $this->render_motion_reveal( $node, $hooks, $context->children_html );
+		}
 		if ( 'button-group' === $id ) {
 			$hooks .= ' role="group"';
 		}
@@ -405,6 +408,26 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 			return '<div' . $hooks . ' data-blx-missing-media></div>';
 		}
 		return '<' . $tag . $hooks . '>' . $context->children_html . '</' . $tag . '>';
+	}
+
+	/** Render an entrance/reveal with a visible static fallback.
+	 *
+	 * @param ElementNode $node Element settings.
+	 * @param string      $hooks Validated element hooks.
+	 * @param string      $children Rendered children.
+	 */
+	private function render_motion_reveal( ElementNode $node, string $hooks, string $children ): string {
+		$effect   = $node->value( 'effect', 'fade-in' );
+		$effect   = is_string( $effect ) && in_array( $effect, [ 'fade-in', 'slide-in-left', 'slide-in-right', 'slide-in-up', 'scale-in' ], true ) ? $effect : 'fade-in';
+		$trigger  = $node->value( 'trigger', 'viewport-enter' );
+		$trigger  = is_string( $trigger ) && in_array( $trigger, [ 'viewport-enter', 'page-load' ], true ) ? $trigger : 'static';
+		$duration = $node->value( 'durationMs', 600 );
+		$duration = is_numeric( $duration ) ? max( 0, min( 3000, (int) $duration ) ) : 600;
+		$delay    = $node->value( 'delayMs', 0 );
+		$delay    = is_numeric( $delay ) ? max( 0, min( 3000, (int) $delay ) ) : 0;
+		$easing   = $node->value( 'easing', 'ease-out' );
+		$easing   = is_string( $easing ) && in_array( $easing, [ 'linear', 'ease', 'ease-in', 'ease-out', 'ease-in-out' ], true ) ? $easing : 'ease-out';
+		return '<div' . $hooks . ' data-blx-motion="' . Escape::attr( $trigger ) . '" data-blx-motion-effect="' . Escape::attr( $effect ) . '" style="--blx-motion-duration:' . $duration . 'ms;--blx-motion-delay:' . $delay . 'ms;--blx-motion-easing:' . Escape::attr( $easing ) . '">' . $children . '</div>';
 	}
 
 	/** Render a safe, two-image comparison with a static fallback and progressive range control.

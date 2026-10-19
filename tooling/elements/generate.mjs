@@ -55,6 +55,8 @@ const editorReady = new Set([
   'table-of-posts',
   'dynamic-tag',
   'user-profile',
+  'entrance-animation',
+  'scroll-reveal',
   'icon-list',
   'icon',
   'icon-svg',
