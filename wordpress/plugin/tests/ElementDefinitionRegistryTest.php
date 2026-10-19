@@ -27,6 +27,7 @@ if ( ! \defined( 'ABSPATH' ) ) {
 	\define( 'ABSPATH', \dirname( __DIR__ ) . '/' ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound -- Test fixture.
 }
 require_once \dirname( __DIR__ ) . '/src/Autoloader.php';
+require_once __DIR__ . '/ElementRendererWordPressStubs.php';
 Autoloader::register();
 
 /** Tests for generated element definition metadata. */
@@ -42,6 +43,53 @@ final class ElementDefinitionRegistryTest extends TestCase {
 		$this->assertSame( 'ready', $registry->get( 'post-title' )['status'] ?? null );
 		$this->assertSame( 'ready', $registry->get( 'site-search' )['status'] ?? null );
 		$this->assertSame( 'ready', $registry->get( 'show-more' )['status'] ?? null );
+	}
+
+	/** Every definition marked ready must use an implemented renderer rather than the generic unsupported wrapper. */
+	public function test_ready_generated_definitions_do_not_use_unsupported_renderer(): void {
+		$registry                     = ElementDefinitionRegistry::from_manifest_file( \dirname( __DIR__ ) . '/data/element-definitions-v2.json' );
+		$media                        = new class() implements AssetReferenceResolver {
+			/** No attachment is available in this catalog-wide renderer contract test.
+			 *
+			 * @param int $attachment_id Attachment identifier.
+			 */
+			public function resolve( int $attachment_id ): ?array {
+				return null;
+			}
+			/** No imported asset is available in this catalog-wide renderer contract test.
+			 *
+			 * @param string $reference Asset reference.
+			 */
+			public function resolve_reference( string $reference ): ?array {
+				return null;
+			}
+		};
+		$renderer                     = new DefinitionArchetypeRenderer( $registry, $media );
+		$unsupported                  = [];
+		$empty                        = [];
+		$empty_when_context_is_absent = [ 'comments-list', 'featured-image', 'form-error', 'form-success', 'query-pagination' ];
+		foreach ( $registry->all() as $definition ) {
+			if ( 'ready' !== ( $definition['status'] ?? null ) ) {
+				continue;
+			}
+			$example = $definition['exampleInstance'] ?? [];
+			$html    = $renderer->render(
+				new ElementNode(
+					(string) ( $example['id'] ?? 'ready-catalog-element' ),
+					'blixis/' . (string) $definition['id'],
+					is_array( $example['props'] ?? null ) ? $example['props'] : []
+				),
+				new RenderContext()
+			);
+			if ( str_contains( $html, 'data-blx-unsupported' ) ) {
+				$unsupported[] = (string) $definition['id'];
+			}
+			if ( '' === $html && ! in_array( $definition['id'], $empty_when_context_is_absent, true ) ) {
+				$empty[] = (string) $definition['id'];
+			}
+		}
+		$this->assertSame( [], $unsupported, 'Ready catalog entries fell through to the unsupported renderer.' );
+		$this->assertSame( [], $empty, 'Ready catalog entries returned no public markup for their documented example.' );
 	}
 
 	/** The document renderer keeps a configured safe local icon glyph instead of silently using the default. */
@@ -116,7 +164,7 @@ final class ElementDefinitionRegistryTest extends TestCase {
 		$this->assertStringContainsString( 'type="search" name="s" value="" placeholder="Search…"><button type="submit">Search</button>', $search );
 		$this->assertTrue( PreviewSanitizer::accepts( $search ) );
 		$this->assertSame( '', $renderer->render( new ElementNode( 'featured', 'blixis/featured-image', [] ), new RenderContext() ) );
-		$this->assertSame( '', $renderer->render( new ElementNode( 'query', 'blixis/query-loop', [] ), new RenderContext() ) );
+		$this->assertSame( '<p data-blx-id="query" data-blx-type="blixis/query-loop">No results</p>', $renderer->render( new ElementNode( 'query', 'blixis/query-loop', [] ), new RenderContext() ) );
 		$this->assertSame( '<p data-blx-id="query-ref" data-blx-type="blixis/query-loop">No results</p>', $renderer->render( new ElementNode( 'query-ref', 'blixis/query-loop', [ 'queryRef' => [ 'id' => 'unregistered' ] ] ), new RenderContext() ) );
 		$this->assertSame(
 			'<span data-blx-id="binding" data-blx-type="blixis/dynamic-tag">Safe fallback</span>',
