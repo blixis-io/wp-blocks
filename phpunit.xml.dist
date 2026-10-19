@@ -22,5 +22,8 @@
 		<testsuite name="plugin">
 			<directory>wordpress/plugin/tests</directory>
 		</testsuite>
+		<testsuite name="pro">
+			<directory>wordpress/pro/tests</directory>
+		</testsuite>
 	</testsuites>
 </phpunit>

@@ -9,5 +9,12 @@
     "@blixis/wp-core": "workspace:*",
     "@blixis/wp-element-registry": "workspace:*",
     "@blixis/wp-capabilities": "workspace:*"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
   }
 }

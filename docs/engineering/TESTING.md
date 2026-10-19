@@ -51,6 +51,7 @@ Initial targets: core schema/state/style packages >= 90% branch where meaningful
 
 - Use deterministic seeded WP fixtures, local Docker or wp-env, fixed clock/timezone, known font fixtures, sampled theme variations.
 - Run WordPress 7.0 and 7.1 against PHP 8.2, 8.3 and 8.5 in the pull request integration smoke matrix; pin every container image by digest.
+- Structure outline interactions use dnd-kit pointer and keyboard sensors for up to 250 visible rows; larger outlines keep keyboard reorder (Alt+Arrow keys) and omit per-row drag registration to keep rendering responsive. Verify sibling reorder, compatible-container nesting, rejection of invalid nesting, drop-target indication, keyboard reorder, and locked-document behavior.
 - Secrets only in GitHub Actions secrets; separate isolated DB per parallel worker.
 - Preserve failing Playwright traces/screenshots and PHP logs as restricted CI artifacts.
 

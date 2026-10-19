@@ -12,7 +12,7 @@ The current registry is a small, validated TypeScript/PHP contract. `docs/elemen
 
 The generator validates every definition against `schemas/element-definition.schema.json`, checks its catalog identity and emits a versioned manifest, palette catalog, TypeScript ID union and Solar icon report. Generated output is committed and must pass `pnpm check:elements`. `sync:plugin-manifest` copies the PHP-consumed generated manifest into the distributable data directory.
 
-Definitions are data. An archetype renderer implements safe behavior shared by compatible elements; a definition supplies semantic tag options, property constraints, defaults and controls. An element is insertable only when status is `ready`; `planned` remains discoverable in the development palette when `showPlannedElements` is enabled. Tier is displayed metadata and never disables existing saved output. PHP exposes `blixis_builder_element_entitlement`; editor integrations expose an equivalent filter whose default is `available`. Server enforcement of restricted editing is a later phase.
+Definitions are data. An archetype renderer implements safe behavior shared by compatible elements; a definition supplies semantic tag options, property constraints, defaults and controls. An element is insertable only when status is `ready`; `planned` remains discoverable in the development palette when `showPlannedElements` is enabled. Tier is displayed metadata and never disables existing saved output. PHP exposes `blixis_builder_element_entitlement`; editor integrations expose an equivalent filter whose default is `available`. Server enforcement of changed paid content is implemented by the versioned capability API: REST writes require the active add-on's server grant, while unchanged saved content, deletion, and rendering remain available.
 
 Each instance has `{ id, type, props, styles, children }`. `type` resolves to a definition, and props are checked for declared type, enum, bounds, required/default behavior, localization and `editorOnly` exclusion from frontend output. Unknown legacy content is retained and safely falls back; it is never silently discarded. Unsafe HTML is never accepted. URL, class, id, semantic tag, asset reference, style and motion values use explicit allowlists; media resolves only through manifest references and WordPress attachments. Motion honors reduced-motion preferences.
 
@@ -39,3 +39,5 @@ Schema validation and freshness checks run in CI; TS and PHP validate shared ins
 ## Rollback
 
 Remove v2 consumers while retaining generated source artifacts and the original registry. No stored document migration is required to disable v2 reading because legacy type/property aliases remain supported.
+
+The capability and renderer hooks are additive. Disabling an add-on removes its renderer and blocks new or changed premium data, but preserves existing documents and the Builder's safe static fallback.
