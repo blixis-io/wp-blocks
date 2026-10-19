@@ -78,10 +78,18 @@ try {
     await send('Page.navigate', { url });
     await sleep(500);
   };
+  const waitFor = async (expression, message) => {
+    for (let attempt = 0; attempt < 50; attempt += 1) {
+      if (await evaluate(expression)) return;
+      await sleep(100);
+    }
+    throw new Error(message);
+  };
   await send('Page.enable');
   await send('Runtime.enable');
   await send('DOM.enable');
   await navigate(`${SITE}/wp-login.php`);
+  await waitFor(`!!document.querySelector('#user_login')`, 'WordPress login form becomes available');
   await evaluate(
     `document.querySelector('#user_login').value='admin';document.querySelector('#user_pass').value='password';document.querySelector('#wp-submit').click()`,
   );
@@ -92,7 +100,7 @@ try {
     ['blixis-templates', 'Use templates from the Setup Wizard'],
     ['blixis-theme-builder', 'Theme Builder is coming soon'],
     ['blixis-assets', 'Upload Files'],
-    ['blixis-settings', 'Show the setup notice in the admin'],
+    ['blixis-settings', 'Demo preview · no license server is connected'],
     ['blixis-help', 'Copy diagnostics'],
   ];
   for (const [slug, expected] of pages) {
@@ -103,6 +111,23 @@ try {
     assert.ok(state.text.includes(expected), `${slug} opens and displays expected content`);
     assert.ok(state.menu.includes('Blixis'), 'the WordPress sidebar contains Blixis');
   }
+  await navigate(`${SITE}/wp-admin/admin.php?page=blixis-settings`);
+  await waitFor(`!!document.querySelector('[data-license-renew]')`, 'license demo controls are available');
+  await evaluate(`document.querySelector('[data-license-renew]').click()`);
+  assert.ok(
+    await evaluate(`document.querySelector('[data-license-feedback]').textContent.includes('no request was made')`),
+    'renew shows a clear demo-only message without contacting a service',
+  );
+  await evaluate(`document.querySelector('[data-license-replace]').click()`);
+  await evaluate(
+    `document.querySelector('[data-license-input]').value='mock-key-1234';document.querySelector('[data-license-apply]').click()`,
+  );
+  const licensePreview = await evaluate(
+    `({key:document.querySelector('[data-license-key]').textContent,body:document.body.innerText,hidden:document.querySelector('[data-license-replace-panel]').hidden})`,
+  );
+  assert.equal(licensePreview.key, 'BLIXIS-DEMO-••••-1234', 'replacement only changes the masked in-memory preview');
+  assert.ok(!licensePreview.body.includes('mock-key-1234'), 'raw license input is not shown in page text');
+  assert.ok(licensePreview.hidden, 'the replacement form closes after preview');
   const labels = await evaluate(
     `(document.querySelector('#adminmenu').innerText.match(/Setup Wizard[\\s\\S]*?Help & Support/)||[])[0]`,
   );

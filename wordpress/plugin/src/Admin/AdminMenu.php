@@ -60,6 +60,20 @@ final class AdminMenu {
 				wp_script_add_data( 'blixis-assets', 'type', 'module' );
 			}
 		}
+		if ( 'blixis_page_blixis-settings' === $hook ) {
+			wp_enqueue_script( 'blixis-license-mock', $base . 'license.js', [], '1.0.0', true );
+			wp_localize_script(
+				'blixis-license-mock',
+				'blixisLicenseDemo',
+				[
+					'renewal'   => __( 'Renewal preview only. A future license service will handle renewal; no request was made.', 'blixis-builder' ),
+					'prompt'    => __( 'Enter a demo key to preview replacement. The value will not be saved or sent.', 'blixis-builder' ),
+					'cancelled' => __( 'Replacement preview cancelled.', 'blixis-builder' ),
+					'invalid'   => __( 'Enter at least 8 characters for this demo preview.', 'blixis-builder' ),
+					'replaced'  => __( 'Replacement preview shown. This demo change is not saved and no license was sent.', 'blixis-builder' ),
+				]
+			);
+		}
 	}
 	/** Register the minimal Settings API option. */
 	public static function settings(): void {
@@ -214,9 +228,18 @@ final class AdminMenu {
 				submit_button();
 				/* translators: 1: plugin version, 2: theme version. */
 				echo '</form><p>' . esc_html( sprintf( __( 'Blixis Builder %1$s · Blixis Theme %2$s', 'blixis-builder' ), self::plugin_version(), wp_get_theme( 'blixis' )->get( 'Version' ) ) ) . '</p><p>' . esc_html__( 'This plugin has no data-deletion option; uninstall removes only its version metadata.', 'blixis-builder' ) . '</p></section>';
+				self::license_mock();
 			},
 			true
 		); }
+	/** Render a non-persistent license-server UI prototype. */
+	private static function license_mock(): void {
+		$host = wp_parse_url( home_url( '/' ), PHP_URL_HOST );
+		if ( ! is_string( $host ) || '' === $host ) {
+			$host = __( 'This WordPress site', 'blixis-builder' );
+		}
+		echo '<section class="blx-admin__card blx-license" data-license-mock aria-labelledby="blx-license-title"><div class="blx-license__heading"><div><h2 id="blx-license-title">' . esc_html__( 'License', 'blixis-builder' ) . '</h2><p>' . esc_html__( 'Demo preview · no license server is connected. Demo actions do not save or send a license key.', 'blixis-builder' ) . '</p></div><span class="blx-license__status">' . esc_html__( 'Demo active', 'blixis-builder' ) . '</span></div><dl class="blx-license__details"><div><dt>' . esc_html__( 'Product', 'blixis-builder' ) . '</dt><dd>Blixis Pro</dd></div><div><dt>' . esc_html__( 'Plan', 'blixis-builder' ) . '</dt><dd>Pro · Demo</dd></div><div><dt>' . esc_html__( 'License key', 'blixis-builder' ) . '</dt><dd><code data-license-key>BLIXIS-PRO-DEMO-••••-42XX</code></dd></div><div><dt>' . esc_html__( 'This site', 'blixis-builder' ) . '</dt><dd>' . esc_html( $host ) . '</dd></div><div><dt>' . esc_html__( 'Expires', 'blixis-builder' ) . '</dt><dd>' . esc_html__( 'October 20, 2027 (demo)', 'blixis-builder' ) . '</dd></div><div><dt>' . esc_html__( 'Activations', 'blixis-builder' ) . '</dt><dd>1 / 3</dd></div></dl><div class="blx-license__actions"><button type="button" class="button" data-license-renew>' . esc_html__( 'Renew license', 'blixis-builder' ) . '</button><button type="button" class="button" data-license-replace>' . esc_html__( 'Replace license', 'blixis-builder' ) . '</button></div><div class="blx-license__replace" data-license-replace-panel hidden><label for="blx-license-new-key">' . esc_html__( 'New license key (demo only)', 'blixis-builder' ) . '</label><div><input id="blx-license-new-key" type="password" maxlength="80" autocomplete="off" data-license-input><button type="button" class="button button-primary" data-license-apply>' . esc_html__( 'Preview replacement', 'blixis-builder' ) . '</button><button type="button" class="button" data-license-cancel>' . esc_html__( 'Cancel', 'blixis-builder' ) . '</button></div></div><p class="blx-license__feedback" data-license-feedback role="status" aria-live="polite"></p></section>';
+	}
 	/** Render support links and safe diagnostics. */
 	public static function help(): void {
 		self::chrome(

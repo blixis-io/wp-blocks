@@ -82,4 +82,23 @@ final class AdminMenuTest extends TestCase {
 		$this->assertStringContainsString( '&lt;svg onload=alert(1)&gt;', $html );
 		$this->assertStringNotContainsString( '/private/template/source', $html );
 	}
+
+	#[RunInSeparateProcess]
+	#[PreserveGlobalState( false )]
+	/** The license panel clearly identifies its demo state and never emits a real key. */
+	public function test_license_panel_is_an_explicit_non_persistent_mock(): void {
+		// phpcs:ignore Squiz.PHP.Eval.Discouraged -- Escaping and URL functions are isolated WordPress test doubles.
+		eval( 'namespace { function esc_html__( $text, $domain = "" ) { return htmlspecialchars( (string) $text, ENT_QUOTES | ENT_SUBSTITUTE, "UTF-8" ); } function esc_html( $value ) { return htmlspecialchars( (string) $value, ENT_QUOTES | ENT_SUBSTITUTE, "UTF-8" ); } function wp_parse_url( $url, $component = -1 ) { return parse_url( $url, $component ); } function home_url( $path = "/" ) { return "https://blixis.test" . $path; } }' );
+		$method = new \ReflectionMethod( AdminMenu::class, 'license_mock' );
+		ob_start();
+		$method->invoke( null );
+		$html = (string) ob_get_clean();
+		$this->assertStringContainsString( 'data-license-mock', $html );
+		$this->assertStringContainsString( 'Demo preview', $html );
+		$this->assertStringContainsString( 'no license server is connected', $html );
+		$this->assertStringContainsString( 'data-license-renew', $html );
+		$this->assertStringContainsString( 'data-license-replace', $html );
+		$this->assertStringContainsString( 'BLIXIS-PRO-DEMO-', $html );
+		$this->assertStringNotContainsString( 'license_key', $html );
+	}
 }

@@ -55,6 +55,8 @@ REST saves check only newly created or changed paid nodes and their localized va
 
 Blixis Pro is a separate paid distribution with Builder API 2 and Plus dependencies. Plus exposes a versioned plan entitlement API; the default provider denies access, and Pro capabilities are only granted when a trusted server-side provider confirms the `pro` plan. Installing Pro alone never enables paid edits. Its WooCommerce adapter renders public product names, permalinks, prices, purchasability/stock availability, and cart count/subtotal/link using WooCommerce read APIs. Upsell and cross-sell lists use only the current product's corresponding WooCommerce relationship IDs, preserve that order, and remain bounded to the configured product limit. When WooCommerce is missing, or during editor preview, it emits inert fallback text. It does not handle checkout, payment, or order mutation. Paid package source remains excluded from public CI artifacts.
 
+The Builder Settings page includes a license-management UI mock for design review. Its status and key are demo data; renew and replace interactions are client-side previews only and do not save, transmit, or validate a key. The license server and trusted entitlement provider remain future integrations. Existing content continues rendering when a paid entitlement is absent.
+
 ## Not here yet
 
 Rich text, per-element style schemas and editor controls (BWB-053/054), broader third-party renderer registration, and the enforcement of the deprecation window (BWB-075).

@@ -41,6 +41,7 @@ import {
   TEXT_ALIGN_ICONS,
 } from '../index';
 import { CORE_ELEMENTS } from '@blixis/wp-element-registry';
+import { GENERATED_ELEMENT_ICONS } from '../icons/generated-element-icons';
 import sidebarCloseData from '@iconify-icons/solar/sidebar-close-line-duotone';
 import sidebarOpenData from '@iconify-icons/solar/sidebar-open-line-duotone';
 
@@ -332,6 +333,16 @@ describe('Icon', () => {
     // @ts-expect-error unknown semantic icon names are rejected at compile time
     const invalidName: IconProps['name'] = 'not-an-icon';
     expect(invalidName).toBe('not-an-icon');
+  });
+
+  it('uses each generated catalog icon for its element type', () => {
+    const types = Object.keys(GENERATED_ELEMENT_ICONS);
+    expect(types).toHaveLength(253);
+    for (const type of types) expect(elementIconName(type)).toBe(type);
+
+    const { container: productPrice } = render(<Icon name={elementIconName('blixis/product-price')} />);
+    const { container: fallback } = render(<Icon name="fallback" />);
+    expect(productPrice.querySelector('svg')?.innerHTML).not.toBe(fallback.querySelector('svg')?.innerHTML);
   });
 });
 
