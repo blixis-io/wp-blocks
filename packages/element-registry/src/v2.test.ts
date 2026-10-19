@@ -68,6 +68,9 @@ describe('generated v2 element registry', () => {
       expect(isElementInsertableV2(`blixis/${type}`)).toBe(true);
     }
     const registry = createEditorRegistry();
+    for (const definition of ELEMENT_DEFINITIONS_V2) {
+      expect(registry.has(`blixis/${definition.id}`)).toBe(definition.status === 'ready');
+    }
     expect(registry.get('blixis/query-loop')?.props['allowedPostTypes']?.kind).toBe('json');
     expect(registry.get('blixis/query-loop')?.props['maxItems']?.default).toBe(30);
     expect(registry.get('blixis/featured-image')?.props['assetRef']?.kind).toBe('string');

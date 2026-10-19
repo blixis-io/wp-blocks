@@ -32071,7 +32071,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'rating',
-    status: 'ready',
+    status: 'planned',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -71374,7 +71374,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'ui-components',
     icon: 'solar:star-linear',
     tier: 'free',
-    status: 'ready',
+    status: 'planned',
     keywords:
       'rating rating ui-components rating element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
