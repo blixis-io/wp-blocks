@@ -42149,7 +42149,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'image',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -43942,7 +43942,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'dynamic',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -44516,7 +44516,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'loop',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -45020,7 +45020,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'pagination',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -47117,7 +47117,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'loop',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -47396,7 +47396,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'card',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -47666,7 +47666,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'datatable',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -71874,7 +71874,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'wordpress',
     icon: 'solar:gallery-linear',
     tier: 'free',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'featured-image featured image wordpress featured image element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71951,7 +71951,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'wordpress',
     icon: 'solar:chat-line-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'comments-list comments list wordpress comments list element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71973,7 +71973,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'wordpress',
     icon: 'solar:repeat-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'query-loop query loop wordpress query loop element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -71995,7 +71995,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'wordpress',
     icon: 'solar:arrow-right-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'query-pagination query pagination wordpress query pagination element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -72083,7 +72083,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'wordpress',
     icon: 'solar:link-circle-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'related-posts related posts wordpress related posts element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -72094,7 +72094,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'wordpress',
     icon: 'solar:user-id-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'author-box author box wordpress author box element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
@@ -72105,7 +72105,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'wordpress',
     icon: 'solar:table-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'table-of-posts table of posts wordpress table of posts element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
