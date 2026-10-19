@@ -53671,7 +53671,7 @@
         ]
       },
       "archetype": "rating",
-      "status": "ready"
+      "status": "planned"
     },
     {
       "$schema": "../../schemas/element-definition.schema.json",

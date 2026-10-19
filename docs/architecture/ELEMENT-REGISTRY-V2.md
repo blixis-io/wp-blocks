@@ -8,7 +8,7 @@
 | --- | --- |
 | Authored definition | Definition schema v1; property types, defaults, required/localizable/editor-only flags, controls, archetype, structure, style and security metadata |
 | Generated registry manifest | All 253 definitions, fully qualified type (`blixis/<id>`), tier metadata, `ready`/`planned` status |
-| TypeScript | Generated `GeneratedElementId` and `GeneratedElementType`; editor runtime integration remains a follow-up slice |
+| TypeScript | Generated `GeneratedElementId` and `GeneratedElementType`; the editor runtime registers every generated definition marked `ready` and excludes every definition marked `planned` |
 | PHP | Distributable generated JSON plus validated registry metadata; renderers resolve an archetype with safe fallback |
 | Palette | Category, title, icon, tier badge, search keywords and status; planned items are opt-in in development |
 
