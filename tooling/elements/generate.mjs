@@ -60,6 +60,7 @@ const editorReady = new Set([
   'hover-tilt',
   'scroll-timeline',
   'stagger-container',
+  'typing-indicator',
   'icon-list',
   'icon',
   'icon-svg',

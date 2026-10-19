@@ -54,7 +54,7 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		$id         = preg_replace( '~^blixis/~', '', $node->type );
 		$definition = $this->definitions->get( (string) $id );
 		$archetype  = is_array( $definition ) ? (string) ( $definition['archetype'] ?? '' ) : '';
-		if ( ! $this->supports( $archetype ) || ( 'loop' === $archetype && ! in_array( $id, [ 'query-loop', 'related-posts' ], true ) ) || ( 'animation' === $archetype && ! in_array( $id, [ 'entrance-animation', 'scroll-reveal', 'hover-tilt', 'scroll-timeline', 'stagger-container' ], true ) ) ) {
+		if ( ! $this->supports( $archetype ) || ( 'loop' === $archetype && ! in_array( $id, [ 'query-loop', 'related-posts' ], true ) ) || ( 'animation' === $archetype && ! in_array( $id, [ 'entrance-animation', 'scroll-reveal', 'hover-tilt', 'scroll-timeline', 'stagger-container', 'typing-indicator' ], true ) ) ) {
 			return ( new StaticFallbackRenderer() )->render( $node, $context );
 		}
 		$tag = self::TAGS[ (string) $id ] ?? match ( $archetype ) {
@@ -68,6 +68,11 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 			}
 		}
 		$hooks = Escape::hooks( $node );
+		if ( 'typing-indicator' === $id ) {
+			$label = $node->value( 'ariaLabel', $this->translate_label( 'Typing' ) );
+			$label = is_string( $label ) && '' !== trim( $label ) ? $label : $this->translate_label( 'Typing' );
+			return '<span' . $hooks . ' data-blx-typing-indicator role="status" aria-label="' . Escape::attr( $label ) . '"><span aria-hidden="true"><i></i><i></i><i></i></span></span>';
+		}
 		if ( in_array( $id, [ 'entrance-animation', 'scroll-reveal', 'hover-tilt', 'scroll-timeline', 'stagger-container' ], true ) ) {
 			return $this->render_motion_reveal( $node, $hooks, $context->children_html );
 		}
