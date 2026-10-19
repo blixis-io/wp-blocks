@@ -22,6 +22,8 @@ import { useEditorStore, useEditorStoreApi } from './state';
 import { ElementId } from './ElementId';
 import { readSessionStorage, writeSessionStorage } from './storage';
 import { ELEMENT_DEFINITIONS_V2, ELEMENT_PALETTE_V2, getElementDefinitionV2 } from '@blixis/wp-element-registry';
+import { DragDropProvider } from '@dnd-kit/react';
+import { isSortableOperation, useSortable } from '@dnd-kit/react/sortable';
 
 interface Row {
   node: ElementNode;
@@ -128,7 +130,41 @@ function highlight(text: string, query: string) {
   );
 }
 
-const OutlineItem = memo(function OutlineItem({
+interface OutlineProps {
+  node: ElementNode;
+  depth: number;
+  parent: string | null;
+  hasChildren: boolean;
+  position: number;
+  setSize: number;
+  guideStops: boolean[];
+  expanded: boolean;
+  tabIndex: number;
+  query: string;
+  editingEnabled: boolean;
+  sortIndex: number;
+  dragEnabled: boolean;
+  onFocus: () => void;
+  onKeyDown: (event: React.KeyboardEvent<HTMLDivElement>, id: string) => void;
+}
+
+type SortableBinding = ReturnType<typeof useSortable>;
+
+const OutlineItem = memo(function OutlineItem(props: OutlineProps) {
+  return props.dragEnabled ? <SortableOutlineItem {...props} /> : <OutlineRow {...props} />;
+});
+
+function SortableOutlineItem(props: OutlineProps) {
+  const sortable = useSortable({
+    id: props.node.id,
+    index: props.sortIndex,
+    group: 'structure-tree',
+    disabled: Boolean(props.query) || !props.editingEnabled,
+  });
+  return <OutlineRow {...props} sortable={sortable} />;
+}
+
+const OutlineRow = memo(function OutlineRow({
   node,
   depth,
   parent,
@@ -141,6 +177,8 @@ const OutlineItem = memo(function OutlineItem({
   query,
   onFocus,
   onKeyDown,
+  dragEnabled,
+  sortable,
 }: {
   node: ElementNode;
   depth: number;
@@ -152,8 +190,11 @@ const OutlineItem = memo(function OutlineItem({
   expanded: boolean;
   tabIndex: number;
   query: string;
+  editingEnabled: boolean;
   onFocus: () => void;
   onKeyDown: (event: React.KeyboardEvent<HTMLDivElement>, id: string) => void;
+  dragEnabled: boolean;
+  sortable?: SortableBinding;
 }) {
   const { t } = useI18n();
   const store = useEditorStoreApi();
@@ -180,6 +221,7 @@ const OutlineItem = memo(function OutlineItem({
   return (
     <div
       role="treeitem"
+      ref={(element) => sortable?.ref(element)}
       aria-labelledby={`blx-tree-label-${node.id}`}
       aria-level={depth}
       aria-selected={selected}
@@ -190,8 +232,14 @@ const OutlineItem = memo(function OutlineItem({
       data-parent={parent ?? undefined}
       data-last-child={position === setSize ? 'true' : 'false'}
       tabIndex={tabIndex}
-      style={{ '--tree-depth': String(depth - 1), '--tree-level': String(depth) } as CSSProperties}
-      className="blx-outline-item ed-focus-ring"
+      style={
+        {
+          '--tree-depth': String(depth - 1),
+          '--tree-level': String(depth),
+          '--tree-handle-space': dragEnabled ? '20px' : '0px',
+        } as CSSProperties
+      }
+      className={`blx-outline-item ed-focus-ring${sortable?.isDragging ? ' is-dragging' : ''}${sortable?.isDropTarget ? ' is-drop-target' : ''}`}
       onFocus={onFocus}
       onKeyDown={(event) => {
         onKeyDown(event, node.id);
@@ -204,6 +252,21 @@ const OutlineItem = memo(function OutlineItem({
       }}
       onClick={() => store.getState().select(node.id)}
     >
+      {dragEnabled ? (
+        <button
+          type="button"
+          ref={(element) => sortable?.handleRef(element)}
+          className="blx-tree-move-handle ed-focus-ring"
+          aria-label={`${t('panel.structure.move')}: ${elementLabel(node.type, t)}`}
+          aria-describedby="blx-structure-move-help"
+          disabled={Boolean(query)}
+          onClick={(event) => {
+            event.stopPropagation();
+          }}
+        >
+          <span aria-hidden="true">⠿</span>
+        </button>
+      ) : null}
       {hasChildren ? (
         <button
           type="button"
@@ -366,6 +429,18 @@ export function StructurePanel({
       const row = currentRows[index];
       const left = dir === 'rtl' ? 'ArrowRight' : 'ArrowLeft';
       const right = dir === 'rtl' ? 'ArrowLeft' : 'ArrowRight';
+      if (event.altKey && (event.key === 'ArrowUp' || event.key === 'ArrowDown') && row) {
+        const siblings = currentRows.filter((item) => item.parent === row.parent);
+        const siblingIndex = siblings.findIndex((item) => item.node.id === id);
+        const destination = event.key === 'ArrowUp' ? siblingIndex - 1 : siblingIndex + 1;
+        const sibling = siblings[destination];
+        if (sibling) {
+          event.preventDefault();
+          store.getState().dispatch({ type: 'move', id, parentId: row.parent, index: destination });
+          setFocusedId(id);
+        }
+        return;
+      }
       let target = index;
       if (event.key === 'ArrowDown') target = Math.min(currentRows.length - 1, index + 1);
       else if (event.key === 'ArrowUp') target = Math.max(0, index - 1);
@@ -389,6 +464,48 @@ export function StructurePanel({
     },
     [dir, setExpanded, store],
   );
+  const dragEnabled = editingEnabled && !query && rows.length <= 250;
+  const finishTreeDrag = useCallback(
+    (event: Parameters<NonNullable<React.ComponentProps<typeof DragDropProvider>['onDragEnd']>>[0]) => {
+      const operation = event.operation;
+      if (operation.canceled || !isSortableOperation(operation)) return;
+      const source = operation.source;
+      const target = operation.target;
+      if (!source || !target || source.id === target.id) return;
+      const currentRoot = store.getState().document?.root;
+      if (!currentRoot) return;
+      const activePath = findPath(currentRoot, String(source.id));
+      const overPath = findPath(currentRoot, String(target.id));
+      if (!activePath || !overPath) return;
+      const activeParentPath = activePath.slice(0, -1);
+      const overParentPath = overPath.slice(0, -1);
+      const activeParent = activeParentPath.length ? nodeAt(currentRoot, activeParentPath) : undefined;
+      const overParent = overParentPath.length ? nodeAt(currentRoot, overParentPath) : undefined;
+      const activeParentId = activeParent?.id ?? null;
+      const overParentId = overParent?.id ?? null;
+      const activeNode = nodeAt(currentRoot, activePath);
+      const overNode = nodeAt(currentRoot, overPath);
+      if (!activeNode || !overNode) return;
+      if (activeParentId === overParentId) {
+        store.getState().dispatch({
+          type: 'move',
+          id: activeNode.id,
+          parentId: overParentId,
+          index: overPath[overPath.length - 1] ?? 0,
+        });
+        return;
+      }
+      if (store.getState().registry.canNest(overNode.type, activeNode.type)) {
+        store.getState().dispatch({
+          type: 'move',
+          id: activeNode.id,
+          parentId: overNode.id,
+          index: overNode.children.length,
+        });
+      }
+    },
+    [store],
+  );
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && query) {
@@ -405,21 +522,32 @@ export function StructurePanel({
   if (status === 'error' && error !== null) body = <p className="blx-empty">{t('panel.structure.loadFailed')}</p>;
   else if (root !== null && root.length > 0)
     body = rows.length ? (
-      <div role="tree" aria-label={t('panel.structure.list')} className="blx-outline" ref={treeRef}>
-        {rows.map((row) => (
-          <OutlineItem
-            key={row.node.id}
-            {...row}
-            expanded={query ? true : expanded.has(row.node.id)}
-            query={query}
-            tabIndex={(focusedId ?? rows[0]?.node.id) === row.node.id ? 0 : -1}
-            onFocus={() => {
-              setFocusedId(row.node.id);
-            }}
-            onKeyDown={keyDown}
-          />
-        ))}
-      </div>
+      (() => {
+        const outline = (
+          <div role="tree" aria-label={t('panel.structure.list')} className="blx-outline" ref={treeRef}>
+            <p id="blx-structure-move-help" className="blx-sr-only">
+              {t('panel.structure.moveHelp')}
+            </p>
+            {rows.map((row, sortIndex) => (
+              <OutlineItem
+                key={row.node.id}
+                {...row}
+                expanded={query ? true : expanded.has(row.node.id)}
+                query={query}
+                editingEnabled={editingEnabled}
+                tabIndex={(focusedId ?? rows[0]?.node.id) === row.node.id ? 0 : -1}
+                onFocus={() => {
+                  setFocusedId(row.node.id);
+                }}
+                onKeyDown={keyDown}
+                sortIndex={sortIndex}
+                dragEnabled={dragEnabled}
+              />
+            ))}
+          </div>
+        );
+        return dragEnabled ? <DragDropProvider onDragEnd={finishTreeDrag}>{outline}</DragDropProvider> : outline;
+      })()
     ) : (
       <p className="blx-empty">{t('panel.search.noResults')}</p>
     );

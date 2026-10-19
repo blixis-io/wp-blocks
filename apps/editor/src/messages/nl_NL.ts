@@ -129,6 +129,9 @@ export const nl_NL: Record<MessageKey, string> = {
   'panel.tree.collapse': 'Samenvouwen',
   'panel.rowMenu': 'Elementacties',
   'panel.delete': 'Verwijderen',
+  'panel.structure.move': 'Element verplaatsen',
+  'panel.structure.moveHelp':
+    'Sleep dit handvat om de volgorde te wijzigen. Zet het op een geschikte container om het element te nesten. Gebruik Alt en een pijltoets om de volgorde met het toetsenbord te wijzigen.',
   'panel.palette.locked': 'Bewerken is uitgeschakeld voor dit document.',
   'panel.palette.unavailable': 'Dit element heeft hier geen geldige positie.',
   'panel.palette.insertFailed':

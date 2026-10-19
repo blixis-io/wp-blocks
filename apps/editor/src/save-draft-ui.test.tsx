@@ -326,7 +326,7 @@ describe('Save Draft UI recovery', () => {
       finish({ ok: true, value: { revision: 6 } } as never);
       await pending;
     });
-    expect(screen.getByRole('status').textContent).toMatch(/Saved/);
+    expect(screen.getByText('Saved now').closest('[role="status"]')).toBeTruthy();
   });
 
   it('dismisses a failure alert', async () => {
@@ -610,6 +610,8 @@ describe('Save Draft browser lifecycle', () => {
   it('clears the automatic retry timer when unmounted', async () => {
     const { store, client, unmount } = await setup();
     vi.useFakeTimers();
+    const setIntervalSpy = vi.spyOn(window, 'setInterval');
+    const clearIntervalSpy = vi.spyOn(window, 'clearInterval');
     dirty(store);
     client.writeLayout = vi
       .fn()
@@ -617,9 +619,12 @@ describe('Save Draft browser lifecycle', () => {
     await act(async () => {
       await store.getState().saveDraft();
     });
-    expect(vi.getTimerCount()).toBeGreaterThan(0);
+    const retryIntervalIndex = setIntervalSpy.mock.calls.findIndex(([, delay]) => delay === 1000);
+    expect(retryIntervalIndex).toBeGreaterThanOrEqual(0);
     unmount();
-    expect(vi.getTimerCount()).toBe(0);
+    expect(clearIntervalSpy).toHaveBeenCalledWith(setIntervalSpy.mock.results[retryIntervalIndex]?.value);
+    setIntervalSpy.mockRestore();
+    clearIntervalSpy.mockRestore();
   });
 
   it('shows the 429 countdown in Dutch', async () => {

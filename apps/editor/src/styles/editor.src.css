@@ -2304,6 +2304,37 @@
       outline: 2px solid var(--ed-focus-ring);
       outline-offset: 0;
     }
+    .blx-outline-item.is-drop-target {
+      outline: 2px solid var(--ed-focus-ring);
+      outline-offset: -2px;
+      background: var(--ed-surface-hover);
+    }
+    .blx-outline-item.is-dragging {
+      opacity: 0.45;
+    }
+    .blx-tree-move-handle {
+      inline-size: 14px;
+      block-size: 22px;
+      flex: none;
+      color: var(--ed-fg-muted);
+      cursor: grab;
+      touch-action: none;
+      user-select: none;
+    }
+    .blx-tree-move-handle:active {
+      cursor: grabbing;
+    }
+    .blx-sr-only {
+      position: absolute;
+      inline-size: 1px;
+      block-size: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
     .blx-tree-guides {
       position: absolute;
       inset: 0;
@@ -2313,8 +2344,8 @@
       position: absolute;
       inset-block: 0;
       inset-inline-start: calc(
-        var(--tree-pad) + var(--tree-chevron) + var(--tree-gap) + var(--tree-icon-center) + var(--guide-depth, 0) *
-          var(--tree-indent)
+        var(--tree-pad) + var(--tree-handle-space, 0px) + var(--tree-chevron) + var(--tree-gap) +
+          var(--tree-icon-center) + var(--guide-depth, 0) * var(--tree-indent)
       );
       inline-size: 8px;
     }
