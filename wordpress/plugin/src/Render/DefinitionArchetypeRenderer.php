@@ -98,6 +98,26 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		if ( 'marquee-layout' === $id ) {
 			return $this->render_marquee_layout( $node, $context->children_html, $hooks, $tag );
 		}
+		if ( 'logo-marquee' === $id ) {
+			$duration_ms = $node->value( 'durationMs', 16000 );
+			$duration    = is_numeric( $duration_ms ) ? max( 10, min( 120, (int) round( (float) $duration_ms / 1000 ) ) ) : 16;
+			if ( true !== $node->value( 'autoplay', false ) ) {
+				return '<' . $tag . $hooks . ' data-blx-marquee="left" data-blx-marquee-duration="' . $duration . '">' . $context->children_html . '</' . $tag . '>';
+			}
+			return $this->render_marquee_layout(
+				new ElementNode(
+					$node->id,
+					$node->type,
+					[
+						'direction' => 'left',
+						'duration'  => $duration,
+					]
+				),
+				$context->children_html,
+				$hooks,
+				$tag
+			);
+		}
 		if ( 'scroll-area' === $id ) {
 			$label = $node->value( 'ariaLabel' );
 			return '<' . $tag . $hooks . ' data-blx-scroll-area tabindex="0"' . ( is_string( $label ) && '' !== trim( $label ) ? ' role="region"' : '' ) . '>' . $context->children_html . '</' . $tag . '>';
@@ -320,7 +340,7 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		if ( 'command-palette' === $id ) {
 			return $this->render_command_palette( $node, $hooks );
 		}
-		if ( 'carousel' === $id ) {
+		if ( in_array( $id, [ 'carousel', 'scroll-snap-carousel' ], true ) ) {
 			return $this->render_carousel( $node, $context->children_html_list, $hooks );
 		}
 		if ( 'scroll-indicator' === $id ) {
