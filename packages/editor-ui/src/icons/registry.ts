@@ -54,6 +54,7 @@ import layers from '@iconify-icons/solar/layers-linear';
 import menuDotsGrid from '@iconify-icons/solar/menu-dots-linear';
 import card from '@iconify-icons/solar/card-linear';
 import type { ElementDefinition } from '@blixis/wp-element-registry';
+import { GENERATED_ELEMENT_ICONS } from './generated-element-icons';
 
 interface SolarIconData {
   width?: number;
@@ -132,6 +133,7 @@ export const ICONS = {
 } as const satisfies Record<string, SolarIconData>;
 
 export type IconName = keyof typeof ICONS;
+export type GeneratedElementIconName = keyof typeof GENERATED_ELEMENT_ICONS;
 export const TEXT_ALIGN_ICONS = {
   left: 'alignLeft',
   center: 'alignCenter',
@@ -162,7 +164,8 @@ export const ELEMENT_ICONS = {
   'blixis/image': 'image',
   'blixis/button': 'button',
 } satisfies Record<ElementDefinition['type'], IconName>;
-export function elementIconName(type: string): IconName {
+export function elementIconName(type: string): IconName | GeneratedElementIconName {
+  if (Object.hasOwn(GENERATED_ELEMENT_ICONS, type)) return type as GeneratedElementIconName;
   if (Object.hasOwn(ELEMENT_ICONS, type)) return ELEMENT_ICONS[type as keyof typeof ELEMENT_ICONS];
   const generated: Record<string, IconName> = {
     'blixis/page': 'pages',
