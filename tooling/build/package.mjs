@@ -181,6 +181,7 @@ if (isMain) {
         outDir: join(outDir, '.verify'),
         only: opt('--only'),
         allowMissing: args.includes('--allow-missing'),
+        includePaid: args.includes('--include-paid'),
       });
       rmSync(join(outDir, '.verify'), { recursive: true, force: true });
       const a = first
