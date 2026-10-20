@@ -167,7 +167,7 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		if ( 'icon-button' === $id ) {
 			return $this->render_icon_button( $node, $hooks );
 		}
-		if ( in_array( $id, [ 'switch', 'checkbox', 'radio-group', 'select', 'combobox', 'toggle', 'toggle-group', 'segmented-control', 'slider', 'range-slider', 'input', 'textarea', 'date-picker', 'text-field', 'email-field', 'password-field', 'phone-field', 'number-field', 'url-field', 'search-field', 'hidden-field' ], true ) ) {
+		if ( in_array( $id, [ 'switch', 'checkbox', 'radio-group', 'select', 'combobox', 'multi-select', 'toggle', 'toggle-group', 'segmented-control', 'slider', 'range-slider', 'input', 'textarea', 'date-picker', 'text-field', 'email-field', 'password-field', 'phone-field', 'number-field', 'url-field', 'search-field', 'hidden-field' ], true ) ) {
 			return $this->render_ui_control( $id, $node, $hooks );
 		}
 		if ( 'calendar' === $id ) {
@@ -1283,6 +1283,21 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 				$html     .= '<label for="' . $option_id . '"><input id="' . $option_id . '" type="radio" name="' . Escape::attr( $name ) . '" value="' . Escape::attr( $option_value ) . '"' . ( $option_value === $value ? ' checked' : '' ) . ( $required ? ' required' : '' ) . $disabled_attr . '> ' . Escape::html( $option_label ) . '</label>';
 			}
 			return $html . '</fieldset>';
+		}
+		if ( 'multi-select' === $id ) {
+			$control_id = 'blx-multi-select-' . substr( hash( 'sha256', $node->id ), 0, 12 );
+			$name       = 'fields[' . $name . '][]';
+			$html       = '<label for="' . $control_id . '">' . Escape::html( $label ) . '</label><select' . $hooks . ' id="' . $control_id . '" name="' . Escape::attr( $name ) . '" multiple' . ( $required ? ' required' : '' ) . $disabled_attr . '>';
+			foreach ( $options as $candidate ) {
+				$candidate    = $this->record( $candidate );
+				$option_value = $candidate['value'] ?? null;
+				$option_label = $candidate['label'] ?? null;
+				if ( ! is_string( $option_value ) || ! is_string( $option_label ) ) {
+					continue;
+				}
+				$html .= '<option value="' . Escape::attr( $option_value ) . '"' . ( $option_value === $value ? ' selected' : '' ) . '>' . Escape::html( $option_label ) . '</option>';
+			}
+			return $html . '</select>';
 		}
 		if ( in_array( $id, [ 'select', 'combobox' ], true ) ) {
 			$control_id = 'blx-control-' . substr( hash( 'sha256', $node->id ), 0, 12 );

@@ -194,6 +194,7 @@ const editorReady = new Set([
   'url-field',
   'search-field',
   'phone-field',
+  'multi-select',
   'hidden-field',
   'submit-button',
   'form-success',
