@@ -118,7 +118,7 @@ final class FormSubmissionController {
 				if ( $child instanceof \stdClass && 'blixis/password-field' === ( $child->type ?? '' ) ) {
 					return null;
 				}
-				if ( ! $child instanceof \stdClass || ! \in_array( $child->type ?? '', [ 'blixis/text-field', 'blixis/email-field', 'blixis/number-field', 'blixis/url-field', 'blixis/search-field', 'blixis/hidden-field' ], true ) || ! ( $child->props ?? null ) instanceof \stdClass ) {
+				if ( ! $child instanceof \stdClass || ! \in_array( $child->type ?? '', [ 'blixis/text-field', 'blixis/email-field', 'blixis/phone-field', 'blixis/number-field', 'blixis/url-field', 'blixis/search-field', 'blixis/hidden-field' ], true ) || ! ( $child->props ?? null ) instanceof \stdClass ) {
 					continue;
 				}
 				$field_props = \get_object_vars( $child->props );
@@ -127,15 +127,20 @@ final class FormSubmissionController {
 				$label       = $translated ?? $field_props['label'] ?? $field_props['ariaLabel'] ?? 'Field';
 				$validation  = $field_props['validation'] ?? null;
 				$validation  = $validation instanceof \stdClass ? \get_object_vars( $validation ) : [];
+				$field_type  = \substr( (string) $child->type, 7 );
+				$max_length  = \is_int( $validation['maxLength'] ?? null ) ? \max( 1, \min( 10000, $validation['maxLength'] ) ) : 255;
+				if ( 'phone-field' === $field_type ) {
+					$max_length = \min( 32, $max_length );
+				}
 				if ( ! \is_string( $name ) || 1 !== \preg_match( '/^[A-Za-z][A-Za-z0-9_.:-]{0,63}$/D', $name ) || ! \is_string( $label ) ) {
 					continue;
 				}
 				$fields[ $name ] = [
-					'type'      => \substr( (string) $child->type, 7 ),
+					'type'      => $field_type,
 					'label'     => \sanitize_text_field( $label ),
 					'required'  => true === ( $field_props['required'] ?? false ),
 					'minLength' => \is_int( $validation['minLength'] ?? null ) ? \max( 0, \min( 10000, $validation['minLength'] ) ) : 0,
-					'maxLength' => \is_int( $validation['maxLength'] ?? null ) ? \max( 1, \min( 10000, $validation['maxLength'] ) ) : 255,
+					'maxLength' => $max_length,
 				];
 			}
 			return [] !== $fields ? [
@@ -203,6 +208,9 @@ final class FormSubmissionController {
 				return false;
 			}
 			if ( 'number-field' === $allowed[ $name ]['type'] && '' !== (string) $value && ! \is_numeric( $value ) ) {
+				return false;
+			}
+			if ( 'phone-field' === $allowed[ $name ]['type'] && '' !== (string) $value && 1 !== \preg_match( '/^\+?[0-9(). -]{3,32}$/D', (string) $value ) ) {
 				return false;
 			}
 			if ( 'url-field' === $allowed[ $name ]['type'] && '' !== (string) $value && ! SafeUrl::accepts( (string) $value ) ) {

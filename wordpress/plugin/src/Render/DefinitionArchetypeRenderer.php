@@ -167,7 +167,7 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		if ( 'icon-button' === $id ) {
 			return $this->render_icon_button( $node, $hooks );
 		}
-		if ( in_array( $id, [ 'switch', 'checkbox', 'radio-group', 'select', 'combobox', 'toggle', 'toggle-group', 'segmented-control', 'slider', 'range-slider', 'input', 'textarea', 'date-picker', 'text-field', 'email-field', 'password-field', 'number-field', 'url-field', 'search-field', 'hidden-field' ], true ) ) {
+		if ( in_array( $id, [ 'switch', 'checkbox', 'radio-group', 'select', 'combobox', 'toggle', 'toggle-group', 'segmented-control', 'slider', 'range-slider', 'input', 'textarea', 'date-picker', 'text-field', 'email-field', 'password-field', 'phone-field', 'number-field', 'url-field', 'search-field', 'hidden-field' ], true ) ) {
 			return $this->render_ui_control( $id, $node, $hooks );
 		}
 		if ( 'calendar' === $id ) {
@@ -1335,6 +1335,7 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 			'text-field'     => 'text',
 			'email-field'    => 'email',
 			'password-field' => 'password',
+			'phone-field'    => 'tel',
 			'number-field'   => 'number',
 			'url-field'      => 'url',
 			'search-field'   => 'search',
@@ -1357,13 +1358,16 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 			$autocomplete        = is_string( $autocomplete ) && in_array( $autocomplete, $autocomplete_values, true ) ? $autocomplete : 'off';
 			$constraints         = '';
 			$validation          = $this->record( $node->value( 'validation', null ) ) ?? [];
-			if ( in_array( $field_type, [ 'text', 'email', 'password', 'url', 'search' ], true ) ) {
+			if ( in_array( $field_type, [ 'text', 'email', 'password', 'tel', 'url', 'search' ], true ) ) {
 				foreach ( [
 					'minLength' => 'minlength',
 					'maxLength' => 'maxlength',
 				] as $property => $attribute ) {
-					$length = $validation[ $property ] ?? ( 'minLength' === $property ? 0 : 255 );
+					$length = $validation[ $property ] ?? ( 'minLength' === $property ? 0 : ( 'tel' === $field_type ? 32 : 255 ) );
 					if ( is_int( $length ) && $length >= 0 ) {
+						if ( 'tel' === $field_type && 'maxLength' === $property ) {
+							$length = min( 32, $length );
+						}
 						$constraints .= ' ' . $attribute . '="' . min( 10000, $length ) . '"';
 					}
 				}

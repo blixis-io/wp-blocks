@@ -1658,6 +1658,7 @@ final class ElementDefinitionRegistryTest extends TestCase {
 			'text-field'     => 'text',
 			'email-field'    => 'email',
 			'password-field' => 'password',
+			'phone-field'    => 'tel',
 			'number-field'   => 'number',
 			'url-field'      => 'url',
 			'search-field'   => 'search',
@@ -1686,7 +1687,9 @@ final class ElementDefinitionRegistryTest extends TestCase {
 			$this->assertStringContainsString( 'name="fields[contact.email]"', $field );
 			$this->assertStringContainsString( 'Label &amp; input', $field );
 			$this->assertStringContainsString( 'required', $field );
-			if ( 'number' !== $field_type ) {
+			if ( 'tel' === $field_type ) {
+				$this->assertStringContainsString( 'maxlength="32"', $field );
+			} elseif ( 'number' !== $field_type ) {
 				$this->assertStringContainsString( 'maxlength="40"', $field );
 			} else {
 				$this->assertStringNotContainsString( 'maxlength=', $field );
@@ -1694,6 +1697,35 @@ final class ElementDefinitionRegistryTest extends TestCase {
 			$this->assertTrue( PreviewSanitizer::accepts( $field ) );
 			$this->assertStringNotContainsString( '<script>', $field );
 		}
+		$phone = $renderer->render(
+			new ElementNode(
+				'phone-contact',
+				'blixis/phone-field',
+				[
+					'label'      => 'Phone',
+					'name'       => 'phone',
+					'required'   => true,
+					'validation' => [ 'maxLength' => 32 ],
+				]
+			),
+			new RenderContext()
+		);
+		$this->assertStringContainsString( 'type="tel"', $phone );
+		$this->assertStringContainsString( 'name="fields[phone]"', $phone );
+		$this->assertStringContainsString( 'required', $phone );
+		$this->assertTrue( PreviewSanitizer::accepts( $phone ) );
+		$phone_validation = new \ReflectionMethod( \Blixis\Builder\Rest\FormSubmissionController::class, 'valid_fields' );
+		$phone_allowed    = [
+			'phone' => [
+				'type'      => 'phone-field',
+				'label'     => 'Phone',
+				'required'  => true,
+				'minLength' => 3,
+				'maxLength' => 32,
+			],
+		];
+		$this->assertTrue( $phone_validation->invoke( null, $phone_allowed, [ 'phone' => '+31 (0) 20-1234567' ] ) );
+		$this->assertFalse( $phone_validation->invoke( null, $phone_allowed, [ 'phone' => 'call-me-maybe' ] ) );
 		$password = $renderer->render(
 			new ElementNode(
 				'password-secret',

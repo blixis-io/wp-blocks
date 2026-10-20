@@ -35549,7 +35549,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'input',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -71522,7 +71522,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'forms',
     icon: 'solar:phone-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'phone-field phone field forms phone field element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },
