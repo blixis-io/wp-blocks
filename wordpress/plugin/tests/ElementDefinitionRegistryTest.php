@@ -1767,6 +1767,45 @@ final class ElementDefinitionRegistryTest extends TestCase {
 		$this->assertTrue( $phone_validation->invoke( null, $multi_allowed, [ 'topics' => [ 'docs', 'events' ] ] ) );
 		$this->assertFalse( $phone_validation->invoke( null, $multi_allowed, [ 'topics' => [ 'unknown' ] ] ) );
 		$this->assertFalse( $phone_validation->invoke( null, $multi_allowed, [ 'topics' => 'docs' ] ) );
+		$tag_input = $renderer->render(
+			new ElementNode(
+				'tag-topic',
+				'blixis/tag-input',
+				[
+					'name'     => 'tags',
+					'label'    => 'Tags & topics',
+					'value'    => 'news, design',
+					'maxTags'  => 5,
+					'required' => true,
+				]
+			),
+			new RenderContext()
+		);
+		$this->assertStringContainsString( 'data-blx-tag-input data-blx-tag-input-max-tags="5"', $tag_input );
+		$this->assertStringContainsString( 'type="text" name="fields[tags]"', $tag_input );
+		$this->assertStringContainsString( 'value="news, design"', $tag_input );
+		$this->assertStringContainsString( 'Tags &amp; topics', $tag_input );
+		$this->assertStringContainsString( 'required', $tag_input );
+		$this->assertStringContainsString( 'role="status" aria-live="polite"', $tag_input );
+		$this->assertTrue( PreviewSanitizer::accepts( $tag_input ) );
+		$tag_allowed = [
+			'tags' => [
+				'type'      => 'tag-input',
+				'label'     => 'Tags',
+				'required'  => true,
+				'minLength' => 0,
+				'maxLength' => 255,
+				'maxTags'   => 3,
+				'options'   => [],
+			],
+		];
+		$this->assertTrue( $phone_validation->invoke( null, $tag_allowed, [ 'tags' => 'news, design' ] ) );
+		$this->assertFalse( $phone_validation->invoke( null, $tag_allowed, [ 'tags' => 'news, NEWS' ] ) );
+		$this->assertFalse( $phone_validation->invoke( null, $tag_allowed, [ 'tags' => 'news,,design' ] ) );
+		$this->assertFalse( $phone_validation->invoke( null, $tag_allowed, [ 'tags' => 'one, two, three, four' ] ) );
+		$this->assertFalse( $phone_validation->invoke( null, $tag_allowed, [ 'tags' => str_repeat( 'x', 65 ) ] ) );
+		$this->assertFalse( $phone_validation->invoke( null, $tag_allowed, [ 'tags' => [ 'news' ] ] ) );
+		$this->assertFalse( $phone_validation->invoke( null, $tag_allowed, [ 'tags' => '' ] ) );
 		$password = $renderer->render(
 			new ElementNode(
 				'password-secret',

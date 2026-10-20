@@ -358,6 +358,7 @@ export const en_US = {
   'inspector.prop.max': 'Maximum value',
   'inspector.prop.maxBytes': 'Maximum file size (bytes)',
   'inspector.prop.maxItems': 'Maximum items',
+  'inspector.prop.maxTags': 'Maximum tags',
   'inspector.prop.maxSelections': 'Maximum selections',
   'inspector.prop.method': 'Method',
   'inspector.prop.min': 'Minimum value',

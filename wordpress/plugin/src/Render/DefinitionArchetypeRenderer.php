@@ -167,7 +167,7 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 		if ( 'icon-button' === $id ) {
 			return $this->render_icon_button( $node, $hooks );
 		}
-		if ( in_array( $id, [ 'switch', 'checkbox', 'radio-group', 'select', 'combobox', 'multi-select', 'toggle', 'toggle-group', 'segmented-control', 'slider', 'range-slider', 'input', 'textarea', 'date-picker', 'text-field', 'email-field', 'password-field', 'phone-field', 'number-field', 'url-field', 'search-field', 'hidden-field' ], true ) ) {
+		if ( in_array( $id, [ 'switch', 'checkbox', 'radio-group', 'select', 'combobox', 'multi-select', 'tag-input', 'toggle', 'toggle-group', 'segmented-control', 'slider', 'range-slider', 'input', 'textarea', 'date-picker', 'text-field', 'email-field', 'password-field', 'phone-field', 'number-field', 'url-field', 'search-field', 'hidden-field' ], true ) ) {
 			return $this->render_ui_control( $id, $node, $hooks );
 		}
 		if ( 'calendar' === $id ) {
@@ -1351,6 +1351,7 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 			'email-field'    => 'email',
 			'password-field' => 'password',
 			'phone-field'    => 'tel',
+			'tag-input'      => 'text',
 			'number-field'   => 'number',
 			'url-field'      => 'url',
 			'search-field'   => 'search',
@@ -1387,12 +1388,20 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 					}
 				}
 			}
-			$input = '<input' . $hooks . ' id="' . $control_id . '" type="' . $field_type . '" name="' . Escape::attr( $name ) . '" autocomplete="' . $autocomplete . '"' . $placeholder . $constraints . ( $required ? ' required' : '' ) . ( $disabled ? ' disabled' : '' ) . ' value="' . Escape::attr( $value ) . '">';
+			$input = '<input' . ( 'tag-input' === $id ? '' : $hooks ) . ' id="' . $control_id . '" type="' . $field_type . '" name="' . Escape::attr( $name ) . '" autocomplete="' . $autocomplete . '"' . $placeholder . $constraints . ( $required ? ' required' : '' ) . ( $disabled ? ' disabled' : '' ) . ' value="' . Escape::attr( $value ) . '"' . ( 'tag-input' === $id ? ' data-blx-tag-input-entry' : '' ) . '>';
 			if ( 'hidden' === $field_type ) {
 				return $input;
 			}
 			$label = $node->value( 'label', $node->value( 'ariaLabel', $this->translate_label( 'Field' ) ) );
 			$label = is_string( $label ) && '' !== trim( $label ) ? trim( $label ) : $this->translate_label( 'Field' );
+			if ( 'tag-input' === $id ) {
+				$max_tags = $node->value( 'maxTags', 10 );
+				$max_tags = is_int( $max_tags ) ? max( 1, min( 20, $max_tags ) ) : 10;
+				$hint_id  = $control_id . '-hint';
+				$tags_id  = $control_id . '-tags';
+				$input    = str_replace( ' value="' . Escape::attr( $value ) . '"', ' aria-describedby="' . $hint_id . '" value="' . Escape::attr( $value ) . '"', $input );
+				return '<div' . $hooks . ' data-blx-tag-input data-blx-tag-input-max-tags="' . $max_tags . '" data-blx-tag-input-remove-prefix="' . Escape::attr( $this->translate_label( 'Remove tag' ) ) . '" data-blx-tag-input-limit-message="' . Escape::attr( $this->translate_label( 'Maximum of %d tags reached.' ) ) . '" data-blx-tag-input-duplicate-message="' . Escape::attr( $this->translate_label( 'This tag is already in the list.' ) ) . '" data-blx-tag-input-length-message="' . Escape::attr( $this->translate_label( 'Each tag must be 64 characters or fewer.' ) ) . '"><label for="' . $control_id . '">' . Escape::html( $label ) . '</label><ul id="' . $tags_id . '" data-blx-tag-input-list aria-label="' . Escape::attr( $this->translate_label( 'Selected tags' ) ) . '" hidden></ul>' . $input . '<p id="' . $hint_id . '">' . Escape::html( $this->translate_label( 'Type a tag, then press Enter or comma to add it.' ) ) . '</p><p data-blx-tag-input-status role="status" aria-live="polite"></p></div>';
+			}
 			return '<label for="' . $control_id . '">' . Escape::html( $label ) . '</label>' . $input;
 		}
 		if ( 'slider' === $id ) {
@@ -2246,6 +2255,13 @@ final class DefinitionArchetypeRenderer implements ArchetypeRenderer {
 			'Next slide' => __( 'Next slide', 'blixis-builder' ),
 			'Next'      => __( 'Next', 'blixis-builder' ),
 			'Load more' => __( 'Load more', 'blixis-builder' ),
+			'Remove tag' => __( 'Remove tag', 'blixis-builder' ),
+			'Selected tags' => __( 'Selected tags', 'blixis-builder' ),
+			'Type a tag, then press Enter or comma to add it.' => __( 'Type a tag, then press Enter or comma to add it.', 'blixis-builder' ),
+			/* translators: %d is the maximum number of tags allowed. */
+			'Maximum of %d tags reached.' => __( 'Maximum of %d tags reached.', 'blixis-builder' ),
+			'This tag is already in the list.' => __( 'This tag is already in the list.', 'blixis-builder' ),
+			'Each tag must be 64 characters or fewer.' => __( 'Each tag must be 64 characters or fewer.', 'blixis-builder' ),
 			'More information' => __( 'More information', 'blixis-builder' ),
 			'Minimum' => __( 'Minimum', 'blixis-builder' ),
 			'Maximum' => __( 'Maximum', 'blixis-builder' ),

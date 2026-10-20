@@ -134,6 +134,15 @@
       "required": false,
       "control": "switch"
     },
+    "maxTags": {
+      "type": "number",
+      "default": 10,
+      "description": "Maximum number of tags accepted, from 1 to 20.",
+      "minimum": 1,
+      "maximum": 20,
+      "required": false,
+      "control": "number"
+    },
     "disabled": {
       "type": "boolean",
       "default": false,
@@ -223,6 +232,12 @@
     "required": {
       "control": "switch",
       "group": "Content",
+      "localizable": false,
+      "supportsDynamicBinding": false
+    },
+    "maxTags": {
+      "control": "number",
+      "group": "Validation",
       "localizable": false,
       "supportsDynamicBinding": false
     },
@@ -478,6 +493,7 @@
       "placeholder": "",
       "value": "",
       "required": false,
+      "maxTags": 10,
       "disabled": false,
       "autocomplete": "off",
       "validation": {

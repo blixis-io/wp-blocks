@@ -60,6 +60,8 @@ P6 Free forms render native POST markup and submit through a nonce bound to the 
 
 Multi-select form fields render as native required-capable `<select multiple>` controls. Published submissions accept at most 20 distinct choices, each of which must match one of the stable option IDs in the published form snapshot; submitted arrays, option counts, value lengths, and unknown choices are rejected otherwise.
 
+Tag-input form fields keep a plain-text comma-delimited scalar submission when JavaScript is unavailable. The enhancement exposes keyboard-added and removable chips, with a published `maxTags` limit clamped to 1–20 (default 10), a 64-character per-tag limit, case-insensitive duplicate rejection, and the field's existing scalar `maxLength` ceiling. The server repeats these checks against the published form snapshot and stores no submissions.
+
 ## Instance and compatibility contract
 
 An instance is `{ id, type, props, styles, children }`. IDs are stable. Definition properties supply validation type, enum/options, bounds, defaults, required status, `localizable`, `editorOnly`, and a control. Array validation recursively applies the declared item type in TypeScript and PHP, including attachment-backed `array<asset-ref>` values. Translatable data stays in locale content streams. `editorOnly` values are excluded from saved frontend props. Unknown types/properties round-trip for forward compatibility and render through the static safe fallback.
