@@ -357,3 +357,21 @@ msgstr "Onderdelen"
 
 msgid "Sidebar navigation"
 msgstr "Zijbalknavigatie"
+
+msgid "Remove tag"
+msgstr "Tag verwijderen"
+
+msgid "Selected tags"
+msgstr "Geselecteerde tags"
+
+msgid "Type a tag, then press Enter or comma to add it."
+msgstr "Typ een tag en druk op Enter of een komma om deze toe te voegen."
+
+msgid "Maximum of %d tags reached."
+msgstr "Het maximum van %d tags is bereikt."
+
+msgid "This tag is already in the list."
+msgstr "Deze tag staat al in de lijst."
+
+msgid "Each tag must be 64 characters or fewer."
+msgstr "Elke tag mag maximaal 64 tekens bevatten."

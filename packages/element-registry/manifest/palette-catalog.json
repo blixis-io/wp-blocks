@@ -1379,7 +1379,7 @@
       "category": "forms",
       "icon": "solar:tag-linear",
       "tier": "plus",
-      "status": "planned",
+      "status": "ready",
       "keywords": "tag-input tag input forms tag input element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code."
     },
     {

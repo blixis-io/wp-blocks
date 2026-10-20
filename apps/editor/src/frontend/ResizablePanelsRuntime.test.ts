@@ -21,6 +21,7 @@ type InitPanorama = (root: HTMLElement) => void;
 type InitDisclosure = (root: HTMLElement) => void;
 type InitScrollSpy = (root: HTMLElement) => void;
 type InitOffcanvas = (root: HTMLDetailsElement) => void;
+type InitTagInput = (root: HTMLElement) => void;
 
 function makePanels(orientation = 'horizontal', minimum = 20) {
   const root = document.createElement('div');
@@ -57,6 +58,7 @@ afterEach(() => {
   delete (window as Window & { blxInitTabs?: InitDisclosure }).blxInitTabs;
   delete (window as Window & { blxInitScrollSpy?: InitScrollSpy }).blxInitScrollSpy;
   delete (window as Window & { blxInitOffcanvas?: InitOffcanvas }).blxInitOffcanvas;
+  delete (window as Window & { blxInitTagInput?: InitTagInput }).blxInitTagInput;
   if (originalIntersectionObserver) Object.defineProperty(window, 'IntersectionObserver', originalIntersectionObserver);
   else delete (window as unknown as { IntersectionObserver?: typeof IntersectionObserver }).IntersectionObserver;
   if (originalDialogShowModal) Object.defineProperty(HTMLDialogElement.prototype, 'showModal', originalDialogShowModal);
@@ -492,5 +494,69 @@ describe('panorama keyboard enhancement', () => {
     expect(viewer.scrollLeft).toBe(148);
     viewer.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', shiftKey: true, bubbles: true }));
     expect(viewer.scrollLeft).toBe(0);
+  });
+});
+
+describe('tag input enhancement', () => {
+  function makeTagInput(required = false) {
+    const form = document.createElement('form');
+    const root = document.createElement('div');
+    root.dataset['blxTagInput'] = '';
+    root.dataset['blxTagInputMaxTags'] = '2';
+    root.dataset['blxTagInputRemovePrefix'] = 'Remove tag';
+    root.dataset['blxTagInputDuplicateMessage'] = 'Duplicate tag';
+    root.dataset['blxTagInputLimitMessage'] = 'Maximum of %d tags reached.';
+    root.dataset['blxTagInputLengthMessage'] = 'Tag is too long.';
+    root.innerHTML = `<ul data-blx-tag-input-list hidden></ul><input data-blx-tag-input-entry name="fields[tags]" ${required ? 'required' : ''}><p data-blx-tag-input-status role="status"></p>`;
+    form.append(root);
+    document.body.append(form);
+    return { form, root };
+  }
+
+  function initialize(root: HTMLElement) {
+    loadInitializer();
+    const init = (window as Window & { blxInitTagInput?: InitTagInput }).blxInitTagInput;
+    if (!init) throw new Error('tag input initializer missing');
+    init(root);
+  }
+
+  it('turns entered tags into removable chips and submits the scalar fallback format', () => {
+    const { form, root } = makeTagInput(true);
+    initialize(root);
+    const entry = root.querySelector<HTMLInputElement>('[data-blx-tag-input-entry]');
+    if (!entry) throw new Error('tag entry missing');
+    entry.value = 'news';
+    entry.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+    entry.value = 'design';
+    entry.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+    const submitted = root.querySelector<HTMLInputElement>('input[type="hidden"]');
+    expect(root.querySelectorAll('[data-blx-tag-input-item]')).toHaveLength(2);
+    expect(submitted?.name).toBe('fields[tags]');
+    expect(submitted?.value).toBe('news, design');
+    expect(entry.required).toBe(false);
+    root.querySelector<HTMLButtonElement>('[data-blx-tag-input-item] button')?.click();
+    expect(submitted?.value).toBe('design');
+    expect(form.querySelectorAll('[data-blx-tag-input-item]')).toHaveLength(1);
+  });
+
+  it('rejects duplicates, tags over 64 characters, and tags beyond the configured count', () => {
+    const { root } = makeTagInput();
+    initialize(root);
+    const entry = root.querySelector<HTMLInputElement>('[data-blx-tag-input-entry]');
+    const status = root.querySelector<HTMLElement>('[data-blx-tag-input-status]');
+    if (!entry || !status) throw new Error('tag controls missing');
+    const add = (value: string) => {
+      entry.value = value;
+      entry.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+    };
+    add('News');
+    add('news');
+    expect(status.textContent).toBe('Duplicate tag');
+    add('x'.repeat(65));
+    expect(status.textContent).toBe('Tag is too long.');
+    add('Design');
+    add('More');
+    expect(status.textContent).toBe('Maximum of 2 tags reached.');
+    expect(root.querySelectorAll('[data-blx-tag-input-item]')).toHaveLength(2);
   });
 });

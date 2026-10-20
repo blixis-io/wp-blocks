@@ -128,6 +128,57 @@
     outline-offset: 2px;
   }
 
+  form[data-blx-form] [data-blx-tag-input] {
+    display: grid;
+    gap: var(--blx-space-2, 0.5rem);
+  }
+
+  form[data-blx-form] [data-blx-tag-input] > label {
+    color: var(--blx-color-text, CanvasText);
+  }
+
+  form[data-blx-form] [data-blx-tag-input-list] {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--blx-space-2, 0.5rem);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  form[data-blx-form] [data-blx-tag-input-list][hidden] {
+    display: none;
+  }
+
+  form[data-blx-form] [data-blx-tag-input-item] {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--blx-space-2, 0.5rem);
+    max-inline-size: 100%;
+    padding: var(--blx-space-1, 0.25rem) var(--blx-space-2, 0.5rem);
+    border: 1px solid var(--blx-color-line, currentcolor);
+    border-radius: 999px;
+    background: var(--blx-color-surface, Canvas);
+    color: var(--blx-color-text, CanvasText);
+  }
+
+  form[data-blx-form] [data-blx-tag-input-item] span {
+    overflow-wrap: anywhere;
+  }
+
+  form[data-blx-form] [data-blx-tag-input-item] button {
+    min-inline-size: 2rem;
+    min-block-size: 2rem;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    line-height: 1;
+    cursor: pointer;
+  }
+
   form[data-blx-form] button[type='submit'] {
     justify-self: start;
     min-block-size: 2.75rem;

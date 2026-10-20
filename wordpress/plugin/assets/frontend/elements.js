@@ -168,6 +168,109 @@
     if (root.open) update();
   };
 
+  const initTagInput = (root) => {
+    if (root.dataset.blxTagInputReady === 'true') return;
+    const entry = root.querySelector('[data-blx-tag-input-entry]');
+    const list = root.querySelector('[data-blx-tag-input-list]');
+    const status = root.querySelector('[data-blx-tag-input-status]');
+    const form = root.closest('form');
+    if (!entry || !list || !status || !form || !entry.name) return;
+
+    root.dataset.blxTagInputReady = 'true';
+    const required = entry.required;
+    const maxTags = Math.max(1, Math.min(20, Number(root.dataset.blxTagInputMaxTags) || 10));
+    const maxLength = 64;
+    const name = entry.name;
+    const hidden = document.createElement('input');
+    hidden.type = 'hidden';
+    hidden.name = name;
+    hidden.disabled = entry.disabled;
+    entry.removeAttribute('name');
+    entry.required = false;
+    entry.after(hidden);
+    list.hidden = false;
+    let tags = [];
+
+    const message = (attribute, fallback) => root.getAttribute(attribute) || fallback;
+    const updateValue = () => {
+      hidden.value = tags.join(', ');
+      entry.required = tags.length === 0 && required;
+      list.hidden = tags.length === 0;
+    };
+    const render = () => {
+      list.replaceChildren();
+      tags.forEach((tag, index) => {
+        const item = document.createElement('li');
+        item.dataset.blxTagInputItem = '';
+        const text = document.createElement('span');
+        text.textContent = tag;
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.textContent = '×';
+        remove.setAttribute('aria-label', `${message('data-blx-tag-input-remove-prefix', 'Remove tag')} ${tag}`);
+        remove.addEventListener('click', () => {
+          tags.splice(index, 1);
+          status.textContent = '';
+          render();
+          updateValue();
+          entry.focus();
+        });
+        item.append(text, remove);
+        list.append(item);
+      });
+      updateValue();
+    };
+    const add = (raw) => {
+      const tag = raw.trim();
+      if (!tag) return false;
+      if (Array.from(tag).length > maxLength) {
+        status.textContent = message('data-blx-tag-input-length-message', 'Each tag must be 64 characters or fewer.');
+        return false;
+      }
+      if (tags.some((existing) => existing.toLocaleLowerCase() === tag.toLocaleLowerCase())) {
+        status.textContent = message('data-blx-tag-input-duplicate-message', 'This tag is already in the list.');
+        return false;
+      }
+      if (tags.length >= maxTags) {
+        status.textContent = message('data-blx-tag-input-limit-message', `Maximum of ${maxTags} tags reached.`).replace(
+          '%d',
+          String(maxTags),
+        );
+        return false;
+      }
+      tags.push(tag);
+      status.textContent = '';
+      return true;
+    };
+    const commit = () => {
+      const pieces = entry.value.split(',');
+      pieces.forEach((piece) => add(piece));
+      entry.value = '';
+      render();
+      updateValue();
+    };
+    const initialValue = entry.value;
+    tags = [];
+    initialValue.split(',').forEach((tag) => add(tag));
+    entry.value = '';
+    render();
+    entry.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ',') {
+        event.preventDefault();
+        commit();
+      } else if (event.key === 'Backspace' && entry.value === '' && tags.length > 0) {
+        tags.pop();
+        render();
+      }
+    });
+    entry.addEventListener('input', () => {
+      if (!entry.value.includes(',')) return;
+      commit();
+    });
+    entry.addEventListener('blur', commit);
+    form.addEventListener('submit', commit, { capture: true });
+  };
+
   const initTabs = (root) => {
     if (root.dataset.blxTabsReady === 'true') return;
     const nav = root.querySelector('nav');
@@ -866,6 +969,7 @@
     document.querySelectorAll('[data-blx-tabs]').forEach(initTabs);
     document.querySelectorAll('[data-blx-scroll-spy]').forEach(initScrollSpy);
     document.querySelectorAll('[data-blx-offcanvas]').forEach(initOffcanvas);
+    document.querySelectorAll('[data-blx-tag-input]').forEach(initTagInput);
   };
   window.blxInitMarquee = initMarquee;
   window.blxInitResizablePanels = initResizablePanels;
@@ -880,6 +984,7 @@
   window.blxInitTabs = initTabs;
   window.blxInitScrollSpy = initScrollSpy;
   window.blxInitOffcanvas = initOffcanvas;
+  window.blxInitTagInput = initTagInput;
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
   else init();
 })();

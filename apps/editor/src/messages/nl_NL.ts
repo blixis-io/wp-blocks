@@ -364,6 +364,7 @@ export const nl_NL: Record<MessageKey, string> = {
   'inspector.prop.max': 'Maximumwaarde',
   'inspector.prop.maxBytes': 'Maximale bestandsgrootte (bytes)',
   'inspector.prop.maxItems': 'Maximumaantal items',
+  'inspector.prop.maxTags': 'Maximumaantal tags',
   'inspector.prop.maxSelections': 'Maximumaantal selecties',
   'inspector.prop.method': 'Methode',
   'inspector.prop.min': 'Minimumwaarde',

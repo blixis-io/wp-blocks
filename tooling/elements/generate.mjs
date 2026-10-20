@@ -195,6 +195,7 @@ const editorReady = new Set([
   'search-field',
   'phone-field',
   'multi-select',
+  'tag-input',
   'hidden-field',
   'submit-button',
   'form-success',
