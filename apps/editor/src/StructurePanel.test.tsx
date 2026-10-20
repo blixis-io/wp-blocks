@@ -162,9 +162,10 @@ describe('left panel and element palette', () => {
       'Alert',
       'Table Of Contents',
       'Phone Field',
+      'Multi Select',
     ])
       expect(within(palette).getByRole('button', { name })).toBeTruthy();
-    expect(within(palette).getAllByRole('button')).toHaveLength(170);
+    expect(within(palette).getAllByRole('button')).toHaveLength(171);
   });
 
   it('remembers the selected left tab for the current session', async () => {

@@ -37940,7 +37940,7 @@ export const GENERATED_ELEMENT_DEFINITIONS = [
       ],
     },
     archetype: 'choice',
-    status: 'planned',
+    status: 'ready',
   },
   {
     $schema: '../../schemas/element-definition.schema.json',
@@ -71610,7 +71610,7 @@ export const GENERATED_ELEMENT_PALETTE = [
     category: 'forms',
     icon: 'solar:list-check-linear',
     tier: 'plus',
-    status: 'planned',
+    status: 'ready',
     keywords:
       'multi-select multi select forms multi select element for blixis wordpress visual builder. the record defines editor options and rendering contracts, not implementation code.',
   },

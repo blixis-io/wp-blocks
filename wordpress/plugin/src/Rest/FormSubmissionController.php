@@ -77,7 +77,7 @@ final class FormSubmissionController {
 	 *
 	 * @param int    $post_id Page id.
 	 * @param string $form_id Stable form id.
-	 * @return ?array{rateLimitPerMinute:int,fields:array<string,array{type:string,label:string,required:bool,minLength:int,maxLength:int}>}
+	 * @return ?array{rateLimitPerMinute:int,fields:array<string,array{type:string,label:string,required:bool,minLength:int,maxLength:int,options:list<string>}>}
 	 */
 	private static function published_form( int $post_id, string $form_id ): ?array {
 		$pointer_raw = \get_post_meta( $post_id, MetaKeys::PUBLISHED, true );
@@ -118,7 +118,7 @@ final class FormSubmissionController {
 				if ( $child instanceof \stdClass && 'blixis/password-field' === ( $child->type ?? '' ) ) {
 					return null;
 				}
-				if ( ! $child instanceof \stdClass || ! \in_array( $child->type ?? '', [ 'blixis/text-field', 'blixis/email-field', 'blixis/phone-field', 'blixis/number-field', 'blixis/url-field', 'blixis/search-field', 'blixis/hidden-field' ], true ) || ! ( $child->props ?? null ) instanceof \stdClass ) {
+				if ( ! $child instanceof \stdClass || ! \in_array( $child->type ?? '', [ 'blixis/text-field', 'blixis/email-field', 'blixis/phone-field', 'blixis/multi-select', 'blixis/number-field', 'blixis/url-field', 'blixis/search-field', 'blixis/hidden-field' ], true ) || ! ( $child->props ?? null ) instanceof \stdClass ) {
 					continue;
 				}
 				$field_props = \get_object_vars( $child->props );
@@ -129,6 +129,15 @@ final class FormSubmissionController {
 				$validation  = $validation instanceof \stdClass ? \get_object_vars( $validation ) : [];
 				$field_type  = \substr( (string) $child->type, 7 );
 				$max_length  = \is_int( $validation['maxLength'] ?? null ) ? \max( 1, \min( 10000, $validation['maxLength'] ) ) : 255;
+				$options     = [];
+				if ( 'multi-select' === $field_type && \is_array( $field_props['options'] ?? null ) ) {
+					foreach ( \array_slice( $field_props['options'], 0, 100 ) as $option ) {
+						if ( $option instanceof \stdClass && \is_string( $option->value ?? null ) && 1 === \preg_match( '/^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$/D', $option->value ) ) {
+							$options[] = $option->value;
+						}
+					}
+					$options = \array_values( \array_unique( $options ) );
+				}
 				if ( 'phone-field' === $field_type ) {
 					$max_length = \min( 32, $max_length );
 				}
@@ -141,6 +150,7 @@ final class FormSubmissionController {
 					'required'  => true === ( $field_props['required'] ?? false ),
 					'minLength' => \is_int( $validation['minLength'] ?? null ) ? \max( 0, \min( 10000, $validation['minLength'] ) ) : 0,
 					'maxLength' => $max_length,
+					'options'   => $options,
 				];
 			}
 			return [] !== $fields ? [
@@ -190,15 +200,32 @@ final class FormSubmissionController {
 
 	/** Validate names and values against the live field allowlist.
 	 *
-	 * @param array<string,array{type:string,label:string,required:bool,minLength:int,maxLength:int}> $allowed Field schema.
-	 * @param array<mixed>                                                                            $input Submitted values.
+	 * @param array<string,array{type:string,label:string,required:bool,minLength:int,maxLength:int,options:list<string>}> $allowed Field schema.
+	 * @param array<mixed>                                                                                                 $input Submitted values.
 	 */
 	private static function valid_fields( array $allowed, array $input ): bool {
 		if ( [] === $input || \count( $input ) > \count( $allowed ) ) {
 			return false;
 		}
 		foreach ( $input as $name => $value ) {
-			if ( ! \is_string( $name ) || ! isset( $allowed[ $name ] ) || ! \is_scalar( $value ) || \strlen( (string) $value ) > 10000 ) {
+			if ( ! \is_string( $name ) || ! isset( $allowed[ $name ] ) ) {
+				return false;
+			}
+			$field = $allowed[ $name ];
+			if ( 'multi-select' === $field['type'] ) {
+				if ( ! \is_array( $value ) || [] === $value || \count( $value ) > 20 ) {
+					return false;
+				}
+				$selected = [];
+				foreach ( $value as $selected_value ) {
+					if ( ! \is_string( $selected_value ) || \strlen( $selected_value ) > 64 || ! \in_array( $selected_value, $field['options'], true ) || \in_array( $selected_value, $selected, true ) ) {
+						return false;
+					}
+					$selected[] = $selected_value;
+				}
+				continue;
+			}
+			if ( ! \is_scalar( $value ) || \strlen( (string) $value ) > 10000 ) {
 				return false;
 			}
 			if ( \strlen( (string) $value ) > $allowed[ $name ]['maxLength'] || \strlen( (string) $value ) < $allowed[ $name ]['minLength'] ) {
@@ -218,7 +245,14 @@ final class FormSubmissionController {
 			}
 		}
 		foreach ( $allowed as $name => $field ) {
-			if ( $field['required'] && ( ! isset( $input[ $name ] ) || '' === \trim( (string) $input[ $name ] ) ) ) {
+			if ( ! $field['required'] ) {
+				continue;
+			}
+			if ( 'multi-select' === $field['type'] ) {
+				if ( ! isset( $input[ $name ] ) || ! \is_array( $input[ $name ] ) || [] === $input[ $name ] ) {
+					return false;
+				}
+			} elseif ( ! isset( $input[ $name ] ) || '' === \trim( (string) $input[ $name ] ) ) {
 				return false;
 			}
 		}

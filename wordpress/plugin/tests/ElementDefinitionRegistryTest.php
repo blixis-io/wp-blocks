@@ -1722,10 +1722,51 @@ final class ElementDefinitionRegistryTest extends TestCase {
 				'required'  => true,
 				'minLength' => 3,
 				'maxLength' => 32,
+				'options'   => [],
 			],
 		];
 		$this->assertTrue( $phone_validation->invoke( null, $phone_allowed, [ 'phone' => '+31 (0) 20-1234567' ] ) );
 		$this->assertFalse( $phone_validation->invoke( null, $phone_allowed, [ 'phone' => 'call-me-maybe' ] ) );
+		$multi_select = $renderer->render(
+			new ElementNode(
+				'multi-topic',
+				'blixis/multi-select',
+				[
+					'name'         => 'topics',
+					'label'        => 'Topics',
+					'options'      => [
+						[
+							'value' => 'docs',
+							'label' => 'Docs & Help',
+						],
+						[
+							'value' => 'events',
+							'label' => 'Events',
+						],
+					],
+					'defaultValue' => 'events',
+					'required'     => true,
+				]
+			),
+			new RenderContext()
+		);
+		$this->assertStringContainsString( 'name="fields[topics][]" multiple required', $multi_select );
+		$this->assertStringContainsString( '<option value="docs">Docs &amp; Help</option>', $multi_select );
+		$this->assertStringContainsString( '<option value="events" selected>Events</option>', $multi_select );
+		$this->assertTrue( PreviewSanitizer::accepts( $multi_select ) );
+		$multi_allowed = [
+			'topics' => [
+				'type'      => 'multi-select',
+				'label'     => 'Topics',
+				'required'  => true,
+				'minLength' => 0,
+				'maxLength' => 255,
+				'options'   => [ 'docs', 'events' ],
+			],
+		];
+		$this->assertTrue( $phone_validation->invoke( null, $multi_allowed, [ 'topics' => [ 'docs', 'events' ] ] ) );
+		$this->assertFalse( $phone_validation->invoke( null, $multi_allowed, [ 'topics' => [ 'unknown' ] ] ) );
+		$this->assertFalse( $phone_validation->invoke( null, $multi_allowed, [ 'topics' => 'docs' ] ) );
 		$password = $renderer->render(
 			new ElementNode(
 				'password-secret',
